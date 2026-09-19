@@ -1,0 +1,111 @@
+version: '3'
+
+env:
+  UV_CACHE_DIR: '{{.UV_CACHE_DIR | default (printf "%s/.cache/uv" .ROOT_DIR)}}'
+  npm_config_cache: '{{.ROOT_DIR}}/.cache/npm'
+
+tasks:
+  bootstrap:
+    run: once
+    cmds:
+      - python3 scripts/bootstrap.py
+
+  install:
+    deps: [bootstrap]
+    cmds:
+      - uv sync --locked
+      - cd frontend && npm ci
+
+  services:
+    deps: [bootstrap]
+    cmds:
+      - docker compose up -d --wait postgres redis
+
+  stop:
+    cmds:
+      - docker compose down
+
+  migrate:
+    cmds:
+      - uv run python backend/manage.py migrate
+
+  api:
+    cmds:
+      - uv run python backend/manage.py runserver 127.0.0.1:8000
+
+  web:
+    dir: frontend
+    cmds:
+      - npm run dev -- --host 127.0.0.1
+
+  worker:
+    cmds:
+      - uv run celery --workdir=backend -A config worker --loglevel=INFO --pool=solo
+
+  scheduler:
+    cmds:
+      - uv run celery --workdir=backend -A config beat --loglevel=INFO --schedule=../.cache/celerybeat-schedule
+
+  check:
+    cmds:
+      - uv run ruff check .
+      - uv run ruff format --check .
+      - uv run mypy
+      - uv run python backend/manage.py check
+      - uv run python backend/manage.py makemigrations --check --dry-run
+      - cd frontend && npm run lint
+      - cd frontend && npm run typecheck
+      - cd frontend && npm run format:check
+
+  test:
+    cmds:
+      - uv run pytest
+      - cd frontend && npm test
+
+  build:
+    dir: frontend
+    cmds:
+      - npm run build
+
+  format:
+    cmds:
+      - uv run ruff check --fix .
+      - uv run ruff format .
+      - cd frontend && npm run format
+
+  schema:
+    cmds:
+      - uv run python backend/manage.py spectacular --file frontend/openapi.yaml --validate --fail-on-warn
+      - cd frontend && npm run api:types
+
+  schema-check:
+    cmds:
+      - uv run python backend/manage.py spectacular --file .cache/openapi.yaml --validate --fail-on-warn
+      - diff -u frontend/openapi.yaml .cache/openapi.yaml
+      - cd frontend && npm exec openapi-typescript -- openapi.yaml -o ../.cache/schema.d.ts
+      - diff -u frontend/src/api/schema.d.ts .cache/schema.d.ts
+
+  browsers:
+    dir: frontend
+    cmds:
+      - npx playwright install chromium
+
+  e2e:
+    dir: frontend
+    cmds:
+      - npm run test:e2e
+
+  worker-check:
+    cmds:
+      - uv run python scripts/check_worker.py
+
+  app:
+    deps: [services]
+    cmds:
+      - docker compose --profile app build
+      - docker compose --profile app run --rm backend uv run --no-sync python backend/manage.py migrate
+      - docker compose --profile app up -d --wait
+
+  app-stop:
+    cmds:
+      - docker compose --profile app down

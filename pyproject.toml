@@ -1,0 +1,59 @@
+[project]
+name = "feedback-inbox"
+version = "0.1.0"
+description = "Internal customer feedback inbox connecting Slack and GitHub"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+  "django>=5.2.8,<5.3",
+  "djangorestframework>=3.16,<4",
+  "drf-spectacular>=0.28,<1",
+  "psycopg[binary]>=3.2,<4",
+  "celery[redis]>=5.6,<6",
+  "django-environ>=0.12,<1",
+  "slack-sdk>=3.36,<4",
+  "httpx>=0.28,<1",
+  "cryptography>=46,<49",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.4,<10",
+  "pytest-django>=4.11,<5",
+  "pytest-cov>=6,<8",
+  "ruff>=0.14,<1",
+  "mypy>=1.18,<2",
+  "django-stubs[compatible-mypy]>=5.2,<5.3",
+  "djangorestframework-stubs>=3.16,<4",
+  "types-redis>=4.6,<5",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+pythonpath = ["backend"]
+testpaths = ["backend/tests"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = ["backend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.14"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+mypy_path = "backend"
+files = ["backend"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings"
+
+[[tool.mypy.overrides]]
+module = ["celery", "celery.*", "environ"]
+ignore_missing_imports = true

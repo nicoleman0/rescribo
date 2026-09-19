@@ -1,0 +1,90 @@
+name: feedback-inbox
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-feedback_inbox}
+      POSTGRES_USER: ${POSTGRES_USER:-feedback_inbox}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run task bootstrap first}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-56379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend: &python-service
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    env_file: .env
+    environment:
+      FEEDBACK_DATABASE_URL: postgresql://${POSTGRES_USER:-feedback_inbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-feedback_inbox}
+      FEEDBACK_REDIS_URL: redis://redis:6379/0
+    volumes:
+      - ./backend:/app/backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: [uv, run, --locked, --no-sync, python, backend/manage.py, runserver, "0.0.0.0:8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: [CMD, uv, run, --no-sync, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/ready/', timeout=5)"]
+      interval: 10s
+      timeout: 8s
+      retries: 12
+
+  worker:
+    <<: *python-service
+    ports: []
+    healthcheck:
+      disable: true
+    command: [uv, run, --locked, --no-sync, celery, --workdir=backend, -A, config, worker, --loglevel=INFO, --concurrency=2]
+
+  scheduler:
+    <<: *python-service
+    ports: []
+    healthcheck:
+      disable: true
+    command: [uv, run, --locked, --no-sync, celery, --workdir=backend, -A, config, beat, --loglevel=INFO, --schedule=/tmp/celerybeat-schedule]
+
+  frontend:
+    profiles: [app]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    environment:
+      API_PROXY_TARGET: http://backend:8000
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
