@@ -84,6 +84,8 @@ No app account is created by setup. For Django's development admin, run `uv run 
 
 Slack, GitHub, and model keys are not needed to start. The first product milestone is live integration feasibility using test apps and disposable data. Follow section 12 of the spec before claiming provider support.
 
+Milestone A work is split by the issues in the [GitHub milestone](https://github.com/nicoleman0/rescribo/milestone/1). The opt-in [GitHub App installation check](docs/GITHUB_INSTALLATION_CHECK.md) covers the first issue without adding credentials to the application or repository.
+
 ## Troubleshooting
 
 - **Docker unavailable:** start Docker Desktop, then run `task services` again.

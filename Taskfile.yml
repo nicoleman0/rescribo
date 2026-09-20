@@ -99,6 +99,11 @@ tasks:
     cmds:
       - uv run python scripts/check_worker.py
 
+  github-installation-check:
+    desc: Run the opt-in live GitHub App installation feasibility check
+    cmds:
+      - uv run python scripts/check_github_installation.py {{.CLI_ARGS}}
+
   app:
     deps: [services]
     cmds:
