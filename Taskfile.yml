@@ -51,6 +51,7 @@ tasks:
       - uv run ruff check .
       - uv run ruff format --check .
       - uv run mypy
+      - shellcheck scripts/*.sh
       - uv run python backend/manage.py check
       - uv run python backend/manage.py makemigrations --check --dry-run
       - cd frontend && npm run lint
@@ -113,6 +114,16 @@ tasks:
     desc: Run the opt-in live Slack shortcut capture feasibility check
     cmds:
       - uv run python scripts/check_slack_shortcut.py {{.CLI_ARGS}}
+
+  slack-tunnel:
+    desc: Open a cloudflared quick tunnel to a feasibility receiver (port, path)
+    cmds:
+      - bash scripts/slack_tunnel.sh {{.CLI_ARGS}}
+
+  slack-channels:
+    desc: List feasibility workspace channel ids for the Slack checks
+    cmds:
+      - uv run python scripts/list_slack_channels.py
 
   app:
     deps: [services]
