@@ -104,6 +104,11 @@ tasks:
     cmds:
       - uv run python scripts/check_github_installation.py {{.CLI_ARGS}}
 
+  github-lifecycle-check:
+    desc: Run the opt-in live GitHub issue lifecycle feasibility check
+    cmds:
+      - uv run python scripts/check_github_issue_lifecycle.py {{.CLI_ARGS}}
+
   app:
     deps: [services]
     cmds:
