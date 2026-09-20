@@ -36,6 +36,7 @@ from integrations.github_app.webhooks import InvalidWebhookSignature  # noqa: E4
 from live_check import (  # noqa: E402
     LoopbackOAuthServer,
     OAuthCallbackHandler,
+    receiver_of,
     required_environment,
 )
 
@@ -51,7 +52,7 @@ class WebhookCallbackHandler(OAuthCallbackHandler):
     """Adds signature-verified webhook deliveries to the loopback receiver."""
 
     def do_POST(self) -> None:  # noqa: N802
-        receiver: LoopbackReceiver = self.server
+        receiver = receiver_of(self, LoopbackReceiver)
         if urlparse(self.path).path != WEBHOOK_PATH:
             self.send_error(404)
             return

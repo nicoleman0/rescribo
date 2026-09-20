@@ -66,6 +66,11 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
     thread_ts = message.get("thread_ts")
     if thread_ts is not None and not isinstance(thread_ts, str):
         raise ShortcutPayloadError("Unexpected type at message.thread_ts")
+    # A file-only or blocks-only message carries an empty `text`; that is a
+    # message without words, not a malformed payload.
+    text = message.get("text")
+    if not isinstance(text, str):
+        raise ShortcutPayloadError("Unexpected type at message.text")
     channel_name = payload.get("channel")
     if isinstance(channel_name, Mapping) and isinstance(channel_name.get("name"), str):
         channel_name = channel_name["name"]
@@ -79,7 +84,7 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
         actor_id=_require_string(payload, "user", "id"),
         message_ts=_require_string(message, "ts"),
         thread_ts=thread_ts if isinstance(thread_ts, str) and thread_ts else None,
-        text=_require_string(message, "text"),
+        text=text,
         trigger_id=_require_string(payload, "trigger_id"),
     )
 

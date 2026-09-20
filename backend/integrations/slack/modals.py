@@ -5,7 +5,16 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Any
 
+from slack_sdk.models.blocks import SectionBlock
+
 from integrations.slack.shortcuts import MessageShortcut
+
+# Slack rejects a section whose plain_text runs past this. Read the limit off
+# the SDK rather than restating Slack's number here.
+SECTION_TEXT_LIMIT: int = SectionBlock.text_max_length
+TITLE_LIMIT = 80
+_TRUNCATION_NOTE = "\n[Preview truncated. The whole message is captured.]"
+_NO_TEXT_NOTE = "(This message has no text.)"
 
 
 class SubmissionErrors(ValueError):
@@ -39,15 +48,35 @@ class CaptureSubmission:
 
 
 def _prefill_title(text: str) -> str:
+    """The leading whole words of the message, within the title limit.
+
+    A first word longer than the limit is cut mid-word: a blank prefill on a
+    required field is worse than a clipped one.
+    """
     words = text.split()
+    if not words:
+        return ""
     parts: list[str] = []
     length = 0
     for word in words:
-        if length + len(word) + bool(parts) > 80:
+        added = len(word) + (1 if parts else 0)
+        if length + added > TITLE_LIMIT:
             break
         parts.append(word)
-        length += len(word) + bool(parts)
+        length += added
+    if not parts:
+        return words[0][:TITLE_LIMIT]
     return " ".join(parts)
+
+
+def _snapshot_text(text: str, captured_on: date) -> str:
+    """The snapshot section, clipped to what Slack will accept in one section."""
+    header = f"Captured on {captured_on.isoformat()}:\n"
+    body = text if text.strip() else _NO_TEXT_NOTE
+    budget = SECTION_TEXT_LIMIT - len(header)
+    if len(body) > budget:
+        body = body[: budget - len(_TRUNCATION_NOTE)] + _TRUNCATION_NOTE
+    return header + body
 
 
 def build_capture_modal(
@@ -67,7 +96,7 @@ def build_capture_modal(
             "type": "section",
             "text": {
                 "type": "plain_text",
-                "text": f"Captured on {captured_on.isoformat()}:\n{shortcut.text}",
+                "text": _snapshot_text(shortcut.text, captured_on),
             },
         }
     ]
@@ -94,16 +123,16 @@ def build_capture_modal(
             },
         },
     )
+    title_element: dict[str, Any] = {"type": "plain_text_input", "action_id": "title"}
+    prefill = _prefill_title(shortcut.text)
+    if prefill:
+        title_element["initial_value"] = prefill
     blocks.append(
         {
             "type": "input",
             "block_id": "report_title",
             "label": {"type": "plain_text", "text": "Report title"},
-            "element": {
-                "type": "plain_text_input",
-                "action_id": "title",
-                "initial_value": _prefill_title(shortcut.text),
-            },
+            "element": title_element,
         },
     )
     blocks.append(

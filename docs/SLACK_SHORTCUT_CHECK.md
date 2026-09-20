@@ -30,8 +30,10 @@ export RESCRIBO_SLACK_RECEIVER_URL=http://127.0.0.1:8767/slack/interactions
 Expose the receiver to Slack with a public HTTPS tunnel:
 
 ```sh
-cloudflared tunnel --url http://127.0.0.1:8767/slack/interactions
+cloudflared tunnel --url http://127.0.0.1:8767
 ```
+
+Pass the origin only. `cloudflared` takes the host and scheme from `--url` and forwards the incoming path unchanged ([`httpService.RoundTrip`](https://github.com/cloudflare/cloudflared/blob/master/ingress/origin_proxy.go) sets `req.URL.Host` and `req.URL.Scheme` and nothing else), so a path written into the flag is silently ignored. The app's Request URL keeps `/slack/interactions`.
 
 `cloudflared` quick tunnels need no account, but the printed `*.trycloudflare.com` URL changes on every run, so the app's Request URL must be updated each time. ngrok works too. smee.io does **not**: Slack expects a synchronous response body for `response_action` delivery. smee can only forward request bodies to a browser window, not return a synchronous response payload back to Slack, so `views.open` is the only reliable way to open the modal over smee and `response_action: errors` cannot work at all.
 
@@ -52,8 +54,8 @@ What the check does, in order:
 2. Starts a threading loopback receiver. Threading is required because Slack retries any interaction that is not answered within three seconds; a single-threaded handler would queue a retry behind a slow `views.open`.
 3. Waits for interaction requests. Every request's signature and timestamp are verified against the raw body before parsing; bad signatures answer 401.
 4. Per `message_action` shortcut: the source channel is checked against the operator-supplied allowlist. Rejections (DM or unapproved channel) are recorded with `text_retained: false` and the message text is dropped without being copied anywhere. Approved shortcuts mint an opaque context id, build the capture modal, call `views.open` inside the acknowledgement window, and answer 200. A duplicate capture inside one run is recorded as `duplicate: true`, not counted as new coverage.
-5. Per `view_submission`: the context id is resolved against the in-memory store (15-minute TTL), the submission is parsed, and the modal is closed with `response_action: clear` on success or `response_action: errors` on visible failure. With `--fail-first-submission` one submission is forced onto the error path, proving a failure returns a visible error rather than a success acknowledgement.
-6. Finishes when all four capture combinations ({public, private} x {root, thread reply}) and both rejections are covered, or on Ctrl-C.
+5. Per `view_submission`: the context id is resolved against the in-memory store (15-minute TTL), the submission is parsed, and the modal is closed with `response_action: clear` on success or `response_action: errors` on visible failure. The context is consumed only once a submission commits, so a visible error can be corrected and resubmitted in the same modal. With `--fail-first-submission` one submission is forced onto the error path, proving a failure returns a visible error rather than a success acknowledgement.
+6. Finishes when all four capture combinations ({public, private} x {root, thread reply}) and both rejections are covered, or on Ctrl-C. A combination counts only once its modal opened *and* its submission committed: a failed `views.open`, an abandoned modal, or a duplicate of an already-captured message proves nothing. The run prints what is still outstanding as it changes.
 
 The sanitised result is written to `.cache/slack-shortcut-result.json`. It contains the team id, granted scopes, per-capture timings (`ack_ms`, `views_open_ms`, `skew_s` — Slack wall-clock skew against the `X-Slack-Request-Timestamp`), which modal blocks were verified, whether each submission committed, and the rejection reasons. It never contains message text, actor ids, tokens, signing secrets, trigger ids, or raw payloads. Live results belong in the Milestone A evidence work for issue #8, separate from mocked test results.
 

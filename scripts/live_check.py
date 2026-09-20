@@ -13,12 +13,22 @@ def required_environment(name: str) -> str:
     return value
 
 
+def receiver_of[ReceiverT: HTTPServer](
+    handler: BaseHTTPRequestHandler, expected: type[ReceiverT]
+) -> ReceiverT:
+    """Narrow `handler.server` to the receiver that owns the handler."""
+    server = handler.server
+    assert isinstance(server, expected), f"Handler is not bound to a {expected.__name__}."
+    return server
+
+
 class OAuthCallbackHandler(BaseHTTPRequestHandler):
     """Records the OAuth callback onto `self.server.callback`."""
 
     def do_GET(self) -> None:  # noqa: N802
+        receiver = receiver_of(self, LoopbackOAuthServer)
         request_uri = urlparse(self.path)
-        if request_uri.path != getattr(self.server, "redirect_path", None):
+        if request_uri.path != receiver.redirect_path:
             self.send_error(404)
             return
         values = parse_qs(request_uri.query)
@@ -27,7 +37,7 @@ class OAuthCallbackHandler(BaseHTTPRequestHandler):
         if not code or not state:
             self.send_error(400)
             return
-        self.server.callback.update(code=code, state=state)
+        receiver.callback.update(code=code, state=state)
         message = b"GitHub authorization received. You can close this tab."
         self.send_response(200)
         self.send_header("Content-Type", "text/plain; charset=utf-8")

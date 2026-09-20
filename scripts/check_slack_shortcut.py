@@ -43,17 +43,12 @@ from integrations.slack import (  # noqa: E402
     parse_message_shortcut,
     verify_slack_signature,
 )
-from live_check import required_environment  # noqa: E402
+from live_check import receiver_of, required_environment  # noqa: E402
+from slack_capture_ledger import CaptureLedger  # noqa: E402
 
 INTERACTIONS_PATH = "/slack/interactions"
 PROPOSED_SCOPES = frozenset({"commands", "channels:read", "groups:read", "chat:write", "im:write"})
 CONTEXT_TTL_S = 15 * 60
-REQUIRED_COVERAGE = {
-    ("public", "root"),
-    ("public", "thread"),
-    ("private", "root"),
-    ("private", "thread"),
-}
 
 
 def utc_now() -> str:
@@ -86,12 +81,11 @@ class SlackReceiver(ThreadingHTTPServer):
     the retry.
     """
 
-    handler: type[SlackInteractionHandler]
-
     def __init__(
         self,
         listening_url: str,
         *,
+        client: WebClient,
         signing_secret: str,
         workspace_name: str,
         public_channel: str,
@@ -109,10 +103,9 @@ class SlackReceiver(ThreadingHTTPServer):
         self.private_channel = private_channel
         self.fail_first_submission = fail_first_submission
         self.approved_channel_ids = frozenset({public_channel, private_channel})
-        self.client = WebClient(token=required_environment("RESCRIBO_SLACK_BOT_TOKEN"))
+        self.client = client
+        self.ledger = CaptureLedger(public_channel=public_channel, private_channel=private_channel)
         self.contexts: dict[str, dict[str, Any]] = {}
-        self.captures: list[dict[str, Any]] = []
-        self.rejections: list[dict[str, Any]] = []
         self._lock = threading.Lock()
         super().__init__((parsed.hostname, parsed.port), SlackInteractionHandler)
 
@@ -125,20 +118,13 @@ class SlackReceiver(ThreadingHTTPServer):
         self.server_close()
         self._thread.join(timeout=5)
 
-    def channel_kind(self, channel_id: str) -> str:
-        if channel_id == self.public_channel:
-            return "public"
-        if channel_id == self.private_channel:
-            return "private"
-        return "unknown"
-
     def handle_interaction(
         self, *, body: str, request_timestamp: str | None
     ) -> tuple[int, dict[str, Any]]:
         """Parse one verified interaction and answer with a response action.
 
-        Returns `(status, payload)`. Additionally remembers how long the
-        acknowledgement took so the following capture record can be updated.
+        Returns `(status, payload)`. The handler times the acknowledgement and
+        writes it back onto the capture record once the body is out.
         """
         try:
             request_ts = float(request_timestamp) if request_timestamp else None
@@ -174,18 +160,10 @@ class SlackReceiver(ThreadingHTTPServer):
         try:
             check_source_allowed(shortcut, approved_channel_ids=self.approved_channel_ids)
         except SourceRejected as reject:
-            with self._lock:
-                self.rejections.append(
-                    {
-                        "reason": reject.reason,
-                        "channel_id": reject.channel_id,
-                        "text_retained": False,
-                    }
-                )
+            self.ledger.record_rejection(reason=reject.reason, channel_id=reject.channel_id)
             print(f"Rejected source {reject.channel_id} ({reject.reason}); text not retained.")
             return 200, {}
-        source_key = shortcut.source_key()
-        duplicate = any(capture.get("source_key") == source_key for capture in self.captures)
+        duplicate = self.ledger.is_duplicate(shortcut.source_key())
         context_id = f"ctx-{secrets.token_hex(8)}"
         with self._lock:
             self.contexts[context_id] = {
@@ -202,31 +180,25 @@ class SlackReceiver(ThreadingHTTPServer):
         try:
             self.client.views_open(trigger_id=shortcut.trigger_id, view=view)
         except SlackApiError as error:
-            slack_error = error.response.data.get("error") if error.response.data else None
+            slack_error = slack_error_code(error.response.data)
             print(f"views.open failed ({slack_error}); the capture is failed and not covered.")
-            self.record_capture(
+            self.ledger.record_capture(
                 shortcut,
-                ack_ms=None,
                 views_open_ms=None,
                 skew_s=skew_s,
-                submission_committed=False,
                 duplicate=duplicate,
-                source_key=source_key,
-                extra={"views_open_error": slack_error},
+                views_open_error=slack_error,
             )
             with self._lock:
                 self.contexts.pop(context_id, None)
             return 200, {}
         views_open_ms = (time.monotonic() - views_open_start) * 1000
         source = "thread" if shortcut.is_thread_reply else "root"
-        self.record_capture(
+        self.ledger.record_capture(
             shortcut,
-            ack_ms=self._ack_placeholder(),
             views_open_ms=views_open_ms,
             skew_s=skew_s,
-            submission_committed=False,
             duplicate=duplicate,
-            source_key=source_key,
         )
         print(
             f"Modal opened for {shortcut.channel_id} ({source}) views_open_ms={views_open_ms:.0f} "
@@ -234,89 +206,23 @@ class SlackReceiver(ThreadingHTTPServer):
         )
         return 200, {}
 
-    def _ack_placeholder(self) -> float:
-        # The exact ack time is filled in once the HTTP 200 body is written.
-        return -1.0
-
-    def record_capture(
-        self,
-        shortcut: MessageShortcut,
-        *,
-        ack_ms: float | None,
-        views_open_ms: float | None,
-        skew_s: float | None,
-        submission_committed: bool,
-        duplicate: bool,
-        source_key: str,
-        extra: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        capture: dict[str, Any] = {
-            "source_key": source_key,
-            "channel_id": shortcut.channel_id,
-            "channel_kind": self.channel_kind(shortcut.channel_id),
-            "source": "thread" if shortcut.is_thread_reply else "root",
-            "ack_ms": ack_ms,
-            "views_open_ms": views_open_ms,
-            "skew_s": skew_s,
-            "snapshot_matches_selected_message": views_open_ms is not None,
-            "thread_warning_shown": shortcut.is_thread_reply,
-            "submission_committed": submission_committed,
-            "duplicate": duplicate,
-        }
-        if extra:
-            capture.update(extra)
-        with self._lock:
-            self.captures.append(capture)
-        return capture
-
-    def record_ack(self, ack_ms: float) -> None:
-        """Fill in the ack time on the newest capture still awaiting one."""
-        with self._lock:
-            for capture in reversed(self.captures):
-                if capture.get("ack_ms") == -1.0:
-                    capture["ack_ms"] = ack_ms
-                    return
-            self._latest_ack_ms = ack_ms
-
-    def _latest_ack_for(self) -> float | None:
-        value = getattr(self, "_latest_ack_ms", None)
-        self._latest_ack_ms = None
-        return value
-
     def handle_view_submission(self, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
-        view = payload.get("view") or {}
-        context_id = view.get("private_metadata")
-        stored = self.contexts.get(context_id) if isinstance(context_id, str) else None
-        if stored is not None:
-            self.contexts.pop(context_id, None)
-        if stored is None:
-            print("Submission arrived with unknown or expired context; rejecting visibly.")
+        view = payload.get("view")
+        context_id = view.get("private_metadata") if isinstance(view, dict) else None
+        stored = None
+        if isinstance(context_id, str):
             with self._lock:
-                self.captures.append(
-                    {
-                        "source_key": "unknown",
-                        "channel_id": "unknown",
-                        "channel_kind": "unknown",
-                        "source": "unknown",
-                        "ack_ms": None,
-                        "views_open_ms": None,
-                        "skew_s": None,
-                        "snapshot_matches_selected_message": False,
-                        "thread_warning_shown": False,
-                        "submission_committed": False,
-                        "error": "context_expired",
-                        "duplicate": False,
-                    }
-                )
+                stored = self.contexts.get(context_id)
+        if stored is None or not isinstance(context_id, str):
+            print("Submission arrived with unknown or expired context; rejecting visibly.")
+            self.ledger.record_expired_submission()
             return 200, {
                 "response_action": "errors",
                 "errors": {"report_title": "Context expired. Retake the shortcut."},
             }
         shortcut: MessageShortcut = stored["shortcut"]
-        if self.fail_first_submission and not any(
-            capture.get("forced") for capture in self.captures
-        ):
-            self.mark_capture_result(shortcut, submission_committed=False, forced=True)
+        if self.fail_first_submission and not self.ledger.forced_error_recorded():
+            self.ledger.mark_submission(shortcut, committed=False, forced=True)
             return 200, {
                 "response_action": "errors",
                 "errors": {"report_title": "Forced visible error to prove the failure path."},
@@ -324,52 +230,24 @@ class SlackReceiver(ThreadingHTTPServer):
         try:
             parse_capture_submission(payload, resolve_context=lambda _cid: shortcut)
         except SubmissionErrors as error:
-            self.mark_capture_result(shortcut, submission_committed=False, forced=False)
+            self.ledger.mark_submission(shortcut, committed=False)
             return 200, {"response_action": "errors", "errors": error.errors}
         except ValueError:
-            self.mark_capture_result(shortcut, submission_committed=False, forced=False)
+            self.ledger.mark_submission(shortcut, committed=False)
             return 200, {
                 "response_action": "errors",
                 "errors": {"report_title": "Could not parse this submission."},
             }
-        self.mark_capture_result(shortcut, submission_committed=True)
+        self.ledger.mark_submission(shortcut, committed=True)
+        with self._lock:
+            self.contexts.pop(context_id, None)
         print(f"Submission committed for {shortcut.channel_id}.")
         return 200, {"response_action": "clear"}
-
-    def mark_capture_result(
-        self, shortcut: MessageShortcut, *, submission_committed: bool, forced: bool
-    ) -> None:
-        source_key_of = f"{shortcut.team_id}:{shortcut.channel_id}:{shortcut.message_ts}"
-        with self._lock:
-            for capture in reversed(self.captures):
-                if (
-                    capture.get("source_key") == source_key_of
-                    and not capture["submission_committed"]
-                ):
-                    capture["submission_committed"] = submission_committed
-                    if forced:
-                        capture["forced"] = True
-                    return
-            raise SystemExit(
-                f"No open capture for source {source_key_of}; the modal state and this "
-                "submission do not line up."
-            )
-
-    def coverage_remaining(self) -> set[tuple[str, str]]:
-        done = {
-            (capture["channel_kind"], capture["source"])
-            for capture in self.captures
-            if capture["channel_kind"] in {"public", "private"} and not capture["duplicate"]
-        }
-        return REQUIRED_COVERAGE - done
-
-    def forced_error_recorded(self) -> bool:
-        return any(capture.get("forced") for capture in self.captures)
 
 
 class SlackInteractionHandler(BaseHTTPRequestHandler):
     def do_POST(self) -> None:  # noqa: N802
-        receiver: SlackReceiver = self.server
+        receiver = receiver_of(self, SlackReceiver)
         if urlparse(self.path).path != INTERACTIONS_PATH:
             self.send_error(404)
             return
@@ -378,7 +256,10 @@ class SlackInteractionHandler(BaseHTTPRequestHandler):
         received = time.monotonic()
         try:
             verify_slack_signature(
-                signing_secret=receiver.signing_secret, body=body, headers=self.headers
+                signing_secret=receiver.signing_secret,
+                body=body,
+                timestamp=self.headers.get("X-Slack-Request-Timestamp"),
+                signature=self.headers.get("X-Slack-Signature"),
             )
         except InvalidSlackSignature:
             print("Rejected a missing or badly signed interaction request (401).")
@@ -398,11 +279,15 @@ class SlackInteractionHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(encoded)))
         self.end_headers()
         self.wfile.write(encoded)
-        ack_ms = (time.monotonic() - received) * 1000
-        receiver.record_ack(ack_ms)
+        receiver.ledger.record_ack((time.monotonic() - received) * 1000)
 
     def log_message(self, _format: str, *args: object) -> None:
         return
+
+
+def slack_error_code(data: dict[str, Any] | bytes) -> str | None:
+    """Pull the `error` code out of a Slack response body, which may be bytes."""
+    return data.get("error") if isinstance(data, dict) else None
 
 
 def check_scopes(client: WebClient) -> dict[str, Any]:
@@ -415,8 +300,9 @@ def check_scopes(client: WebClient) -> dict[str, Any]:
             f"Granted scopes {sorted(granted)} are not exactly the proposed set "
             f"{sorted(PROPOSED_SCOPES)}."
         )
-    team_id = response.data.get("team_id")
-    bot_user_id = response.data.get("user_id")
+    data = response.data if isinstance(response.data, dict) else {}
+    team_id = data.get("team_id")
+    bot_user_id = data.get("user_id")
     print(f"Signed in as bot {bot_user_id} on team {team_id}.")
     print(f"Granted scopes: {', '.join(sorted(granted))}")
     return {"team_id": team_id, "bot_user_id": bot_user_id, "granted_scopes": sorted(granted)}
@@ -424,7 +310,7 @@ def check_scopes(client: WebClient) -> dict[str, Any]:
 
 def print_checklist(args: argparse.Namespace) -> None:
     print("Do this first, in another terminal, so the Request URL matches:")
-    print(f"  cloudflared tunnel --url http://127.0.0.1:{args.receiver_port}{INTERACTIONS_PATH}")
+    print(f"  cloudflared tunnel --url http://127.0.0.1:{args.receiver_port}")
     print("Then update the app's Interactivity Request URL to the printed trycloudflare URL.")
     print("Run these six interactions in the Slack workspace:")
     print("  1. Shortcut on a root message in the approved public channel.")
@@ -434,30 +320,6 @@ def print_checklist(args: argparse.Namespace) -> None:
     print("  5. Shortcut on a message in a DM channel (must be rejected).")
     print("  6. Shortcut on a message in an unapproved channel (must be rejected).")
     print("Submit the modal once per capture; press Ctrl-C here when done.")
-
-
-def sanitise(captures: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    allowed_keys = {
-        "channel_id",
-        "channel_kind",
-        "source",
-        "ack_ms",
-        "views_open_ms",
-        "skew_s",
-        "snapshot_matches_selected_message",
-        "thread_warning_shown",
-        "submission_committed",
-        "duplicate",
-        "views_open_error",
-    }
-    clean: list[dict[str, Any]] = []
-    for capture in captures:
-        entry = {key: value for key, value in capture.items() if key in allowed_keys}
-        forced = capture.get("forced") or capture.get("submission_forced_error")
-        if forced:
-            entry["forced_submission_error"] = True
-        clean.append(entry)
-    return clean
 
 
 def run(args: argparse.Namespace) -> None:
@@ -473,6 +335,7 @@ def run(args: argparse.Namespace) -> None:
     evidence.update(check_scopes(client))
     receiver = SlackReceiver(
         listening_url,
+        client=client,
         signing_secret=signing_secret,
         workspace_name=args.workspace_name,
         public_channel=args.public_channel,
@@ -483,24 +346,23 @@ def run(args: argparse.Namespace) -> None:
     receiver.start()
     print(f"Receiver on http://127.0.0.1:{receiver.server_port}{INTERACTIONS_PATH}")
     print_checklist(args)
+    ledger = receiver.ledger
+    announced: list[str] = []
     try:
-        while True:
+        while not ledger.complete(require_forced_error=args.fail_first_submission):
             time.sleep(1)
-            missing = receiver.coverage_remaining()
-            if missing:
-                continue
-            if args.fail_first_submission and not receiver.forced_error_recorded():
-                print("Coverage reached; submit one more modal to force the visible error path.")
-                continue
-            break
+            outstanding = ledger.outstanding(require_forced_error=args.fail_first_submission)
+            if outstanding != announced:
+                print("Still outstanding: " + "; ".join(outstanding))
+                announced = outstanding
     except KeyboardInterrupt:
         print("Interrupted; writing what was recorded so far.")
     finally:
         receiver.stop()
 
-    evidence["rejections"] = list(receiver.rejections)
-    evidence["captures"] = sanitise(receiver.captures)
-    evidence["coverage_complete"] = not receiver.coverage_remaining()
+    evidence["rejections"] = ledger.rejections()
+    evidence["captures"] = ledger.sanitised_captures()
+    evidence["coverage_complete"] = ledger.complete(require_forced_error=args.fail_first_submission)
     evidence["finished_at"] = utc_now()
     output = json.dumps(evidence, indent=2, sort_keys=True)
     print(output)

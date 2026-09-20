@@ -5,6 +5,7 @@ import time
 from datetime import date
 
 import pytest
+from slack_sdk.models.blocks import SectionBlock
 
 from integrations.slack import (
     InvalidSlackSignature,
@@ -18,9 +19,23 @@ from integrations.slack import (
     parse_message_shortcut,
     verify_slack_signature,
 )
+from integrations.slack.modals import SECTION_TEXT_LIMIT, TITLE_LIMIT
 
 SECRET = "feasibility-signing-secret"
 CONTEXT_ID = "ctx-0123456789abcdef"
+
+
+def modal_for(shortcut: MessageShortcut) -> dict:
+    return build_capture_modal(
+        shortcut,
+        workspace_name="Feasibility A",
+        captured_on=date(2026, 9, 20),
+        context_id=CONTEXT_ID,
+    )
+
+
+def block_by_id(view: dict, block_id: str) -> dict:
+    return next(block for block in view["blocks"] if block.get("block_id") == block_id)
 
 
 def signed_headers(secret: str, body: bytes, timestamp: int | None = None) -> dict[str, str]:
@@ -28,10 +43,7 @@ def signed_headers(secret: str, body: bytes, timestamp: int | None = None) -> di
     digest = hmac.new(
         secret.encode(), b"v0:" + str(timestamp).encode() + b":" + body, hashlib.sha256
     ).hexdigest()
-    return {
-        "X-Slack-Request-Timestamp": str(timestamp),
-        "X-Slack-Signature": f"v0={digest}",
-    }
+    return {"timestamp": str(timestamp), "signature": f"v0={digest}"}
 
 
 def make_shortcut(**overrides: object) -> MessageShortcut:
@@ -93,31 +105,37 @@ def submission_payload(context_id: str, team: str = "T0OTHER") -> dict:
 
 def test_valid_signature_accepted() -> None:
     body = b"payload=%7B%22x%22%3A1%7D"
-    verify_slack_signature(signing_secret=SECRET, body=body, headers=signed_headers(SECRET, body))
+    verify_slack_signature(signing_secret=SECRET, body=body, **signed_headers(SECRET, body))
 
 
 def test_wrong_secret_rejected() -> None:
     body = b"payload=1"
     with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(
-            signing_secret=SECRET, body=body, headers=signed_headers("other", body)
-        )
+        verify_slack_signature(signing_secret=SECRET, body=body, **signed_headers("other", body))
 
 
-def test_missing_signature_header_rejected() -> None:
+def test_tampered_body_rejected() -> None:
     body = b"payload=1"
     headers = signed_headers(SECRET, body)
-    del headers["X-Slack-Signature"]
     with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(signing_secret=SECRET, body=body, headers=headers)
+        verify_slack_signature(signing_secret=SECRET, body=b"payload=2", **headers)
+
+
+@pytest.mark.parametrize("dropped", ["timestamp", "signature"])
+def test_missing_signature_header_rejected(dropped: str) -> None:
+    body = b"payload=1"
+    headers = signed_headers(SECRET, body)
+    headers[dropped] = ""
+    with pytest.raises(InvalidSlackSignature):
+        verify_slack_signature(signing_secret=SECRET, body=body, **headers)
 
 
 def test_malformed_timestamp_rejected() -> None:
     body = b"payload=1"
     headers = signed_headers(SECRET, body)
-    headers["X-Slack-Request-Timestamp"] = "not-a-number"
+    headers["timestamp"] = "not-a-number"
     with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(signing_secret=SECRET, body=body, headers=headers)
+        verify_slack_signature(signing_secret=SECRET, body=body, **headers)
 
 
 def test_stale_timestamp_rejected() -> None:
@@ -125,7 +143,7 @@ def test_stale_timestamp_rejected() -> None:
     stale = int(time.time()) - 301
     with pytest.raises(InvalidSlackSignature):
         verify_slack_signature(
-            signing_secret=SECRET, body=body, headers=signed_headers(SECRET, body, stale)
+            signing_secret=SECRET, body=body, **signed_headers(SECRET, body, stale)
         )
 
 
@@ -150,8 +168,6 @@ def test_parse_message_shortcut_rejects_wrong_type() -> None:
 @pytest.mark.parametrize("missing", ["trigger_id", "callback_id", "team", "channel", "message"])
 def test_parse_message_shortcut_rejects_missing_fields(missing: str) -> None:
     payload = shortcut_payload()
-    if missing == "message":
-        payload["message"] = {"text": "Invented text without ts."}
     payload.pop(missing)
     with pytest.raises(ShortcutPayloadError):
         parse_message_shortcut(payload)
@@ -291,3 +307,75 @@ def test_submission_rejects_blank_title() -> None:
     with pytest.raises(SubmissionErrors) as error:
         parse_capture_submission(payload, resolve_context=resolve_context)
     assert "report_title" in error.value.errors
+
+
+def test_parse_message_shortcut_accepts_a_message_without_text() -> None:
+    payload = shortcut_payload()
+    payload["message"] = {"ts": "1758400000.000100", "text": ""}
+    assert parse_message_shortcut(payload).text == ""
+
+
+def test_parse_message_shortcut_rejects_non_string_text() -> None:
+    payload = shortcut_payload()
+    payload["message"] = {"ts": "1758400000.000100", "text": ["not", "a", "string"]}
+    with pytest.raises(ShortcutPayloadError):
+        parse_message_shortcut(payload)
+
+
+def test_modal_says_so_when_the_message_has_no_text() -> None:
+    view = modal_for(make_shortcut(text=""))
+    assert "no text" in view["blocks"][0]["text"]["text"]
+    assert "initial_value" not in block_by_id(view, "report_title")["element"]
+
+
+def test_modal_snapshot_stays_within_slack_section_limit() -> None:
+    view = modal_for(make_shortcut(text="w" * 10_000))
+    snapshot = view["blocks"][0]["text"]["text"]
+    assert len(snapshot) <= SECTION_TEXT_LIMIT
+    assert snapshot.endswith("The whole message is captured.]")
+
+
+def test_modal_snapshot_is_verbatim_when_it_fits() -> None:
+    text = "y" * (SECTION_TEXT_LIMIT - 100)
+    snapshot = modal_for(make_shortcut(text=text))["blocks"][0]["text"]["text"]
+    assert snapshot.split("\n", 1)[1] == text
+
+
+def test_prefilled_title_keeps_whole_words_up_to_the_limit() -> None:
+    text = f"{'a' * 40} {'b' * 39}"
+    assert len(text) == TITLE_LIMIT
+    view = modal_for(make_shortcut(text=text))
+    assert block_by_id(view, "report_title")["element"]["initial_value"] == text
+
+
+def test_prefilled_title_drops_the_word_that_would_overflow() -> None:
+    text = f"{'a' * 40} {'b' * 40}"
+    assert len(text) == TITLE_LIMIT + 1
+    view = modal_for(make_shortcut(text=text))
+    assert block_by_id(view, "report_title")["element"]["initial_value"] == "a" * 40
+
+
+def test_prefilled_title_cuts_a_single_oversized_word() -> None:
+    view = modal_for(make_shortcut(text="z" * 200))
+    prefill = block_by_id(view, "report_title")["element"]["initial_value"]
+    assert prefill == "z" * TITLE_LIMIT
+
+
+def test_prefilled_title_never_exceeds_the_limit() -> None:
+    for text in ["short", "a" * 79, "a" * 80, "a" * 81, "word " * 40, "  spaced   out  "]:
+        view = modal_for(make_shortcut(text=text))
+        prefill = block_by_id(view, "report_title")["element"].get("initial_value", "")
+        assert len(prefill) <= TITLE_LIMIT
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["", "A short customer report.", "w" * 40_000, "z" * 5_000, "word " * 2_000],
+)
+def test_modal_sections_pass_the_slack_sdk_block_validator(text: str) -> None:
+    """`SectionBlock` enforces Slack's own limits, so let it police the snapshot."""
+    for shortcut in (make_shortcut(text=text), make_shortcut(text=text, thread_ts="1.0")):
+        view = modal_for(shortcut)
+        for block in view["blocks"]:
+            if block["type"] == "section":
+                SectionBlock(text=block["text"]["text"]).validate_json()
