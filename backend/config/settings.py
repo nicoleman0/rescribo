@@ -51,7 +51,7 @@ TEMPLATES = [
 ]
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
-DATABASES = {"default": env.db("FEEDBACK_DATABASE_URL")}
+DATABASES = {"default": env.db("RESCRIBO_DATABASE_URL")}
 DATABASES["default"]["OPTIONS"] = {"connect_timeout": 3}
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": f"django.contrib.auth.password_validation.{name}"}
@@ -81,8 +81,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
-SPECTACULAR_SETTINGS = {"TITLE": "Feedback Inbox API", "VERSION": "0.1.0"}
-REDIS_URL = env("FEEDBACK_REDIS_URL")
+SPECTACULAR_SETTINGS = {"TITLE": "Rescribo API", "VERSION": "0.1.0"}
+REDIS_URL = env("RESCRIBO_REDIS_URL")
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_TASK_SERIALIZER = "json"

@@ -1,5 +1,5 @@
 [project]
-name = "feedback-inbox"
+name = "rescribo"
 version = "0.1.0"
 description = "Internal customer feedback inbox connecting Slack and GitHub"
 requires-python = ">=3.14,<3.15"

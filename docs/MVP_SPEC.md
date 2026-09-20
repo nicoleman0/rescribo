@@ -1,8 +1,8 @@
-# Internal feedback inbox: MVP specification
+# Rescribo: MVP specification
 
 Status: draft for review. Product direction and React + TypeScript agreed; detailed design proposed here.
 Prepared: 17 September 2026.
-Working directory name: `feedback-inbox`. This is a descriptive placeholder, not a chosen product name.
+Product name: `Rescribo`, from the Latin *rescribo*: “I write back” or “reply in writing.”
 
 ## 1. Product and outcome
 
@@ -171,7 +171,7 @@ Enforce source uniqueness in PostgreSQL. Scope every foreign-key assignment to t
 - **Storage:** PostgreSQL for business state, search, receipts, operations, and audit history.
 - **Background execution:** Celery with Redis, plus one Celery Beat scheduler. Use established task/retry machinery rather than creating a queue framework. Business operation state remains in PostgreSQL. [T5]
 - **Integrations:** Slack's Python SDK for API calls/signature helpers; a dedicated GitHub HTTP client. Provider-specific auth, payload validation, and error translation stay in their modules.
-- **AI:** one configured provider/model initially, behind a typed generation boundary. Start with bounded calls; LangGraph is not required by the agreed workflow. Operator-supplied credentials or a compatible local endpoint; AI can be disabled.
+- **AI:** one configured provider/model initially, behind typed decision and generation boundaries. Start with bounded calls; LangGraph is not required by the agreed workflow. Operator-supplied credentials or a compatible local endpoint; AI can be disabled.
 - **Tooling:** uv and npm lockfiles; Python/TypeScript formatting and static checks; pytest, frontend component tests, and Playwright journey tests. Pin compatible supported versions during implementation.
 
 Django is proposed over FastAPI because this product has substantial account, permission, data-editing, and migration work. React remains responsible for the product interface. A separate Node backend is unnecessary for this design.
@@ -243,8 +243,32 @@ Serve browser and API under one origin. Use secure HttpOnly session cookies and 
 
 This first retrieval method may miss paraphrases. Measure candidate recall before attributing a missed match to the model. Add semantic retrieval only if the evaluation demonstrates the need; keep it behind the candidate retrieval boundary.
 
+### Initial Jev matching design
+
+- Use OpenRouter with one operator-managed `OPENROUTER_API_KEY`. Workspace owners enable AI per workspace; users do not supply keys. Missing credentials make AI unavailable without failing application health checks.
+- Pin `typesafe/jev-1.13`. Model upgrades are explicit and require a new evaluation run. [J1]
+- Run matching asynchronously after report creation or a relevant edit. Store the report version with the run, check it before the provider call and before saving, and discard stale results. Provider failure never rolls back report capture.
+- Retrieve the top ten candidates from the same workspace with PostgreSQL text search. Include problem titles, summaries, and bounded linked-report excerpts. Exclude customer contact details and provider identifiers.
+- Send one bounded Decisions request containing:
+  - one Choice across the candidate problem IDs plus `no_match`;
+  - one Noul per candidate asking whether it represents the same underlying problem; and
+  - one Choice per candidate selecting the strongest supplied evidence reference or `no_evidence`. [J2]
+- Rank with the relative Choice distribution and gate with each candidate's independent Noul result. Do not assume those judgments must agree. Derive thresholds from the development dataset, then freeze them before held-out evaluation.
+- Build the explanation in code from validated IDs and the selected source reference. Jev does not generate explanation text. Reject unknown candidate or evidence IDs.
+- Return at most three suggestions. A person accepts or rejects them; Jev cannot link, dismiss, or otherwise mutate a report or problem.
+- Keep provider-specific transport in `integrations/openrouter`. The AI module owns retrieval, questions, result validation, thresholds, persistence, and evaluation. Use the existing `httpx` dependency for the OpenRouter Decisions endpoint rather than adding the TypeSafe SDK, which uses TypeSafe's API and credentials.
+- Send `provider.zdr: true` and `provider.data_collection: "deny"`. Never log credentials, request bodies, response bodies, report text, or evidence text. [J3]
+- Record an AI matching run with workspace/report IDs, report version, model and question-set versions, supplied candidate/evidence IDs, typed answers, usage, latency, status, and a safe error. Do not duplicate report text in the run record.
+- Store each suggestion as a workspace-scoped relation to its run and problem, with rank, Choice probability, Noul probability, evidence reference, and pending/accepted/rejected outcome. Database constraints and application checks prevent cross-workspace or duplicate suggestions.
+- Expose only the latest non-stale run through the report API. Use separate authenticated actions for retry, accept, and reject. Acceptance calls the normal report-linking use case; the AI module does not own that transition.
+
+The OpenRouter Decisions API is currently alpha. Contain request and response changes in the adapter, validate responses at that boundary, keep sanitised contract fixtures, and use capped retries for retryable provider failures. [J4]
+
+Because the repository is still an environment scaffold, record this design now but do not build persistence, tasks, or UI ahead of the report/problem/workspace foundations. The first implementation is an opt-in live contract check using synthetic data and the operator's OpenRouter key. It verifies the pinned model, Choice, Noul, evidence selection, privacy fields, response validation, and failure handling. Full product integration remains milestone D after the manual workflow and isolation foundations exist.
+
 ### Drafting
 
+- Jev is not used for drafting. The initial product uses the deterministic follow-up template. A separate generative model and evaluation are later work if deterministic drafting proves insufficient.
 - Use only the report and human-approved resolution details. Do not invent release dates, versions, causes, or customer promises.
 - Treat report/issue text as untrusted data. No model tools, external page fetches, or authority to write to integrations.
 - Display editable output with the resolution it was based on. Changed inputs invalidate the draft approval.
@@ -256,6 +280,7 @@ This first retrieval method may miss paraphrases. Measure candidate recall befor
 - Version a labelled synthetic dataset with genuine matches, no-match reports, similar symptoms with different causes, missing context, misleading version details, and prompt-injection text.
 - Separate development and held-out cases. Derive case counts from fixtures, not hard-coded expectations.
 - Report candidate recall@k, top-suggestion precision, suggestion coverage, abstention behaviour, and evidence validity. Compare against text-search-only ranking.
+- For Jev matching, also report top-three recall and evidence-selection accuracy. Tune thresholds on the development set only, then freeze them for the held-out run.
 - Evaluate drafts for unsupported claims and omission of required fix details. Manually inspect a documented sample.
 - Proposed release bar: at least 90% top-suggestion precision on a held-out set containing at least 30 non-abstained suggestions, 100% valid record references, and no unsupported claims in the reviewed draft set. Report sample sizes and coverage; high precision from near-total abstention is not success.
 - If matching does not beat the baseline meaningfully, ship manual/search matching and label AI experimental. Do not hide the result or claim validated AI quality.
@@ -303,6 +328,7 @@ These are build milestones, not estimates or a task-by-task implementation plan.
 
 ### D. AI and portfolio delivery
 
+- Before the product AI work, run the synthetic live Jev/OpenRouter contract check described in section 10. Keep it opt-in and separate from the normal test suite.
 - Run the held-out evaluation and publish the actual results with model/prompt configuration and limitations.
 - Verify invalid IDs, injected instructions, provider timeout, disabled AI, and exhausted budget leave manual work functional.
 - Demonstrate the complete live Slack/GitHub journey. Keep live evidence separate from mocked integration tests and synthetic evaluation.
@@ -317,12 +343,12 @@ The live workflow in milestone B works; milestone C passes; AI meets its stated 
 
 - Confirmed: internal team inbox; Slack first; GitHub engineering tracking; Python backend; React + TypeScript frontend.
 - Proposed in this spec: Django/DRF, Celery/Redis, direct employee DMs, selected public/private channels with explicit publication, and invite-only app accounts.
-- Product name, hosting provider, and model choice are intentionally not fixed. They do not block reviewing this MVP scope. Version/model selection is an implementation decision backed by compatibility checks and evaluation.
+- Confirmed: the product is named Rescribo and the initial matching model is pinned to `typesafe/jev-1.13` through OpenRouter. Hosting provider selection remains an implementation decision.
 - Reusability, modularity, DRY, and maintainability are primary code-quality requirements.
 
 ## Sources
 
-Checked 17 September 2026. API support is documentation-verified; live feasibility remains milestone A.
+Checked 20 September 2026. API support is documentation-verified; live feasibility remains milestone A.
 
 - [S1: Slack shortcuts](https://docs.slack.dev/interactivity/implementing-shortcuts/)
 - [S2: Shortcut payloads](https://docs.slack.dev/reference/interaction-payloads/shortcuts-interaction-payload/)
@@ -347,3 +373,7 @@ Checked 17 September 2026. API support is documentation-verified; live feasibili
 - [T3: Django authentication](https://docs.djangoproject.com/en/5.2/topics/auth/default/)
 - [T4: DRF authentication](https://www.django-rest-framework.org/api-guide/authentication/)
 - [T5: Celery and Django](https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html)
+- [J1: Jev 1.13 on OpenRouter](https://openrouter.ai/typesafe/jev-1.13/)
+- [J2: TypeSafe primitives](https://docs.typesafe.ai/primitives)
+- [J3: OpenRouter privacy controls](https://openrouter.ai/docs/guides/get-started/sovereign-ai)
+- [J4: OpenRouter Decisions API integration](https://github.com/OpenRouterTeam/ai-sdk-provider)

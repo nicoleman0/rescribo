@@ -371,7 +371,7 @@ wheels = [
 ]
 
 [[package]]
-name = "feedback-inbox"
+name = "rescribo"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

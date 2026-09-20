@@ -1,4 +1,4 @@
-# Feedback inbox
+# Rescribo
 
 An internal inbox connecting customer feedback, engineering issues, and employee follow-up.
 
@@ -76,7 +76,7 @@ task app-stop
 | PostgreSQL | `127.0.0.1:55432` |
 | Redis | `127.0.0.1:56379` |
 
-All published container ports bind to loopback. The database credentials are generated in `.env`. Connections use `FEEDBACK_DATABASE_URL` and `FEEDBACK_REDIS_URL` to avoid inherited settings from other projects. PostgreSQL and Redis use named volumes. `task stop` / `task app-stop` preserve data. `docker compose down --volumes` deletes that data; use it only when intentionally resetting the environment.
+All published container ports bind to loopback. The database credentials are generated in `.env`. Connections use `RESCRIBO_DATABASE_URL` and `RESCRIBO_REDIS_URL` to avoid inherited settings from other projects. PostgreSQL and Redis use named volumes. `task stop` / `task app-stop` preserve data. `docker compose down --volumes` deletes that data; use it only when intentionally resetting the environment.
 
 Liveness is `/api/health/live/`. Readiness is `/api/health/ready/`; it reports availability without returning connection details. Future API routes default to authenticated access. The development health routes intentionally allow anonymous checks.
 

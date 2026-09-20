@@ -1,11 +1,11 @@
-name: feedback-inbox
+name: rescribo
 
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-feedback_inbox}
-      POSTGRES_USER: ${POSTGRES_USER:-feedback_inbox}
+      POSTGRES_DB: ${POSTGRES_DB:-rescribo}
+      POSTGRES_USER: ${POSTGRES_USER:-rescribo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run task bootstrap first}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-55432}:5432"
@@ -37,8 +37,8 @@ services:
       dockerfile: backend/Dockerfile.dev
     env_file: .env
     environment:
-      FEEDBACK_DATABASE_URL: postgresql://${POSTGRES_USER:-feedback_inbox}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-feedback_inbox}
-      FEEDBACK_REDIS_URL: redis://redis:6379/0
+      RESCRIBO_DATABASE_URL: postgresql://${POSTGRES_USER:-rescribo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rescribo}
+      RESCRIBO_REDIS_URL: redis://redis:6379/0
     volumes:
       - ./backend:/app/backend
     depends_on:
