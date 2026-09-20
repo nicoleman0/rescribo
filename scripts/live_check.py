@@ -1,4 +1,4 @@
-"""Shared loopback helpers for the opt-in GitHub feasibility check scripts."""
+"""Shared loopback helpers for the opt-in live feasibility check scripts."""
 
 import os
 import time

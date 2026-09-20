@@ -14,12 +14,12 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
 environ.Env.read_env(REPOSITORY_ROOT / ".env.github-feasibility", overwrite=False)
 
-from github_live import LoopbackOAuthServer, required_environment  # noqa: E402
 from integrations.github_app import (  # noqa: E402
     GitHubAppClient,
     InstallationProbe,
     OAuthStateStore,
 )
+from live_check import LoopbackOAuthServer, required_environment  # noqa: E402
 
 
 def state_store() -> OAuthStateStore:

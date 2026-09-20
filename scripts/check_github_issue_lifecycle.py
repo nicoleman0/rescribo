@@ -20,11 +20,6 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
 environ.Env.read_env(REPOSITORY_ROOT / ".env.github-feasibility", overwrite=False)
 
-from github_live import (  # noqa: E402
-    LoopbackOAuthServer,
-    OAuthCallbackHandler,
-    required_environment,
-)
 from integrations.github_app import (  # noqa: E402
     GitHubAppClient,
     InstallationProbe,
@@ -38,6 +33,11 @@ from integrations.github_app import (  # noqa: E402
 )
 from integrations.github_app.client import GitHubAPIError  # noqa: E402
 from integrations.github_app.webhooks import InvalidWebhookSignature  # noqa: E402
+from live_check import (  # noqa: E402
+    LoopbackOAuthServer,
+    OAuthCallbackHandler,
+    required_environment,
+)
 
 ACCESS_LOST_STATUSES = {404, 410}
 WEBHOOK_PATH = "/webhooks"
