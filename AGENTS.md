@@ -1,5 +1,6 @@
 # Working in this repository
 
+- Use the GitHub milestones and issues as the source of truth for implementation breakdown and delivery order.
 - Read `docs/MVP_SPEC.md` before changing product behaviour.
 - Prioritise reusability, modularity, DRY, and maintainability. Use clear ownership boundaries, shared workflow rules, and typed contracts.
 - Keep provider-specific behaviour in integration modules. Keep HTTP handlers and background tasks thin.
