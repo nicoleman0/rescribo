@@ -105,9 +105,14 @@ tasks:
       - uv run python scripts/check_github_installation.py {{.CLI_ARGS}}
 
   github-lifecycle-check:
-    desc: Run the opt-in live GitHub issue lifecycle feasibility check
+    desc: Run the opt-in GitHub issue lifecycle feasibility check
     cmds:
       - uv run python scripts/check_github_issue_lifecycle.py {{.CLI_ARGS}}
+
+  slack-shortcut-check:
+    desc: Run the opt-in live Slack shortcut capture feasibility check
+    cmds:
+      - uv run python scripts/check_slack_shortcut.py {{.CLI_ARGS}}
 
   app:
     deps: [services]
