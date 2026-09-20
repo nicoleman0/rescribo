@@ -95,6 +95,8 @@ def test_parse_issue_reference_accepts_numbers_and_bound_urls() -> None:
         parse_issue_reference("not-an-issue", expected_repository="owner/disposable")
     with pytest.raises(IssueLinkError, match="issue number or"):
         parse_issue_reference("0", expected_repository="owner/disposable")
+    with pytest.raises(IssueLinkError, match="issue number or"):
+        parse_issue_reference("²", expected_repository="owner/disposable")
 
 
 def test_resolve_issue_link_returns_sanitised_issue(private_key: bytes) -> None:
@@ -159,6 +161,19 @@ def test_resolve_issue_link_rejects_unknown_issues(private_key: bytes) -> None:
         )
 
 
+def test_resolve_issue_link_rejects_moved_issues(private_key: bytes) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(301, json={"message": "Moved Permanentely"})
+
+    with pytest.raises(IssueLinkError, match="not found"):
+        resolve_issue_link(
+            make_client(private_key, handler),
+            installation_token="installation-token",
+            expected_repository="owner/disposable",
+            reference="7",
+        )
+
+
 def sign(secret: bytes, body: bytes) -> str:
     return f"sha256={hmac.new(secret, body, hashlib.sha256).hexdigest()}"
 
@@ -170,7 +185,7 @@ def test_webhook_signature_verification() -> None:
     )
     with pytest.raises(InvalidWebhookSignature, match="missing"):
         verify_webhook_signature(secret=b"wh-secret", body=body, signature_header=None)
-    with pytest.raises(InvalidWebhookSignature, match="missing"):
+    with pytest.raises(InvalidWebhookSignature, match="malformed"):
         verify_webhook_signature(secret=b"wh-secret", body=body, signature_header="sha1=abc")
     with pytest.raises(InvalidWebhookSignature, match="does not match"):
         verify_webhook_signature(
@@ -207,6 +222,8 @@ def test_parse_issue_event_tracks_close_reopen_edit_delete() -> None:
     )
     assert parse_issue_event(issue_payload("opened")) is None
     assert parse_issue_event(issue_payload("labeled")) is None
+    transferred = parse_issue_event(issue_payload("transferred"))
+    assert transferred is not None and transferred.action == "transferred"
     with pytest.raises(InvalidWebhookPayload):
         parse_issue_event({"action": "closed", "issue": {}, "repository": {}})
 
@@ -284,6 +301,7 @@ def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
 
     assert outcome.applied is False
     assert outcome.access == "ok"
+    assert outcome.updated_at == "2026-09-20T21:30:00Z"
 
 
 def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: bytes) -> None:
@@ -301,6 +319,47 @@ def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: 
     assert outcome.applied is False
     assert outcome.access == "access_lost"
     assert outcome.state is None
+
+
+def test_apply_issue_event_maps_moved_issues_to_access_lost(private_key: bytes) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(301, json={"message": "Moved Permanentely"})
+
+    outcome = apply_issue_event(
+        make_client(private_key, handler),
+        installation_token="installation-token",
+        expected_repository="owner/disposable",
+        event=closed_event(),
+        stored_updated_at=None,
+    )
+
+    assert outcome.applied is False
+    assert outcome.access == "access_lost"
+
+
+def test_apply_issue_event_treats_transferred_foreign_repository_as_access_lost(
+    private_key: bytes,
+) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("A transferred event must not fetch from the destination repository.")
+
+    event = IssueEvent(
+        action="transferred",
+        number=7,
+        repository="other/destination",
+        state_reason=None,
+        updated_at="2026-09-20T21:05:00Z",
+    )
+    outcome = apply_issue_event(
+        make_client(private_key, handler),
+        installation_token="installation-token",
+        expected_repository="owner/disposable",
+        event=event,
+        stored_updated_at="2026-09-20T21:00:00Z",
+    )
+
+    assert outcome.applied is False
+    assert outcome.access == "access_lost"
 
 
 def test_apply_issue_event_rejects_events_for_other_repositories(private_key: bytes) -> None:

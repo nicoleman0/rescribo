@@ -63,7 +63,7 @@ class GitHubAppClient:
             json=json_body,
             params=params,
         )
-        if response.is_error:
+        if response.is_error or response.is_redirect:
             raise GitHubAPIError(operation, response.status_code)
         if response.status_code == 204 or not response.content:
             return {}

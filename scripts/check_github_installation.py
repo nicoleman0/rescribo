@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import json
-import os
 import sys
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import urlencode
 
 import environ
 import httpx
@@ -16,18 +14,12 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
 environ.Env.read_env(REPOSITORY_ROOT / ".env.github-feasibility", overwrite=False)
 
+from github_live import LoopbackOAuthServer, required_environment  # noqa: E402
 from integrations.github_app import (  # noqa: E402
     GitHubAppClient,
     InstallationProbe,
     OAuthStateStore,
 )
-
-
-def required_environment(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        raise SystemExit(f"Set {name} before running this check.")
-    return value
 
 
 def state_store() -> OAuthStateStore:
@@ -76,45 +68,14 @@ def complete(*, workspace: str, state: str, code: str) -> None:
 
 
 def run_with_callback(workspace: str, repository: str) -> None:
-    redirect_uri = urlparse(required_environment("RESCRIBO_GITHUB_REDIRECT_URI"))
-    if redirect_uri.scheme != "http" or redirect_uri.hostname not in {"127.0.0.1", "localhost"}:
-        raise SystemExit("The live callback listener requires an HTTP loopback redirect URI.")
-    if redirect_uri.port is None:
-        raise SystemExit("The loopback redirect URI must include a port.")
-
-    callback: dict[str, str] = {}
-
-    class CallbackHandler(BaseHTTPRequestHandler):
-        def do_GET(self) -> None:  # noqa: N802
-            request_uri = urlparse(self.path)
-            if request_uri.path != redirect_uri.path:
-                self.send_error(404)
-                return
-            values = parse_qs(request_uri.query)
-            code = values.get("code", [""])[0]
-            state = values.get("state", [""])[0]
-            if not code or not state:
-                self.send_error(400)
-                return
-            callback.update(code=code, state=state)
-            message = b"GitHub authorization received. You can close this tab."
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain; charset=utf-8")
-            self.send_header("Content-Length", str(len(message)))
-            self.end_headers()
-            self.wfile.write(message)
-
-        def log_message(self, _format: str, *args: object) -> None:
-            return
-
-    server = HTTPServer((redirect_uri.hostname, redirect_uri.port), CallbackHandler)
+    server = LoopbackOAuthServer(required_environment("RESCRIBO_GITHUB_REDIRECT_URI"))
     server.timeout = 180
     print(f"Open this URL within three minutes:\n{create_authorisation_url(workspace, repository)}")
     server.handle_request()
     server.server_close()
-    if not callback:
+    if not server.callback:
         raise SystemExit("No GitHub callback was received within three minutes.")
-    complete(workspace=workspace, state=callback["state"], code=callback["code"])
+    complete(workspace=workspace, state=server.callback["state"], code=server.callback["code"])
 
 
 def parse_args() -> argparse.Namespace:

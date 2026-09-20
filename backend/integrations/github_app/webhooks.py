@@ -17,8 +17,10 @@ class InvalidWebhookPayload(ValueError):
 
 
 def verify_webhook_signature(*, secret: bytes, body: bytes, signature_header: str | None) -> None:
-    if not signature_header or not signature_header.startswith("sha256="):
+    if not signature_header:
         raise InvalidWebhookSignature("The webhook signature header is missing.")
+    if not signature_header.startswith("sha256="):
+        raise InvalidWebhookSignature("The webhook signature header is malformed.")
     expected = f"sha256={hmac.new(secret, body, hashlib.sha256).hexdigest()}"
     if not hmac.compare_digest(expected, signature_header):
         raise InvalidWebhookSignature("The webhook signature does not match the payload.")
@@ -36,7 +38,7 @@ class IssueEvent:
         return asdict(self)
 
 
-_TRACKED_ISSUE_ACTIONS = {"closed", "reopened", "edited", "deleted"}
+_TRACKED_ISSUE_ACTIONS = {"closed", "reopened", "edited", "deleted", "transferred"}
 
 
 def parse_issue_event(payload: Mapping[str, Any]) -> IssueEvent | None:
@@ -141,7 +143,22 @@ def apply_issue_event(
     The webhook payload is never trusted for state. An inaccessible issue is
     reported as access_lost, never as closed. A fetch whose provider timestamp
     is not newer than the stored one is treated as a stale delivery.
+
+    `outcome.updated_at` is the effective timestamp callers persist: it never
+    regresses on stale deliveries, so replays cannot roll stored state back.
+    A `transferred` event fired by the destination repository arrives with a
+    repository that no longer matches the binding; that is the expected signal
+    that the issue left the bound repository and is reported as access_lost.
     """
+    if event.action == "transferred" and event.repository.lower() != expected_repository.lower():
+        return IssueStateOutcome(
+            number=event.number,
+            applied=False,
+            access="access_lost",
+            state=None,
+            state_reason=None,
+            updated_at=None,
+        )
     if event.repository.lower() != expected_repository.lower():
         raise InvalidWebhookPayload(
             f"The event belongs to {event.repository}, not {expected_repository}."
@@ -155,7 +172,7 @@ def apply_issue_event(
             number=event.number,
         )
     except GitHubAPIError as error:
-        if error.status_code in {404, 410}:
+        if error.status_code in {301, 404, 410}:
             return IssueStateOutcome(
                 number=event.number,
                 applied=False,
@@ -179,7 +196,7 @@ def apply_issue_event(
             access="ok",
             state=state,
             state_reason=state_reason if isinstance(state_reason, str) else None,
-            updated_at=fetched_updated_at,
+            updated_at=stored_updated_at,
         )
     return IssueStateOutcome(
         number=event.number,

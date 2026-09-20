@@ -2,16 +2,14 @@
 import argparse
 import itertools
 import json
-import os
 import queue
 import sys
 import threading
 import time
 from datetime import UTC, datetime
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
-from urllib.parse import parse_qs, urlencode, urlparse
+from urllib.parse import urlencode, urlparse
 
 import environ
 import httpx
@@ -22,6 +20,11 @@ sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
 environ.Env.read_env(REPOSITORY_ROOT / ".env.github-feasibility", overwrite=False)
 
+from github_live import (  # noqa: E402
+    LoopbackOAuthServer,
+    OAuthCallbackHandler,
+    required_environment,
+)
 from integrations.github_app import (  # noqa: E402
     GitHubAppClient,
     InstallationProbe,
@@ -40,18 +43,47 @@ ACCESS_LOST_STATUSES = {404, 410}
 WEBHOOK_PATH = "/webhooks"
 
 
-def required_environment(name: str) -> str:
-    value = os.environ.get(name)
-    if not value:
-        raise SystemExit(f"Set {name} before running this check.")
-    return value
-
-
 def utc_now() -> str:
     return datetime.now(UTC).isoformat()
 
 
-class LoopbackReceiver:
+class WebhookCallbackHandler(OAuthCallbackHandler):
+    """Adds signature-verified webhook deliveries to the loopback receiver."""
+
+    def do_POST(self) -> None:  # noqa: N802
+        receiver: LoopbackReceiver = self.server
+        if urlparse(self.path).path != WEBHOOK_PATH:
+            self.send_error(404)
+            return
+        length = int(self.headers.get("Content-Length") or 0)
+        body = self.rfile.read(length)
+        try:
+            verify_webhook_signature(
+                secret=receiver.webhook_secret,
+                body=body,
+                signature_header=self.headers.get("X-Hub-Signature-256"),
+            )
+        except InvalidWebhookSignature:
+            self.send_error(401)
+            return
+        record = {
+            "order": next(receiver.order),
+            "delivery_id": self.headers.get("X-GitHub-Delivery"),
+            "event": self.headers.get("X-GitHub-Event"),
+            "received_at": utc_now(),
+            "payload": json.loads(body),
+        }
+        receiver.delivery_log.append(record)
+        receiver.deliveries.put(record)
+        self.send_response(200)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def log_message(self, _format: str, *args: object) -> None:
+        return
+
+
+class LoopbackReceiver(LoopbackOAuthServer):
     """Receives the OAuth callback and smee-forwarded webhooks on one loopback port.
 
     Every webhook delivery is signature-verified on arrival. Verified deliveries
@@ -59,89 +91,23 @@ class LoopbackReceiver:
     stay in memory and are never written to disk.
     """
 
+    handler = WebhookCallbackHandler
+
     def __init__(self, redirect_uri: str, *, webhook_secret: bytes) -> None:
-        parsed = urlparse(redirect_uri)
-        if parsed.scheme != "http" or parsed.hostname not in {"127.0.0.1", "localhost"}:
-            raise SystemExit("The live check requires an HTTP loopback redirect URI.")
-        if parsed.port is None:
-            raise SystemExit("The loopback redirect URI must include a port.")
-        self._redirect_path = parsed.path
-        self.port = parsed.port
-        self.callback: dict[str, str] = {}
+        self.webhook_secret = webhook_secret
         self.deliveries: queue.Queue[dict[str, Any]] = queue.Queue()
         self.delivery_log: list[dict[str, Any]] = []
-        order = itertools.count(1)
-        receiver = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self) -> None:  # noqa: N802
-                request_uri = urlparse(self.path)
-                if request_uri.path != receiver._redirect_path:
-                    self.send_error(404)
-                    return
-                values = parse_qs(request_uri.query)
-                code = values.get("code", [""])[0]
-                state = values.get("state", [""])[0]
-                if not code or not state:
-                    self.send_error(400)
-                    return
-                receiver.callback.update(code=code, state=state)
-                message = b"GitHub authorization received. You can close this tab."
-                self.send_response(200)
-                self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.send_header("Content-Length", str(len(message)))
-                self.end_headers()
-                self.wfile.write(message)
-
-            def do_POST(self) -> None:  # noqa: N802
-                if urlparse(self.path).path != WEBHOOK_PATH:
-                    self.send_error(404)
-                    return
-                length = int(self.headers.get("Content-Length") or 0)
-                body = self.rfile.read(length)
-                try:
-                    verify_webhook_signature(
-                        secret=webhook_secret,
-                        body=body,
-                        signature_header=self.headers.get("X-Hub-Signature-256"),
-                    )
-                except InvalidWebhookSignature:
-                    self.send_error(401)
-                    return
-                record = {
-                    "order": next(order),
-                    "delivery_id": self.headers.get("X-GitHub-Delivery"),
-                    "event": self.headers.get("X-GitHub-Event"),
-                    "received_at": utc_now(),
-                    "payload": json.loads(body),
-                }
-                receiver.delivery_log.append(record)
-                receiver.deliveries.put(record)
-                self.send_response(200)
-                self.send_header("Content-Length", "0")
-                self.end_headers()
-
-            def log_message(self, _format: str, *args: object) -> None:
-                return
-
-        self._server = HTTPServer((parsed.hostname, parsed.port), Handler)
-        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
+        self.order = itertools.count(1)
+        super().__init__(redirect_uri)
 
     def start(self) -> None:
+        self._thread = threading.Thread(target=self.serve_forever, daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
-        self._server.shutdown()
-        self._server.server_close()
+        self.shutdown()
+        self.server_close()
         self._thread.join(timeout=5)
-
-    def wait_callback(self, timeout: int = 180) -> dict[str, str]:
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            if self.callback:
-                return self.callback
-            time.sleep(0.1)
-        raise SystemExit("No GitHub authorisation callback was received in time.")
 
     def wait_delivery(self, *, event: str, actions: set[str], timeout: int = 120) -> dict[str, Any]:
         deadline = time.monotonic() + timeout

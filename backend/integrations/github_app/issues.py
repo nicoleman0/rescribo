@@ -36,7 +36,7 @@ def parse_issue_reference(reference: str, *, expected_repository: str) -> int:
     any network access.
     """
     candidate = reference.strip()
-    if candidate.isdigit() and int(candidate) > 0:
+    if candidate.isascii() and candidate.isdigit() and int(candidate) > 0:
         return int(candidate)
     match = _ISSUE_URL.match(candidate)
     if match is None:
@@ -70,7 +70,7 @@ def resolve_issue_link(
             installation_token=installation_token, owner=owner, name=name, number=number
         )
     except GitHubAPIError as error:
-        if error.status_code in {404, 410}:
+        if error.status_code in {301, 404, 410}:
             raise IssueLinkError(
                 f"Issue #{number} was not found in {expected_repository}."
             ) from error
