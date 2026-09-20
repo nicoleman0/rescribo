@@ -1,0 +1,41 @@
+{
+  "display_information": {
+    "name": "Rescribo Feasibility",
+    "description": "Disposable app for the Rescribo Slack shortcut capture check.",
+    "background_color": "#2b2d31"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "Rescribo Feasibility",
+      "always_online": false
+    },
+    "shortcuts": [
+      {
+        "name": "Submit customer feedback",
+        "type": "message",
+        "callback_id": "submit_customer_feedback",
+        "description": "Capture this message as a customer feedback report"
+      }
+    ]
+  },
+  "oauth_config": {
+    "scopes": {
+      "bot": [
+        "commands",
+        "channels:read",
+        "groups:read",
+        "chat:write",
+        "im:write"
+      ]
+    }
+  },
+  "settings": {
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://placeholder.trycloudflare.com/slack/interactions"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

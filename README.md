@@ -14,6 +14,7 @@ An internal inbox connecting customer feedback, engineering issues, and employee
 - Node.js 24 and npm.
 - Docker Desktop or Docker Engine with Compose.
 - [Task](https://taskfile.dev) (`brew install go-task`).
+- ShellCheck (`brew install shellcheck`), used by `task check`.
 
 Toolchain versions are recorded in `.python-version` and `.node-version`. Python dependencies are locked in `uv.lock`; frontend dependencies in `frontend/package-lock.json`.
 

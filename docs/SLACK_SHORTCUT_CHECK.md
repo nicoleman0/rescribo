@@ -6,10 +6,9 @@ This opt-in check covers GitHub issue #3. It verifies that a Slack message short
 
 Slack app inside a disposable workspace. Nothing here is reinstalled.
 
-- **Bot token scopes, exactly these five and nothing else:** `commands`, `channels:read`, `groups:read`, `chat:write`, `im:write`.
-- **Interactivity:** on. Request URL `https://<tunnel-host>/slack/interactions`.
-- **Message shortcut:** one entry, name "Submit customer feedback", callback id `submit_customer_feedback`.
-- Install to the workspace from the app's configuration page and copy the bot token (`xoxb-...`). No OAuth install flow is exercised; workspace install binding belongs to issue #26.
+Create the app from [`slack-feasibility-app-manifest.json`](slack-feasibility-app-manifest.json), through api.slack.com/apps -> Create New App -> From a manifest. It holds the proposed bot scopes, interactivity, and the "Submit customer feedback" message shortcut with callback id `submit_customer_feedback`. The check asserts the granted scopes match that set exactly, so granting one more fails the run before a request is served.
+
+The manifest's Request URL is a placeholder; replace it with the tunnel host on each run. Install to the workspace from the app's configuration page and copy the bot token (`xoxb-...`). No OAuth install flow is exercised; workspace install binding belongs to issue #26.
 
 Prepare the workspace before running:
 
@@ -30,12 +29,16 @@ export RESCRIBO_SLACK_RECEIVER_URL=http://127.0.0.1:8767/slack/interactions
 Expose the receiver to Slack with a public HTTPS tunnel:
 
 ```sh
-cloudflared tunnel --url http://127.0.0.1:8767
+task slack-tunnel
 ```
 
-Pass the origin only. `cloudflared` takes the host and scheme from `--url` and forwards the incoming path unchanged ([`httpService.RoundTrip`](https://github.com/cloudflare/cloudflared/blob/master/ingress/origin_proxy.go) sets `req.URL.Host` and `req.URL.Scheme` and nothing else), so a path written into the flag is silently ignored. The app's Request URL keeps `/slack/interactions`.
+It runs `cloudflared tunnel --url http://127.0.0.1:8767`, waits for the assigned hostname, and prints the Request URL to paste into the app. A different receiver port or path goes in as `task slack-tunnel -- 8767 /slack/interactions`.
+
+The tunnel takes the origin only. `cloudflared` takes the host and scheme from `--url` and forwards the incoming path unchanged ([`httpService.RoundTrip`](https://github.com/cloudflare/cloudflared/blob/master/ingress/origin_proxy.go) sets `req.URL.Host` and `req.URL.Scheme` and nothing else), so a path written into the flag is silently ignored. The app's Request URL keeps `/slack/interactions`.
 
 `cloudflared` quick tunnels need no account, but the printed `*.trycloudflare.com` URL changes on every run, so the app's Request URL must be updated each time. ngrok works too. smee.io does **not**: Slack expects a synchronous response body for `response_action` delivery. smee can only forward request bodies to a browser window, not return a synchronous response payload back to Slack, so `views.open` is the only reliable way to open the modal over smee and `response_action: errors` cannot work at all.
+
+`task slack-channels` lists the workspace's channel ids and the bot's membership, so the two approved ids can be read off rather than copied out of Slack by hand.
 
 Run the check with the operator-declared channel ids. The operator declares which channel is public and which is private; the allowlist is those two ids. No `conversations.info` call is made (that belongs to issue #26):
 
@@ -65,4 +68,4 @@ The sanitised result is written to `.cache/slack-shortcut-result.json`. It conta
 - Whether the `message` object on a thread reply carries `thread_ts`, and whether Slack sets `thread_ts` on root messages (it should not).
 - The exact `channel` shape for a DM interaction payload: the channel id prefix (`D...`) and the channel `name` Slack supplies.
 - Whether Slack retries an interaction that responds slowly, and which headers distinguish a retry (`X-Slack-Retry-Num`, `X-Slack-Retry-Reason`, if present).
-- The `x-oauth-scopes` header value actually granted by `auth.test` versus the five scopes requested on the app configuration page.
+- The `x-oauth-scopes` header value actually granted by `auth.test` versus the scopes the manifest requests.
