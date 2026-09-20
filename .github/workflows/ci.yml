@@ -32,9 +32,9 @@ jobs:
       - run: task e2e
       - name: Worker smoke check
         run: |
-          task worker > /tmp/feedback-worker.log 2>&1 &
+          setsid task worker > /tmp/feedback-worker.log 2>&1 &
           worker_pid=$!
-          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          trap 'kill -TERM -"$worker_pid" 2>/dev/null || true' EXIT
           task worker-check
       - name: Stop local services
         if: always()
