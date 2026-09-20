@@ -63,8 +63,10 @@ class GitHubAppClient:
             json=json_body,
             params=params,
         )
-        if response.is_error:
+        if response.is_error or response.is_redirect:
             raise GitHubAPIError(operation, response.status_code)
+        if response.status_code == 204 or not response.content:
+            return {}
         data = response.json()
         if not isinstance(data, dict):
             raise RuntimeError(f"GitHub {operation} returned an unexpected response shape.")
@@ -141,4 +143,61 @@ class GitHubAppClient:
             f"/repos/{owner}/{name}",
             token=installation_token,
             operation="selected repository lookup",
+        )
+
+    def create_issue(
+        self,
+        *,
+        installation_token: str,
+        owner: str,
+        name: str,
+        title: str,
+        body: str,
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"/repos/{owner}/{name}/issues",
+            token=installation_token,
+            operation="issue creation",
+            json_body={"title": title, "body": body},
+        )
+
+    def get_issue(
+        self, *, installation_token: str, owner: str, name: str, number: int
+    ) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            f"/repos/{owner}/{name}/issues/{number}",
+            token=installation_token,
+            operation="issue lookup",
+        )
+
+    def update_issue_state(
+        self, *, installation_token: str, owner: str, name: str, number: int, state: str
+    ) -> dict[str, Any]:
+        if state not in {"open", "closed"}:
+            raise ValueError("Issue state must be open or closed.")
+        return self._request(
+            "PATCH",
+            f"/repos/{owner}/{name}/issues/{number}",
+            token=installation_token,
+            operation="issue state update",
+            json_body={"state": state},
+        )
+
+    def remove_installation_repository(
+        self, *, user_token: str, installation_id: int, repository_id: int
+    ) -> None:
+        self._request(
+            "DELETE",
+            f"/user/installations/{installation_id}/repositories/{repository_id}",
+            token=user_token,
+            operation="installation repository removal",
+        )
+
+    def delete_installation(self, *, installation_id: int) -> None:
+        self._request(
+            "DELETE",
+            f"/app/installations/{installation_id}",
+            operation="installation deletion",
         )
