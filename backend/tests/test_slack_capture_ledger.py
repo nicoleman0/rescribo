@@ -206,7 +206,9 @@ def test_rejections_record_that_text_was_not_retained() -> None:
 
 def test_rejection_records_the_channel_name_slack_supplied() -> None:
     ledger = make_ledger()
-    ledger.record_rejection(reason="direct_message", channel_id="D0DM", channel_name="directmessage")
+    ledger.record_rejection(
+        reason="direct_message", channel_id="D0DM", channel_name="directmessage"
+    )
     assert ledger.rejections()[0]["channel_name"] == "directmessage"
 
 
