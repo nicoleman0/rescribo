@@ -34,6 +34,7 @@ class CaptureSubmission:
     customer_reference: str
     affected_version: str
     additional_context: str
+    link_code: str
 
     def as_evidence(self) -> dict[str, Any]:
         return {
@@ -44,6 +45,7 @@ class CaptureSubmission:
             "customer_reference_given": bool(self.customer_reference),
             "affected_version_given": bool(self.affected_version),
             "additional_context_given": bool(self.additional_context),
+            "link_code_given": bool(self.link_code),
         }
 
 
@@ -85,6 +87,7 @@ def build_capture_modal(
     workspace_name: str,
     captured_on: date,
     context_id: str,
+    link_required: bool = False,
 ) -> dict[str, Any]:
     """Build the Block Kit capture modal from the shortcut snapshot.
 
@@ -123,6 +126,15 @@ def build_capture_modal(
             },
         },
     )
+    if link_required:
+        blocks.append(
+            {
+                "type": "input",
+                "block_id": "slack_link_code",
+                "label": {"type": "plain_text", "text": "Product linking code"},
+                "element": {"type": "plain_text_input", "action_id": "value"},
+            }
+        )
     title_element: dict[str, Any] = {"type": "plain_text_input", "action_id": "title"}
     prefill = _prefill_title(shortcut.text)
     if prefill:
@@ -178,6 +190,7 @@ _BLOCK_ACTION_IDS = {
     "customer_reference": "value",
     "affected_version": "value",
     "additional_context": "value",
+    "slack_link_code": "value",
 }
 
 
@@ -227,4 +240,5 @@ def parse_capture_submission(
         customer_reference=_input_value(values, "customer_reference"),
         affected_version=_input_value(values, "affected_version"),
         additional_context=_input_value(values, "additional_context"),
+        link_code=_input_value(values, "slack_link_code"),
     )

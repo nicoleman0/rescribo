@@ -32,6 +32,7 @@ from slack_sdk import WebClient  # noqa: E402
 from slack_sdk.errors import SlackApiError  # noqa: E402
 
 from integrations.slack import (  # noqa: E402
+    REQUIRED_BOT_SCOPES,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
@@ -47,7 +48,6 @@ from live_check import receiver_of, required_environment  # noqa: E402
 from slack_capture_ledger import CaptureLedger  # noqa: E402
 
 INTERACTIONS_PATH = "/slack/interactions"
-PROPOSED_SCOPES = frozenset({"commands", "channels:read", "groups:read", "chat:write", "im:write"})
 CONTEXT_TTL_S = 15 * 60
 
 
@@ -308,11 +308,11 @@ def check_scopes(client: WebClient) -> dict[str, Any]:
     header_value = response.headers.get("x-oauth-scopes", "") if response.headers else ""
     # Slack sends the scopes comma-separated, e.g. "commands,chat:write,channels:read".
     granted = {scope.strip() for scope in header_value.split(",") if scope.strip()}
-    if granted != PROPOSED_SCOPES:
+    if granted != REQUIRED_BOT_SCOPES:
         print("Slack reports these granted scopes:", sorted(granted))
         raise SystemExit(
             f"Granted scopes {sorted(granted)} are not exactly the proposed set "
-            f"{sorted(PROPOSED_SCOPES)}."
+            f"{sorted(REQUIRED_BOT_SCOPES)}."
         )
     data = response.data if isinstance(response.data, dict) else {}
     team_id = data.get("team_id")
