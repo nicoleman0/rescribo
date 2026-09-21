@@ -166,6 +166,15 @@ def test_permalink_failure_preserves_report_and_retry_succeeds() -> None:
     assert retried.permalink_error is None
 
 
+def test_permalink_error_records_the_reason_code() -> None:
+    response = SimpleNamespace(data={"error": "channel_not_found"})
+    rejected = RuntimeError("slack rejected the call")
+    rejected.response = response  # type: ignore[attr-defined]
+    client = PermalinkClient([rejected, {"permalink": ""}])
+    assert resolve_report_permalink(report(), client).permalink_error == "channel_not_found"
+    assert resolve_report_permalink(report(), client).permalink_error == "missing_permalink"
+
+
 class DeliveryClient:
     def __init__(self, *, post_error: Exception | None = None) -> None:
         self.calls: list[tuple[str, str, str]] = []

@@ -53,7 +53,28 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         default=REPOSITORY_ROOT / ".cache" / "slack-issue26-result.json",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    # Settle the argument contract before the first live call, so a missing
+    # flag costs nothing.
+    if bool(args.message_channel) != bool(args.message_ts):
+        parser.error("--message-channel and --message-ts must be supplied together")
+    if args.send_delayed_dm:
+        if not args.actor_id or not args.captured_at:
+            parser.error("--send-delayed-dm requires --actor-id and --captured-at")
+        args.captured_at = parse_capture_time(parser, args.captured_at)
+    return args
+
+
+def parse_capture_time(parser: argparse.ArgumentParser, value: str) -> datetime:
+    try:
+        captured = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        parser.error(f"--captured-at is not an ISO timestamp: {value}")
+    if captured.tzinfo is None:
+        parser.error("--captured-at needs a UTC offset, for example 2026-09-21T10:00:00Z")
+    if (datetime.now(UTC) - captured.astimezone(UTC)).total_seconds() <= 30 * 60:
+        parser.error("--captured-at must be more than 30 minutes ago for live evidence")
+    return captured
 
 
 def check_channel(client: WebClient, channel_id: str) -> dict[str, Any]:
@@ -82,12 +103,9 @@ def check_permalink(client: WebClient, channel_id: str, message_ts: str) -> dict
 
 
 def check_delayed_dm(
-    client: WebClient, *, actor_id: str, captured_at: str, team_id: str
+    client: WebClient, *, actor_id: str, captured_at: datetime, team_id: str
 ) -> dict[str, Any]:
-    captured = datetime.fromisoformat(captured_at.replace("Z", "+00:00"))
-    age_seconds = (datetime.now(UTC) - captured.astimezone(UTC)).total_seconds()
-    if age_seconds <= 30 * 60:
-        raise RuntimeError("--captured-at must be more than 30 minutes ago for live evidence")
+    age_seconds = (datetime.now(UTC) - captured_at.astimezone(UTC)).total_seconds()
     guard = SlackConnectionGuard(team_id=team_id)
     result = send_delayed_dm(
         client,
@@ -119,18 +137,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "permalink": None,
         "delayed_dm": None,
     }
-    if bool(args.message_channel) != bool(args.message_ts):
-        raise RuntimeError("--message-channel and --message-ts must be supplied together")
     if args.message_channel and args.message_ts:
         evidence["permalink"] = check_permalink(client, args.message_channel, args.message_ts)
     if args.send_delayed_dm:
-        if not args.actor_id or not args.captured_at:
-            raise RuntimeError("--send-delayed-dm requires --actor-id and --captured-at")
         team_id = str(evidence["scope_check"]["team_id"])
         evidence["delayed_dm"] = check_delayed_dm(
             client, actor_id=args.actor_id, captured_at=args.captured_at, team_id=team_id
         )
     return evidence
+
+
+def display_path(path: Path) -> str:
+    """Name a repository path relatively; leave any other path as given."""
+    return str(path.relative_to(REPOSITORY_ROOT) if path.is_relative_to(REPOSITORY_ROOT) else path)
 
 
 def main() -> None:
@@ -140,7 +159,7 @@ def main() -> None:
     print(output)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(f"{output}\n", encoding="utf-8")
-    print(f"Sanitised result written to {args.output.relative_to(REPOSITORY_ROOT)}")
+    print(f"Sanitised result written to {display_path(args.output)}")
 
 
 if __name__ == "__main__":

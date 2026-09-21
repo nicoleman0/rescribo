@@ -3,6 +3,8 @@
 from dataclasses import dataclass, replace
 from typing import Protocol
 
+from integrations.slack.errors import slack_error_code
+
 
 class PermalinkClient(Protocol):
     def chat_getPermalink(self, *, channel: str, message_ts: str) -> dict[str, object]: ...
@@ -25,8 +27,8 @@ def resolve_report_permalink(report: CapturedReport, client: PermalinkClient) ->
     try:
         response = client.chat_getPermalink(channel=report.channel_id, message_ts=report.message_ts)
         permalink = response.get("permalink")
-        if not isinstance(permalink, str) or not permalink:
-            raise ValueError("missing_permalink")
     except Exception as error:
-        return replace(report, permalink_error=type(error).__name__)
+        return replace(report, permalink_error=slack_error_code(error) or type(error).__name__)
+    if not isinstance(permalink, str) or not permalink:
+        return replace(report, permalink_error="missing_permalink")
     return replace(report, permalink=permalink, permalink_error=None)
