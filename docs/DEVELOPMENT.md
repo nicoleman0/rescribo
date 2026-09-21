@@ -49,10 +49,17 @@ This environment does not implement the full MVP's tenant isolation, durable ope
 ## Frontend screenshots
 
 The UI foundation screenshot baselines are generated with Playwright Chromium
-on the development macOS host at 1280px desktop and 375px mobile widths.
-Update them only after reviewing the rendered shell and gallery at both sizes:
+at 1280px desktop and 375px mobile widths. The macOS files are the reviewed
+local baselines. Linux files are also committed because Playwright includes
+the host platform in snapshot names and CI runs on Ubuntu.
+
+Update the local baselines only after reviewing the rendered shell and gallery
+at both sizes:
 
 ```sh
 cd frontend
 npx playwright test e2e/ui-foundation.spec.ts --update-snapshots
 ```
+
+The Linux files are generated in the Playwright Ubuntu image used for CI so
+font rendering and browser versions match the runner.
