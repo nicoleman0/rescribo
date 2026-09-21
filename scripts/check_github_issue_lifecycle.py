@@ -131,7 +131,7 @@ class LoopbackReceiver(LoopbackOAuthServer):
 
 def issue_access_state(
     client: GitHubAppClient, *, installation_token: str, repository: str, number: int
-) -> str:
+) -> dict[str, str | int | None]:
     owner, _, name = repository.partition("/")
     try:
         client.get_issue(
@@ -139,9 +139,9 @@ def issue_access_state(
         )
     except GitHubAPIError as error:
         if error.status_code in ACCESS_LOST_STATUSES:
-            return "access_lost"
+            return {"state": "access_lost", "status_code": error.status_code}
         raise
-    return "ok"
+    return {"state": "ok", "status_code": None}
 
 
 def expect_link_rejection(
@@ -372,7 +372,7 @@ def run(args: argparse.Namespace) -> None:
                 "event": removal_event.as_dict() if removal_event else None,
                 "issue_access": access_after_removal,
             }
-            if access_after_removal != "access_lost":
+            if access_after_removal["state"] != "access_lost":
                 raise SystemExit("The issue remained accessible after repository removal.")
             print("Repository removal produced access-lost state.")
 
@@ -388,11 +388,13 @@ def run(args: argparse.Namespace) -> None:
                 if error.status_code not in ACCESS_LOST_STATUSES:
                     raise
                 token_access = "access_lost"
+                token_access_status = error.status_code
             else:
                 raise SystemExit("Token creation succeeded after installation deletion.")
             evidence["phases"]["installation_revocation"] = {
                 "event": deletion_event.as_dict() if deletion_event else None,
                 "token_creation": token_access,
+                "token_creation_status": token_access_status,
             }
             print("Installation revocation produced access-lost state.")
     finally:
