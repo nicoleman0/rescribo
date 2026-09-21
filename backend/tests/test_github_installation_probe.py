@@ -95,7 +95,7 @@ def test_probe_verifies_user_access_and_restricts_installation_token(private_key
     assert len(requests) == 4
 
 
-def test_probe_rejects_more_than_one_selected_repository(private_key: bytes) -> None:
+def test_probe_rejects_unexpected_selected_repository(private_key: bytes) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/repos/owner/one/installation":
             return httpx.Response(
@@ -119,11 +119,61 @@ def test_probe_rejects_more_than_one_selected_repository(private_key: bytes) -> 
         base_url="https://api.github.com", transport=httpx.MockTransport(handler)
     ) as http:
         probe = InstallationProbe(GitHubAppClient(http, app_id="123", private_key=private_key))
-        with pytest.raises(InvalidInstallation, match="exactly one"):
+        with pytest.raises(InvalidInstallation, match="unexpected number"):
             probe.run(
                 user_token="user-token",
                 expected_repository="owner/one",
             )
+
+
+def test_probe_allows_named_additional_repository(private_key: bytes) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/repos/owner/disposable/installation":
+            return httpx.Response(
+                200,
+                json={
+                    "id": 42,
+                    "permissions": {"issues": "write", "metadata": "read"},
+                    "repository_selection": "selected",
+                    "suspended_at": None,
+                },
+            )
+        if request.url.path == "/user/installations/42/repositories":
+            return httpx.Response(
+                200,
+                json={
+                    "total_count": 2,
+                    "repositories": [
+                        {"full_name": "owner/anchor"},
+                        {"full_name": "owner/disposable"},
+                    ],
+                },
+            )
+        if request.url.path == "/app/installations/42/access_tokens":
+            return httpx.Response(
+                201,
+                json={"token": "installation-token", "expires_at": "2026-09-20T21:00:00Z"},
+            )
+        if request.url.path == "/repos/owner/disposable":
+            return httpx.Response(
+                200,
+                json={"full_name": "owner/disposable", "visibility": "private"},
+            )
+        raise AssertionError(f"Unexpected request: {request.method} {request.url}")
+
+    with httpx.Client(
+        base_url="https://api.github.com", transport=httpx.MockTransport(handler)
+    ) as http:
+        result = InstallationProbe(
+            GitHubAppClient(http, app_id="123", private_key=private_key)
+        ).run(
+            user_token="user-token",
+            expected_repository="owner/disposable",
+            additional_repositories={"owner/anchor"},
+        )
+
+    assert result.connection_status == "active"
+    assert result.repository == "owner/disposable"
 
 
 def test_probe_rejects_extra_app_permissions(private_key: bytes) -> None:

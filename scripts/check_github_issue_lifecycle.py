@@ -163,6 +163,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run the opt-in GitHub issue lifecycle check.")
     parser.add_argument("--workspace", required=True, help="Synthetic workspace identifier")
     parser.add_argument("--repository", required=True, help="Disposable owner/name")
+    parser.add_argument(
+        "--anchor-repository",
+        required=True,
+        help="Second disposable owner/name kept installed during repository removal",
+    )
     parser.add_argument("--smee-url", required=True, help="Disposable smee.io channel URL")
     parser.add_argument(
         "--pull-request-url",
@@ -175,6 +180,8 @@ def parse_args() -> argparse.Namespace:
 
 
 def run(args: argparse.Namespace) -> None:
+    if args.anchor_repository == args.repository:
+        raise SystemExit("The anchor repository must differ from the lifecycle repository.")
     webhook_secret = required_environment("RESCRIBO_GITHUB_WEBHOOK_SECRET").encode()
     receiver = LoopbackReceiver(
         required_environment("RESCRIBO_GITHUB_REDIRECT_URI"), webhook_secret=webhook_secret
@@ -217,7 +224,9 @@ def run(args: argparse.Namespace) -> None:
                 redirect_uri=redirect_uri,
             )
             probe = InstallationProbe(client).run(
-                user_token=user_token, expected_repository=repository
+                user_token=user_token,
+                expected_repository=repository,
+                additional_repositories={args.anchor_repository},
             )
             evidence["phases"]["installation"] = probe.as_dict()
             if probe.connection_status != "active" or probe.installation_id is None:
@@ -342,18 +351,13 @@ def run(args: argparse.Namespace) -> None:
             print("Signed close and reopen events verified and applied from fetched state.")
 
             # Phase 5: repository removal produces access-lost state.
-            repository_id = client.get_repository(
-                installation_token=installation_token, owner=owner, name=name
-            ).get("id")
-            if not isinstance(repository_id, int):
-                raise SystemExit("GitHub did not return the repository ID.")
-            client.remove_installation_repository(
-                user_token=user_token,
-                installation_id=probe.installation_id,
-                repository_id=repository_id,
+            print(
+                f"Open https://github.com/settings/installations/{probe.installation_id} and "
+                f"remove {repository} from the selected repositories. Keep "
+                f"{args.anchor_repository} selected."
             )
             removal_record = receiver.wait_delivery(
-                event="installation_repositories", actions={"removed"}
+                event="installation_repositories", actions={"removed"}, timeout=300
             )
             removal_event = parse_installation_event(
                 "installation_repositories", removal_record["payload"]

@@ -34,6 +34,7 @@ class InstallationProbe:
         *,
         user_token: str,
         expected_repository: str,
+        additional_repositories: set[str] | None = None,
     ) -> ProbeResult:
         owner, separator, name = expected_repository.partition("/")
         if not separator or not owner or not name:
@@ -84,14 +85,23 @@ class InstallationProbe:
         )
         repositories = repositories_response.get("repositories")
         total_count = repositories_response.get("total_count")
-        if not isinstance(repositories, list) or total_count != 1 or len(repositories) != 1:
+        expected_repositories = {expected_repository, *(additional_repositories or set())}
+        if (
+            not isinstance(repositories, list)
+            or total_count != len(expected_repositories)
+            or len(repositories) != len(expected_repositories)
+        ):
             raise InvalidInstallation(
-                "The authorised installation must expose exactly one repository."
+                "The authorised installation exposes an unexpected number of repositories."
             )
-        repository = repositories[0]
-        if not isinstance(repository, dict) or repository.get("full_name") != expected_repository:
+        repository_names = {
+            repository.get("full_name")
+            for repository in repositories
+            if isinstance(repository, dict)
+        }
+        if repository_names != expected_repositories:
             raise InvalidInstallation(
-                "The authorised installation does not expose the expected repository."
+                "The authorised installation exposes unexpected repositories."
             )
 
         installation_token, expires_at = self._client.create_installation_token(

@@ -8,8 +8,9 @@ Start from the installation check app settings, then add webhook delivery:
 
 - **Webhook URL:** a disposable [smee.io](https://smee.io) channel. Start a new channel per run; do not reuse channels across checks.
 - **Webhook secret:** a random value. It stays in the ignored `.env.github-feasibility` file.
-- **Subscribe to events:** *Issues*, *Installation*, and *Installation repositories*. The *Meta* event is not required.
+- **Subscribe to events:** *Issues*. GitHub Apps receive *Installation* and *Installation repositories* automatically. The *Meta* event is not required.
 - Permissions remain **Issues: Read and write** and the implicit **Metadata: Read-only**.
+- Install the app on the disposable lifecycle repository and a second disposable anchor repository. GitHub does not allow removing the last selected repository from an installation.
 
 Keep the private key, client secret, user token, installation token, and webhook secret outside the repository. The result file contains only the repository identity, issue number, event actions, delivery identifiers, connection states, and timestamps.
 
@@ -32,6 +33,7 @@ Run the check with a synthetic workspace identifier:
 task github-lifecycle-check -- \
   --workspace feasibility-a \
   --repository owner/disposable-repository \
+  --anchor-repository owner/disposable-anchor \
   --smee-url https://smee.io/your-disposable-channel
 ```
 
@@ -53,10 +55,10 @@ What the check does, in order:
    ```
 
    The port comes from `RESCRIBO_GITHUB_REDIRECT_URI`. The check then closes and reopens the issue through the API. Every delivery's `X-Hub-Signature-256` is verified on arrival; bad signatures are rejected with HTTP 401. Each verified event is applied by fetching current issue state from the API and comparing provider `updated_at` values, so a stale delivery cannot overwrite newer state. The webhook payload itself is never trusted for state.
-5. Removes the repository from the installation, expects an `installation_repositories` removal event, and confirms the issue is inaccessible (access-lost, not closed).
+5. Prints the installation settings URL. Remove the lifecycle repository in the browser while leaving the anchor selected. The check expects an `installation_repositories` removal event and confirms the issue is inaccessible (access-lost, not closed). GitHub's REST endpoint for this change does not accept GitHub App user access tokens.
 6. Deletes the installation, expects an `installation` deletion event, and confirms installation token creation fails (access-lost).
 
-The user token from step 1 is held in memory only and used for the repository removal call; it is never stored. This mirrors the product rule to discard setup credentials after verification.
+The user token from step 1 is held in memory only and never stored. This mirrors the product rule to discard setup credentials after verification.
 
 The sanitised result is written to `.cache/github-issue-lifecycle-result.json`, including the ordered delivery log (delivery IDs, event names, actions, and receive times only). Review it before using it as evidence. Live results and app settings belong in the Milestone A evidence PR for issue #8, separate from mocked test results. Raw payloads are processed in memory to verify signatures and extract state, and are never written to disk.
 
