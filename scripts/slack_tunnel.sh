@@ -5,7 +5,7 @@ set -euo pipefail
 
 port="${1:-8767}"
 path="${2:-/slack/interactions}"
-log="$(mktemp -t slack-tunnel)"
+log="$(mktemp -t slack-tunnel.XXXXXX)"
 
 # api.trycloudflare.com is cloudflared's own control endpoint, not the tunnel.
 tunnel_hostname() {
