@@ -5,18 +5,11 @@ from dataclasses import dataclass
 from time import monotonic
 from typing import Any
 
+from integrations.slack.errors import ChannelRejected
+
 REQUIRED_BOT_SCOPES = frozenset(
     {"commands", "channels:read", "groups:read", "chat:write", "im:write"}
 )
-
-
-class ChannelRejected(ValueError):
-    """Raised when a Slack conversation cannot be an approved source."""
-
-    def __init__(self, channel_id: str, reason: str) -> None:
-        super().__init__(f"{reason}:{channel_id}")
-        self.channel_id = channel_id
-        self.reason = reason
 
 
 @dataclass(frozen=True)
@@ -35,7 +28,7 @@ class SlackChannel:
     def from_api(cls, data: Mapping[str, Any]) -> SlackChannel:
         channel_id = data.get("id")
         if not isinstance(channel_id, str) or not channel_id:
-            raise ChannelRejected("unknown", "missing_channel_id")
+            raise ChannelRejected("missing_channel_id", "unknown")
         return cls(
             channel_id=channel_id,
             is_private=data.get("is_private") is True,
@@ -51,15 +44,15 @@ def validate_channel(data: Mapping[str, Any]) -> SlackChannel:
     """Validate an internal, active channel containing the bot."""
     channel = SlackChannel.from_api(data)
     if channel.is_im:
-        raise ChannelRejected(channel.channel_id, "direct_message")
+        raise ChannelRejected("direct_message", channel.channel_id)
     if channel.is_mpim:
-        raise ChannelRejected(channel.channel_id, "group_direct_message")
+        raise ChannelRejected("group_direct_message", channel.channel_id)
     if channel.is_ext_shared:
-        raise ChannelRejected(channel.channel_id, "externally_shared")
+        raise ChannelRejected("externally_shared", channel.channel_id)
     if channel.is_archived:
-        raise ChannelRejected(channel.channel_id, "archived")
+        raise ChannelRejected("archived", channel.channel_id)
     if not channel.is_member:
-        raise ChannelRejected(channel.channel_id, "bot_not_member")
+        raise ChannelRejected("bot_not_member", channel.channel_id)
     return channel
 
 

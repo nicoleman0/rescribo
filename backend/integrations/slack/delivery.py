@@ -4,6 +4,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
+from integrations.slack.errors import slack_error_code
+
 
 class SlackDeliveryClient(Protocol):
     def conversations_open(self, *, users: str) -> Any: ...
@@ -44,13 +46,6 @@ class SlackConnectionGuard:
             return False
         self.disable("app_uninstalled")
         return True
-
-
-def slack_error_code(error: Exception) -> str | None:
-    response = getattr(error, "response", None)
-    data = getattr(response, "data", None)
-    code = data.get("error") if isinstance(data, dict) else None
-    return code if isinstance(code, str) else None
 
 
 REVOCATION_ERRORS = frozenset({"account_inactive", "invalid_auth", "not_authed", "token_revoked"})

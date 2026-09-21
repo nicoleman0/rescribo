@@ -8,10 +8,10 @@ import pytest
 from slack_sdk.models.blocks import SectionBlock
 
 from integrations.slack import (
+    ChannelRejected,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
-    SourceRejected,
     SubmissionErrors,
     build_capture_modal,
     check_source_allowed,
@@ -198,7 +198,7 @@ def test_check_source_allowed_accepts_approved_channels() -> None:
 
 
 def test_check_source_allowed_rejects_dm_channel() -> None:
-    with pytest.raises(SourceRejected) as error:
+    with pytest.raises(ChannelRejected) as error:
         check_source_allowed(
             make_shortcut(channel_id="D0DM", channel_name=None),
             approved_channel_ids=frozenset({"C0PUBLIC"}),
@@ -209,7 +209,7 @@ def test_check_source_allowed_rejects_dm_channel() -> None:
 
 
 def test_check_source_allowed_rejects_unapproved_channel() -> None:
-    with pytest.raises(SourceRejected) as error:
+    with pytest.raises(ChannelRejected) as error:
         check_source_allowed(
             make_shortcut(channel_id="C0OTHER", channel_name="random"),
             approved_channel_ids=frozenset({"C0PUBLIC"}),

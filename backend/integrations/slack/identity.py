@@ -6,7 +6,6 @@ import secrets
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import time
-from typing import Final
 
 
 class LinkCodeRejected(ValueError):
@@ -90,29 +89,3 @@ def require_linked_actor(
         raise LinkCodeRejected("Slack workspace does not match the linked identity")
     if not hmac.compare_digest(identity.actor_id, actor_id):
         raise LinkCodeRejected("Slack actor does not match the linked identity")
-
-
-def redeem_for_shortcut(
-    store: LinkCodeStore,
-    code: str,
-    *,
-    workspace_id: str,
-    team_id: str,
-    actor_id: str,
-) -> SlackIdentity:
-    """Redeem a modal code against the signed shortcut identity."""
-    return store.redeem(
-        code,
-        workspace_id=workspace_id,
-        team_id=team_id,
-        actor_id=actor_id,
-    )
-
-
-__all__: Final = [
-    "LinkCodeRejected",
-    "LinkCodeStore",
-    "SlackIdentity",
-    "redeem_for_shortcut",
-    "require_linked_actor",
-]

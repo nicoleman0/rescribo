@@ -12,8 +12,8 @@ live Slack evidence.
   actor. Display names and email addresses are not used.
 - `build_capture_modal(..., link_required=True)` adds the product-code field to
   the first capture modal. The submission parser keeps that code separate from
-  report fields; the handler redeems it through `redeem_for_shortcut` using the
-  signed shortcut team and actor.
+  report fields; the handler redeems it through `LinkCodeStore.redeem` using
+  the signed shortcut team and actor.
 - `ChannelEligibilityCache.validate_for_modal_start` may use a short-lived
   cache. `validate_for_submission` always calls `conversations.info` again.
   Archived, direct, group-direct, externally shared, and bot-unjoined

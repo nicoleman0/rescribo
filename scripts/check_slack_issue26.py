@@ -23,13 +23,13 @@ environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
 environ.Env.read_env(REPOSITORY_ROOT / ".env.slack-feasibility", overwrite=False)
 
 from integrations.slack import (  # noqa: E402
-    REQUIRED_BOT_SCOPES,
     ChannelRejected,
     SlackConnectionGuard,
     send_delayed_dm,
     validate_channel,
 )
 from live_check import required_environment  # noqa: E402
+from slack_live import check_granted_scopes  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,22 +54,6 @@ def parse_args() -> argparse.Namespace:
         default=REPOSITORY_ROOT / ".cache" / "slack-issue26-result.json",
     )
     return parser.parse_args()
-
-
-def granted_scopes(client: WebClient) -> dict[str, Any]:
-    response = client.auth_test()
-    header = response.headers.get("x-oauth-scopes", "") if response.headers else ""
-    scopes = {item.strip() for item in header.split(",") if item.strip()}
-    if scopes != REQUIRED_BOT_SCOPES:
-        raise RuntimeError(
-            f"Slack granted {sorted(scopes)}, expected {sorted(REQUIRED_BOT_SCOPES)}"
-        )
-    data = response.data if isinstance(response.data, dict) else {}
-    return {
-        "team_id": data.get("team_id"),
-        "bot_user_id": data.get("user_id"),
-        "granted_scopes": sorted(scopes),
-    }
 
 
 def check_channel(client: WebClient, channel_id: str) -> dict[str, Any]:
@@ -127,7 +111,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     evidence: dict[str, Any] = {
         "check": "slack-issue-26",
         "evidence_mode": "live_api",
-        "scope_check": granted_scopes(client),
+        "scope_check": check_granted_scopes(client),
         "channels": [
             check_channel(client, args.public_channel),
             check_channel(client, args.private_channel),
