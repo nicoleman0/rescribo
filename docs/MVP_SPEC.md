@@ -111,7 +111,7 @@ The snapshot includes only the selected message's text and source identifiers. A
 - **Link existing:** accept a GitHub issue URL/number, verify it belongs to the configured repository, fetch it, and reject pull requests. GitHub issue endpoints may also return PRs. [G2]
 - **Create:** preview an editable title/body and destination. Default body contains the problem summary and a product link, without customer identities or raw Slack excerpts. Publish only on an explicit user action.
 - One active GitHub issue link per problem; one issue maps to one problem within a product workspace. Relinking records history and clears any pending approval based on the old issue.
-- Subscribe to Issues and installation/access lifecycle events. Handle close, reopen, edits, deletion/transfer, repository removal, and suspended/deleted installations. [G6]
+- Subscribe to Issues and installation/access lifecycle events. GitHub Apps receive `installation` and `installation_repositories` events automatically; only Issues needs an explicit subscription. Handle close, reopen, edits, deletion/transfer, repository removal, and suspended/deleted installations. GitHub will not remove a repository that is the last one selected, so effective revocation may arrive as an installation deletion; treat repository removal and installation deletion as the same access-lost signal (both were observed returning HTTP 404). [G6]
 - A verified close event flags **Review engineering update**. Preserve `state_reason`; a closure as not planned is not a fix. Human confirmation requires a fix note and availability/version information, with optional evidence URL.
 - Fetch current issue state when processing a change, serialize processing per issue, and retain provider update times. An old webhook must not overwrite newer state.
 - Reconcile active linked issues every 15 minutes and expose **Refresh status**. Show last successful sync and stale/access-lost status. An inaccessible issue is unknown, not closed.
@@ -307,6 +307,7 @@ These are build milestones, not estimates or a task-by-task implementation plan.
 - Verify account linking, channel revalidation, permalink retrieval, and a bot DM sent more than 30 minutes after capture.
 - Verify GitHub installation ownership checks, selected-repository issue creation/read, signed closure/reopen events, and access revocation.
 - Record tested app settings, granted scopes, observed payloads after sanitisation, and any platform limitations. Update this spec if observed behaviour differs from documentation.
+- Consolidated sanitised evidence lives in [`LIVE_INTEGRATION_EVIDENCE.md`](LIVE_INTEGRATION_EVIDENCE.md), separate from mocked tests. Slack capture, identity boundaries, and both GitHub checks have live runs; the delayed bot DM (issue #26) is planned but not yet exercised live.
 
 ### B. Product without AI
 
