@@ -4,22 +4,11 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
+from integrations.slack.errors import ChannelRejected
+
 
 class ShortcutPayloadError(ValueError):
     """Raised when an interaction payload is not a well-formed message shortcut."""
-
-
-class SourceRejected(ValueError):
-    """Raised when a shortcut source channel is not eligible.
-
-    The message names the reason code and the channel id only; never the
-    message text or actor identity.
-    """
-
-    def __init__(self, reason: str, channel_id: str) -> None:
-        super().__init__(f"{reason}:{channel_id}")
-        self.reason = reason
-        self.channel_id = channel_id
 
 
 @dataclass(frozen=True)
@@ -92,8 +81,8 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
 def check_source_allowed(
     shortcut: MessageShortcut, *, approved_channel_ids: frozenset[str]
 ) -> None:
-    """Reject DMs and unapproved channels, raising `SourceRejected`."""
+    """Reject DMs and unapproved channels, raising `ChannelRejected`."""
     if shortcut.channel_id.startswith("D") or shortcut.channel_name == "directmessage":
-        raise SourceRejected("direct_message", shortcut.channel_id)
+        raise ChannelRejected("direct_message", shortcut.channel_id)
     if shortcut.channel_id not in approved_channel_ids:
-        raise SourceRejected("unapproved_channel", shortcut.channel_id)
+        raise ChannelRejected("unapproved_channel", shortcut.channel_id)

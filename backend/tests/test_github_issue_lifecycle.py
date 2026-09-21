@@ -385,19 +385,10 @@ def test_apply_issue_event_rejects_events_for_other_repositories(private_key: by
 
 def test_installation_lifecycle_client_calls(private_key: bytes) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        if (
-            request.method == "DELETE"
-            and request.url.path == "/user/installations/42/repositories/9001"
-        ):
-            assert request.headers["Authorization"] == "Bearer user-token"
-            return httpx.Response(204)
         if request.method == "DELETE" and request.url.path == "/app/installations/42":
             assert request.headers["Authorization"].startswith("Bearer ey")
             return httpx.Response(204)
         raise AssertionError(f"Unexpected request: {request.method} {request.url}")
 
     client = make_client(private_key, handler)
-    client.remove_installation_repository(
-        user_token="user-token", installation_id=42, repository_id=9001
-    )
     client.delete_installation(installation_id=42)

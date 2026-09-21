@@ -115,6 +115,11 @@ tasks:
     cmds:
       - uv run python scripts/check_slack_shortcut.py {{.CLI_ARGS}}
 
+  slack-issue26-check:
+    desc: Run the opt-in live Slack identity and delivery feasibility check
+    cmds:
+      - uv run python scripts/check_slack_issue26.py {{.CLI_ARGS}}
+
   slack-tunnel:
     desc: Open a cloudflared quick tunnel to a feasibility receiver (port, path)
     cmds:

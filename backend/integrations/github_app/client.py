@@ -185,16 +185,6 @@ class GitHubAppClient:
             json_body={"state": state},
         )
 
-    def remove_installation_repository(
-        self, *, user_token: str, installation_id: int, repository_id: int
-    ) -> None:
-        self._request(
-            "DELETE",
-            f"/user/installations/{installation_id}/repositories/{repository_id}",
-            token=user_token,
-            operation="installation repository removal",
-        )
-
     def delete_installation(self, *, installation_id: int) -> None:
         self._request(
             "DELETE",

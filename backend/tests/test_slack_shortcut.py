@@ -8,10 +8,10 @@ import pytest
 from slack_sdk.models.blocks import SectionBlock
 
 from integrations.slack import (
+    ChannelRejected,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
-    SourceRejected,
     SubmissionErrors,
     build_capture_modal,
     check_source_allowed,
@@ -198,7 +198,7 @@ def test_check_source_allowed_accepts_approved_channels() -> None:
 
 
 def test_check_source_allowed_rejects_dm_channel() -> None:
-    with pytest.raises(SourceRejected) as error:
+    with pytest.raises(ChannelRejected) as error:
         check_source_allowed(
             make_shortcut(channel_id="D0DM", channel_name=None),
             approved_channel_ids=frozenset({"C0PUBLIC"}),
@@ -209,7 +209,7 @@ def test_check_source_allowed_rejects_dm_channel() -> None:
 
 
 def test_check_source_allowed_rejects_unapproved_channel() -> None:
-    with pytest.raises(SourceRejected) as error:
+    with pytest.raises(ChannelRejected) as error:
         check_source_allowed(
             make_shortcut(channel_id="C0OTHER", channel_name="random"),
             approved_channel_ids=frozenset({"C0PUBLIC"}),
@@ -265,6 +265,18 @@ def test_modal_names_workspace_and_carries_opaque_context() -> None:
     assert view["private_metadata"] == CONTEXT_ID
 
 
+def test_first_link_modal_requests_the_product_code() -> None:
+    view = build_capture_modal(
+        make_shortcut(),
+        workspace_name="Feasibility A",
+        captured_on=date(2026, 9, 20),
+        context_id=CONTEXT_ID,
+        link_required=True,
+    )
+    code_input = block_by_id(view, "slack_link_code")
+    assert code_input["label"]["text"] == "Product linking code"
+
+
 def test_submission_resolves_identity_from_context_not_payload() -> None:
     seen: list[str] = []
 
@@ -288,6 +300,15 @@ def test_submission_records_context_identity() -> None:
     )
     assert submission.shortcut.team_id == "T0TEAM"
     assert submission.title == "Report title from fixture"
+
+
+def test_submission_carries_link_code_separately_from_report_fields() -> None:
+    payload = submission_payload(CONTEXT_ID)
+    payload["view"]["state"]["values"]["slack_link_code"] = {
+        "value": {"value": "link-code-fixture"}
+    }
+    submission = parse_capture_submission(payload, resolve_context=lambda _cid: make_shortcut())
+    assert submission.link_code == "link-code-fixture"
 
 
 def test_submission_rejects_unknown_context() -> None:

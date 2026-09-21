@@ -32,22 +32,23 @@ from slack_sdk import WebClient  # noqa: E402
 from slack_sdk.errors import SlackApiError  # noqa: E402
 
 from integrations.slack import (  # noqa: E402
+    ChannelRejected,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
-    SourceRejected,
     SubmissionErrors,
     build_capture_modal,
     check_source_allowed,
     parse_capture_submission,
     parse_message_shortcut,
+    slack_error_code,
     verify_slack_signature,
 )
 from live_check import receiver_of, required_environment  # noqa: E402
 from slack_capture_ledger import CaptureLedger  # noqa: E402
+from slack_live import check_granted_scopes  # noqa: E402
 
 INTERACTIONS_PATH = "/slack/interactions"
-PROPOSED_SCOPES = frozenset({"commands", "channels:read", "groups:read", "chat:write", "im:write"})
 CONTEXT_TTL_S = 15 * 60
 
 
@@ -166,7 +167,7 @@ class SlackReceiver(ThreadingHTTPServer):
             return 200, {}
         try:
             check_source_allowed(shortcut, approved_channel_ids=self.approved_channel_ids)
-        except SourceRejected as reject:
+        except ChannelRejected as reject:
             self.ledger.record_rejection(
                 reason=reject.reason,
                 channel_id=reject.channel_id,
@@ -191,7 +192,7 @@ class SlackReceiver(ThreadingHTTPServer):
         try:
             self.client.views_open(trigger_id=shortcut.trigger_id, view=view)
         except SlackApiError as error:
-            slack_error = slack_error_code(error.response.data)
+            slack_error = slack_error_code(error)
             print(f"views.open failed ({slack_error}); the capture is failed and not covered.")
             self.ledger.record_capture(
                 shortcut,
@@ -298,30 +299,6 @@ class SlackInteractionHandler(BaseHTTPRequestHandler):
         return
 
 
-def slack_error_code(data: dict[str, Any] | bytes) -> str | None:
-    """Pull the `error` code out of a Slack response body, which may be bytes."""
-    return data.get("error") if isinstance(data, dict) else None
-
-
-def check_scopes(client: WebClient) -> dict[str, Any]:
-    response = client.auth_test()
-    header_value = response.headers.get("x-oauth-scopes", "") if response.headers else ""
-    # Slack sends the scopes comma-separated, e.g. "commands,chat:write,channels:read".
-    granted = {scope.strip() for scope in header_value.split(",") if scope.strip()}
-    if granted != PROPOSED_SCOPES:
-        print("Slack reports these granted scopes:", sorted(granted))
-        raise SystemExit(
-            f"Granted scopes {sorted(granted)} are not exactly the proposed set "
-            f"{sorted(PROPOSED_SCOPES)}."
-        )
-    data = response.data if isinstance(response.data, dict) else {}
-    team_id = data.get("team_id")
-    bot_user_id = data.get("user_id")
-    print(f"Signed in as bot {bot_user_id} on team {team_id}.")
-    print(f"Granted scopes: {', '.join(sorted(granted))}")
-    return {"team_id": team_id, "bot_user_id": bot_user_id, "granted_scopes": sorted(granted)}
-
-
 def print_checklist(args: argparse.Namespace) -> None:
     print("Do this first, in another terminal, so the Request URL matches:")
     print(f"  cloudflared tunnel --url http://127.0.0.1:{args.receiver_port}")
@@ -346,7 +323,7 @@ def run(args: argparse.Namespace) -> None:
         "workspace": args.workspace,
         "started_at": utc_now(),
     }
-    evidence.update(check_scopes(client))
+    evidence.update(check_granted_scopes(client))
     receiver = SlackReceiver(
         listening_url,
         client=client,
