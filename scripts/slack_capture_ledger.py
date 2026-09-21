@@ -49,6 +49,7 @@ class CaptureLedger:
         self._lock = threading.Lock()
         self._captures: list[dict[str, Any]] = []
         self._rejections: list[dict[str, Any]] = []
+        self._retries: list[dict[str, Any]] = []
 
     def channel_kind(self, channel_id: str) -> str:
         if channel_id == self.public_channel:
@@ -115,11 +116,35 @@ class CaptureLedger:
                     capture["ack_ms"] = ack_ms
                     return
 
-    def record_rejection(self, *, reason: str, channel_id: str) -> None:
+    def record_rejection(
+        self, *, reason: str, channel_id: str, channel_name: str | None = None
+    ) -> None:
+        entry: dict[str, Any] = {
+            "reason": reason,
+            "channel_id": channel_id,
+            "text_retained": False,
+        }
+        if channel_name is not None:
+            entry["channel_name"] = channel_name
         with self._lock:
-            self._rejections.append(
-                {"reason": reason, "channel_id": channel_id, "text_retained": False}
+            self._rejections.append(entry)
+
+    def record_retry(
+        self, interaction_kind: str, *, retry_num: str, retry_reason: str | None
+    ) -> None:
+        """Record one verified interaction Slack flagged as a retry."""
+        with self._lock:
+            self._retries.append(
+                {
+                    "interaction": interaction_kind,
+                    "retry_num": retry_num,
+                    "retry_reason": retry_reason,
+                }
             )
+
+    def retries(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(retry) for retry in self._retries]
 
     def mark_submission(
         self, shortcut: MessageShortcut, *, committed: bool, forced: bool = False

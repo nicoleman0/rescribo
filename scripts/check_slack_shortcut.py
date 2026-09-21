@@ -119,7 +119,12 @@ class SlackReceiver(ThreadingHTTPServer):
         self._thread.join(timeout=5)
 
     def handle_interaction(
-        self, *, body: str, request_timestamp: str | None
+        self,
+        *,
+        body: str,
+        request_timestamp: str | None,
+        retry_num: str | None = None,
+        retry_reason: str | None = None,
     ) -> tuple[int, dict[str, Any]]:
         """Parse one verified interaction and answer with a response action.
 
@@ -133,6 +138,8 @@ class SlackReceiver(ThreadingHTTPServer):
         skew_s = time.time() - request_ts if request_ts is not None else None
         payload = json.loads(parse_qs(body).get("payload", ["{}"])[0])
         kind = payload.get("type")
+        if retry_num is not None:
+            self.ledger.record_retry(str(kind), retry_num=retry_num, retry_reason=retry_reason)
         if kind == "message_action":
             return self.handle_message_action(payload, skew_s=skew_s)
         if kind == "view_submission":
@@ -160,7 +167,11 @@ class SlackReceiver(ThreadingHTTPServer):
         try:
             check_source_allowed(shortcut, approved_channel_ids=self.approved_channel_ids)
         except SourceRejected as reject:
-            self.ledger.record_rejection(reason=reject.reason, channel_id=reject.channel_id)
+            self.ledger.record_rejection(
+                reason=reject.reason,
+                channel_id=reject.channel_id,
+                channel_name=shortcut.channel_name,
+            )
             print(f"Rejected source {reject.channel_id} ({reject.reason}); text not retained.")
             return 200, {}
         duplicate = self.ledger.is_duplicate(shortcut.source_key())
@@ -269,6 +280,8 @@ class SlackInteractionHandler(BaseHTTPRequestHandler):
             status, response = receiver.handle_interaction(
                 body=body.decode("utf-8"),
                 request_timestamp=self.headers.get("X-Slack-Request-Timestamp"),
+                retry_num=self.headers.get("X-Slack-Retry-Num"),
+                retry_reason=self.headers.get("X-Slack-Retry-Reason"),
             )
         except Exception:
             self.send_error(500)
@@ -293,7 +306,8 @@ def slack_error_code(data: dict[str, Any] | bytes) -> str | None:
 def check_scopes(client: WebClient) -> dict[str, Any]:
     response = client.auth_test()
     header_value = response.headers.get("x-oauth-scopes", "") if response.headers else ""
-    granted = {scope for scope in header_value.split() if scope}
+    # Slack sends the scopes comma-separated, e.g. "commands,chat:write,channels:read".
+    granted = {scope.strip() for scope in header_value.split(",") if scope.strip()}
     if granted != PROPOSED_SCOPES:
         print("Slack reports these granted scopes:", sorted(granted))
         raise SystemExit(
@@ -362,6 +376,7 @@ def run(args: argparse.Namespace) -> None:
 
     evidence["rejections"] = ledger.rejections()
     evidence["captures"] = ledger.sanitised_captures()
+    evidence["observed_retries"] = ledger.retries()
     evidence["coverage_complete"] = ledger.complete(require_forced_error=args.fail_first_submission)
     evidence["finished_at"] = utc_now()
     output = json.dumps(evidence, indent=2, sort_keys=True)

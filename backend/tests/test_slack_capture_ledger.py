@@ -204,6 +204,28 @@ def test_rejections_record_that_text_was_not_retained() -> None:
     ]
 
 
+def test_rejection_records_the_channel_name_slack_supplied() -> None:
+    ledger = make_ledger()
+    ledger.record_rejection(
+        reason="direct_message", channel_id="D0DM", channel_name="directmessage"
+    )
+    assert ledger.rejections()[0]["channel_name"] == "directmessage"
+
+
+def test_retries_default_to_none_observed() -> None:
+    assert make_ledger().retries() == []
+
+
+def test_record_retry_keeps_the_headers_slack_sent() -> None:
+    ledger = make_ledger()
+    ledger.record_retry("message_action", retry_num="1", retry_reason="http_timeout")
+    ledger.record_retry("view_submission", retry_num="2", retry_reason=None)
+    assert ledger.retries() == [
+        {"interaction": "message_action", "retry_num": "1", "retry_reason": "http_timeout"},
+        {"interaction": "view_submission", "retry_num": "2", "retry_reason": None},
+    ]
+
+
 def test_outstanding_lists_what_the_operator_still_has_to_do() -> None:
     ledger = make_ledger()
     outstanding = ledger.outstanding(require_forced_error=True)
