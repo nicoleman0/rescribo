@@ -77,9 +77,9 @@ class SlackReceiver(ThreadingHTTPServer):
 
     Interaction requests are signature-verified against the raw body on the
     HTTP thread, then handled inline so the acknowledgement deadline applies to
-    the actual work. Threading matters: Slack retries any interaction not
-    answered within three seconds, so a blocked handler would only guarantee
-    the retry.
+    the actual work. Threading matters: a slow `views.open` for one
+    interaction must not hold another interaction's acknowledgement past
+    Slack's three-second deadline.
     """
 
     def __init__(

@@ -54,7 +54,7 @@ task slack-shortcut-check -- \
 What the check does, in order:
 
 1. Verifies the bot token with `auth.test` and asserts that the granted scopes are exactly the five proposed. Anything else fails the check before a request is served.
-2. Starts a threading loopback receiver. Threading is required because Slack retries any interaction that is not answered within three seconds; a single-threaded handler would queue a retry behind a slow `views.open`.
+2. Starts a threading loopback receiver, so a slow `views.open` for one interaction cannot hold another interaction's acknowledgement past Slack's three-second deadline.
 3. Waits for interaction requests. Every request's signature and timestamp are verified against the raw body before parsing; bad signatures answer 401.
 4. Per `message_action` shortcut: the source channel is checked against the operator-supplied allowlist. Rejections (DM or unapproved channel) are recorded with `text_retained: false` and the message text is dropped without being copied anywhere. Approved shortcuts mint an opaque context id, build the capture modal, call `views.open` inside the acknowledgement window, and answer 200. A duplicate capture inside one run is recorded as `duplicate: true`, not counted as new coverage.
 5. Per `view_submission`: the context id is resolved against the in-memory store (15-minute TTL), the submission is parsed, and the modal is closed with `response_action: clear` on success or `response_action: errors` on visible failure. The context is consumed only once a submission commits, so a visible error can be corrected and resubmitted in the same modal. With `--fail-first-submission` one submission is forced onto the error path, proving a failure returns a visible error rather than a success acknowledgement.
@@ -64,8 +64,8 @@ The sanitised result is written to `.cache/slack-shortcut-result.json`. It conta
 
 ## Expected observations to record
 
-- Observed `ack_ms` and `views_open_ms` against Slack's three-second acknowledgement deadline, and how much headroom is lost through the cloudflared tunnel. If `ack_ms` is marginal, record the number as a Milestone A finding for issue #8 rather than tuning around it; measuring it is the point of this check.
-- Whether the `message` object on a thread reply carries `thread_ts`, and whether Slack sets `thread_ts` on root messages (it should not).
+- Observed `ack_ms` and `views_open_ms` against Slack's three-second acknowledgement deadline. Both are measured inside the receiver, so cloudflared tunnel transit is not included. If `ack_ms` is marginal, record the number as a Milestone A finding for issue #8 rather than tuning around it; measuring it is the point of this check.
+- Whether the `message` object on a thread reply carries `thread_ts`. A thread parent carries `thread_ts` equal to its own `ts` ([retrieving messages](https://docs.slack.dev/messaging/retrieving-messages/)), so it classifies as root; the result records only the classification.
 - The exact `channel` shape for a DM interaction payload: the channel id prefix (`D...`) and the channel `name` Slack supplies. Both are recorded on the rejection entry in the result file.
-- Whether Slack retries an interaction that responds slowly, and which headers distinguish a retry. Retried requests land in `observed_retries` with their `X-Slack-Retry-Num` and `X-Slack-Retry-Reason` values; an empty list means Slack sent no retry during the run.
+- Whether Slack retries an interaction that responds slowly, and which headers distinguish a retry. Retried requests land in `observed_retries` with their `X-Slack-Retry-Num` and `X-Slack-Retry-Reason` values; an empty list means Slack sent no retry during the run. The check never answers slowly on purpose, so an empty list does not show whether Slack retries slow interactions.
 - The `x-oauth-scopes` header value actually granted by `auth.test` versus the scopes the manifest requests.
