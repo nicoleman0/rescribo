@@ -12,3 +12,4 @@
 - Database changes require migrations. Cross-workspace access checks belong in both application code and tests.
 - Use real services for integration checks. Distinguish mocked tests from live provider verification.
 - This scaffold is local development infrastructure, not a production deployment.
+- Frontend visual rules and shared component ownership are documented in [frontend/DESIGN.md](frontend/DESIGN.md).

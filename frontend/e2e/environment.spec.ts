@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test'
 test('browser reaches the real backend and dependencies through the dev proxy', async ({
   page,
 }) => {
-  await page.goto('/')
+  await page.goto('/dev/status')
   await expect(
     page.getByRole('heading', { name: 'Feedback inbox' }),
   ).toBeVisible()

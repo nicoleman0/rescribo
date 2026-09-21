@@ -1,41 +1,86 @@
-import { useQuery } from '@tanstack/react-query'
-import { getReadiness } from './api/health'
-import './App.css'
+import { lazy, Suspense } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { AppShell } from '@/components/layout/app-shell'
+import { EmptyState } from '@/components/states/async-states'
+import { DevelopmentStatusPage } from '@/pages/development-status-page'
+
+const UiGalleryPage = import.meta.env.DEV
+  ? lazy(() => import('@/dev/ui-gallery'))
+  : undefined
+
+const productRoutes = [
+  {
+    path: 'inbox',
+    title: 'Inbox',
+    description: 'Customer reports will appear here once intake is connected.',
+  },
+  {
+    path: 'problems',
+    title: 'Problems',
+    description: 'Track recurring problems and their engineering work here.',
+  },
+  {
+    path: 'follow-ups',
+    title: 'Follow-ups',
+    description: 'Approved customer follow-ups will be managed here.',
+  },
+  {
+    path: 'settings',
+    title: 'Settings',
+    description:
+      'Workspace connections and membership settings will live here.',
+  },
+] as const
+
+function PlaceholderPage({
+  title,
+  description,
+}: (typeof productRoutes)[number]) {
+  return (
+    <EmptyState
+      title={`${title} is ready for its feature issue`}
+      description={description}
+    />
+  )
+}
 
 export default function App() {
-  const health = useQuery({
-    queryKey: ['readiness'],
-    queryFn: getReadiness,
-    retry: false,
-  })
   return (
-    <main>
-      <p className="eyebrow">Development workspace</p>
-      <h1>Feedback inbox</h1>
-      <p>
-        Customer reports, engineering work, and the people waiting for an
-        answer.
-      </p>
-      <section aria-labelledby="environment-heading">
-        <h2 id="environment-heading">Environment</h2>
-        <p role="status">
-          {health.isPending
-            ? 'Checking services…'
-            : health.isError
-              ? 'Services unavailable. Start the API, PostgreSQL, and Redis.'
-              : 'API, PostgreSQL, and Redis are ready.'}
-        </p>
-        <button
-          onClick={() => void health.refetch()}
-          disabled={health.isFetching}
-        >
-          Check again
-        </button>
-      </section>
-      <p className="note">
-        Product workflows are not built yet. This page checks the development
-        services.
-      </p>
-    </main>
+    <Routes>
+      <Route path="/dev/status" element={<DevelopmentStatusPage />} />
+      {UiGalleryPage ? (
+        <Route
+          path="/dev/ui"
+          element={
+            <AppShell>
+              <Suspense fallback={<p>Loading gallery…</p>}>
+                <UiGalleryPage />
+              </Suspense>
+            </AppShell>
+          }
+        />
+      ) : null}
+      <Route element={<AppShell />}>
+        <Route path="/" element={<Navigate replace to="/inbox" />} />
+        {productRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={<PlaceholderPage {...route} />}
+          />
+        ))}
+      </Route>
+      <Route
+        path="*"
+        element={
+          <main className="grid min-h-svh place-items-center p-6">
+            <EmptyState
+              title="Page not found"
+              description="The page you requested does not exist."
+            />
+          </main>
+        }
+      />
+    </Routes>
   )
 }

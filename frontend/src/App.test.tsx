@@ -1,12 +1,12 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
-import App from './App'
+import { DevelopmentStatusPage } from './pages/development-status-page'
 
 function renderApp() {
   return render(
     <QueryClientProvider client={new QueryClient()}>
-      <App />
+      <DevelopmentStatusPage />
     </QueryClientProvider>,
   )
 }

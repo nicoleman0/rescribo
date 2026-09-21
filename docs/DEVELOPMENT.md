@@ -45,3 +45,14 @@ The environment includes Slack SDK, HTTPX, and cryptography dependencies for the
 The readiness test uses real PostgreSQL and Redis. Failure tests inject dependency errors and assert that responses do not expose internals. Component tests isolate browser presentation. Playwright checks the real browser -> Vite proxy -> Django -> PostgreSQL/Redis path. The worker smoke script exercises Redis and an actual worker separately.
 
 This environment does not implement the full MVP's tenant isolation, durable operations, provider authentication, AI evaluation, or production hardening. Those requirements remain in the spec and must be tested with their corresponding features.
+
+## Frontend screenshots
+
+The UI foundation screenshot baselines are generated with Playwright Chromium
+on the development macOS host at 1280px desktop and 375px mobile widths.
+Update them only after reviewing the rendered shell and gallery at both sizes:
+
+```sh
+cd frontend
+npx playwright test e2e/ui-foundation.spec.ts --update-snapshots
+```
