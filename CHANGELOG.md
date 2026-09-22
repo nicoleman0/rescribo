@@ -6,6 +6,7 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- Workspace-scoped report and problem domain with provenance, transitions, row versions, and content-free activity (#7).
 - Workspace accounts and sessions: sign-in, sign-out, invitations, memberships, owner and member roles, and one-use password resets (#37).
 - `task bootstrap-owner` creates the first workspace owner. `task issue-owner-recovery` issues an owner recovery link or sets a password (#37).
 - Sign-in, invitation acceptance, and password reset pages in the frontend (#37).

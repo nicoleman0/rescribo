@@ -6,6 +6,7 @@
 backend/config/       Django settings, routes, ASGI/WSGI, Celery bootstrap
 backend/health/       Dependency checks and worker smoke task
 backend/tests/        Backend tests
+backend/feedback/     Workspace-scoped reports, problems, and activity
 frontend/src/api/     API calls and generated TypeScript contract
 frontend/src/test/    Component test setup
 frontend/e2e/         Browser tests against the real local API
@@ -13,13 +14,17 @@ scripts/              Local bootstrap and service verification
 docs/MVP_SPEC.md      Product scope, architecture, and acceptance criteria
 ```
 
-Business modules will be added as their workflows are implemented. The spec defines their responsibilities; empty placeholder applications are not needed to establish the boundaries.
+Other business modules will be added as their workflows are implemented. The spec defines their responsibilities; empty placeholder applications are not needed to establish the boundaries.
 
 ## Accounts boundary
 
 `accounts.tokens` owns framework-free secret generation, digest checks, and expiry. `accounts.services` owns transactions and invariants. HTTP views and Celery tasks pass an explicitly resolved active `Membership` to every mutating use case; they never pass a bare user or workspace ID. Workspace permissions resolve membership on each request and hide foreign workspaces with 404. Workers must resolve and pass the actor membership too.
 
 Use management commands for reading or writing product rows. Use `scripts/` CLIs for credential handling and provider checks that do not use the product ORM. Sessions remain in PostgreSQL. Membership is rechecked per workspace request; `session_generation` revokes all sessions after password changes or the last membership is revoked. Browser writes use CSRF tokens; `SameSite=Lax` applies to both session and CSRF cookies.
+
+## Feedback boundary
+
+`feedback` owns report and problem records, transitions, provenance, and activity. Mutations take a resolved active `Membership`, scope reads and references to its workspace, and check row versions under a transaction. HTTP handlers and workers should call these use cases. Activity metadata records field names and state or ID changes, not customer content.
 
 ## Shared contracts
 
