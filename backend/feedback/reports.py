@@ -9,6 +9,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import Membership
+from feedback.errors import AlreadyLinked, NoChanges, TitleRequired
 from feedback.models import Activity, Problem, Report, ReportSource
 from feedback.services import (
     finish_mutation,
@@ -36,17 +37,13 @@ class ReportChanges:
     affected_version: str | None = None
 
 
-class AlreadyLinked(Exception):
-    reason = "already_linked"
-
-
 def submit_report(
     *, actor: Membership, submission: ReportSubmission, now: datetime | None = None
 ) -> SubmitResult:
     current = now or timezone.now()
     title = submission.title.strip()
     if not title:
-        raise ValueError("title_required")
+        raise TitleRequired()
     source = submission.source
     if source is not None and source.kind != ReportSource.Kind.SLACK:
         raise ValueError("invalid_source_kind")
@@ -127,12 +124,12 @@ def update_report(
                 if item.name == "title":
                     value = value.strip()
                     if not value:
-                        raise ValueError("title_required")
+                        raise TitleRequired()
                 if getattr(report, item.name) != value:
                     setattr(report, item.name, value)
                     changed.append(item.name)
         if not changed:
-            raise ValueError("no_changes")
+            raise NoChanges()
         finish_mutation(row=report, now=current, update_fields=changed)
         write_activity(
             actor=actor,
@@ -161,7 +158,7 @@ def assign_report(
             actor=actor, model=Membership, reference_id=assignee_id, field="assignee"
         )
         if report.assignee_id == (assignee.pk if assignee else None):
-            raise ValueError("no_changes")
+            raise NoChanges()
         previous = report.assignee_id
         report.assignee = assignee
         finish_mutation(row=report, now=current, update_fields=["assignee"])
@@ -195,7 +192,7 @@ def link_report(
             actor=actor, model=Problem, reference_id=problem_id, field="problem"
         )
         if report.problem_id == problem.pk:
-            raise AlreadyLinked
+            raise AlreadyLinked()
         to_state = check_report_transition(action="link", from_state=report.triage_state)
         previous = report.problem_id
         report.problem = problem

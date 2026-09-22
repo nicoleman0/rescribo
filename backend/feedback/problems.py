@@ -8,6 +8,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import Membership
+from feedback.errors import NoChanges, ReasonRequired, TitleRequired
 from feedback.models import Activity, Problem
 from feedback.services import (
     finish_mutation,
@@ -17,10 +18,6 @@ from feedback.services import (
     write_activity,
 )
 from feedback.transitions import check_fix_confirmation_transition, check_problem_transition
-
-
-class ReasonRequired(ValueError):
-    reason = "reason_required"
 
 
 @dataclass(frozen=True)
@@ -40,7 +37,7 @@ def create_problem(
     current = now or timezone.now()
     clean_title = title.strip()
     if not clean_title:
-        raise ValueError("title_required")
+        raise TitleRequired()
     with transaction.atomic():
         owner = validate_reference(
             actor=actor, model=Membership, reference_id=owner_id, field="owner"
@@ -82,12 +79,12 @@ def update_problem(
                 if item.name == "title":
                     value = value.strip()
                     if not value:
-                        raise ValueError("title_required")
+                        raise TitleRequired()
                 if getattr(problem, item.name) != value:
                     setattr(problem, item.name, value)
                     changed.append(item.name)
         if not changed:
-            raise ValueError("no_changes")
+            raise NoChanges()
         finish_mutation(row=problem, now=current, update_fields=changed)
         write_activity(
             actor=actor,
@@ -116,7 +113,7 @@ def assign_problem_owner(
             actor=actor, model=Membership, reference_id=owner_id, field="owner"
         )
         if problem.owner_id == (owner.pk if owner else None):
-            raise ValueError("no_changes")
+            raise NoChanges()
         problem.owner = owner
         finish_mutation(row=problem, now=current, update_fields=["owner"])
         write_activity(
@@ -145,7 +142,7 @@ def change_problem_state(
         require_version(row=problem, expected_version=expected_version)
         next_state = check_problem_transition(action=action, from_state=problem.state)
         if action == "decline" and not reason.strip():
-            raise ReasonRequired("reason_required")
+            raise ReasonRequired()
         problem.state = next_state
         update_fields = ["state"]
         if action == "decline":

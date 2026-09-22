@@ -5,10 +5,20 @@ import pytest
 from builders import make_membership, make_report, make_user, make_workspace
 from django.utils import timezone
 
-from feedback.models import Activity, Problem
+from accounts.models import Membership
+from feedback.errors import (
+    AlreadyLinked,
+    InvalidReference,
+    InvalidTransition,
+    NoChanges,
+    NotFound,
+    ReasonRequired,
+    TitleRequired,
+    VersionConflict,
+)
+from feedback.models import Activity, Problem, Report
 from feedback.problems import (
     ProblemChanges,
-    ReasonRequired,
     assign_problem_owner,
     change_problem_state,
     confirm_fix,
@@ -16,7 +26,6 @@ from feedback.problems import (
     update_problem,
 )
 from feedback.reports import (
-    AlreadyLinked,
     ReportChanges,
     assign_report,
     dismiss_report,
@@ -26,9 +35,7 @@ from feedback.reports import (
     unlink_report,
     update_report,
 )
-from feedback.services import InvalidReference, VersionConflict
 from feedback.submissions import ReportSubmission, SourceSnapshot
-from feedback.transitions import InvalidTransition
 
 pytestmark = pytest.mark.django_db
 
@@ -56,6 +63,16 @@ def test_submit_manual_creates_provenance_and_content_free_activity() -> None:
     assert activity.created_at == now and activity.metadata == {}
 
 
+def test_missing_title_raises_title_required() -> None:
+    actor = make_membership()
+    with pytest.raises(TitleRequired) as report_error:
+        submit_report(actor=actor, submission=submission(title="   "))
+    assert report_error.value.reason == "title_required"
+    with pytest.raises(TitleRequired) as problem_error:
+        create_problem(actor=actor, title="   ")
+    assert problem_error.value.reason == "title_required"
+
+
 def test_duplicate_source_returns_existing_without_changes_or_activity() -> None:
     actor = make_membership()
     first = submit_report(actor=actor, submission=submission(source=slack_source()))
@@ -79,7 +96,7 @@ def test_duplicate_source_recovers_after_concurrent_insert() -> None:
     existing_source = reports._existing_source
     calls = 0
 
-    def miss_once(*, actor, source):
+    def miss_once(*, actor: Membership, source: SourceSnapshot) -> Report | None:
         nonlocal calls
         calls += 1
         if calls == 1:
@@ -204,7 +221,7 @@ def test_declining_not_planned_problem_checks_transition_before_reason() -> None
 def test_problem_title_whitespace_only_update_is_no_changes() -> None:
     actor = make_membership()
     problem = create_problem(actor=actor, title="Same")
-    with pytest.raises(ValueError, match="no_changes"):
+    with pytest.raises(NoChanges) as error:
         update_problem(
             actor=actor,
             problem_id=problem.pk,
@@ -213,12 +230,13 @@ def test_problem_title_whitespace_only_update_is_no_changes() -> None:
         )
     problem.refresh_from_db()
     assert problem.version == 1
+    assert error.value.reason == "no_changes"
 
 
 def test_report_title_whitespace_only_update_is_no_changes() -> None:
     actor = make_membership()
     report = make_report(actor=actor, title="Same")
-    with pytest.raises(ValueError, match="no_changes"):
+    with pytest.raises(NoChanges) as error:
         update_report(
             actor=actor,
             report_id=report.pk,
@@ -227,6 +245,7 @@ def test_report_title_whitespace_only_update_is_no_changes() -> None:
         )
     report.refresh_from_db()
     assert report.version == 1
+    assert error.value.reason == "no_changes"
 
 
 def test_problem_owner_can_be_cleared_and_cross_workspace_owner_is_rejected() -> None:
@@ -303,8 +322,21 @@ def test_cross_workspace_rows_and_references_are_hidden() -> None:
             actor=actor_a, problem_id=foreign_problem.pk, expected_version=1, action="start"
         ),
     ):
-        with pytest.raises(LookupError):
+        with pytest.raises(NotFound):
             operation()
+    with pytest.raises(NotFound) as report_error:
+        update_report(
+            actor=actor_a,
+            report_id=foreign_report.pk,
+            expected_version=1,
+            changes=ReportChanges(title="Hidden"),
+        )
+    assert report_error.value.record == "report"
+    with pytest.raises(NotFound) as problem_error:
+        change_problem_state(
+            actor=actor_a, problem_id=foreign_problem.pk, expected_version=1, action="start"
+        )
+    assert problem_error.value.record == "problem"
     own_report = make_report(actor=actor_a)
     with pytest.raises(InvalidReference) as assignee_error:
         assign_report(

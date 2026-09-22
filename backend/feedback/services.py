@@ -7,23 +7,8 @@ from uuid import UUID
 from django.utils import timezone
 
 from accounts.models import Membership
+from feedback.errors import InvalidReference, NotFound, VersionConflict
 from feedback.models import Activity, Problem, Report
-
-
-class VersionConflict(Exception):
-    reason = "version_conflict"
-
-    def __init__(self, *, current: Report | Problem) -> None:
-        self.current = current
-        super().__init__(self.reason)
-
-
-class InvalidReference(ValueError):
-    reason = "invalid_reference"
-
-    def __init__(self, *, field: str) -> None:
-        self.field = field
-        super().__init__(self.reason)
 
 
 def validate_reference(
@@ -66,7 +51,7 @@ def locked_report(*, actor: Membership, report_id: UUID) -> Report:
             pk=report_id, workspace_id=actor.workspace_id
         )
     except Report.DoesNotExist as error:
-        raise LookupError("report_not_found") from error
+        raise NotFound(record="report") from error
 
 
 def locked_problem(*, actor: Membership, problem_id: UUID) -> Problem:
@@ -75,7 +60,7 @@ def locked_problem(*, actor: Membership, problem_id: UUID) -> Problem:
             pk=problem_id, workspace_id=actor.workspace_id
         )
     except Problem.DoesNotExist as error:
-        raise LookupError("problem_not_found") from error
+        raise NotFound(record="problem") from error
 
 
 def require_version(*, row: Report | Problem, expected_version: int) -> None:

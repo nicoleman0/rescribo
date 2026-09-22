@@ -2,10 +2,10 @@ from collections.abc import Callable
 
 import pytest
 
+from feedback.errors import InvalidTransition
 from feedback.transitions import (
     PROBLEM_TRANSITIONS,
     REPORT_TRANSITIONS,
-    InvalidTransition,
     check_fix_confirmation_transition,
     check_problem_transition,
     check_report_transition,

@@ -1,5 +1,7 @@
 """Framework-free report and problem transition rules."""
 
+from feedback.errors import InvalidTransition
+
 REPORT_TRANSITIONS: dict[str, tuple[frozenset[str], str]] = {
     "link": (frozenset({"new", "linked"}), "linked"),
     "unlink": (frozenset({"linked"}), "new"),
@@ -15,15 +17,6 @@ PROBLEM_TRANSITIONS: dict[str, tuple[frozenset[str], str]] = {
 }
 
 FIX_CONFIRMATION_TRANSITION = (frozenset({"open", "in_progress"}), "fix_available")
-
-
-class InvalidTransition(Exception):
-    reason = "invalid_transition"
-
-    def __init__(self, *, action: str, from_state: str) -> None:
-        self.action = action
-        self.from_state = from_state
-        super().__init__(self.reason)
 
 
 def check_report_transition(*, action: str, from_state: str) -> str:
