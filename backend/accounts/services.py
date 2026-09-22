@@ -17,6 +17,7 @@ from accounts.tokens import (
     PASSWORD_RESET_LIFETIME,
     TokenError,
     check_token,
+    digest,
     issue_token,
 )
 
@@ -40,32 +41,6 @@ class SessionView:
 
 class LastActiveOwner(Exception):
     reason = "last_active_owner"
-
-
-def bootstrap_workspace_owner(
-    *,
-    email: str,
-    full_name: str,
-    password: str,
-    workspace_name: str,
-    workspace_slug: str,
-    now: datetime | None = None,
-) -> tuple[Workspace, User, Membership]:
-    current = now or timezone.now()
-    with transaction.atomic():
-        if Workspace.objects.filter(slug=workspace_slug).exists():
-            raise ValueError("workspace_exists")
-        workspace = Workspace.objects.create(
-            name=workspace_name, slug=workspace_slug, created_at=current
-        )
-        user_model = get_user_model()
-        user = user_model.objects.create_user(
-            email=email, full_name=full_name, password=password, date_joined=current
-        )
-        membership = Membership.objects.create(
-            workspace=workspace, user=user, role=Membership.Role.OWNER, created_at=current
-        )
-    return workspace, user, membership
 
 
 def bootstrap_owner(
@@ -133,15 +108,22 @@ def resolve_active_membership(*, user: User, workspace_id: UUID | str) -> Member
 
 
 def require_remaining_active_owner(*, actor: Membership, target: Membership) -> None:
-    if target.role != Membership.Role.OWNER or not target.is_active:
-        return
     with transaction.atomic():
-        others = (
-            Membership.objects.select_for_update()
-            .filter(workspace_id=actor.workspace_id, role=Membership.Role.OWNER, is_active=True)
-            .exclude(pk=target.pk)
+        # A workspace lock gives every owner change the same lock order.
+        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        locked_target = Membership.objects.select_for_update().get(pk=target.pk)
+        is_last_owner = (
+            locked_target.role == Membership.Role.OWNER
+            and locked_target.is_active
+            and not Membership.objects.filter(
+                workspace_id=actor.workspace_id,
+                role=Membership.Role.OWNER,
+                is_active=True,
+            )
+            .exclude(pk=locked_target.pk)
+            .exists()
         )
-        if not others.exists():
+        if is_last_owner:
             raise LastActiveOwner
 
 
@@ -158,6 +140,9 @@ def operator_set_owner_password(*, actor: Membership, password: str) -> None:
         rejected.messages = error.messages
         raise rejected from error
     with transaction.atomic():
+        PasswordReset.objects.filter(
+            user=user, used_at__isnull=True, revoked_at__isnull=True
+        ).update(revoked_at=timezone.now())
         user.set_password(password)
         user.session_generation += 1
         user.save(update_fields=["password", "session_generation"])
@@ -190,12 +175,8 @@ def create_invitation(
 
 def preview_invitation(*, secret: str, now: datetime | None = None) -> dict[str, str]:
     current = now or timezone.now()
-    from hashlib import sha256
-
     invitation = (
-        Invitation.objects.filter(token_digest=sha256(secret.encode()).hexdigest())
-        .select_related("workspace")
-        .first()
+        Invitation.objects.filter(token_digest=digest(secret)).select_related("workspace").first()
     )
     if invitation is None:
         return {"status": "unknown"}
@@ -204,7 +185,7 @@ def preview_invitation(*, secret: str, now: datetime | None = None) -> dict[str,
             secret=secret,
             digest=invitation.token_digest,
             expires_at=invitation.expires_at,
-            used=bool(invitation.used_at),
+            used=bool(invitation.used_at or invitation.revoked_at),
             now=current,
         )
     except TokenError as error:
@@ -225,13 +206,9 @@ def accept_invitation(
     now: datetime | None = None,
 ) -> User:
     current = now or timezone.now()
-    from hashlib import sha256
-
     with transaction.atomic():
         invitation = (
-            Invitation.objects.select_for_update()
-            .filter(token_digest=sha256(secret.encode()).hexdigest())
-            .first()
+            Invitation.objects.select_for_update().filter(token_digest=digest(secret)).first()
         )
         if invitation is None:
             raise TokenError("invalid_token")
@@ -293,14 +270,21 @@ def revoke_membership(
             revoke_all_sessions(user=target.user)
 
 
+def revoke_invitation(*, workspace_id: UUID | str, invitation_id: UUID | str) -> None:
+    count = Invitation.objects.filter(
+        pk=invitation_id, workspace_id=workspace_id, used_at__isnull=True, revoked_at__isnull=True
+    ).update(revoked_at=timezone.now())
+    if not count:
+        raise LookupError("invitation_not_found")
+
+
 def change_membership_role(*, actor: Membership, target: Membership, role: str) -> None:
     if target.workspace_id != actor.workspace_id:
         raise LookupError("membership_not_found")
     if role not in Membership.Role.values:
         raise ValueError("Unknown membership role.")
     with transaction.atomic():
-        if role == Membership.Role.MEMBER:
-            require_remaining_active_owner(actor=actor, target=target)
+        require_remaining_active_owner(actor=actor, target=target)
         target = Membership.objects.select_for_update().get(pk=target.pk)
         target.role = role
         target.save(update_fields=["role"])
@@ -317,7 +301,13 @@ def create_password_reset(
     issued = issue_token(now=current, lifetime=PASSWORD_RESET_LIFETIME)
     if target.workspace_id != actor.workspace_id:
         raise LookupError("membership_not_found")
+    if not issued_by_operator:
+        if not owner_may_reset_membership(target=target):
+            raise LookupError("membership_not_found")
     with transaction.atomic():
+        PasswordReset.objects.filter(
+            user=target.user, used_at__isnull=True, revoked_at__isnull=True
+        ).update(revoked_at=current)
         reset = PasswordReset.objects.create(
             user=target.user,
             workspace_id=actor.workspace_id,
@@ -329,10 +319,17 @@ def create_password_reset(
     return reset, issued.secret
 
 
-def preview_password_reset(*, secret: str, now: datetime | None = None) -> dict[str, str]:
-    from hashlib import sha256
+def owner_may_reset_membership(*, target: Membership) -> bool:
+    return (
+        target.is_active
+        and target.user.is_active
+        and target.role == Membership.Role.MEMBER
+        and Membership.objects.filter(user=target.user, is_active=True).count() == 1
+    )
 
-    reset = PasswordReset.objects.filter(token_digest=sha256(secret.encode()).hexdigest()).first()
+
+def preview_password_reset(*, secret: str, now: datetime | None = None) -> dict[str, str]:
+    reset = PasswordReset.objects.filter(token_digest=digest(secret)).first()
     if reset is None:
         return {"status": "unknown"}
     try:
@@ -349,13 +346,11 @@ def preview_password_reset(*, secret: str, now: datetime | None = None) -> dict[
 
 
 def redeem_password_reset(*, secret: str, password: str, now: datetime | None = None) -> User:
-    from hashlib import sha256
-
     current = now or timezone.now()
     with transaction.atomic():
         reset = (
             PasswordReset.objects.select_for_update()
-            .filter(token_digest=sha256(secret.encode()).hexdigest())
+            .filter(token_digest=digest(secret))
             .select_related("user")
             .first()
         )
@@ -368,6 +363,17 @@ def redeem_password_reset(*, secret: str, password: str, now: datetime | None = 
             used=bool(reset.used_at or reset.revoked_at),
             now=current,
         )
+        if reset.issued_by_operator:
+            eligible = (
+                reset.user.is_active and reset.user.memberships.filter(is_active=True).exists()
+            )
+        else:
+            membership = Membership.objects.filter(
+                user=reset.user, workspace_id=reset.workspace_id, is_active=True
+            ).first()
+            eligible = membership is not None and owner_may_reset_membership(target=membership)
+        if not eligible:
+            raise TokenError("invalid_token")
         try:
             validate_password(password, reset.user)
         except ValidationError as error:
@@ -377,6 +383,9 @@ def redeem_password_reset(*, secret: str, password: str, now: datetime | None = 
         reset.user.set_password(password)
         reset.user.session_generation += 1
         reset.user.save(update_fields=["password", "session_generation"])
+        PasswordReset.objects.filter(
+            user=reset.user, used_at__isnull=True, revoked_at__isnull=True
+        ).update(revoked_at=current)
         reset.used_at = current
         reset.save(update_fields=["used_at"])
         return reset.user

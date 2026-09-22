@@ -13,6 +13,7 @@ export function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
+  const [previewError, setPreviewError] = useState('')
   const navigate = useNavigate()
   const cache = useQueryClient()
   useEffect(() => {
@@ -21,6 +22,7 @@ export function ResetPasswordPage() {
         apiRequest<{ status: string }>('password-resets/preview/', { token }),
       )
       .then((value) => setValid(value.status === 'valid'))
+      .catch((reason: Error) => setPreviewError(reason.message))
   }, [token])
   const redeem = useMutation({
     mutationFn: async () => {
@@ -45,7 +47,11 @@ export function ResetPasswordPage() {
     <AuthLayout>
       <h1 className="mb-5 text-xl font-semibold">Reset password</h1>
       {valid === null ? (
-        <p role="status">Checking reset link…</p>
+        previewError ? (
+          <p role="alert">{previewError}</p>
+        ) : (
+          <p role="status">Checking reset link…</p>
+        )
       ) : !valid ? (
         <p role="status">
           This reset link has expired or is no longer available.

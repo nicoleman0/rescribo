@@ -30,18 +30,22 @@ class TokenError(Exception):
 
 def issue_token(*, now: datetime, lifetime: timedelta) -> IssuedToken:
     secret = secrets.token_urlsafe(32)
-    return IssuedToken(secret, hashlib.sha256(secret.encode()).hexdigest(), now + lifetime)
+    return IssuedToken(secret, digest(secret), now + lifetime)
 
 
-def matches(*, secret: str, digest: str) -> bool:
-    candidate = hashlib.sha256(secret.encode()).hexdigest()
-    return hmac.compare_digest(candidate, digest)
+def digest(secret: str) -> str:
+    return hashlib.sha256(secret.encode()).hexdigest()
+
+
+def matches(*, secret: str, expected_digest: str) -> bool:
+    candidate = digest(secret)
+    return hmac.compare_digest(candidate, expected_digest)
 
 
 def check_token(
     *, secret: str, digest: str, expires_at: datetime, used: bool, now: datetime
 ) -> None:
-    if not matches(secret=secret, digest=digest):
+    if not matches(secret=secret, expected_digest=digest):
         raise TokenError("invalid_token")
     if used:
         raise TokenError("invitation_already_used")

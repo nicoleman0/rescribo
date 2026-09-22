@@ -630,7 +630,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenPreview"];
                 };
             };
-            429: {
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -663,7 +663,7 @@ export interface operations {
                     "application/json": components["schemas"]["TokenPreview"];
                 };
             };
-            429: {
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -6,6 +6,7 @@ from argparse import ArgumentParser
 from typing import Any
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.management.base import BaseCommand, CommandError
 
 from accounts.models import Workspace
@@ -50,5 +51,13 @@ class Command(BaseCommand):
                 add_owner=bool(options["add_owner"]),
             )
         except ValueError as error:
-            raise CommandError("Workspace or owner details could not be applied.") from error
+            messages = {
+                "workspace_exists": (
+                    "Workspace slug already exists; pass --add-owner to add an owner."
+                ),
+                "password_required": "A password is required for a new owner.",
+            }
+            raise CommandError(messages.get(str(error), str(error))) from error
+        except ValidationError as error:
+            raise CommandError("Password rejected: " + "; ".join(error.messages)) from error
         self.stdout.write(f"Owner ready for workspace {workspace.slug}.")

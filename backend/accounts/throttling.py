@@ -11,7 +11,10 @@ class LoginIdentityThrottle(SimpleRateThrottle):
     scope = "login_identity"
 
     def get_cache_key(self, request: Request, view: APIView) -> str:
-        identity = str(request.data.get("email", "")).strip().lower()
+        payload = request.data
+        identity = (
+            str(payload.get("email", "") if isinstance(payload, dict) else "").strip().lower()
+        )
         return self.cache_format % {
             "scope": self.scope,
             "ident": hashlib.sha256(identity.encode()).hexdigest(),

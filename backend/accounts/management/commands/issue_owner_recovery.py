@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from accounts.models import Membership
 from accounts.services import create_password_reset, operator_set_owner_password
+from accounts.tokens import TokenError
 
 
 class Command(BaseCommand):
@@ -30,7 +31,10 @@ class Command(BaseCommand):
             password = getpass.getpass("New password: ")
             if password != getpass.getpass("New password again: "):
                 raise CommandError("Passwords do not match.")
-            operator_set_owner_password(actor=membership, password=password)
+            try:
+                operator_set_owner_password(actor=membership, password=password)
+            except TokenError as error:
+                raise CommandError("Password rejected: " + "; ".join(error.messages)) from error
             self.stdout.write("Owner password updated.")
             return
         _, secret = create_password_reset(

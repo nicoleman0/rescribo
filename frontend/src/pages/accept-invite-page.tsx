@@ -17,6 +17,7 @@ export function AcceptInvitePage() {
   const [password, setPassword] = useState('')
   const [confirmation, setConfirmation] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [previewError, setPreviewError] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -30,6 +31,7 @@ export function AcceptInvitePage() {
     void csrf()
       .then(() => apiRequest<Preview>('invitations/preview/', { token }))
       .then(setPreview)
+      .catch((error: Error) => setPreviewError(error.message))
   }, [token])
   const accept = useMutation({
     mutationFn: async () => {
@@ -58,7 +60,11 @@ export function AcceptInvitePage() {
     <AuthLayout>
       <h1 className="text-xl font-semibold">Accept invitation</h1>
       {!preview ? (
-        <p role="status">Checking invitation…</p>
+        previewError ? (
+          <p role="alert">{previewError}</p>
+        ) : (
+          <p role="status">Checking invitation…</p>
+        )
       ) : preview.status === 'unknown' || preview.status === 'expired' ? (
         <p role="status">
           This invitation has expired or is no longer available.

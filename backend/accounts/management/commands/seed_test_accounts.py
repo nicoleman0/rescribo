@@ -34,12 +34,11 @@ class Command(BaseCommand):
             "owner-3@example.test",
             "owner-4@example.test",
             "owner-5@example.test",
-            "owner-reset@example.test",
             "member@example.test",
         ]
         password = os.environ.get("RESCRIBO_E2E_PASSWORD", "Rescribo-e2e-test-2026!")
         users = []
-        roles = [Membership.Role.OWNER] * 6 + [Membership.Role.MEMBER]
+        roles = [Membership.Role.OWNER] * 5 + [Membership.Role.MEMBER]
         for email, role in zip(emails, roles, strict=True):
             user, _ = get_user_model().objects.get_or_create(
                 email=email, defaults={"full_name": role.title()}

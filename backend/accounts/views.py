@@ -4,7 +4,7 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
-from django.utils import timezone
+from django.http import JsonResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from drf_spectacular.utils import extend_schema
@@ -26,6 +26,7 @@ from accounts.services import (
     preview_invitation,
     preview_password_reset,
     redeem_password_reset,
+    revoke_invitation,
     revoke_membership,
 )
 from accounts.session import bind_session_generation
@@ -130,8 +131,8 @@ def session_payload(user: Any) -> dict[str, Any]:
     }
 
 
-def csrf_failure(request: Any, reason: str = "") -> Response:
-    return Response(
+def csrf_failure(request: Any, reason: str = "") -> JsonResponse:
+    return JsonResponse(
         {
             "detail": "Your request could not be verified. Refresh and try again.",
             "reason": "csrf_failed",
@@ -310,15 +311,21 @@ class PublicTokenView(APIView):
 
 @method_decorator(csrf_protect, name="dispatch")
 class InvitePreviewView(PublicTokenView):
-    throttle_classes = [TokenRedemptionThrottle]
+    throttle_classes: list = []
 
     @extend_schema(
         request=TokenSerializer,
-        responses={200: TokenPreviewSerializer, 429: ErrorSerializer},
+        responses={200: TokenPreviewSerializer, 400: ErrorSerializer},
         auth=[],
     )
     def post(self, request: Request) -> Response:
-        secret = str(request.data.get("token", ""))
+        payload = request.data
+        if not isinstance(payload, dict):
+            return Response(
+                {"detail": "Expected an object.", "reason": "invalid_request", "field_errors": {}},
+                status=400,
+            )
+        secret = str(payload.get("token", ""))
         return Response(preview_invitation(secret=secret))
 
 
@@ -402,16 +409,12 @@ class InvitationRevokeView(OwnerWorkspaceView):
         responses={204: None, 401: ErrorSerializer, 403: ErrorSerializer, 404: ErrorSerializer},
     )
     def post(self, request: Request, workspace_id: str, invitation_id: str) -> Response:
-        count = Invitation.objects.filter(
-            pk=invitation_id,
-            workspace_id=workspace_id,
-            used_at__isnull=True,
-            revoked_at__isnull=True,
-        ).update(revoked_at=timezone.now())
-        if not count:
+        try:
+            revoke_invitation(workspace_id=workspace_id, invitation_id=invitation_id)
+        except LookupError:
             from rest_framework.exceptions import NotFound
 
-            raise NotFound()
+            raise NotFound() from None
         return Response(status=204)
 
 
@@ -499,7 +502,12 @@ class MembershipPasswordResetView(OwnerWorkspaceView):
             from rest_framework.exceptions import NotFound
 
             raise NotFound()
-        reset, secret = create_password_reset(actor=self.membership, target=target)
+        try:
+            reset, secret = create_password_reset(actor=self.membership, target=target)
+        except LookupError as error:
+            from rest_framework.exceptions import NotFound
+
+            raise NotFound() from error
         return Response(
             {
                 "id": str(reset.pk),
@@ -510,15 +518,21 @@ class MembershipPasswordResetView(OwnerWorkspaceView):
 
 
 class PasswordResetPreviewView(PublicTokenView):
-    throttle_classes = [TokenRedemptionThrottle]
+    throttle_classes: list = []
 
     @extend_schema(
         request=TokenSerializer,
-        responses={200: TokenPreviewSerializer, 429: ErrorSerializer},
+        responses={200: TokenPreviewSerializer, 400: ErrorSerializer},
         auth=[],
     )
     def post(self, request: Request) -> Response:
-        return Response(preview_password_reset(secret=str(request.data.get("token", ""))))
+        payload = request.data
+        if not isinstance(payload, dict):
+            return Response(
+                {"detail": "Expected an object.", "reason": "invalid_request", "field_errors": {}},
+                status=400,
+            )
+        return Response(preview_password_reset(secret=str(payload.get("token", ""))))
 
 
 class PasswordResetRedeemSerializer(serializers.Serializer):

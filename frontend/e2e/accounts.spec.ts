@@ -119,23 +119,26 @@ test('an owner issued password reset link works in a clean browser context', asy
 }) => {
   const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
   await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[5].email)
+  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[0].email)
   await page.getByLabel('Password').fill(seed.users[0].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
-  const session = (await page.evaluate(async () =>
-    (await fetch('/api/auth/session/')).json(),
-  )) as { memberships: { membership_id: string; workspace: { id: string } }[] }
+  const memberships = await page
+    .context()
+    .request.get(`/api/workspaces/${seed.workspace_id}/memberships/`)
+  expect(memberships.status()).toBe(200)
+  const rows = (await memberships.json()) as { id: string; email: string }[]
+  const member = rows.find((row) => row.email === 'member@example.test')
+  expect(member).toBeTruthy()
   await page.evaluate(() => fetch('/api/auth/csrf/'))
   const csrfCookie = (await page.context().cookies()).find(
     (cookie) => cookie.name === 'csrftoken',
   )
-  const membership = session.memberships[0]
   const response = await page
     .context()
     .request.post(
       new URL(
-        `/api/workspaces/${membership.workspace.id}/memberships/${membership.membership_id}/password-reset/`,
+        `/api/workspaces/${seed.workspace_id}/memberships/${member!.id}/password-reset/`,
         page.url(),
       ).toString(),
       { headers: { 'X-CSRFToken': csrfCookie?.value ?? '' } },
@@ -156,7 +159,7 @@ test('an owner issued password reset link works in a clean browser context', asy
   await resetPage.getByRole('button', { name: 'Sign out' }).click()
   await resetPage
     .getByRole('textbox', { name: 'Email' })
-    .fill(seed.users[5].email)
+    .fill('member@example.test')
   await resetPage.getByLabel('Password').fill('Cobalt-Window-9264!Birch')
   await resetPage.getByRole('button', { name: 'Sign in' }).click()
   await expect(resetPage).toHaveURL(/\/inbox$/)
