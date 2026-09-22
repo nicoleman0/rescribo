@@ -16,7 +16,7 @@ PROBLEM_TRANSITIONS: dict[str, tuple[frozenset[str], str]] = {
     "reopen": (frozenset({"not_planned"}), "open"),
 }
 
-FIX_CONFIRMATION_TRANSITION = (frozenset({"open", "in_progress"}), "fix_available")
+FIX_CONFIRMATION_SOURCES = frozenset({"open", "in_progress"})
 
 
 def check_report_transition(*, action: str, from_state: str) -> str:
@@ -28,9 +28,9 @@ def check_problem_transition(*, action: str, from_state: str) -> str:
 
 
 def check_fix_confirmation_transition(*, from_state: str) -> str:
-    return _check(
-        {"confirm_fix": FIX_CONFIRMATION_TRANSITION}, action="confirm_fix", from_state=from_state
-    )
+    if from_state not in FIX_CONFIRMATION_SOURCES:
+        raise InvalidTransition(action="confirm_fix", from_state=from_state)
+    return "fix_available"
 
 
 def _check(rules: dict[str, tuple[frozenset[str], str]], *, action: str, from_state: str) -> str:
