@@ -9,7 +9,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import Membership
-from feedback.errors import AlreadyLinked, NoChanges, TitleRequired
+from feedback.errors import AlreadyLinked, InvalidSourceKind, NoChanges, TitleRequired
 from feedback.models import Activity, Problem, Report, ReportSource
 from feedback.services import (
     finish_mutation,
@@ -46,7 +46,7 @@ def submit_report(
         raise TitleRequired()
     source = submission.source
     if source is not None and source.kind != ReportSource.Kind.SLACK:
-        raise ValueError("invalid_source_kind")
+        raise InvalidSourceKind()
     with transaction.atomic():
         if source is not None:
             existing = _existing_source(actor=actor, source=source)

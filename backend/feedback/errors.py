@@ -29,8 +29,9 @@ class NotFound(FeedbackError, LookupError):
 class AlreadyLinked(FeedbackError):
     reason = "already_linked"
 
-    def __init__(self) -> None:
-        Exception.__init__(self)
+
+class InvalidSourceKind(FeedbackError, ValueError):
+    reason = "invalid_source_kind"
 
 
 class ReasonRequired(FeedbackError, ValueError):

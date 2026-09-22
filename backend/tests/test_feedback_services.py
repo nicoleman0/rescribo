@@ -9,6 +9,7 @@ from accounts.models import Membership
 from feedback.errors import (
     AlreadyLinked,
     InvalidReference,
+    InvalidSourceKind,
     InvalidTransition,
     NoChanges,
     NotFound,
@@ -73,6 +74,16 @@ def test_missing_title_raises_title_required() -> None:
     assert problem_error.value.reason == "title_required"
 
 
+def test_manual_source_snapshot_is_rejected() -> None:
+    actor = make_membership()
+    with pytest.raises(InvalidSourceKind) as error:
+        submit_report(
+            actor=actor, submission=submission(source=replace(slack_source(), kind="manual"))
+        )
+    assert error.value.reason == "invalid_source_kind"
+    assert not Report.objects.exists()
+
+
 def test_duplicate_source_returns_existing_without_changes_or_activity() -> None:
     actor = make_membership()
     first = submit_report(actor=actor, submission=submission(source=slack_source()))
@@ -125,8 +136,9 @@ def test_report_use_cases_versions_and_activity() -> None:
     report = link_report(
         actor=actor, report_id=report.pk, expected_version=3, problem_id=problem.pk
     )
-    with pytest.raises(AlreadyLinked):
+    with pytest.raises(AlreadyLinked) as linked_error:
         link_report(actor=actor, report_id=report.pk, expected_version=4, problem_id=problem.pk)
+    assert str(linked_error.value) == "already_linked"
     source_values = {
         field.name: getattr(report.source, field.attname)
         for field in report.source._meta.concrete_fields
