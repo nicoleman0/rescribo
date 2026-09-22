@@ -1,4 +1,6 @@
-# Rescribo
+<h1 align="center">
+  <img src="docs/assets/rescribo.png" alt="Rescribo" width="344" height="70">
+</h1>
 
 An internal inbox connecting customer feedback, engineering issues, and employee follow-up.
 

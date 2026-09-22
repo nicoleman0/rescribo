@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "health",
     "accounts",
+    "feedback",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
