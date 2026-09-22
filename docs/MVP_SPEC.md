@@ -166,7 +166,7 @@ Enforce source uniqueness in PostgreSQL. Scope every foreign-key assignment to t
 
 ### Proposed stack
 
-- **Frontend:** React + TypeScript, Vite, React Router, TanStack Query. Feature modules for inbox, problems, follow-ups, and settings; shared accessible UI components and API types. Vite supplies a React/TypeScript template; TanStack Query manages asynchronous server state. [T1, T2]
+- **Frontend:** React + TypeScript, Vite, React Router, TanStack Query, Tailwind CSS v4, and shadcn/ui with Radix primitives. Feature modules for inbox, problems, follow-ups, and settings; shared accessible UI components and API types. Vite supplies a React/TypeScript template; Tailwind owns utility styling and the token CSS file; shadcn components are copied into the repository; TanStack Query manages asynchronous server state. [T1, T2]
 - **Backend:** Django + Django REST Framework. Use Django's auth, sessions, ORM, and migrations; DRF for validated REST endpoints. One Python application, deployed as web and worker processes. [T3, T4]
 - **Storage:** PostgreSQL for business state, search, receipts, operations, and audit history.
 - **Background execution:** Celery with Redis, plus one Celery Beat scheduler. Use established task/retry machinery rather than creating a queue framework. Business operation state remains in PostgreSQL. [T5]

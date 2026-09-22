@@ -1,0 +1,91 @@
+@import '@fontsource-variable/geist';
+@import '@fontsource-variable/geist-mono';
+
+:root {
+  --font-ui: 'Geist Variable', sans-serif;
+  --font-code: 'Geist Mono Variable', monospace;
+  --font-size-base: 13px;
+  --line-height-body: 1.45;
+
+  --space-unit: 0.25rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  --radius-control: 6px;
+  --radius-card: 8px;
+  --radius-pill: 9999px;
+
+  --background: #fbfbfc;
+  --sidebar: #f4f4f7;
+  --card: #ffffff;
+  --card-foreground: #16161d;
+  --border: #e4e4ea;
+  --foreground: #16161d;
+  --muted-foreground: #62626e;
+  --muted: #f4f4f7;
+  --secondary: #f4f4f7;
+  --secondary-foreground: #16161d;
+  --accent: #f4f4f7;
+  --accent-foreground: #16161d;
+  --input: #e4e4ea;
+  --selected: #ececf3;
+  --primary: #5b5bd6;
+  --primary-foreground: #ffffff;
+  --linked: #e3f3ea;
+  --linked-foreground: #17613f;
+  --needs-review: #fbeedb;
+  --needs-review-foreground: #8a4b00;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --ring: #5b5bd6;
+}
+
+@theme inline {
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
+  --spacing: var(--space-unit);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-pill: var(--radius-pill);
+  --radius-sm: var(--radius-control);
+  --radius-md: var(--radius-control);
+  --radius-lg: var(--radius-card);
+  --radius-xl: var(--radius-card);
+  --radius-full: var(--radius-pill);
+  --color-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-input: var(--input);
+  --color-selected: var(--selected);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-linked: var(--linked);
+  --color-linked-foreground: var(--linked-foreground);
+  --color-needs-review: var(--needs-review);
+  --color-needs-review-foreground: var(--needs-review-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
+}
+
+@media (max-width: 767px) {
+  :root {
+    --font-size-base: 15px;
+  }
+}

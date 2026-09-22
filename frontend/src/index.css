@@ -1,14 +1,33 @@
-:root {
-  font-family: system-ui, sans-serif;
-  color: #20372c;
-  background: #f4f6f2;
-  font-synthesis: none;
-  line-height: 1.6;
-}
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import './styles/theme.css';
+
 * {
   box-sizing: border-box;
 }
+
+html {
+  font-family: var(--font-ui);
+  font-size: var(--font-size-base);
+  font-synthesis: none;
+}
+
 body {
-  margin: 0;
   min-width: 320px;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  line-height: var(--line-height-body);
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }

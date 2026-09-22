@@ -48,6 +48,7 @@ tasks:
 
   check:
     cmds:
+      - python3 scripts/check_raw_colours.py
       - uv run ruff check .
       - uv run ruff format --check .
       - uv run mypy
