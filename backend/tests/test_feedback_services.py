@@ -284,6 +284,19 @@ def test_problem_owner_can_be_cleared_and_cross_workspace_owner_is_rejected() ->
             expected_version=2,
             owner_id=foreign_owner.pk,
         )
+    revoked_owner = make_membership(
+        user=make_user(email="revoked-owner@example.test"), workspace=actor.workspace
+    )
+    revoked_owner.is_active = False
+    revoked_owner.revoked_at = timezone.now()
+    revoked_owner.save(update_fields=["is_active", "revoked_at"])
+    with pytest.raises(InvalidReference):
+        assign_problem_owner(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=2,
+            owner_id=revoked_owner.pk,
+        )
 
 
 def test_stale_version_returns_current_row_without_mutation() -> None:
