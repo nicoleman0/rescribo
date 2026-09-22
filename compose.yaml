@@ -39,6 +39,9 @@ services:
     environment:
       RESCRIBO_DATABASE_URL: postgresql://${POSTGRES_USER:-rescribo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rescribo}
       RESCRIBO_REDIS_URL: redis://redis:6379/0
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS}
+      RESCRIBO_PUBLIC_BASE_URL: ${RESCRIBO_PUBLIC_BASE_URL}
     volumes:
       - ./backend:/app/backend
     depends_on:

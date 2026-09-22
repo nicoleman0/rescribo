@@ -2,7 +2,22 @@
 
 An internal inbox connecting customer feedback, engineering issues, and employee follow-up.
 
-**Current state:** development environment only. Slack/GitHub integrations and product workflows are specified but not implemented.
+**Current state:** development environment only. Account and workspace workflows are under development; Slack/GitHub product workflows are specified but not implemented.
+
+## Database reset for the accounts schema
+
+The accounts feature changes Django's user model. If this database has already had
+migrations applied, its `auth_user` tables cannot be converted in place. Back up
+anything you need, then recreate only the local PostgreSQL database before
+running `task migrate`:
+
+```sh
+docker compose exec postgres dropdb -U rescribo rescribo
+docker compose exec postgres createdb -U rescribo rescribo
+```
+
+This removes PostgreSQL data. It preserves the Redis volume and other Docker
+volumes. Do not use `docker compose down --volumes` for this reset.
 
 - [MVP specification](docs/MVP_SPEC.md)
 - [Development setup plan](docs/DEV_SETUP_PLAN.md)
@@ -79,9 +94,15 @@ task app-stop
 
 All published container ports bind to loopback. The database credentials are generated in `.env`. Connections use `RESCRIBO_DATABASE_URL` and `RESCRIBO_REDIS_URL` to avoid inherited settings from other projects. PostgreSQL and Redis use named volumes. `task stop` / `task app-stop` preserve data. `docker compose down --volumes` deletes that data; use it only when intentionally resetting the environment.
 
+The browser E2E servers use plain HTTP and require `DJANGO_DEBUG=True`; secure cookies and HTTPS redirects are enabled when debug is off.
+
 Liveness is `/api/health/live/`. Readiness is `/api/health/ready/`; it reports availability without returning connection details. Future API routes default to authenticated access. The development health routes intentionally allow anonymous checks.
 
-No app account is created by setup. For Django's development admin, run `uv run python backend/manage.py createsuperuser`. Product invitations and workspaces are not implemented yet.
+No app account is created by setup. Create the first product owner with `task bootstrap-owner`; this command validates a password without putting it in process arguments. Product access always comes from an active workspace membership. Django superusers do not gain product workspace access from `is_superuser` alone.
+
+`task issue-owner-recovery -- --email owner@example.test` prints a one-use password reset link. Add `--set-password` to set a new password interactively. Treat a printed recovery URL as a credential.
+
+`task e2e` seeds synthetic accounts in the reserved `e2e-test` workspace and resets that workspace's test data. Do not use that slug for real work.
 
 Slack, GitHub, and model keys are not needed to start. The first product milestone is live integration feasibility using test apps and disposable data. Follow section 12 of the spec before claiming provider support.
 
