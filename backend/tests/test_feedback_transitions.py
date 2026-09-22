@@ -6,6 +6,7 @@ from feedback.transitions import (
     PROBLEM_TRANSITIONS,
     REPORT_TRANSITIONS,
     InvalidTransition,
+    check_fix_confirmation_transition,
     check_problem_transition,
     check_report_transition,
 )
@@ -33,8 +34,6 @@ def test_report_transitions(action: str, state: str, expected: str) -> None:
         ("decline", "open", "not_planned"),
         ("decline", "in_progress", "not_planned"),
         ("reopen", "not_planned", "open"),
-        ("confirm_fix", "open", "fix_available"),
-        ("confirm_fix", "in_progress", "fix_available"),
     ],
 )
 def test_problem_transitions(action: str, state: str, expected: str) -> None:
@@ -74,3 +73,10 @@ def test_each_action_state_pair_matches_its_transition_table(
                     check(action=action, from_state=state)
                 assert error.value.action == action
                 assert error.value.from_state == state
+
+
+@pytest.mark.parametrize("state", ["open", "in_progress"])
+def test_fix_confirmation_is_a_separate_transition(state: str) -> None:
+    assert check_fix_confirmation_transition(from_state=state) == "fix_available"
+    with pytest.raises(InvalidTransition):
+        check_problem_transition(action="confirm_fix", from_state=state)

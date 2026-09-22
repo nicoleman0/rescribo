@@ -16,7 +16,7 @@ from feedback.services import (
     validate_reference,
     write_activity,
 )
-from feedback.transitions import check_problem_transition
+from feedback.transitions import check_fix_confirmation_transition, check_problem_transition
 
 
 class ReasonRequired(ValueError):
@@ -27,7 +27,6 @@ class ReasonRequired(ValueError):
 class ProblemChanges:
     title: str | None = None
     summary: str | None = None
-    owner_id: UUID | None = None
 
 
 def create_problem(
@@ -79,20 +78,14 @@ def update_problem(
         changed: list[str] = []
         for item in fields(changes):
             value = getattr(changes, item.name)
-            field_name = "owner" if item.name == "owner_id" else item.name
             if value is not None:
-                if item.name == "owner_id":
-                    value = validate_reference(
-                        actor=actor, model=Membership, reference_id=value, field="owner"
-                    )
-                existing = getattr(problem, field_name)
-                existing_value = existing.pk if field_name == "owner" and existing else existing
-                new_value = value.pk if field_name == "owner" and value else value
-                if existing_value != new_value:
-                    if item.name == "title" and not value.strip():
+                if item.name == "title":
+                    value = value.strip()
+                    if not value:
                         raise ValueError("title_required")
-                    setattr(problem, field_name, value.strip() if item.name == "title" else value)
-                    changed.append(field_name)
+                if getattr(problem, item.name) != value:
+                    setattr(problem, item.name, value)
+                    changed.append(item.name)
         if not changed:
             raise ValueError("no_changes")
         finish_mutation(row=problem, actor=actor, now=current, update_fields=changed)
@@ -102,6 +95,36 @@ def update_problem(
             record_type="problem",
             record_id=problem.pk,
             metadata={"fields": changed},
+            now=current,
+        )
+        return problem
+
+
+def assign_problem_owner(
+    *,
+    actor: Membership,
+    problem_id: UUID,
+    expected_version: int,
+    owner_id: UUID | None,
+    now: datetime | None = None,
+) -> Problem:
+    current = now or timezone.now()
+    with transaction.atomic():
+        problem = locked_problem(actor=actor, problem_id=problem_id)
+        require_version(row=problem, expected_version=expected_version)
+        owner = validate_reference(
+            actor=actor, model=Membership, reference_id=owner_id, field="owner"
+        )
+        if problem.owner_id == (owner.pk if owner else None):
+            raise ValueError("no_changes")
+        problem.owner = owner
+        finish_mutation(row=problem, actor=actor, now=current, update_fields=["owner"])
+        write_activity(
+            actor=actor,
+            action=Activity.Action.PROBLEM_UPDATED,
+            record_type="problem",
+            record_id=problem.pk,
+            metadata={"fields": ["owner"]},
             now=current,
         )
         return problem
@@ -154,7 +177,7 @@ def confirm_fix(
     with transaction.atomic():
         problem = locked_problem(actor=actor, problem_id=problem_id)
         require_version(row=problem, expected_version=expected_version)
-        problem.state = check_problem_transition(action="confirm_fix", from_state=problem.state)
+        problem.state = check_fix_confirmation_transition(from_state=problem.state)
         problem.resolution_revision += 1
         problem.fix_note = fix_note
         problem.fix_confirmed_at = current

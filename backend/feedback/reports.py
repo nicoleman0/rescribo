@@ -118,11 +118,14 @@ def update_report(
         changed: list[str] = []
         for item in fields(changes):
             value = getattr(changes, item.name)
-            if value is not None and getattr(report, item.name) != value:
-                if item.name == "title" and not value.strip():
-                    raise ValueError("title_required")
-                setattr(report, item.name, value.strip() if item.name == "title" else value)
-                changed.append(item.name)
+            if value is not None:
+                if item.name == "title":
+                    value = value.strip()
+                    if not value:
+                        raise ValueError("title_required")
+                if getattr(report, item.name) != value:
+                    setattr(report, item.name, value)
+                    changed.append(item.name)
         if not changed:
             raise ValueError("no_changes")
         finish_mutation(row=report, actor=actor, now=current, update_fields=changed)

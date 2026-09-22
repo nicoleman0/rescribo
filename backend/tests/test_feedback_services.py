@@ -1,4 +1,5 @@
 from dataclasses import replace
+from unittest.mock import patch
 
 import pytest
 from builders import make_membership, make_report, make_user, make_workspace
@@ -8,6 +9,7 @@ from feedback.models import Activity, Problem
 from feedback.problems import (
     ProblemChanges,
     ReasonRequired,
+    assign_problem_owner,
     change_problem_state,
     confirm_fix,
     create_problem,
@@ -64,6 +66,29 @@ def test_duplicate_source_returns_existing_without_changes_or_activity() -> None
     first.report.refresh_from_db()
     assert duplicate.created is False and duplicate.report.pk == first.report.pk
     assert first.report.title == "Captured report" and first.report.assignee_id == actor.pk
+    assert Activity.objects.count() == count
+
+
+def test_duplicate_source_recovers_after_concurrent_insert() -> None:
+    actor = make_membership()
+    original = submit_report(actor=actor, submission=submission(source=slack_source()))
+    count = Activity.objects.count()
+    from feedback import reports
+
+    existing_source = reports._existing_source
+    calls = 0
+
+    def miss_once(*, actor, source):
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return None
+        return existing_source(actor=actor, source=source)
+
+    with patch("feedback.reports._existing_source", side_effect=miss_once):
+        result = submit_report(actor=actor, submission=submission(source=slack_source()))
+    assert calls == 2
+    assert result.created is False and result.report.pk == original.report.pk
     assert Activity.objects.count() == count
 
 
@@ -124,6 +149,92 @@ def test_problem_updates_state_and_fix_revision() -> None:
     Problem.objects.filter(pk=problem.pk).update(state="in_progress")
     problem = confirm_fix(actor=actor, problem_id=problem.pk, expected_version=5, fix_note="Second")
     assert problem.resolution_revision == 2
+
+
+@pytest.mark.parametrize("initial_state", ["open", "in_progress"])
+def test_generic_problem_state_change_cannot_confirm_fix(initial_state: str) -> None:
+    from feedback.transitions import InvalidTransition
+
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    if initial_state == "in_progress":
+        problem = change_problem_state(
+            actor=actor, problem_id=problem.pk, expected_version=1, action="start"
+        )
+    before = Activity.objects.count()
+    prior = {
+        "state": problem.state,
+        "version": problem.version,
+        "resolution_revision": problem.resolution_revision,
+        "fix_note": problem.fix_note,
+        "fix_confirmed_at": problem.fix_confirmed_at,
+        "fix_confirmed_by_id": problem.fix_confirmed_by_id,
+        "needs_review": problem.needs_review,
+    }
+    with pytest.raises(InvalidTransition):
+        change_problem_state(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=problem.version,
+            action="confirm_fix",
+        )
+    problem.refresh_from_db()
+    assert {key: getattr(problem, key) for key in prior} == prior
+    assert Activity.objects.count() == before
+
+
+def test_problem_title_whitespace_only_update_is_no_changes() -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Same")
+    with pytest.raises(ValueError, match="no_changes"):
+        update_problem(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=1,
+            changes=ProblemChanges(title="  Same  "),
+        )
+    problem.refresh_from_db()
+    assert problem.version == 1
+
+
+def test_report_title_whitespace_only_update_is_no_changes() -> None:
+    actor = make_membership()
+    report = make_report(actor=actor, title="Same")
+    with pytest.raises(ValueError, match="no_changes"):
+        update_report(
+            actor=actor,
+            report_id=report.pk,
+            expected_version=1,
+            changes=ReportChanges(title="  Same  "),
+        )
+    report.refresh_from_db()
+    assert report.version == 1
+
+
+def test_problem_owner_can_be_cleared_and_cross_workspace_owner_is_rejected() -> None:
+    actor = make_membership()
+    foreign_owner = make_membership(
+        user=make_user(email="foreign-owner@example.test"),
+        workspace=make_workspace(name="Other", slug="other"),
+    )
+    problem = create_problem(actor=actor, title="Problem", owner_id=actor.pk)
+    problem = assign_problem_owner(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        owner_id=None,
+    )
+    assert problem.owner_id is None and problem.version == 2
+    activity = Activity.objects.latest("created_at")
+    assert activity.action == Activity.Action.PROBLEM_UPDATED
+    assert activity.metadata == {"fields": ["owner"]}
+    with pytest.raises(InvalidReference):
+        assign_problem_owner(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=2,
+            owner_id=foreign_owner.pk,
+        )
 
 
 def test_stale_version_returns_current_row_without_mutation() -> None:
