@@ -56,7 +56,7 @@ def create_problem(
         write_activity(
             actor=actor,
             action=Activity.Action.PROBLEM_CREATED,
-            record_type="problem",
+            record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             now=current,
         )
@@ -88,11 +88,11 @@ def update_problem(
                     changed.append(item.name)
         if not changed:
             raise ValueError("no_changes")
-        finish_mutation(row=problem, actor=actor, now=current, update_fields=changed)
+        finish_mutation(row=problem, now=current, update_fields=changed)
         write_activity(
             actor=actor,
             action=Activity.Action.PROBLEM_UPDATED,
-            record_type="problem",
+            record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             metadata={"fields": changed},
             now=current,
@@ -118,11 +118,11 @@ def assign_problem_owner(
         if problem.owner_id == (owner.pk if owner else None):
             raise ValueError("no_changes")
         problem.owner = owner
-        finish_mutation(row=problem, actor=actor, now=current, update_fields=["owner"])
+        finish_mutation(row=problem, now=current, update_fields=["owner"])
         write_activity(
             actor=actor,
             action=Activity.Action.PROBLEM_UPDATED,
-            record_type="problem",
+            record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             metadata={"fields": ["owner"]},
             now=current,
@@ -143,9 +143,10 @@ def change_problem_state(
     with transaction.atomic():
         problem = locked_problem(actor=actor, problem_id=problem_id)
         require_version(row=problem, expected_version=expected_version)
+        next_state = check_problem_transition(action=action, from_state=problem.state)
         if action == "decline" and not reason.strip():
             raise ReasonRequired("reason_required")
-        problem.state = check_problem_transition(action=action, from_state=problem.state)
+        problem.state = next_state
         update_fields = ["state"]
         if action == "decline":
             problem.not_planned_reason = reason.strip()
@@ -153,11 +154,11 @@ def change_problem_state(
         elif action == "reopen":
             problem.not_planned_reason = ""
             update_fields.append("not_planned_reason")
-        finish_mutation(row=problem, actor=actor, now=current, update_fields=update_fields)
+        finish_mutation(row=problem, now=current, update_fields=update_fields)
         write_activity(
             actor=actor,
             action=Activity.Action.PROBLEM_STATE_CHANGED,
-            record_type="problem",
+            record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             metadata={"action": action, "state": problem.state},
             now=current,
@@ -185,7 +186,6 @@ def confirm_fix(
         problem.needs_review = False
         finish_mutation(
             row=problem,
-            actor=actor,
             now=current,
             update_fields=[
                 "state",
@@ -199,7 +199,7 @@ def confirm_fix(
         write_activity(
             actor=actor,
             action=Activity.Action.PROBLEM_FIX_CONFIRMED,
-            record_type="problem",
+            record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             metadata={"resolution_revision": problem.resolution_revision},
             now=current,

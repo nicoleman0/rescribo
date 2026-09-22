@@ -4,9 +4,9 @@
 
 ```text
 backend/config/       Django settings, routes, ASGI/WSGI, Celery bootstrap
+backend/feedback/     Workspace-scoped reports, problems, and activity
 backend/health/       Dependency checks and worker smoke task
 backend/tests/        Backend tests
-backend/feedback/     Workspace-scoped reports, problems, and activity
 frontend/src/api/     API calls and generated TypeScript contract
 frontend/src/test/    Component test setup
 frontend/e2e/         Browser tests against the real local API

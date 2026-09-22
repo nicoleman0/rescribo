@@ -1,6 +1,6 @@
 """Shared helpers for transactional feedback use cases."""
 
-from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -26,12 +26,6 @@ class InvalidReference(ValueError):
         super().__init__(self.reason)
 
 
-@dataclass(frozen=True)
-class SubmitResult:
-    report: Report
-    created: bool
-
-
 def validate_reference(
     *, actor: Membership, model: type[Any], reference_id: UUID | None, field: str
 ) -> Any:
@@ -53,7 +47,7 @@ def write_activity(
     record_type: str,
     record_id: UUID,
     metadata: dict[str, Any] | None = None,
-    now: Any = None,
+    now: datetime | None = None,
 ) -> Activity:
     return Activity.objects.create(
         workspace_id=actor.workspace_id,
@@ -89,9 +83,7 @@ def require_version(*, row: Report | Problem, expected_version: int) -> None:
         raise VersionConflict(current=row)
 
 
-def finish_mutation(
-    *, row: Report | Problem, actor: Membership, now: Any, update_fields: list[str]
-) -> None:
+def finish_mutation(*, row: Report | Problem, now: datetime, update_fields: list[str]) -> None:
     row.version += 1
     row.updated_at = now
     row.save(update_fields=[*update_fields, "version", "updated_at"])

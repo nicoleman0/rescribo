@@ -28,6 +28,7 @@ from feedback.reports import (
 )
 from feedback.services import InvalidReference, VersionConflict
 from feedback.submissions import ReportSubmission, SourceSnapshot
+from feedback.transitions import InvalidTransition
 
 pytestmark = pytest.mark.django_db
 
@@ -153,8 +154,6 @@ def test_problem_updates_state_and_fix_revision() -> None:
 
 @pytest.mark.parametrize("initial_state", ["open", "in_progress"])
 def test_generic_problem_state_change_cannot_confirm_fix(initial_state: str) -> None:
-    from feedback.transitions import InvalidTransition
-
     actor = make_membership()
     problem = create_problem(actor=actor, title="Problem")
     if initial_state == "in_progress":
@@ -181,6 +180,25 @@ def test_generic_problem_state_change_cannot_confirm_fix(initial_state: str) -> 
     problem.refresh_from_db()
     assert {key: getattr(problem, key) for key in prior} == prior
     assert Activity.objects.count() == before
+
+
+def test_declining_not_planned_problem_checks_transition_before_reason() -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    problem = change_problem_state(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        action="decline",
+        reason="No plan",
+    )
+    with pytest.raises(InvalidTransition):
+        change_problem_state(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=2,
+            action="decline",
+        )
 
 
 def test_problem_title_whitespace_only_update_is_no_changes() -> None:

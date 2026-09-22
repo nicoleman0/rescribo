@@ -68,13 +68,13 @@ def test_manual_sources_and_problem_constraints() -> None:
             actor_membership=actor,
             actor_system="worker",
             action="report.created",
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=problem.pk,
         )
     with pytest.raises(IntegrityError), transaction.atomic():
         Activity.objects.create(
             workspace=actor.workspace,
             action="report.created",
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=problem.pk,
         )

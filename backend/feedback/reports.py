@@ -11,7 +11,6 @@ from django.utils import timezone
 from accounts.models import Membership
 from feedback.models import Activity, Problem, Report, ReportSource
 from feedback.services import (
-    SubmitResult,
     finish_mutation,
     locked_report,
     require_version,
@@ -20,6 +19,12 @@ from feedback.services import (
 )
 from feedback.submissions import ReportSubmission
 from feedback.transitions import check_report_transition
+
+
+@dataclass(frozen=True)
+class SubmitResult:
+    report: Report
+    created: bool
 
 
 @dataclass(frozen=True)
@@ -128,11 +133,11 @@ def update_report(
                     changed.append(item.name)
         if not changed:
             raise ValueError("no_changes")
-        finish_mutation(row=report, actor=actor, now=current, update_fields=changed)
+        finish_mutation(row=report, now=current, update_fields=changed)
         write_activity(
             actor=actor,
             action=Activity.Action.REPORT_UPDATED,
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
             metadata={"fields": changed},
             now=current,
@@ -159,11 +164,11 @@ def assign_report(
             raise ValueError("no_changes")
         previous = report.assignee_id
         report.assignee = assignee
-        finish_mutation(row=report, actor=actor, now=current, update_fields=["assignee"])
+        finish_mutation(row=report, now=current, update_fields=["assignee"])
         write_activity(
             actor=actor,
             action=Activity.Action.REPORT_ASSIGNED,
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
             metadata={
                 "from_assignee_id": str(previous) if previous else None,
@@ -195,13 +200,11 @@ def link_report(
         previous = report.problem_id
         report.problem = problem
         report.triage_state = to_state
-        finish_mutation(
-            row=report, actor=actor, now=current, update_fields=["problem", "triage_state"]
-        )
+        finish_mutation(row=report, now=current, update_fields=["problem", "triage_state"])
         write_activity(
             actor=actor,
             action=Activity.Action.REPORT_LINKED,
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
             metadata={
                 "from_problem_id": str(previous) if previous else None,
@@ -261,7 +264,7 @@ def _report_transition(
         if action == "unlink":
             report.problem = None
             update_fields.append("problem")
-        finish_mutation(row=report, actor=actor, now=current, update_fields=update_fields)
+        finish_mutation(row=report, now=current, update_fields=update_fields)
         activity_action = {
             "unlink": Activity.Action.REPORT_UNLINKED,
             "dismiss": Activity.Action.REPORT_DISMISSED,
@@ -270,7 +273,7 @@ def _report_transition(
         write_activity(
             actor=actor,
             action=activity_action,
-            record_type="report",
+            record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
             now=current,
         )
