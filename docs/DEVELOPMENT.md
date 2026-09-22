@@ -15,6 +15,12 @@ docs/MVP_SPEC.md      Product scope, architecture, and acceptance criteria
 
 Business modules will be added as their workflows are implemented. The spec defines their responsibilities; empty placeholder applications are not needed to establish the boundaries.
 
+## Accounts boundary
+
+`accounts.tokens` owns framework-free secret generation, digest checks, and expiry. `accounts.services` owns transactions and invariants. HTTP views and Celery tasks pass an explicitly resolved active `Membership` to every mutating use case; they never pass a bare user or workspace ID. Workspace permissions resolve membership on each request and hide foreign workspaces with 404. Workers must resolve and pass the actor membership too.
+
+Use management commands for reading or writing product rows. Use `scripts/` CLIs for credential handling and provider checks that do not use the product ORM. Sessions remain in PostgreSQL. Membership is rechecked per workspace request; `session_generation` revokes all sessions after password changes or the last membership is revoked. Browser writes use CSRF tokens; `SameSite=Lax` applies to both session and CSRF cookies.
+
 ## Shared contracts
 
 DRF serializers and drf-spectacular define the API contract. `task schema` generates `frontend/openapi.yaml` and `frontend/src/api/schema.d.ts`. Frontend callers import those types and validate untrusted response values where needed. The browser uses relative `/api/` URLs; Vite proxies to Django without requiring permissive CORS settings.

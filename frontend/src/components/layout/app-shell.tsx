@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { CircleDot, Inbox, MessageSquareText, Settings } from 'lucide-react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { logout, sessionQueryKey } from '@/api/auth'
+import { useOptionalWorkspace } from '@/components/auth/use-workspace'
+import { Button } from '@/components/ui/button'
 
 type NavigationItem = {
   label: string
@@ -52,6 +56,16 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
 export function AppShell({ children }: { children?: ReactNode }) {
   const location = useLocation()
   const isGallery = location.pathname === '/dev/ui'
+  const workspace = useOptionalWorkspace()
+  const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const signOut = useMutation({
+    mutationFn: logout,
+    onSuccess: () => {
+      queryClient.removeQueries({ queryKey: sessionQueryKey })
+      navigate('/sign-in', { replace: true })
+    },
+  })
 
   return (
     <div className="min-h-svh bg-background md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
@@ -61,13 +75,18 @@ export function AppShell({ children }: { children?: ReactNode }) {
             Rescribo
           </span>
         </div>
-        <div className="flex flex-1 flex-col gap-8 p-3">
+        <div className="flex flex-1 flex-col p-3">
           <Navigation />
-          <div className="mt-auto rounded-card border border-border bg-card p-3 text-xs text-muted-foreground">
-            <p className="font-mono text-[11px] text-foreground">A. Quiet</p>
-            <p className="mt-1">
-              A compact workspace for the work that needs a human answer.
-            </p>
+          <div className="mt-auto border-t border-border pt-3">
+            <Button
+              className="w-full"
+              variant="outline"
+              size="sm"
+              onClick={() => signOut.mutate()}
+              disabled={signOut.isPending}
+            >
+              Sign out
+            </Button>
           </div>
         </div>
       </aside>
@@ -76,15 +95,30 @@ export function AppShell({ children }: { children?: ReactNode }) {
         <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-8">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
-              {isGallery ? 'UI gallery' : 'Development workspace'}
+              {isGallery
+                ? 'UI gallery'
+                : (workspace?.workspace.name ?? 'Workspace')}
             </p>
             <p className="hidden text-xs text-muted-foreground sm:block">
               Quiet surfaces for focused triage
             </p>
           </div>
-          <span className="font-mono text-[11px] text-muted-foreground">
-            Updated just now
-          </span>
+          <div className="flex items-center gap-3">
+            <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
+              Updated just now
+            </span>
+            {!isGallery ? (
+              <Button
+                className="md:hidden"
+                size="sm"
+                variant="outline"
+                onClick={() => signOut.mutate()}
+                disabled={signOut.isPending}
+              >
+                Sign out
+              </Button>
+            ) : null}
+          </div>
         </header>
 
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">

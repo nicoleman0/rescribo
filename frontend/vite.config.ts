@@ -14,6 +14,7 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
+    allowedHosts: ['frontend'],
     proxy: Object.fromEntries(
       ['/api', '/admin', '/static'].map((path) => [
         path,

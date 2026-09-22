@@ -3,6 +3,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/app-shell'
 import { EmptyState } from '@/components/states/async-states'
 import { DevelopmentStatusPage } from '@/pages/development-status-page'
+import { RequireAuth } from '@/components/auth/require-auth'
+import { SignInPage } from '@/pages/sign-in-page'
+import { AcceptInvitePage } from '@/pages/accept-invite-page'
+import { ResetPasswordPage } from '@/pages/reset-password-page'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
@@ -48,6 +52,9 @@ export default function App() {
   return (
     <Routes>
       <Route path="/dev/status" element={<DevelopmentStatusPage />} />
+      <Route path="/sign-in" element={<SignInPage />} />
+      <Route path="/invite/:token" element={<AcceptInvitePage />} />
+      <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
       {UiGalleryPage ? (
         <Route
           path="/dev/ui"
@@ -60,15 +67,17 @@ export default function App() {
           }
         />
       ) : null}
-      <Route element={<AppShell />}>
-        <Route path="/" element={<Navigate replace to="/inbox" />} />
-        {productRoutes.map((route) => (
-          <Route
-            key={route.path}
-            path={route.path}
-            element={<PlaceholderPage {...route} />}
-          />
-        ))}
+      <Route element={<RequireAuth />}>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Navigate replace to="/inbox" />} />
+          {productRoutes.map((route) => (
+            <Route
+              key={route.path}
+              path={route.path}
+              element={<PlaceholderPage {...route} />}
+            />
+          ))}
+        </Route>
       </Route>
       <Route
         path="*"

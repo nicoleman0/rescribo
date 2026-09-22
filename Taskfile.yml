@@ -29,6 +29,16 @@ tasks:
     cmds:
       - uv run python backend/manage.py migrate
 
+  bootstrap-owner:
+    desc: Create or add a workspace owner interactively
+    cmds:
+      - uv run python backend/manage.py bootstrap_owner {{.CLI_ARGS}}
+
+  issue-owner-recovery:
+    desc: Issue a recovery link or set an owner's password
+    cmds:
+      - uv run python backend/manage.py issue_owner_recovery {{.CLI_ARGS}}
+
   api:
     cmds:
       - uv run python backend/manage.py runserver 127.0.0.1:8000
