@@ -545,6 +545,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/members/:
+    get:
+      operationId: workspaces_members_list
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberSummary'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/memberships/:
     get:
       operationId: workspaces_memberships_list
@@ -741,6 +776,179 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/:
+    get:
+      operationId: workspaces_reports_list
+      parameters:
+      - in: query
+        name: assignee
+        schema:
+          type: string
+          minLength: 1
+      - in: query
+        name: customer
+        schema:
+          type: string
+          maxLength: 200
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 200
+      - in: query
+        name: source_kind
+        schema:
+          enum:
+          - manual
+          - slack
+          type: string
+          minLength: 1
+        description: |-
+          * `manual` - Manual
+          * `slack` - Slack
+      - in: query
+        name: triage_state
+        schema:
+          enum:
+          - new
+          - linked
+          - dismissed
+          type: string
+          minLength: 1
+        description: |-
+          * `new` - New
+          * `linked` - Linked
+          * `dismissed` - Dismissed
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportListItemList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: workspaces_reports_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ManualReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ManualReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ManualReport'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/:
+    get:
+      operationId: workspaces_reports_retrieve
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
 components:
   schemas:
     Error:
@@ -842,6 +1050,41 @@ components:
       required:
       - email
       - password
+    ManualReport:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        customer_label:
+          type: string
+          maxLength: 200
+        customer_contact_reference:
+          type: string
+          maxLength: 200
+        affected_version:
+          type: string
+          maxLength: 100
+      required:
+      - title
+    MemberSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        full_name:
+          type: string
+        email:
+          type: string
+          format: email
+      required:
+      - email
+      - full_name
+      - id
     MembershipOutput:
       type: object
       properties:
@@ -860,6 +1103,29 @@ components:
       - full_name
       - id
       - role
+    PaginatedReportListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportListItem'
     PasswordResetOutput:
       type: object
       properties:
@@ -883,6 +1149,135 @@ components:
       required:
       - password
       - token
+    ProblemSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        state:
+          $ref: '#/components/schemas/StateEnum'
+      required:
+      - id
+      - state
+      - title
+    ReportDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        customer_label:
+          type: string
+        customer_contact_reference:
+          type: string
+        affected_version:
+          type: string
+        triage_state:
+          $ref: '#/components/schemas/TriageStateEnum'
+        provenance:
+          $ref: '#/components/schemas/ReportProvenance'
+        submitted_by:
+          $ref: '#/components/schemas/MemberSummary'
+        assignee:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+        problem:
+          allOf:
+          - $ref: '#/components/schemas/ProblemSummary'
+          nullable: true
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - affected_version
+      - assignee
+      - created_at
+      - customer_contact_reference
+      - customer_label
+      - description
+      - id
+      - problem
+      - provenance
+      - submitted_by
+      - title
+      - triage_state
+      - updated_at
+      - version
+    ReportListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        customer_label:
+          type: string
+        triage_state:
+          $ref: '#/components/schemas/TriageStateEnum'
+        source_kind:
+          $ref: '#/components/schemas/ReportSourceKindEnum'
+        assignee:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+        problem:
+          allOf:
+          - $ref: '#/components/schemas/ProblemSummary'
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - assignee
+      - created_at
+      - customer_label
+      - id
+      - problem
+      - source_kind
+      - title
+      - triage_state
+    ReportProvenance:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ReportSourceKindEnum'
+        permalink:
+          type: string
+        author_display_name:
+          type: string
+        snapshot_text:
+          type: string
+        captured_at:
+          type: string
+          format: date-time
+      required:
+      - author_display_name
+      - captured_at
+      - kind
+      - permalink
+      - snapshot_text
+    ReportSourceKindEnum:
+      enum:
+      - manual
+      - slack
+      type: string
+      description: |-
+        * `manual` - Manual
+        * `slack` - Slack
     Role:
       type: object
       properties:
@@ -912,6 +1307,18 @@ components:
       required:
       - memberships
       - user
+    StateEnum:
+      enum:
+      - open
+      - in_progress
+      - fix_available
+      - not_planned
+      type: string
+      description: |-
+        * `open` - Open
+        * `in_progress` - In progress
+        * `fix_available` - Fix available
+        * `not_planned` - Not planned
     StatusEnum:
       enum:
       - ok
@@ -936,6 +1343,16 @@ components:
           type: string
       required:
       - status
+    TriageStateEnum:
+      enum:
+      - new
+      - linked
+      - dismissed
+      type: string
+      description: |-
+        * `new` - New
+        * `linked` - Linked
+        * `dismissed` - Dismissed
   securitySchemes:
     sessionCookie:
       type: apiKey
