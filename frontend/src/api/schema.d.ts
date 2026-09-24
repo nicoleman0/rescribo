@@ -218,6 +218,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/members/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_members_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/memberships/": {
         parameters: {
             query?: never;
@@ -282,6 +298,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_reports_list"];
+        put?: never;
+        post: operations["workspaces_reports_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_reports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -335,6 +383,20 @@ export interface components {
             email: string;
             password: string;
         };
+        ManualReport: {
+            title: string;
+            description?: string;
+            customer_label?: string;
+            customer_contact_reference?: string;
+            affected_version?: string;
+        };
+        MemberSummary: {
+            /** Format: uuid */
+            id: string;
+            full_name: string;
+            /** Format: email */
+            email: string;
+        };
         MembershipOutput: {
             /** Format: uuid */
             id: string;
@@ -342,6 +404,21 @@ export interface components {
             email: string;
             full_name: string;
             role: string;
+        };
+        PaginatedReportListItemList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ReportListItem"][];
         };
         PasswordResetOutput: {
             /** Format: uuid */
@@ -353,6 +430,57 @@ export interface components {
             token: string;
             password: string;
         };
+        ProblemSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            state: components["schemas"]["StateEnum"];
+        };
+        ReportDetail: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: string;
+            customer_label: string;
+            customer_contact_reference: string;
+            affected_version: string;
+            triage_state: components["schemas"]["TriageStateEnum"];
+            provenance: components["schemas"]["ReportProvenance"];
+            submitted_by: components["schemas"]["MemberSummary"];
+            assignee: components["schemas"]["MemberSummary"] | null;
+            problem: components["schemas"]["ProblemSummary"] | null;
+            version: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        ReportListItem: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            customer_label: string;
+            triage_state: components["schemas"]["TriageStateEnum"];
+            source_kind: components["schemas"]["ReportSourceKindEnum"];
+            assignee: components["schemas"]["MemberSummary"] | null;
+            problem: components["schemas"]["ProblemSummary"] | null;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ReportProvenance: {
+            kind: components["schemas"]["ReportSourceKindEnum"];
+            permalink: string;
+            author_display_name: string;
+            snapshot_text: string;
+            /** Format: date-time */
+            captured_at: string;
+        };
+        /**
+         * @description * `manual` - Manual
+         *     * `slack` - Slack
+         * @enum {string}
+         */
+        ReportSourceKindEnum: "manual" | "slack";
         Role: {
             role: components["schemas"]["RoleRoleEnum"];
         };
@@ -371,6 +499,14 @@ export interface components {
             }[];
         };
         /**
+         * @description * `open` - Open
+         *     * `in_progress` - In progress
+         *     * `fix_available` - Fix available
+         *     * `not_planned` - Not planned
+         * @enum {string}
+         */
+        StateEnum: "open" | "in_progress" | "fix_available" | "not_planned";
+        /**
          * @description * `ok` - ok
          *     * `unavailable` - unavailable
          * @enum {string}
@@ -383,6 +519,13 @@ export interface components {
             status: string;
             workspace_name?: string;
         };
+        /**
+         * @description * `new` - New
+         *     * `linked` - Linked
+         *     * `dismissed` - Dismissed
+         * @enum {string}
+         */
+        TriageStateEnum: "new" | "linked" | "dismissed";
     };
     responses: never;
     parameters: never;
@@ -904,6 +1047,43 @@ export interface operations {
             };
         };
     };
+    workspaces_members_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberSummary"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     workspaces_memberships_list: {
         parameters: {
             query?: never;
@@ -1091,6 +1271,157 @@ export interface operations {
                 };
             };
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_reports_list: {
+        parameters: {
+            query?: {
+                assignee?: string;
+                customer?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                q?: string;
+                /**
+                 * @description * `manual` - Manual
+                 *     * `slack` - Slack
+                 */
+                source_kind?: "manual" | "slack";
+                /**
+                 * @description * `new` - New
+                 *     * `linked` - Linked
+                 *     * `dismissed` - Dismissed
+                 */
+                triage_state?: "new" | "linked" | "dismissed";
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReportListItemList"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_reports_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManualReport"];
+                "application/x-www-form-urlencoded": components["schemas"]["ManualReport"];
+                "multipart/form-data": components["schemas"]["ManualReport"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_reports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDetail"];
+                };
+            };
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

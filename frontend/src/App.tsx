@@ -7,17 +7,14 @@ import { RequireAuth } from '@/components/auth/require-auth'
 import { SignInPage } from '@/pages/sign-in-page'
 import { AcceptInvitePage } from '@/pages/accept-invite-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
+import { InboxPage } from '@/features/inbox/inbox-page'
+import { ManualReportPage } from '@/features/inbox/manual-report-page'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
   : undefined
 
 const productRoutes = [
-  {
-    path: 'inbox',
-    title: 'Inbox',
-    description: 'Customer reports will appear here once intake is connected.',
-  },
   {
     path: 'problems',
     title: 'Problems',
@@ -70,6 +67,9 @@ export default function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate replace to="/inbox" />} />
+          <Route path="inbox" element={<InboxPage />} />
+          <Route path="inbox/new" element={<ManualReportPage />} />
+          <Route path="inbox/:reportId" element={<InboxPage />} />
           {productRoutes.map((route) => (
             <Route
               key={route.path}
