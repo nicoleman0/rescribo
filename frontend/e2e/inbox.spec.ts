@@ -26,6 +26,11 @@ async function signIn(page: Page) {
 
 const reportList = (page: Page) => page.getByRole('list', { name: 'Reports' })
 
+// The router commits URL changes in a transition. Wait for each filter change
+// to land before the next one, or the next handler can reuse stale filters.
+const expectSearch = (page: Page, search: string) =>
+  expect.poll(() => new URL(page.url()).search).toBe(search)
+
 test.describe('Inbox', () => {
   test.beforeEach(async ({ page }) => signIn(page))
 
@@ -59,29 +64,38 @@ test.describe('Inbox', () => {
     await expect(reportList(page)).toContainText(marker)
 
     await page.getByRole('button', { name: 'Clear filters' }).click()
+    await expectSearch(page, '')
     await page
       .getByRole('searchbox', { name: 'Customer' })
       .fill('seeded customer')
     await page.getByRole('button', { name: 'Search' }).click()
+    await expectSearch(page, '?customer=seeded+customer')
     await expect(reportList(page).getByRole('listitem')).toHaveCount(1)
     await expect(reportList(page)).toContainText(seededTitle)
 
     await page.getByRole('button', { name: 'Clear filters' }).click()
+    await expectSearch(page, '')
     await page.getByLabel('Source').selectOption('slack')
+    await expectSearch(page, '?source_kind=slack')
     await expect(reportList(page)).toContainText(seededTitle)
     await expect(reportList(page)).not.toContainText(marker)
     await page.getByLabel('Source').selectOption('manual')
+    await expectSearch(page, '?source_kind=manual')
     await expect(reportList(page)).toContainText(marker)
     await expect(reportList(page)).not.toContainText(seededTitle)
 
     await page.getByLabel('Source').selectOption('')
+    await expectSearch(page, '')
     await page.getByLabel('Assignee').selectOption('unassigned')
+    await expectSearch(page, '?assignee=unassigned')
     await page.getByLabel('Status').selectOption('new')
+    await expectSearch(page, '?assignee=unassigned&triage_state=new')
     await expect(reportList(page)).toContainText(marker)
     await page.getByLabel('Status').selectOption('dismissed')
     await expect(page.getByText('No reports match these filters')).toBeVisible()
 
     await page.getByRole('button', { name: 'Clear filters' }).first().click()
+    await expectSearch(page, '')
     await reportList(page).getByRole('link', { name: seededTitle }).click()
     const provenance = page
       .getByRole('region', { name: 'Report detail' })
