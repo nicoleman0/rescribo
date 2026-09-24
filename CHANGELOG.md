@@ -6,6 +6,9 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- Inbox with paginated reports, text and customer search, status/assignee/source filters, and a report detail panel showing provenance, assignee, triage state, and related problem (#6).
+- Manual report capture through the shared report workflow. Unsaved drafts survive failed requests and reloads in the same tab (#6).
+- Workspace report list, detail, and create endpoints, plus a member directory readable by all members (#6).
 - Workspace-scoped report and problem domain with provenance, transitions, row versions, and content-free activity (#38).
 - Workspace accounts and sessions: sign-in, sign-out, invitations, memberships, owner and member roles, and one-use password resets (#37).
 - `task bootstrap-owner` creates the first workspace owner. `task issue-owner-recovery` issues an owner recovery link or sets a password (#37).
@@ -19,6 +22,8 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ### Changed
 
+- UI foundation shell screenshots now capture the Problems placeholder, because the Inbox shows live data (#6).
+- CI uploads Playwright screenshot differences when the browser checks fail (#6).
 - The custom user model replaces Django's `auth_user`. Existing local databases must be recreated before `task migrate`. See the README (#37).
 - Product access now requires an active workspace membership. `is_superuser` alone grants none (#37).
 

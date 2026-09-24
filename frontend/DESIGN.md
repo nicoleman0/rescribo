@@ -17,13 +17,17 @@ interaction surface.
 
 ## Components
 
-- shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, and Skeleton
+- shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, Skeleton, Input, Textarea, and NativeSelect
+- form fields: Field, TextareaField, and SelectField share one label, hint, and inline error layout
 - shared async states: LoadingState, EmptyState, ErrorState, RetryButton, and QueryState
 - AppShell: desktop sidebar, mobile bottom navigation, and a compact status header
 
 ## Async state pattern
 
-TanStack Query screens pass their query state to `QueryState`. It renders one
+TanStack Query screens pass their query state to `QueryState`, or compose
+LoadingState, EmptyState, and ErrorState directly when the empty state needs
+screen-specific wording (the inbox separates "no reports yet" from "no
+matches"). It renders one
 of loading, empty, error, or ready. Errors explain the next action and retry
 uses the same button everywhere. Preserve user input in the feature screen
 that owns the draft when a recoverable request fails.

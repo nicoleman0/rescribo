@@ -27,11 +27,13 @@ test.describe('UI foundation', () => {
     await expect(page).toHaveURL(/\/inbox$/)
   })
 
+  // The shell screenshots use a placeholder screen so live inbox data
+  // cannot change the baseline.
   test('shell at desktop width', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
-    await page.goto('/inbox')
+    await page.goto('/problems')
     await expect(
-      page.getByRole('heading', { name: /Inbox is ready/ }),
+      page.getByRole('heading', { name: /Problems is ready/ }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
     await expect(page).toHaveScreenshot('shell-desktop.png', { fullPage: true })
@@ -39,7 +41,7 @@ test.describe('UI foundation', () => {
 
   test('shell at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
-    await page.goto('/inbox')
+    await page.goto('/problems')
     await expect(
       page.getByRole('navigation', { name: 'Primary navigation' }),
     ).toBeVisible()
