@@ -58,6 +58,11 @@ tasks:
 
   check:
     cmds:
+      - task check-backend
+      - task check-frontend
+
+  check-backend:
+    cmds:
       - python3 scripts/check_raw_colours.py
       - uv run ruff check .
       - uv run ruff format --check .
@@ -65,13 +70,24 @@ tasks:
       - shellcheck scripts/*.sh
       - uv run python backend/manage.py check
       - uv run python backend/manage.py makemigrations --check --dry-run
+
+  check-frontend:
+    cmds:
       - cd frontend && npm run lint
       - cd frontend && npm run typecheck
       - cd frontend && npm run format:check
 
   test:
     cmds:
+      - task test-backend
+      - task test-frontend
+
+  test-backend:
+    cmds:
       - uv run pytest
+
+  test-frontend:
+    cmds:
       - cd frontend && npm test
 
   build:
@@ -92,8 +108,18 @@ tasks:
 
   schema-check:
     cmds:
+      - task schema-check-backend
+      - task schema-check-frontend
+
+  schema-check-backend:
+    cmds:
+      - mkdir -p .cache
       - uv run python backend/manage.py spectacular --file .cache/openapi.yaml --validate --fail-on-warn
       - diff -u frontend/openapi.yaml .cache/openapi.yaml
+
+  schema-check-frontend:
+    cmds:
+      - mkdir -p .cache
       - cd frontend && npm exec openapi-typescript -- openapi.yaml -o ../.cache/schema.d.ts
       - diff -u frontend/src/api/schema.d.ts .cache/schema.d.ts
 
