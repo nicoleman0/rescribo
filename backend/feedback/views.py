@@ -1,6 +1,5 @@
 """Thin HTTP adapters for inbox reads and manual report capture."""
 
-from typing import Any
 from uuid import UUID
 
 from django.db.models import QuerySet
@@ -15,7 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.views import ErrorSerializer, WorkspaceView
-from feedback.errors import FeedbackError, NotFound
+from feedback.errors import NotFound, TitleRequired
 from feedback.inbox import get_report, search_reports, workspace_directory
 from feedback.models import Report
 from feedback.reports import submit_report
@@ -28,29 +27,6 @@ from feedback.serializers import (
 )
 
 READ_ERRORS = {401: ErrorSerializer, 404: ErrorSerializer}
-
-
-def invalid_request(field_errors: Any) -> Response:
-    return Response(
-        {
-            "detail": "Check the submitted fields.",
-            "reason": "invalid_request",
-            "field_errors": field_errors,
-        },
-        status=400,
-    )
-
-
-def feedback_error_response(error: FeedbackError) -> Response:
-    field = "title" if error.reason == "title_required" else getattr(error, "field", None)
-    return Response(
-        {
-            "detail": "The request could not be completed.",
-            "reason": error.reason,
-            "field_errors": {field: [error.reason]} if field else {},
-        },
-        status=400,
-    )
 
 
 class ReportPagination(PageNumberPagination):
@@ -81,12 +57,18 @@ class ReportListView(ListModelMixin, WorkspaceView, GenericAPIView):
     )
     def post(self, request: Request, workspace_id: UUID) -> Response:
         data = ManualReportSerializer(data=request.data)
-        if not data.is_valid():
-            return invalid_request(data.errors)
+        data.is_valid(raise_exception=True)
         try:
             result = submit_report(actor=self.membership, submission=data.to_submission())
-        except FeedbackError as error:
-            return feedback_error_response(error)
+        except TitleRequired:
+            return Response(
+                {
+                    "detail": "The request could not be completed.",
+                    "reason": "title_required",
+                    "field_errors": {"title": ["title_required"]},
+                },
+                status=400,
+            )
         report = get_report(actor=self.membership, report_id=result.report.pk)
         return Response(ReportDetailSerializer(report).data, status=201)
 
