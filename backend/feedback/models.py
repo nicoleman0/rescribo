@@ -1,12 +1,14 @@
 """Workspace-scoped customer feedback domain records."""
 
 import uuid
+from typing import Any
 
 from django.db import models
 from django.db.models import Q
 from django.utils import timezone
 
 from accounts.models import Membership, Workspace
+from connections.models import Connection
 
 
 class Problem(models.Model):
@@ -174,6 +176,9 @@ class Activity(models.Model):
         PROBLEM_UPDATED = "problem.updated", "Problem updated"
         PROBLEM_STATE_CHANGED = "problem.state_changed", "Problem state changed"
         PROBLEM_FIX_CONFIRMED = "problem.fix_confirmed", "Problem fix confirmed"
+        ENGINEERING_ISSUE_LINKED = "engineering_issue.linked", "Engineering issue linked"
+        ENGINEERING_ISSUE_CREATED = "engineering_issue.created", "Engineering issue created"
+        ENGINEERING_ISSUE_UNLINKED = "engineering_issue.unlinked", "Engineering issue unlinked"
 
     class RecordType(models.TextChoices):
         REPORT = "report", "Report"
@@ -279,3 +284,61 @@ class ReportNotificationOperation(models.Model):
         indexes = [
             models.Index(fields=["workspace", "report", "state"], name="notification_ws_report_idx")
         ]
+
+
+class EngineeringIssue(models.Model):
+    """A GitHub issue linked to a problem. Superseding a link keeps the old row for history."""
+
+    class State(models.TextChoices):
+        OPEN = "open", "Open"
+        CLOSED = "closed", "Closed"
+
+    class Access(models.TextChoices):
+        OK = "ok", "OK"
+        ACCESS_LOST = "access_lost", "Access lost"
+        SUSPENDED = "suspended", "Suspended"
+        DELETED = "deleted", "Deleted"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="engineering_issues"
+    )
+    problem = models.ForeignKey(
+        Problem, on_delete=models.PROTECT, related_name="engineering_issues"
+    )
+    connection = models.ForeignKey(Connection, on_delete=models.PROTECT, related_name="+")
+    repository_id = models.CharField(max_length=64)
+    issue_id = models.CharField(max_length=64)
+    number = models.PositiveIntegerField()
+    url = models.URLField(max_length=500)
+    title = models.CharField(max_length=256)
+    state = models.CharField(max_length=10, choices=State.choices)
+    state_reason = models.CharField(max_length=32, blank=True, default="")
+    access = models.CharField(max_length=16, choices=Access.choices, default=Access.OK)
+    provider_updated_at = models.DateTimeField()
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+    sync_error = models.CharField(max_length=200, blank=True, default="")
+    active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="+")
+    created_at = models.DateTimeField(default=timezone.now)
+    unlinked_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["problem"], condition=Q(active=True), name="one_active_issue_per_problem"
+            ),
+            models.UniqueConstraint(
+                fields=["workspace", "repository_id", "issue_id"],
+                condition=Q(active=True),
+                name="one_active_problem_per_issue",
+            ),
+        ]
+        indexes = [models.Index(fields=["workspace", "active"], name="eng_issue_ws_active_idx")]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        # Cross-table invariants cannot be expressed as a PostgreSQL CHECK constraint.
+        assert self.workspace_id == self.problem.workspace_id, (
+            "An engineering issue must share its problem's workspace."
+        )
+        super().save(*args, **kwargs)

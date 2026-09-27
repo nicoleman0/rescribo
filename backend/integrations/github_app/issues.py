@@ -1,4 +1,5 @@
 import re
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -10,17 +11,51 @@ class IssueLinkError(ValueError):
 
 
 @dataclass(frozen=True)
-class LinkedIssue:
+class EngineeringIssueSnapshot:
+    """The typed read result for one GitHub issue, shared by link, webhook, and reconcile reads."""
+
+    issue_id: str
     number: int
     title: str
+    url: str
     state: str
     state_reason: str | None
-    url: str
     updated_at: str
-    repository: str
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+def parse_issue_payload(
+    issue: Mapping[str, Any], *, error: type[Exception]
+) -> EngineeringIssueSnapshot:
+    issue_id = issue.get("id")
+    number = issue.get("number")
+    title = issue.get("title")
+    state = issue.get("state")
+    updated_at = issue.get("updated_at")
+    url = issue.get("html_url")
+    state_reason = issue.get("state_reason")
+    if not (
+        isinstance(issue_id, int)
+        and isinstance(number, int)
+        and isinstance(title, str)
+        and isinstance(state, str)
+        and isinstance(updated_at, str)
+        and isinstance(url, str)
+    ):
+        raise error("GitHub returned an incomplete issue payload.")
+    if state_reason is not None and not isinstance(state_reason, str):
+        raise error("GitHub returned an invalid issue state_reason.")
+    return EngineeringIssueSnapshot(
+        issue_id=str(issue_id),
+        number=number,
+        title=title,
+        url=url,
+        state=state,
+        state_reason=state_reason,
+        updated_at=updated_at,
+    )
 
 
 _ISSUE_URL = re.compile(
@@ -57,7 +92,7 @@ def resolve_issue_link(
     installation_token: str,
     expected_repository: str,
     reference: str,
-) -> LinkedIssue:
+) -> EngineeringIssueSnapshot:
     """Fetch and validate an existing issue for linking.
 
     Rejects pull requests (GitHub issue endpoints also return PRs) and issues
@@ -82,26 +117,4 @@ def resolve_issue_link(
         f"/repos/{expected_repository.lower()}"
     ):
         raise IssueLinkError("The fetched issue does not belong to the configured repository.")
-    title = issue.get("title")
-    state = issue.get("state")
-    updated_at = issue.get("updated_at")
-    url = issue.get("html_url")
-    state_reason = issue.get("state_reason")
-    if not (
-        isinstance(title, str)
-        and isinstance(state, str)
-        and isinstance(updated_at, str)
-        and isinstance(url, str)
-    ):
-        raise IssueLinkError("GitHub returned an incomplete issue payload.")
-    if state_reason is not None and not isinstance(state_reason, str):
-        raise IssueLinkError("GitHub returned an invalid issue state_reason.")
-    return LinkedIssue(
-        number=number,
-        title=title,
-        state=state,
-        state_reason=state_reason,
-        url=url,
-        updated_at=updated_at,
-        repository=expected_repository,
-    )
+    return parse_issue_payload(issue, error=IssueLinkError)

@@ -317,6 +317,8 @@ def run(args: argparse.Namespace) -> None:
                 event=closed_event,
                 stored_updated_at=str(fetched["updated_at"]),
             )
+            if closed_outcome.snapshot is None:
+                raise SystemExit("The closed event fetch reported access_lost.")
 
             client.update_issue_state(
                 installation_token=installation_token,
@@ -334,7 +336,7 @@ def run(args: argparse.Namespace) -> None:
                 installation_token=installation_token,
                 expected_repository=repository,
                 event=reopened_event,
-                stored_updated_at=closed_outcome.updated_at,
+                stored_updated_at=closed_outcome.snapshot.updated_at,
             )
             evidence["phases"]["webhooks"] = {
                 "closed": {

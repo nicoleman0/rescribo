@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient
+from integrations.github_app.issues import EngineeringIssueSnapshot, parse_issue_payload
 
 
 class InvalidWebhookSignature(PermissionError):
@@ -115,12 +116,18 @@ def parse_installation_event(
 
 @dataclass(frozen=True)
 class IssueStateOutcome:
+    """The result of fetching current issue state for one event.
+
+    `snapshot` is None exactly when `access` is `access_lost`. `applied` tells the
+    caller whether `snapshot.updated_at` is newer than what is already stored: callers
+    must only overwrite persisted state and `provider_updated_at` when `applied` is
+    True, so a stale or replayed delivery cannot roll stored state backward.
+    """
+
     number: int
     applied: bool
     access: Literal["ok", "access_lost"]
-    state: str | None
-    state_reason: str | None
-    updated_at: str | None
+    snapshot: EngineeringIssueSnapshot | None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -142,22 +149,17 @@ def apply_issue_event(
 
     The webhook payload is never trusted for state. An inaccessible issue is
     reported as access_lost, never as closed. A fetch whose provider timestamp
-    is not newer than the stored one is treated as a stale delivery.
+    is not newer than the stored one is treated as a stale delivery: `snapshot`
+    still carries GitHub's current answer, but `applied` is False so the caller
+    knows not to persist it.
 
-    `outcome.updated_at` is the effective timestamp callers persist: it never
-    regresses on stale deliveries, so replays cannot roll stored state back.
     A `transferred` event fired by the destination repository arrives with a
     repository that no longer matches the binding; that is the expected signal
     that the issue left the bound repository and is reported as access_lost.
     """
     if event.action == "transferred" and event.repository.lower() != expected_repository.lower():
         return IssueStateOutcome(
-            number=event.number,
-            applied=False,
-            access="access_lost",
-            state=None,
-            state_reason=None,
-            updated_at=None,
+            number=event.number, applied=False, access="access_lost", snapshot=None
         )
     if event.repository.lower() != expected_repository.lower():
         raise InvalidWebhookPayload(
@@ -174,35 +176,11 @@ def apply_issue_event(
     except GitHubAPIError as error:
         if error.status_code in {301, 404, 410}:
             return IssueStateOutcome(
-                number=event.number,
-                applied=False,
-                access="access_lost",
-                state=None,
-                state_reason=None,
-                updated_at=None,
+                number=event.number, applied=False, access="access_lost", snapshot=None
             )
         raise
-    fetched_updated_at = issue.get("updated_at")
-    state = issue.get("state")
-    state_reason = issue.get("state_reason")
-    if not (isinstance(fetched_updated_at, str) and isinstance(state, str)):
-        raise InvalidWebhookPayload("GitHub returned an incomplete issue payload.")
-    if stored_updated_at is not None and _provider_time(fetched_updated_at) <= _provider_time(
+    snapshot = parse_issue_payload(issue, error=InvalidWebhookPayload)
+    applied = stored_updated_at is None or _provider_time(snapshot.updated_at) > _provider_time(
         stored_updated_at
-    ):
-        return IssueStateOutcome(
-            number=event.number,
-            applied=False,
-            access="ok",
-            state=state,
-            state_reason=state_reason if isinstance(state_reason, str) else None,
-            updated_at=stored_updated_at,
-        )
-    return IssueStateOutcome(
-        number=event.number,
-        applied=True,
-        access="ok",
-        state=state,
-        state_reason=state_reason if isinstance(state_reason, str) else None,
-        updated_at=fetched_updated_at,
     )
+    return IssueStateOutcome(number=event.number, applied=applied, access="ok", snapshot=snapshot)

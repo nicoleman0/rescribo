@@ -10,6 +10,7 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 
 from integrations.github_app.client import GitHubAppClient
 from integrations.github_app.issues import (
+    EngineeringIssueSnapshot,
     IssueLinkError,
     parse_issue_reference,
     resolve_issue_link,
@@ -43,6 +44,7 @@ def make_client(
 
 
 ISSUE_PAYLOAD = {
+    "id": 555,
     "number": 7,
     "title": "Export button does nothing",
     "state": "open",
@@ -111,9 +113,15 @@ def test_resolve_issue_link_returns_sanitised_issue(private_key: bytes) -> None:
         reference="https://github.com/owner/disposable/issues/7",
     )
 
-    assert linked.number == 7
-    assert linked.state == "open"
-    assert linked.repository == "owner/disposable"
+    assert linked == EngineeringIssueSnapshot(
+        issue_id="555",
+        number=7,
+        title="Export button does nothing",
+        url="https://github.com/owner/disposable/issues/7",
+        state="open",
+        state_reason=None,
+        updated_at="2026-09-20T21:00:00Z",
+    )
 
 
 def test_resolve_issue_link_rejects_pull_requests(private_key: bytes) -> None:
@@ -279,9 +287,10 @@ def test_apply_issue_event_fetches_current_state(private_key: bytes) -> None:
 
     assert outcome.applied is True
     assert outcome.access == "ok"
-    assert outcome.state == "closed"
-    assert outcome.state_reason == "not_planned"
-    assert outcome.updated_at == "2026-09-20T21:05:00Z"
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.state == "closed"
+    assert outcome.snapshot.state_reason == "not_planned"
+    assert outcome.snapshot.updated_at == "2026-09-20T21:05:00Z"
 
 
 def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
@@ -301,7 +310,8 @@ def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
 
     assert outcome.applied is False
     assert outcome.access == "ok"
-    assert outcome.updated_at == "2026-09-20T21:30:00Z"
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.updated_at == "2026-09-20T21:00:00Z"
 
 
 def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: bytes) -> None:
@@ -318,7 +328,7 @@ def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: 
 
     assert outcome.applied is False
     assert outcome.access == "access_lost"
-    assert outcome.state is None
+    assert outcome.snapshot is None
 
 
 def test_apply_issue_event_maps_moved_issues_to_access_lost(private_key: bytes) -> None:
