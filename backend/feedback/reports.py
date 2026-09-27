@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass, fields
 from datetime import datetime
-from typing import Any
 from uuid import UUID
 
 from django.db import IntegrityError, transaction
@@ -21,7 +20,7 @@ from feedback.services import (
     validate_reference,
     write_activity,
 )
-from feedback.submissions import ReportSubmission
+from feedback.submissions import ReportSubmission, SourceSnapshot
 from feedback.transitions import check_report_transition
 
 
@@ -50,11 +49,14 @@ def submit_report(
     source = submission.source
     if source is not None and source.kind != ReportSource.Kind.SLACK:
         raise InvalidSourceKind()
+    if source is None and not isinstance(submission.submission_key, UUID):
+        raise ValueError("Manual submission_key must be a UUID.")
+    if source is not None and submission.submission_key is not None:
+        raise ValueError("Only manual sources may have a submission_key.")
     with transaction.atomic():
-        if source is not None:
-            existing = _existing_source(actor=actor, source=source)
-            if existing is not None:
-                return SubmitResult(report=existing, created=False)
+        existing = _existing_submission(actor=actor, submission=submission)
+        if existing is not None:
+            return SubmitResult(report=existing, created=False)
         try:
             with transaction.atomic():
                 report = Report.objects.create(
@@ -72,6 +74,7 @@ def submit_report(
                     report=report,
                     workspace_id=actor.workspace_id,
                     kind=source.kind if source else ReportSource.Kind.MANUAL,
+                    submission_key=submission.submission_key,
                     external_workspace_id=source.external_workspace_id if source else "",
                     external_channel_id=source.external_channel_id if source else "",
                     external_message_id=source.external_message_id if source else "",
@@ -82,9 +85,7 @@ def submit_report(
                     captured_at=current,
                 )
         except IntegrityError:
-            if source is None:
-                raise
-            existing = _existing_source(actor=actor, source=source)
+            existing = _existing_submission(actor=actor, submission=submission)
             if existing is None:
                 raise
             return SubmitResult(report=existing, created=False)
@@ -98,7 +99,18 @@ def submit_report(
         return SubmitResult(report=report, created=True)
 
 
-def _existing_source(*, actor: Membership, source: Any) -> Report | None:
+def _existing_submission(*, actor: Membership, submission: ReportSubmission) -> Report | None:
+    if submission.source is not None:
+        return _existing_source(actor=actor, source=submission.source)
+    return Report.objects.filter(
+        workspace_id=actor.workspace_id,
+        source__workspace_id=actor.workspace_id,
+        source__kind=ReportSource.Kind.MANUAL,
+        source__submission_key=submission.submission_key,
+    ).first()
+
+
+def _existing_source(*, actor: Membership, source: SourceSnapshot) -> Report | None:
     return Report.objects.filter(
         workspace_id=actor.workspace_id,
         source__kind=source.kind,

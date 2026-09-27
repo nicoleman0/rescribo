@@ -1,6 +1,7 @@
 """Provider-neutral input contract for report capture."""
 
 from dataclasses import dataclass
+from uuid import UUID
 
 
 @dataclass(frozen=True)
@@ -23,3 +24,4 @@ class ReportSubmission:
     customer_contact_reference: str
     affected_version: str
     source: SourceSnapshot | None
+    submission_key: UUID | None = None

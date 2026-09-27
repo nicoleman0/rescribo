@@ -1,7 +1,11 @@
 import type { FormEvent } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { createManualReport, reportKeys } from '@/api/reports'
+import {
+  createManualReport,
+  reportKeys,
+  type ManualReportInput,
+} from '@/api/reports'
 import type { ApiError } from '@/api/request'
 import { useWorkspace } from '@/components/auth/use-workspace'
 import { Field, TextareaField } from '@/components/forms/field'
@@ -19,11 +23,22 @@ function failureMessage(error: ApiError) {
 
 export function ManualReportPage() {
   const { workspace } = useWorkspace()
-  const { draft, restored, update, clear } = useReportDraft(workspace.id)
+  return <ManualReportForm key={workspace.id} workspace={workspace} />
+}
+
+function ManualReportForm({
+  workspace,
+}: {
+  workspace: { id: string; name: string }
+}) {
+  const { draft, restored, update, clear, prepareSubmission } = useReportDraft(
+    workspace.id,
+  )
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const mutation = useMutation({
-    mutationFn: (input: ReportDraft) => createManualReport(workspace.id, input),
+    mutationFn: (input: ManualReportInput) =>
+      createManualReport(workspace.id, input),
     onSuccess: (report) => {
       clear()
       queryClient.setQueryData(
@@ -42,7 +57,7 @@ export function ManualReportPage() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    mutation.mutate(draft)
+    mutation.mutate(prepareSubmission())
   }
 
   const field = (name: keyof ReportDraft) => ({
@@ -122,7 +137,7 @@ export function ManualReportPage() {
         </fieldset>
         {mutation.isError && error ? (
           <Alert variant="destructive">
-            <AlertTitle>The report was not created</AlertTitle>
+            <AlertTitle>Could not confirm report creation</AlertTitle>
             <AlertDescription>
               {failureMessage(error)} Your draft is kept on this page.
             </AlertDescription>
