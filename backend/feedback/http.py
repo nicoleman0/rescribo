@@ -15,6 +15,7 @@ from feedback.errors import (
     InvalidTransition,
     IssueAlreadyLinked,
     IssueAlreadyLinkedElsewhere,
+    IssueCreationUncertain,
     IssueProviderUnavailable,
     IssueReferenceRejected,
     NoChanges,
@@ -103,6 +104,20 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
                 "reason": error.reason,
                 "field_errors": {},
                 "problem_id": str(error.problem_id),
+                "current": current(),
+            },
+            status=409,
+        )
+    if isinstance(error, IssueCreationUncertain):
+        return Response(
+            {
+                "detail": (
+                    "GitHub did not confirm this issue was created in time. Check the "
+                    "repository for a duplicate before trying again."
+                ),
+                "reason": error.reason,
+                "field_errors": {},
+                "operation_id": str(error.operation_id),
                 "current": current(),
             },
             status=409,

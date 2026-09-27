@@ -1285,6 +1285,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/create/:
+    post:
+      operationId: workspaces_problems_issue_create_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateIssue'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueCreationUncertain'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/issue/link/:
     post:
       operationId: workspaces_problems_issue_link_create
@@ -1344,6 +1414,45 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/preview/:
+    get:
+      operationId: workspaces_problems_issue_preview_retrieve
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuePreview'
+          description: ''
+        '401':
           content:
             application/json:
               schema:
@@ -2212,6 +2321,22 @@ components:
         * `active` - Active
         * `error` - Needs attention
         * `disconnected` - Disconnected
+    CreateIssue:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 256
+        body:
+          type: string
+          maxLength: 10000
+      required:
+      - body
+      - expected_version
+      - title
     CreateProblemForReport:
       type: object
       properties:
@@ -2401,6 +2526,26 @@ components:
       - accept_url
       - email
       - id
+    IssueCreationUncertain:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ProblemDetail'
+        operation_id:
+          type: string
+          format: uuid
+      required:
+      - current
+      - detail
+      - operation_id
+      - reason
     IssueLinkConflict:
       type: object
       properties:
@@ -2420,6 +2565,16 @@ components:
       - current
       - detail
       - reason
+    IssuePreview:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+      required:
+      - body
+      - title
     LinkIssue:
       type: object
       properties:

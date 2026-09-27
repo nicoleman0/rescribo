@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.views import ErrorSerializer, WorkspaceView
-from feedback.engineering_issues import link_issue
+from feedback.engineering_issues import create_issue, link_issue, preview_issue
 from feedback.errors import FeedbackError, NotFound, TitleRequired
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
 from feedback.inbox import get_report, search_reports, workspace_directory
@@ -39,9 +39,12 @@ from feedback.reports import (
 )
 from feedback.serializers import (
     AssignReportSerializer,
+    CreateIssueSerializer,
     CreateProblemForReportSerializer,
     InboxFilterSerializer,
+    IssueCreationUncertainSerializer,
     IssueLinkConflictSerializer,
+    IssuePreviewSerializer,
     LinkIssueSerializer,
     LinkReportSerializer,
     ManualReportSerializer,
@@ -304,6 +307,7 @@ class ProblemActionView(WorkspaceView):
     """Run one problem use case and return the updated problem."""
 
     input_serializer: type[VersionedSerializer] = VersionedSerializer
+    success_status = 200
 
     def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
         raise NotImplementedError
@@ -324,7 +328,7 @@ class ProblemActionView(WorkspaceView):
                 ),
             )
         problem = get_problem(actor=self.membership, problem_id=problem.pk)
-        return Response(ProblemDetailSerializer(problem).data)
+        return Response(ProblemDetailSerializer(problem).data, status=self.success_status)
 
 
 def problem_action_schema(request: type[VersionedSerializer]) -> Callable[[Any], Any]:
@@ -375,5 +379,40 @@ class ProblemIssueLinkView(ProblemActionView):
             problem_id=problem_id,
             expected_version=data["expected_version"],
             reference=data["reference"],
+        )
+        return issue.problem
+
+
+class ProblemIssuePreviewView(WorkspaceView):
+    @extend_schema(responses={200: IssuePreviewSerializer, **READ_ERRORS})
+    def get(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
+        try:
+            preview = preview_issue(actor=self.membership, problem_id=problem_id)
+        except NotFound:
+            raise exceptions.NotFound() from None
+        return Response(IssuePreviewSerializer(preview).data)
+
+
+@extend_schema_view(
+    post=extend_schema(
+        request=CreateIssueSerializer,
+        responses={
+            201: ProblemDetailSerializer,
+            409: IssueCreationUncertainSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+)
+class ProblemIssueCreateView(ProblemActionView):
+    input_serializer = CreateIssueSerializer
+    success_status = 201
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        issue = create_issue(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
+            title=data["title"],
+            body=data["body"],
         )
         return issue.problem

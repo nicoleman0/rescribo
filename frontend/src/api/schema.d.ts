@@ -476,6 +476,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/create/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one problem use case and return the updated problem. */
+        post: operations["workspaces_problems_issue_create_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/link/": {
         parameters: {
             query?: never;
@@ -487,6 +504,22 @@ export interface paths {
         put?: never;
         /** @description Run one problem use case and return the updated problem. */
         post: operations["workspaces_problems_issue_link_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_problems_issue_preview_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -740,6 +773,11 @@ export interface components {
          * @enum {string}
          */
         ConnectionStatusEnum: "active" | "error" | "disconnected";
+        CreateIssue: {
+            expected_version: number;
+            title: string;
+            body: string;
+        };
         CreateProblemForReport: {
             expected_version: number;
             title: string;
@@ -829,6 +867,16 @@ export interface components {
             /** Format: uri */
             accept_url: string;
         };
+        IssueCreationUncertain: {
+            detail: string;
+            reason: string;
+            field_errors?: {
+                [key: string]: unknown;
+            };
+            current: components["schemas"]["ProblemDetail"];
+            /** Format: uuid */
+            operation_id: string;
+        };
         IssueLinkConflict: {
             detail: string;
             reason: string;
@@ -838,6 +886,10 @@ export interface components {
             current: components["schemas"]["ProblemDetail"];
             /** Format: uuid */
             problem_id?: string;
+        };
+        IssuePreview: {
+            title: string;
+            body: string;
         };
         LinkIssue: {
             expected_version: number;
@@ -2385,6 +2437,74 @@ export interface operations {
             };
         };
     };
+    workspaces_problems_issue_create_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateIssue"];
+                "application/x-www-form-urlencoded": components["schemas"]["CreateIssue"];
+                "multipart/form-data": components["schemas"]["CreateIssue"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueCreationUncertain"];
+                };
+            };
+        };
+    };
     workspaces_problems_issue_link_create: {
         parameters: {
             query?: never;
@@ -2449,6 +2569,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IssueLinkConflict"];
+                };
+            };
+        };
+    };
+    workspaces_problems_issue_preview_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssuePreview"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

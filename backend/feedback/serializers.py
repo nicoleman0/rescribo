@@ -284,6 +284,16 @@ class LinkIssueSerializer(VersionedSerializer):
     reference = serializers.CharField(max_length=500)
 
 
+class IssuePreviewSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    body = serializers.CharField()
+
+
+class CreateIssueSerializer(VersionedSerializer):
+    title = serializers.CharField(max_length=256)
+    body = serializers.CharField(max_length=10000, allow_blank=True)
+
+
 class ReportConflictSerializer(ErrorSerializer):
     current = ReportDetailSerializer()
 
@@ -294,3 +304,7 @@ class ProblemConflictSerializer(ErrorSerializer):
 
 class IssueLinkConflictSerializer(ProblemConflictSerializer):
     problem_id = serializers.UUIDField(required=False)
+
+
+class IssueCreationUncertainSerializer(ProblemConflictSerializer):
+    operation_id = serializers.UUIDField()

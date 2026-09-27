@@ -1,8 +1,10 @@
 """Linking, creating, and syncing the GitHub issue for a problem."""
 
 from datetime import datetime
-from uuid import UUID
+from uuid import UUID, uuid4
 
+import httpx
+from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
@@ -13,8 +15,10 @@ from feedback.errors import (
     ConnectionNotReady,
     IssueAlreadyLinked,
     IssueAlreadyLinkedElsewhere,
+    IssueCreationUncertain,
     IssueProviderUnavailable,
     IssueReferenceRejected,
+    TitleRequired,
 )
 from feedback.models import Activity, EngineeringIssue, Problem
 from feedback.problem_reads import get_problem
@@ -23,6 +27,7 @@ from integrations.github_app.client import GitHubAppClient
 from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
+    parse_issue_payload,
     provider_time,
     resolve_issue_link,
 )
@@ -86,6 +91,69 @@ def link_issue(
             snapshot=snapshot,
             now=current,
             action=Activity.Action.ENGINEERING_ISSUE_LINKED,
+        )
+
+
+def preview_issue(*, actor: Membership, problem_id: UUID) -> dict[str, str]:
+    problem = get_problem(actor=actor, problem_id=problem_id)
+    return {"title": problem.title, "body": _default_body(problem)}
+
+
+def _default_body(problem: Problem) -> str:
+    link = f"{settings.RESCRIBO_PUBLIC_BASE_URL}/problems/{problem.pk}"
+    summary = problem.summary.strip()
+    parts = [summary] if summary else []
+    parts.append(f"View in Rescribo: {link}")
+    return "\n\n".join(parts)
+
+
+def create_issue(
+    *,
+    actor: Membership,
+    problem_id: UUID,
+    expected_version: int,
+    title: str,
+    body: str,
+    now: datetime | None = None,
+) -> EngineeringIssue:
+    current = now or timezone.now()
+    problem = get_problem(actor=actor, problem_id=problem_id)
+    require_version(row=problem, expected_version=expected_version)
+    clean_title = title.strip()
+    if not clean_title:
+        raise TitleRequired()
+    connection = _active_github_connection(actor)
+    operation_id = uuid4()
+    # An opaque marker so a future reconciliation (#15/#18) can find an issue this
+    # request created even if the response confirming it was lost to a timeout.
+    published_body = f"{body}\n\n<!-- rescribo-operation:{operation_id} -->"
+    owner, name = connection.repository.split("/", 1)
+    try:
+        with github_client() as client:
+            token = _installation_token(client, connection)
+            created = client.create_issue(
+                installation_token=token,
+                owner=owner,
+                name=name,
+                title=clean_title,
+                body=published_body,
+            )
+    except httpx.TimeoutException as error:
+        raise IssueCreationUncertain(operation_id=operation_id) from error
+    except PROVIDER_ERRORS as error:
+        raise IssueProviderUnavailable() from error
+    snapshot = parse_issue_payload(created, error=IssueLinkError)
+
+    with transaction.atomic():
+        problem = locked_problem(actor=actor, problem_id=problem_id)
+        require_version(row=problem, expected_version=expected_version)
+        return _supersede_and_create(
+            actor=actor,
+            problem=problem,
+            connection=connection,
+            snapshot=snapshot,
+            now=current,
+            action=Activity.Action.ENGINEERING_ISSUE_CREATED,
         )
 
 
