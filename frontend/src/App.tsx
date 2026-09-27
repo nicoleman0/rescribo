@@ -9,17 +9,14 @@ import { AcceptInvitePage } from '@/pages/accept-invite-page'
 import { ResetPasswordPage } from '@/pages/reset-password-page'
 import { InboxPage } from '@/features/inbox/inbox-page'
 import { ManualReportPage } from '@/features/inbox/manual-report-page'
+import { ProblemDetailPage } from '@/features/problems/problem-detail-page'
+import { ProblemsPage } from '@/features/problems/problems-page'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
   : undefined
 
 const productRoutes = [
-  {
-    path: 'problems',
-    title: 'Problems',
-    description: 'Track recurring problems and their engineering work here.',
-  },
   {
     path: 'follow-ups',
     title: 'Follow-ups',
@@ -70,6 +67,8 @@ export default function App() {
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/new" element={<ManualReportPage />} />
           <Route path="inbox/:reportId" element={<InboxPage />} />
+          <Route path="problems" element={<ProblemsPage />} />
+          <Route path="problems/:problemId" element={<ProblemDetailPage />} />
           {productRoutes.map((route) => (
             <Route
               key={route.path}

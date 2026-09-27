@@ -20,6 +20,7 @@ interaction surface.
 - shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, Skeleton, Input, Textarea, and NativeSelect
 - form fields: Field, TextareaField, and SelectField share one label, hint, and inline error layout
 - shared async states: LoadingState, EmptyState, ErrorState, RetryButton, and QueryState
+- ActionError explains a failed save or triage action; the form that owns the input keeps it
 - AppShell: desktop sidebar, mobile bottom navigation, and a compact status header
 
 ## Async state pattern
@@ -35,7 +36,7 @@ that owns the draft when a recoverable request fails.
 ## Layout rules
 
 - Desktop uses a sidebar, a flexible content area, and compact 44px navigation rows.
-- Mobile keeps all navigation targets at a 44px minimum touch target and moves navigation to a bottom tab bar.
+- Mobile keeps all navigation targets at a 44px minimum touch target and moves navigation to a bottom tab bar. Action controls use `touchTarget` for the same minimum.
 - Controls use the smaller control radius. Cards use the larger card radius. Status chips are pills.
 - Use left alignment, short text measure, visible focus, and no decorative colour outside the token system.
 

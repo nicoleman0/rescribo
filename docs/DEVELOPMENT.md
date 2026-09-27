@@ -65,8 +65,8 @@ This environment does not implement the full MVP's tenant isolation, durable ope
 
 ## Frontend screenshots
 
-The shell screenshots capture the Problems placeholder so live inbox data
-cannot change them. The UI foundation screenshot baselines are generated with Playwright Chromium
+The shell screenshots capture the Follow-ups placeholder so live workspace
+data cannot change them. The UI foundation screenshot baselines are generated with Playwright Chromium
 at 1280px desktop and 375px mobile widths. The macOS files are the reviewed
 local baselines. Linux files are also committed because Playwright includes
 the host platform in snapshot names and CI runs on Ubuntu.

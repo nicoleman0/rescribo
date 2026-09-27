@@ -31,9 +31,9 @@ test.describe('UI foundation', () => {
   // cannot change the baseline.
   test('shell at desktop width', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
-    await page.goto('/problems')
+    await page.goto('/follow-ups')
     await expect(
-      page.getByRole('heading', { name: /Problems is ready/ }),
+      page.getByRole('heading', { name: /Follow-ups is ready/ }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
     await expect(page).toHaveScreenshot('shell-desktop.png', { fullPage: true })
@@ -41,7 +41,7 @@ test.describe('UI foundation', () => {
 
   test('shell at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
-    await page.goto('/problems')
+    await page.goto('/follow-ups')
     await expect(
       page.getByRole('navigation', { name: 'Primary navigation' }),
     ).toBeVisible()

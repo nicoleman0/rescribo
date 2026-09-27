@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ExternalLink } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getReport, reportKeys, type ReportDetail } from '@/api/reports'
 import type { ApiError } from '@/api/request'
@@ -11,7 +11,9 @@ import {
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { formatDate, memberName, sourceLabel } from './report-format'
+import { Provenance } from './provenance'
+import { ReportTriage } from './report-actions'
+import { formatDate, memberName } from './report-format'
 import { TriageBadge } from './triage-badge'
 
 export function ReportDetailPanel({
@@ -54,12 +56,20 @@ export function ReportDetailPanel({
           isRetrying={report.isFetching}
         />
       ) : null}
-      {report.isSuccess ? <ReportDetailBody report={report.data} /> : null}
+      {report.isSuccess ? (
+        <ReportDetailBody workspaceId={workspaceId} report={report.data} />
+      ) : null}
     </section>
   )
 }
 
-function ReportDetailBody({ report }: { report: ReportDetail }) {
+function ReportDetailBody({
+  workspaceId,
+  report,
+}: {
+  workspaceId: string
+  report: ReportDetail
+}) {
   return (
     <article className="grid gap-4">
       <header className="grid gap-2">
@@ -90,7 +100,16 @@ function ReportDetailBody({ report }: { report: ReportDetail }) {
         </Detail>
         <Detail label="Submitted by">{memberName(report.submitted_by)}</Detail>
         <Detail label="Problem">
-          {report.problem ? report.problem.title : 'Not linked'}
+          {report.problem ? (
+            <Link
+              to={`/problems/${report.problem.id}`}
+              className="text-primary underline-offset-4 hover:underline"
+            >
+              {report.problem.title}
+            </Link>
+          ) : (
+            'Not linked'
+          )}
         </Detail>
         <Detail label="Created">
           <time dateTime={report.created_at}>
@@ -99,12 +118,15 @@ function ReportDetailBody({ report }: { report: ReportDetail }) {
         </Detail>
       </dl>
       <Separator />
-      <Provenance report={report} />
+      <ReportTriage workspaceId={workspaceId} report={report} />
+      <Separator />
+      <Provenance
+        provenance={report.provenance}
+        submittedBy={report.submitted_by}
+      />
     </article>
   )
 }
-
-const isSafeLink = (value: string) => value.startsWith('https://')
 
 function Detail({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -112,52 +134,5 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
       <dt className="text-muted-foreground">{label}</dt>
       <dd className="min-w-0 break-words">{children}</dd>
     </>
-  )
-}
-
-function Provenance({ report }: { report: ReportDetail }) {
-  const source = report.provenance
-  const captured = (
-    <time dateTime={source.captured_at}>{formatDate(source.captured_at)}</time>
-  )
-  return (
-    <section aria-label="Provenance" className="grid gap-2 text-sm">
-      <h3 className="font-medium">Source</h3>
-      {source.kind === 'manual' ? (
-        <p className="text-muted-foreground">
-          Manual entry by {memberName(report.submitted_by)} on {captured}.
-        </p>
-      ) : (
-        <>
-          <p className="text-muted-foreground">
-            {sourceLabel(source.kind)} message
-            {source.author_display_name
-              ? ` by ${source.author_display_name}`
-              : ''}
-            . Captured on {captured}; this is not a live copy.
-          </p>
-          {source.snapshot_text ? (
-            <blockquote className="rounded-control border-l-2 border-border bg-muted px-3 py-2 whitespace-pre-wrap">
-              {source.snapshot_text}
-            </blockquote>
-          ) : null}
-          {isSafeLink(source.permalink) ? (
-            <a
-              href={source.permalink}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex w-fit items-center gap-1 text-primary underline-offset-4 hover:underline"
-            >
-              Open original message
-              <ExternalLink aria-hidden="true" className="size-3.5" />
-            </a>
-          ) : (
-            <p className="text-muted-foreground">
-              The message link is not available yet.
-            </p>
-          )}
-        </>
-      )}
-    </section>
   )
 }

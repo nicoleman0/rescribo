@@ -200,7 +200,9 @@ test('shows report detail with provenance, people, and problem', async () => {
   expect(within(panel).getByText('CRM-42')).toBeInTheDocument()
   expect(within(panel).getByText('Exports time out')).toBeInTheDocument()
   expect(within(panel).getByText('Unnamed member')).toBeInTheDocument()
-  expect(within(panel).getByText('Ada Lovelace')).toBeInTheDocument()
+  expect(
+    within(panel).getByText('Ada Lovelace', { selector: 'dd' }),
+  ).toBeInTheDocument()
   const source = within(panel).getByRole('region', { name: 'Provenance' })
   expect(source).toHaveTextContent('Slack message by Grace')
   expect(source).toHaveTextContent('this is not a live copy')

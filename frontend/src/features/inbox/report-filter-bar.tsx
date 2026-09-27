@@ -1,8 +1,7 @@
 import { useState, type FormEvent } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Search, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { listMembers, reportKeys, type InboxQuery } from '@/api/reports'
+import type { InboxQuery } from '@/api/reports'
 import { Field, SelectField } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import {
@@ -15,6 +14,7 @@ import {
   type FilterKey,
 } from './inbox-query'
 import { memberName } from './report-format'
+import { useMembers } from './use-members'
 
 export function ReportFilterBar({
   workspaceId,
@@ -26,11 +26,7 @@ export function ReportFilterBar({
   const [params, setParams] = useSearchParams()
   const [text, setText] = useState(query.q ?? '')
   const [customer, setCustomer] = useState(query.customer ?? '')
-  const members = useQuery({
-    queryKey: reportKeys.members(workspaceId),
-    queryFn: () => listMembers(workspaceId),
-    staleTime: 60_000,
-  })
+  const members = useMembers(workspaceId)
   const selectedAssigneeKnown =
     !query.assignee ||
     query.assignee === UNASSIGNED ||
