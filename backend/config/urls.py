@@ -33,6 +33,7 @@ from feedback.views import (
     ProblemActivityListView,
     ProblemDetailView,
     ProblemEditView,
+    ProblemIssueLinkView,
     ProblemListView,
     ProblemOwnerView,
     ProblemReportListView,
@@ -178,6 +179,11 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/assign-owner/",
         ProblemOwnerView.as_view(),
         name="problem-assign-owner",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/link/",
+        ProblemIssueLinkView.as_view(),
+        name="problem-issue-link",
     ),
     path("api/schema/", SpectacularAPIView.as_view(authentication_classes=[]), name="schema"),
 ]

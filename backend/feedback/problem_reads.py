@@ -5,12 +5,12 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
-from django.db.models import Count, Q, QuerySet
+from django.db.models import Count, Prefetch, Q, QuerySet
 
 from accounts.models import Membership
 from feedback.errors import NotFound
 from feedback.inbox import workspace_reports
-from feedback.models import Activity, Problem, Report
+from feedback.models import Activity, EngineeringIssue, Problem, Report
 
 
 def _workspace_problems(*, actor: Membership) -> QuerySet[Problem]:
@@ -19,6 +19,13 @@ def _workspace_problems(*, actor: Membership) -> QuerySet[Problem]:
         Problem.objects.filter(workspace_id=actor.workspace_id)
         .select_related("owner__user")
         .annotate(report_count=Count("reports"))
+        .prefetch_related(
+            Prefetch(
+                "engineering_issues",
+                queryset=EngineeringIssue.objects.filter(active=True),
+                to_attr="active_issues",
+            )
+        )
     )
 
 

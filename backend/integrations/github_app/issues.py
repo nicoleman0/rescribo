@@ -1,6 +1,7 @@
 import re
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 from typing import Any
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient
@@ -8,6 +9,11 @@ from integrations.github_app.client import GitHubAPIError, GitHubAppClient
 
 class IssueLinkError(ValueError):
     """The reference cannot be linked to the configured repository."""
+
+
+def provider_time(value: str) -> datetime:
+    """Parse a GitHub ISO-8601 timestamp for comparison and storage."""
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
 
 
 @dataclass(frozen=True)

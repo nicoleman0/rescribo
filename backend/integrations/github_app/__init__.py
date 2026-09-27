@@ -5,6 +5,7 @@ from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
     parse_issue_payload,
+    provider_time,
     resolve_issue_link,
 )
 from integrations.github_app.probe import InstallationProbe, ProbeResult
@@ -32,9 +33,10 @@ __all__ = [
     "OAuthStateStore",
     "ProbeResult",
     "apply_issue_event",
+    "parse_installation_event",
     "parse_issue_event",
     "parse_issue_payload",
-    "parse_installation_event",
+    "provider_time",
     "resolve_issue_link",
     "verify_webhook_signature",
 ]

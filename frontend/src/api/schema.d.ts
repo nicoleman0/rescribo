@@ -476,6 +476,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/link/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one problem use case and return the updated problem. */
+        post: operations["workspaces_problems_issue_link_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/reports/": {
         parameters: {
             query?: never;
@@ -647,6 +664,14 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description * `ok` - OK
+         *     * `access_lost` - Access lost
+         *     * `suspended` - Suspended
+         *     * `deleted` - Deleted
+         * @enum {string}
+         */
+        AccessEnum: "ok" | "access_lost" | "suspended" | "deleted";
+        /**
          * @description * `report.deleted` - Report deleted
          *     * `report.created` - Report created
          *     * `report.updated` - Report updated
@@ -659,9 +684,12 @@ export interface components {
          *     * `problem.updated` - Problem updated
          *     * `problem.state_changed` - Problem state changed
          *     * `problem.fix_confirmed` - Problem fix confirmed
+         *     * `engineering_issue.linked` - Engineering issue linked
+         *     * `engineering_issue.created` - Engineering issue created
+         *     * `engineering_issue.unlinked` - Engineering issue unlinked
          * @enum {string}
          */
-        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed";
+        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked";
         AssignReport: {
             expected_version: number;
             /** Format: uuid */
@@ -730,6 +758,27 @@ export interface components {
             version: number;
             confirmation: components["schemas"]["ConfirmationEnum"];
         };
+        EngineeringIssue: {
+            /** Format: uuid */
+            id: string;
+            number: number;
+            url: string;
+            title: string;
+            state: components["schemas"]["EngineeringIssueStateEnum"];
+            state_reason: string;
+            access: components["schemas"]["AccessEnum"];
+            /** Format: date-time */
+            provider_updated_at: string;
+            /** Format: date-time */
+            last_synced_at: string | null;
+            sync_error: string;
+        };
+        /**
+         * @description * `open` - Open
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        EngineeringIssueStateEnum: "open" | "closed";
         Error: {
             detail: string;
             reason: string;
@@ -779,6 +828,20 @@ export interface components {
             email: string;
             /** Format: uri */
             accept_url: string;
+        };
+        IssueLinkConflict: {
+            detail: string;
+            reason: string;
+            field_errors?: {
+                [key: string]: unknown;
+            };
+            current: components["schemas"]["ProblemDetail"];
+            /** Format: uuid */
+            problem_id?: string;
+        };
+        LinkIssue: {
+            expected_version: number;
+            reference: string;
         };
         LinkReport: {
             expected_version: number;
@@ -929,6 +992,7 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
+            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
         };
         ProblemEdit: {
             expected_version: number;
@@ -2317,6 +2381,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemConflict"];
+                };
+            };
+        };
+    };
+    workspaces_problems_issue_link_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkIssue"];
+                "application/x-www-form-urlencoded": components["schemas"]["LinkIssue"];
+                "multipart/form-data": components["schemas"]["LinkIssue"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueLinkConflict"];
                 };
             };
         };

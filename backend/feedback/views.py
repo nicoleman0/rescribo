@@ -15,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.views import ErrorSerializer, WorkspaceView
+from feedback.engineering_issues import link_issue
 from feedback.errors import FeedbackError, NotFound, TitleRequired
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
 from feedback.inbox import get_report, search_reports, workspace_directory
@@ -40,6 +41,8 @@ from feedback.serializers import (
     AssignReportSerializer,
     CreateProblemForReportSerializer,
     InboxFilterSerializer,
+    IssueLinkConflictSerializer,
+    LinkIssueSerializer,
     LinkReportSerializer,
     ManualReportSerializer,
     MemberSummarySerializer,
@@ -355,3 +358,22 @@ class ProblemOwnerView(ProblemActionView):
             expected_version=data["expected_version"],
             owner_id=data["owner_id"],
         )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        request=LinkIssueSerializer,
+        responses={200: ProblemDetailSerializer, 409: IssueLinkConflictSerializer, **WRITE_ERRORS},
+    )
+)
+class ProblemIssueLinkView(ProblemActionView):
+    input_serializer = LinkIssueSerializer
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        issue = link_issue(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
+            reference=data["reference"],
+        )
+        return issue.problem

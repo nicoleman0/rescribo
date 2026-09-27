@@ -1285,6 +1285,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/link/:
+    post:
+      operationId: workspaces_problems_issue_link_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueLinkConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/reports/:
     get:
       operationId: workspaces_problems_reports_list
@@ -1978,6 +2048,18 @@ paths:
           description: ''
 components:
   schemas:
+    AccessEnum:
+      enum:
+      - ok
+      - access_lost
+      - suspended
+      - deleted
+      type: string
+      description: |-
+        * `ok` - OK
+        * `access_lost` - Access lost
+        * `suspended` - Suspended
+        * `deleted` - Deleted
     ActivityActionEnum:
       enum:
       - report.deleted
@@ -1992,6 +2074,9 @@ components:
       - problem.updated
       - problem.state_changed
       - problem.fix_confirmed
+      - engineering_issue.linked
+      - engineering_issue.created
+      - engineering_issue.unlinked
       type: string
       description: |-
         * `report.deleted` - Report deleted
@@ -2006,6 +2091,9 @@ components:
         * `problem.updated` - Problem updated
         * `problem.state_changed` - Problem state changed
         * `problem.fix_confirmed` - Problem fix confirmed
+        * `engineering_issue.linked` - Engineering issue linked
+        * `engineering_issue.created` - Engineering issue created
+        * `engineering_issue.unlinked` - Engineering issue unlinked
     AssignReport:
       type: object
       properties:
@@ -2172,6 +2260,52 @@ components:
       required:
       - confirmation
       - version
+    EngineeringIssue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        url:
+          type: string
+        title:
+          type: string
+        state:
+          $ref: '#/components/schemas/EngineeringIssueStateEnum'
+        state_reason:
+          type: string
+        access:
+          $ref: '#/components/schemas/AccessEnum'
+        provider_updated_at:
+          type: string
+          format: date-time
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+        sync_error:
+          type: string
+      required:
+      - access
+      - id
+      - last_synced_at
+      - number
+      - provider_updated_at
+      - state
+      - state_reason
+      - sync_error
+      - title
+      - url
+    EngineeringIssueStateEnum:
+      enum:
+      - open
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `closed` - Closed
     Error:
       type: object
       properties:
@@ -2267,6 +2401,37 @@ components:
       - accept_url
       - email
       - id
+    IssueLinkConflict:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ProblemDetail'
+        problem_id:
+          type: string
+          format: uuid
+      required:
+      - current
+      - detail
+      - reason
+    LinkIssue:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        reference:
+          type: string
+          maxLength: 500
+      required:
+      - expected_version
+      - reference
     LinkReport:
       type: object
       properties:
@@ -2590,8 +2755,14 @@ components:
         updated_at:
           type: string
           format: date-time
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
       required:
       - created_at
+      - engineering_issue
       - id
       - needs_review
       - owner

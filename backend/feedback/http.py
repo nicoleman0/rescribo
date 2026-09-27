@@ -9,9 +9,14 @@ from rest_framework.response import Response
 
 from feedback.errors import (
     AlreadyLinked,
+    ConnectionNotReady,
     FeedbackError,
     InvalidReference,
     InvalidTransition,
+    IssueAlreadyLinked,
+    IssueAlreadyLinkedElsewhere,
+    IssueProviderUnavailable,
+    IssueReferenceRejected,
     NoChanges,
     NotFound,
     TitleRequired,
@@ -22,6 +27,7 @@ CONFLICT_DETAILS: dict[type[FeedbackError], str] = {
     VersionConflict: "This record changed since you loaded it. Review the current version.",
     InvalidTransition: "This action is not available in the record's current state.",
     AlreadyLinked: "The report is already linked to this problem.",
+    IssueAlreadyLinked: "This issue is already linked to this problem.",
     NoChanges: "Nothing would change.",
 }
 
@@ -62,6 +68,44 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
                 "field_errors": {"title": [error.reason]},
             },
             status=400,
+        )
+    if isinstance(error, ConnectionNotReady):
+        return Response(
+            {
+                "detail": "Connect an active GitHub repository before working with issues.",
+                "reason": error.reason,
+                "field_errors": {},
+            },
+            status=400,
+        )
+    if isinstance(error, IssueReferenceRejected):
+        return Response(
+            {
+                "detail": error.detail,
+                "reason": error.reason,
+                "field_errors": {"reference": [error.reason]},
+            },
+            status=400,
+        )
+    if isinstance(error, IssueProviderUnavailable):
+        return Response(
+            {
+                "detail": "Check the GitHub connection status, then try again.",
+                "reason": error.reason,
+                "field_errors": {},
+            },
+            status=400,
+        )
+    if isinstance(error, IssueAlreadyLinkedElsewhere):
+        return Response(
+            {
+                "detail": f'This issue is already linked to "{error.problem_title}".',
+                "reason": error.reason,
+                "field_errors": {},
+                "problem_id": str(error.problem_id),
+                "current": current(),
+            },
+            status=409,
         )
     detail = CONFLICT_DETAILS.get(type(error))
     if detail is None:

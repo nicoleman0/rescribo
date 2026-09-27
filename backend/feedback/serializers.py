@@ -9,7 +9,7 @@ from rest_framework import serializers
 from accounts.models import Membership
 from accounts.views import ErrorSerializer
 from feedback.inbox import InboxFilters
-from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.models import Activity, EngineeringIssue, Problem, Report, ReportSource
 from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
 
@@ -149,6 +149,19 @@ class ProblemListItemSerializer(serializers.Serializer):
         return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
 
 
+class EngineeringIssueSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    number = serializers.IntegerField()
+    url = serializers.CharField()
+    title = serializers.CharField()
+    state = serializers.ChoiceField(choices=EngineeringIssue.State.choices)
+    state_reason = serializers.CharField()
+    access = serializers.ChoiceField(choices=EngineeringIssue.Access.choices)
+    provider_updated_at = serializers.DateTimeField()
+    last_synced_at = serializers.DateTimeField(allow_null=True)
+    sync_error = serializers.CharField()
+
+
 class ProblemDetailSerializer(serializers.Serializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
@@ -161,6 +174,13 @@ class ProblemDetailSerializer(serializers.Serializer):
     version = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+    engineering_issue = serializers.SerializerMethodField()
+
+    @extend_schema_field(EngineeringIssueSerializer(allow_null=True))
+    def get_engineering_issue(self, problem: Problem) -> Any:
+        active = getattr(problem, "active_issues", None)
+        issue = active[0] if active else None
+        return EngineeringIssueSerializer(issue).data if issue is not None else None
 
 
 class RecordReferenceSerializer(serializers.Serializer):
@@ -260,9 +280,17 @@ class ProblemOwnerSerializer(VersionedSerializer):
     owner_id = serializers.UUIDField(allow_null=True)
 
 
+class LinkIssueSerializer(VersionedSerializer):
+    reference = serializers.CharField(max_length=500)
+
+
 class ReportConflictSerializer(ErrorSerializer):
     current = ReportDetailSerializer()
 
 
 class ProblemConflictSerializer(ErrorSerializer):
     current = ProblemDetailSerializer()
+
+
+class IssueLinkConflictSerializer(ProblemConflictSerializer):
+    problem_id = serializers.UUIDField(required=False)

@@ -2,11 +2,14 @@ import hashlib
 import hmac
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
 from typing import Any, Literal
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient
-from integrations.github_app.issues import EngineeringIssueSnapshot, parse_issue_payload
+from integrations.github_app.issues import (
+    EngineeringIssueSnapshot,
+    parse_issue_payload,
+    provider_time,
+)
 
 
 class InvalidWebhookSignature(PermissionError):
@@ -133,10 +136,6 @@ class IssueStateOutcome:
         return asdict(self)
 
 
-def _provider_time(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-
-
 def apply_issue_event(
     client: GitHubAppClient,
     *,
@@ -180,7 +179,7 @@ def apply_issue_event(
             )
         raise
     snapshot = parse_issue_payload(issue, error=InvalidWebhookPayload)
-    applied = stored_updated_at is None or _provider_time(snapshot.updated_at) > _provider_time(
+    applied = stored_updated_at is None or provider_time(snapshot.updated_at) > provider_time(
         stored_updated_at
     )
     return IssueStateOutcome(number=event.number, applied=applied, access="ok", snapshot=snapshot)

@@ -36,6 +36,7 @@ const detail: ProblemDetail = {
   version: 2,
   created_at: '2026-09-20T10:00:00Z',
   updated_at: '2026-09-20T10:00:00Z',
+  engineering_issue: null,
 }
 
 const linkedReport: ReportDetail = {
