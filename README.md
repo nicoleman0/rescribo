@@ -4,6 +4,10 @@
 
 # Customer feedback, carried through to a fix
 
+[![Checks](https://github.com/nicoleman0/rescribo/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nicoleman0/rescribo/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)](docs/LOCAL_DEVELOPMENT.md#requirements)
+[![Node.js 24](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](docs/LOCAL_DEVELOPMENT.md#requirements)
+
 Rescribo is being built to help teams turn customer reports into engineering work and keep track of the follow-up that comes after a fix.
 
 ## The workflow
