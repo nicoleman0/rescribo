@@ -95,3 +95,16 @@ test('creates a manual report, clears the draft, and opens it', async () => {
   expect(init?.headers).toMatchObject({ 'X-CSRFToken': 'csrf-token' })
   expect(sessionStorage.length).toBe(0)
 })
+
+test('locks the fields while the create request is pending', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  stubApi({
+    [csrfPath]: () => new Response(null, { status: 204 }),
+    [createPath]: () => new Promise(() => {}),
+  })
+  renderWorkspaceRoutes(routes, '/inbox/new')
+  fill('Title', 'Pending report')
+  fireEvent.click(screen.getByRole('button', { name: 'Create report' }))
+  expect(await screen.findByText('Creating report…')).toBeInTheDocument()
+  expect(screen.getByLabelText('Title')).toBeDisabled()
+})

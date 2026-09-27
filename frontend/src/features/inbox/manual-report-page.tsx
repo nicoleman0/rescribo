@@ -84,40 +84,42 @@ export function ManualReportPage() {
         </Alert>
       ) : null}
       <form className="grid gap-4" onSubmit={submit} noValidate>
-        <Field
-          {...field('title')}
-          label="Title"
-          required
-          maxLength={200}
-          autoComplete="off"
-        />
-        <TextareaField
-          {...field('description')}
-          label="Description"
-          maxLength={10000}
-          rows={5}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset disabled={mutation.isPending} className="grid gap-4">
           <Field
-            {...field('customer_label')}
-            label="Customer organisation"
+            {...field('title')}
+            label="Title"
+            required
             maxLength={200}
             autoComplete="off"
           />
+          <TextareaField
+            {...field('description')}
+            label="Description"
+            maxLength={10000}
+            rows={5}
+          />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field
+              {...field('customer_label')}
+              label="Customer organisation"
+              maxLength={200}
+              autoComplete="off"
+            />
+            <Field
+              {...field('customer_contact_reference')}
+              label="Contact reference"
+              hint="For example a CRM ID. Not used to contact the customer."
+              maxLength={200}
+              autoComplete="off"
+            />
+          </div>
           <Field
-            {...field('customer_contact_reference')}
-            label="Contact reference"
-            hint="For example a CRM ID. Not used to contact the customer."
-            maxLength={200}
+            {...field('affected_version')}
+            label="Affected version"
+            maxLength={100}
             autoComplete="off"
           />
-        </div>
-        <Field
-          {...field('affected_version')}
-          label="Affected version"
-          maxLength={100}
-          autoComplete="off"
-        />
+        </fieldset>
         {mutation.isError && error ? (
           <Alert variant="destructive">
             <AlertTitle>The report was not created</AlertTitle>

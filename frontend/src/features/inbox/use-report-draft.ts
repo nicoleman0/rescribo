@@ -52,13 +52,11 @@ export function useReportDraft(workspaceId: string) {
 
   const update = useCallback(
     (field: keyof ReportDraft, value: string) => {
-      setDraft((current) => {
-        const next = { ...current, [field]: value }
-        writeDraft(workspaceId, next)
-        return next
-      })
+      const next = { ...draft, [field]: value }
+      setDraft(next)
+      writeDraft(workspaceId, next)
     },
-    [workspaceId],
+    [draft, workspaceId],
   )
 
   const clear = useCallback(() => {
