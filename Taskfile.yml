@@ -113,6 +113,7 @@ tasks:
 
   schema-check-backend:
     cmds:
+      - mkdir -p .cache
       - uv run python backend/manage.py spectacular --file .cache/openapi.yaml --validate --fail-on-warn
       - diff -u frontend/openapi.yaml .cache/openapi.yaml
 
