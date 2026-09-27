@@ -2,6 +2,7 @@
 name = "rescribo"
 version = "0.1.0"
 description = "Internal customer feedback inbox connecting Slack and GitHub"
+license = "AGPL-3.0-or-later"
 requires-python = ">=3.14,<3.15"
 dependencies = [
   "django>=5.2.8,<5.3",
