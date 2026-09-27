@@ -1076,14 +1076,11 @@ components:
         id:
           type: string
           format: uuid
-        full_name:
+        display_name:
           type: string
-        email:
-          type: string
-          format: email
+          readOnly: true
       required:
-      - email
-      - full_name
+      - display_name
       - id
     MembershipOutput:
       type: object

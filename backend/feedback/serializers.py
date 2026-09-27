@@ -5,6 +5,7 @@ from uuid import UUID
 
 from rest_framework import serializers
 
+from accounts.models import Membership
 from feedback.inbox import InboxFilters
 from feedback.models import Problem, Report, ReportSource
 from feedback.submissions import ReportSubmission
@@ -14,8 +15,11 @@ UNASSIGNED = "unassigned"
 
 class MemberSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
-    full_name = serializers.CharField(source="user.full_name")
-    email = serializers.EmailField(source="user.email")
+    # Members see names only; email addresses stay with owners.
+    display_name = serializers.SerializerMethodField()
+
+    def get_display_name(self, membership: Membership) -> str:
+        return membership.user.full_name or "Unnamed member"
 
 
 class ProblemSummarySerializer(serializers.Serializer):

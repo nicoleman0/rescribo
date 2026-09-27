@@ -199,7 +199,7 @@ def test_report_detail_includes_provenance_people_and_problem(client: Client) ->
         "snapshot_text": "snapshot",
         "captured_at": body["provenance"]["captured_at"],
     }
-    member = {"id": str(actor.pk), "full_name": "Test Member", "email": "member@example.test"}
+    member = {"id": str(actor.pk), "display_name": "Test Member"}
     assert body["submitted_by"] == body["assignee"] == member
     assert body["problem"]["title"] == "Exports" and body["triage_state"] == "linked"
     assert body["version"] == 3
@@ -240,10 +240,13 @@ def test_member_directory_lists_active_workspace_members(client: Client) -> None
     make_membership(
         workspace=actor.workspace, user=make_user(email="a@example.test", full_name="Ada")
     )
+    make_membership(workspace=actor.workspace, user=make_user(email="u@example.test", full_name=""))
     revoked = make_membership(workspace=actor.workspace, user=make_user(email="r@example.test"))
     Membership.objects.filter(pk=revoked.pk).update(is_active=False, revoked_at=actor.created_at)
     make_membership(workspace=make_workspace(slug="other"), user=make_user(email="o@example.test"))
     sign_in(client, actor)
     response = client.get(f"/api/workspaces/{actor.workspace_id}/members/")
     assert response.status_code == 200
-    assert [row["email"] for row in response.json()] == ["a@example.test", "member@example.test"]
+    rows = response.json()
+    assert [row["display_name"] for row in rows] == ["Unnamed member", "Ada", "Test Member"]
+    assert all(set(row) == {"id", "display_name"} for row in rows)

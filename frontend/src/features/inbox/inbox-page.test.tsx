@@ -6,8 +6,7 @@ import { InboxPage } from './inbox-page'
 
 const member = {
   id: 'mem-2',
-  full_name: 'Ada Lovelace',
-  email: 'ada@example.test',
+  display_name: 'Ada Lovelace',
 }
 
 const listItem: ReportListItem = {
@@ -182,7 +181,7 @@ const detail: ReportDetail = {
     snapshot_text: 'Customer says export is broken',
     captured_at: '2026-09-20T10:00:00Z',
   },
-  submitted_by: { id: 'mem-1', full_name: '', email: 'sub@example.test' },
+  submitted_by: { id: 'mem-1', display_name: 'Unnamed member' },
   problem: { id: 'prob-1', title: 'Exports time out', state: 'open' },
   triage_state: 'linked',
   version: 3,
@@ -200,7 +199,7 @@ test('shows report detail with provenance, people, and problem', async () => {
   await within(panel).findByText('Export stops halfway.')
   expect(within(panel).getByText('CRM-42')).toBeInTheDocument()
   expect(within(panel).getByText('Exports time out')).toBeInTheDocument()
-  expect(within(panel).getByText('sub@example.test')).toBeInTheDocument()
+  expect(within(panel).getByText('Unnamed member')).toBeInTheDocument()
   expect(within(panel).getByText('Ada Lovelace')).toBeInTheDocument()
   const source = within(panel).getByRole('region', { name: 'Provenance' })
   expect(source).toHaveTextContent('Slack message by Grace')
@@ -233,7 +232,7 @@ test('shows manual provenance and a missing report', async () => {
   })
   const view = renderWorkspaceRoutes(routes, '/inbox/rep-1')
   expect(
-    await screen.findByText(/Manual entry by sub@example.test/),
+    await screen.findByText(/Manual entry by Unnamed member/),
   ).toBeInTheDocument()
   view.unmount()
   renderWorkspaceRoutes(routes, '/inbox/gone')

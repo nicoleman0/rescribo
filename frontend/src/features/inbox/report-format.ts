@@ -8,7 +8,6 @@ const dateFormat = new Intl.DateTimeFormat(undefined, {
 
 export const formatDate = (value: string) => dateFormat.format(new Date(value))
 
-export const memberName = (member: MemberSummary) =>
-  member.full_name || member.email
+export const memberName = (member: MemberSummary) => member.display_name
 
 export const sourceLabel = (kind: SourceKind) => sourceLabels[kind]

@@ -393,9 +393,7 @@ export interface components {
         MemberSummary: {
             /** Format: uuid */
             id: string;
-            full_name: string;
-            /** Format: email */
-            email: string;
+            readonly display_name: string;
         };
         MembershipOutput: {
             /** Format: uuid */
