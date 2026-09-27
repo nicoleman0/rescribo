@@ -1,13 +1,16 @@
-"""API contracts for feedback reads and manual capture."""
+"""API contracts for feedback reads, manual capture, and triage."""
 
 from typing import Any
 from uuid import UUID
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import Membership
+from accounts.views import ErrorSerializer
 from feedback.inbox import InboxFilters
-from feedback.models import Problem, Report, ReportSource
+from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
 
 UNASSIGNED = "unassigned"
@@ -118,3 +121,146 @@ class InboxFilterSerializer(serializers.Serializer):
             unassigned=assignee == UNASSIGNED,
             source_kind=data.get("source_kind"),
         )
+
+
+SUMMARY_EXCERPT_LENGTH = 160
+
+
+class ProblemFilterSerializer(serializers.Serializer):
+    q = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+
+class ProblemListItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    summary_excerpt = serializers.SerializerMethodField()
+    state = serializers.ChoiceField(choices=Problem.State.choices)
+    owner = MemberSummarySerializer(allow_null=True)
+    report_count = serializers.IntegerField()
+    needs_review = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+
+    def get_summary_excerpt(self, problem: Problem) -> str:
+        summary = " ".join(problem.summary.split())
+        if len(summary) <= SUMMARY_EXCERPT_LENGTH:
+            return summary
+        return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
+
+
+class ProblemDetailSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    summary = serializers.CharField()
+    state = serializers.ChoiceField(choices=Problem.State.choices)
+    owner = MemberSummarySerializer(allow_null=True)
+    report_count = serializers.IntegerField()
+    needs_review = serializers.BooleanField()
+    resolution_revision = serializers.IntegerField()
+    version = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class RecordReferenceSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+
+
+class ProblemActivitySerializer(serializers.Serializer):
+    """Activity with its ID references resolved to names the member may already read."""
+
+    id = serializers.UUIDField()
+    action = serializers.ChoiceField(choices=Activity.Action.choices)
+    actor = MemberSummarySerializer(source="actor_membership", allow_null=True)
+    actor_system = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    report = serializers.SerializerMethodField()
+    from_problem = serializers.SerializerMethodField()
+    to_problem = serializers.SerializerMethodField()
+    from_assignee = serializers.SerializerMethodField()
+    to_assignee = serializers.SerializerMethodField()
+    changed_fields = serializers.SerializerMethodField()
+    state = serializers.SerializerMethodField()
+
+    @property
+    def references(self) -> ActivityReferences:
+        return self.context["references"]
+
+    def _record(self, table: dict[str, Any], activity: Activity, key: str) -> Any:
+        value = activity.metadata.get(key)
+        record = table.get(str(value)) if value else None
+        return None if record is None else {"id": record.pk, "title": record.title}
+
+    def _member(self, activity: Activity, key: str) -> Any:
+        value = activity.metadata.get(key)
+        member = self.references.members.get(str(value)) if value else None
+        return None if member is None else MemberSummarySerializer(member).data
+
+    @extend_schema_field(RecordReferenceSerializer(allow_null=True))
+    def get_report(self, activity: Activity) -> Any:
+        return self._record(self.references.reports, activity, "report_id")
+
+    @extend_schema_field(RecordReferenceSerializer(allow_null=True))
+    def get_from_problem(self, activity: Activity) -> Any:
+        return self._record(self.references.problems, activity, "from_problem_id")
+
+    @extend_schema_field(RecordReferenceSerializer(allow_null=True))
+    def get_to_problem(self, activity: Activity) -> Any:
+        return self._record(self.references.problems, activity, "to_problem_id")
+
+    @extend_schema_field(MemberSummarySerializer(allow_null=True))
+    def get_from_assignee(self, activity: Activity) -> Any:
+        return self._member(activity, "from_assignee_id")
+
+    @extend_schema_field(MemberSummarySerializer(allow_null=True))
+    def get_to_assignee(self, activity: Activity) -> Any:
+        return self._member(activity, "to_assignee_id")
+
+    def get_changed_fields(self, activity: Activity) -> list[str]:
+        return [str(name) for name in activity.metadata.get("fields", [])]
+
+    @extend_schema_field(serializers.ChoiceField(choices=Problem.State.choices, allow_null=True))
+    def get_state(self, activity: Activity) -> str | None:
+        return activity.metadata.get("state")
+
+
+class VersionedSerializer(serializers.Serializer):
+    expected_version = serializers.IntegerField(min_value=1)
+
+
+class LinkReportSerializer(VersionedSerializer):
+    problem_id = serializers.UUIDField()
+
+
+class CreateProblemForReportSerializer(VersionedSerializer):
+    title = serializers.CharField(max_length=200)
+    summary = serializers.CharField(max_length=10000, required=False, allow_blank=True)
+    owner_id = serializers.UUIDField(required=False, allow_null=True)
+
+
+class AssignReportSerializer(VersionedSerializer):
+    assignee_id = serializers.UUIDField(allow_null=True)
+
+
+class ProblemEditSerializer(VersionedSerializer):
+    title = serializers.CharField(max_length=200, required=False)
+    summary = serializers.CharField(max_length=10000, required=False, allow_blank=True)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if "title" not in attrs and "summary" not in attrs:
+            raise serializers.ValidationError(
+                {"title": ["Change the title or the summary."]}, code="required"
+            )
+        return attrs
+
+
+class ProblemOwnerSerializer(VersionedSerializer):
+    owner_id = serializers.UUIDField(allow_null=True)
+
+
+class ReportConflictSerializer(ErrorSerializer):
+    current = ReportDetailSerializer()
+
+
+class ProblemConflictSerializer(ErrorSerializer):
+    current = ProblemDetailSerializer()

@@ -3,7 +3,7 @@
 from typing import Any
 
 from accounts.models import Membership, User, Workspace
-from feedback.models import Problem, Report
+from feedback.models import Problem, Report, ReportNotificationOperation
 
 
 def make_user(**overrides: Any) -> User:
@@ -54,3 +54,26 @@ def make_report(*, actor: Membership | None = None, source: Any = None, **overri
     if overrides:
         raise ValueError(f"Unsupported report overrides: {', '.join(overrides)}")
     return submit_report(actor=actor, submission=submission).report
+
+
+def make_notification(
+    *, report: Report, state: str = "draft", **overrides: Any
+) -> ReportNotificationOperation:
+    """Persist a prepared notification directly; no production path creates one yet."""
+    if report.problem is None:
+        raise ValueError("A notification needs a linked report.")
+    values: dict[str, Any] = {
+        "workspace_id": report.workspace_id,
+        "report": report,
+        "problem": report.problem,
+        "recipient": report.assignee or report.submitted_by,
+        "resolution_revision": report.problem.resolution_revision,
+        "report_version": report.version,
+        "state": state,
+    }
+    if state == "sent":
+        values.update(
+            sent_at=report.updated_at, remote_conversation_id="D123", remote_message_id="171.1"
+        )
+    values.update(overrides)
+    return ReportNotificationOperation.objects.create(**values)

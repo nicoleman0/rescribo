@@ -196,3 +196,74 @@ class Activity(models.Model):
                 name="activity_record_idx",
             )
         ]
+
+
+class ReportNotificationOperation(models.Model):
+    """One prepared employee notification for a report, as captured at preparation time.
+
+    This is the persisted record later delivery work extends. Rows are never retargeted:
+    triage changes cancel or invalidate them, and a fresh preview creates a new row.
+    """
+
+    class State(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        QUEUED = "queued", "Queued"
+        FAILED = "failed", "Failed"
+        UNCERTAIN = "uncertain", "Uncertain"
+        SENT = "sent", "Sent"
+        CANCELLED = "cancelled", "Cancelled"
+
+    class InvalidationReason(models.TextChoices):
+        REASSIGNED = "reassigned", "Report reassigned"
+        MOVED = "moved", "Report moved to another problem"
+        UNLINKED = "unlinked", "Report ungrouped"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(
+        Workspace, on_delete=models.CASCADE, related_name="report_notification_operations"
+    )
+    # History outlives triage changes, so referenced rows cannot be deleted from under it.
+    report = models.ForeignKey(
+        Report, on_delete=models.PROTECT, related_name="notification_operations"
+    )
+    problem = models.ForeignKey(Problem, on_delete=models.PROTECT, related_name="+")
+    recipient = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="+")
+    resolution_revision = models.PositiveIntegerField()
+    report_version = models.PositiveIntegerField()
+    state = models.CharField(max_length=12, choices=State.choices, default=State.DRAFT)
+    remote_conversation_id = models.CharField(max_length=64, blank=True, default="")
+    remote_message_id = models.CharField(max_length=64, blank=True, default="")
+    sent_at = models.DateTimeField(null=True, blank=True)
+    invalidated_at = models.DateTimeField(null=True, blank=True)
+    invalidation_reason = models.CharField(
+        max_length=16, choices=InvalidationReason.choices, blank=True, default=""
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(state="sent", sent_at__isnull=False)
+                & ~Q(remote_conversation_id="")
+                & ~Q(remote_message_id="")
+                | ~Q(state="sent") & Q(sent_at__isnull=True),
+                name="notification_sent_has_remote_result",
+            ),
+            models.CheckConstraint(
+                condition=Q(invalidated_at__isnull=True, invalidation_reason="")
+                | Q(invalidated_at__isnull=False) & ~Q(invalidation_reason=""),
+                name="notification_invalidation_complete",
+            ),
+            # Only cancelled or uncertain rows carry an invalidation. An uncertain send keeps
+            # its state because the remote write may have happened.
+            models.CheckConstraint(
+                condition=Q(state="cancelled", invalidated_at__isnull=False)
+                | Q(state="uncertain")
+                | ~Q(state__in=["cancelled", "uncertain"]) & Q(invalidated_at__isnull=True),
+                name="notification_invalidation_matches_state",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["workspace", "report", "state"], name="notification_ws_report_idx")
+        ]
