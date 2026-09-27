@@ -1,3 +1,4 @@
+import { DeleteReport } from '@/features/settings/delete-report'
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
@@ -120,6 +121,7 @@ function ReportDetailBody({
       <Separator />
       <ReportTriage workspaceId={workspaceId} report={report} />
       <Separator />
+      <DeleteReport report={report} />
       <Provenance
         provenance={report.provenance}
         submittedBy={report.submitted_by}

@@ -18,6 +18,16 @@ from accounts.views import (
     PasswordResetRedeemView,
     SessionView,
 )
+from connections.views import (
+    CallbackView,
+    ChannelView,
+    ConnectionListView,
+    DisconnectView,
+    RefreshView,
+    ReportDeleteView,
+    SetupView,
+    WorkspaceDeleteView,
+)
 from feedback.views import (
     MemberDirectoryView,
     ProblemActivityListView,
@@ -38,6 +48,28 @@ from feedback.views import (
 from health.views import LiveView, ReadyView
 
 urlpatterns = [
+    path("api/workspaces/<uuid:workspace_id>/connections/", ConnectionListView.as_view()),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/setup/", SetupView.as_view()
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/callback/",
+        CallbackView.as_view(),
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/disconnect/",
+        DisconnectView.as_view(),
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/refresh/",
+        RefreshView.as_view(),
+    ),
+    path("api/workspaces/<uuid:workspace_id>/channels/", ChannelView.as_view()),
+    path("api/workspaces/<uuid:workspace_id>/delete/", WorkspaceDeleteView.as_view()),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/delete/",
+        ReportDeleteView.as_view(),
+    ),
     path("admin/", admin.site.urls),
     path("api/health/live/", LiveView.as_view(), name="health-live"),
     path("api/health/ready/", ReadyView.as_view(), name="health-ready"),

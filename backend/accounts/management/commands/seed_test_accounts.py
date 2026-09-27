@@ -94,8 +94,24 @@ class Command(BaseCommand):
                     ),
                 ),
             )
+        from feedback.deletion import delete_workspace
+
+        existing = Membership.objects.filter(
+            workspace__slug="e2e-settings", role="owner", is_active=True
+        ).first()
+        if existing:
+            delete_workspace(existing, "e2e-settings")
+        settings_workspace = Workspace.objects.create(name="Settings test", slug="e2e-settings")
+        settings_user, _ = get_user_model().objects.get_or_create(
+            email="settings-owner@example.test"
+        )
+        settings_user.set_password(password)
+        settings_user.save(update_fields=["password"])
+        Membership.objects.create(workspace=settings_workspace, user=settings_user, role="owner")
+        users.append({"email": settings_user.email, "password": password})
         result = {
             "workspace_id": str(workspace.pk),
+            "settings_workspace_id": str(settings_workspace.pk),
             "users": users,
             "expired_invitation_token": expired.secret,
         }

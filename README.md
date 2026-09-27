@@ -24,6 +24,7 @@ Rescribo is an early development scaffold. Workspace accounts, invitations, the 
 
 - [MVP specification](docs/MVP_SPEC.md)
 - [Local development guide](docs/LOCAL_DEVELOPMENT.md)
+- [Workspace settings and provider setup](docs/SETTINGS.md)
 - [Architecture and development conventions](docs/DEVELOPMENT.md)
 - [Implementation milestone](https://github.com/nicoleman0/rescribo/milestone/1)
 
