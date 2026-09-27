@@ -106,7 +106,7 @@ No app account is created by setup. Create the first product owner with `task bo
 
 `task e2e` seeds synthetic accounts in the reserved `e2e-test` workspace and resets that workspace's test data. Do not use that slug for real work.
 
-Slack, GitHub, and model keys are not needed to start. The first product milestone is live integration feasibility using test apps and disposable data. Follow section 12 of the spec before claiming provider support.
+Slack and GitHub credentials are not needed to start. Local matching is planned but is not implemented in this scaffold. The first product milestone is live integration feasibility using test apps and disposable data. Follow section 12 of the spec before claiming provider support.
 
 Milestone A work is split by the issues in the [GitHub milestone](https://github.com/nicoleman0/rescribo/milestone/1). The opt-in [GitHub App installation check](docs/GITHUB_INSTALLATION_CHECK.md) covers the first issue without adding credentials to the application or repository.
 
