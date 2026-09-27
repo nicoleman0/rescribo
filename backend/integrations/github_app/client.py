@@ -109,14 +109,14 @@ class GitHubAppClient:
         )
 
     def get_user_installation_repositories(
-        self, *, user_token: str, installation_id: int
+        self, *, user_token: str, installation_id: int, page: int = 1
     ) -> dict[str, Any]:
         return self._request(
             "GET",
             f"/user/installations/{installation_id}/repositories",
             token=user_token,
             operation="user installation access check",
-            params={"per_page": 100},
+            params={"per_page": 100, "page": page},
         )
 
     def create_installation_token(
@@ -191,3 +191,6 @@ class GitHubAppClient:
             f"/app/installations/{installation_id}",
             operation="installation deletion",
         )
+
+    def revoke_installation_token(self, *, token: str) -> None:
+        self._request("DELETE", "/installation/token", token=token, operation="token revocation")

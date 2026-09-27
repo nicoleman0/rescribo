@@ -1,3 +1,4 @@
+import { SettingsPage } from '@/features/settings/settings-page'
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/app-shell'
@@ -21,12 +22,6 @@ const productRoutes = [
     path: 'follow-ups',
     title: 'Follow-ups',
     description: 'Approved customer follow-ups will be managed here.',
-  },
-  {
-    path: 'settings',
-    title: 'Settings',
-    description:
-      'Workspace connections and membership settings will live here.',
   },
 ] as const
 
@@ -67,6 +62,7 @@ export default function App() {
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/new" element={<ManualReportPage />} />
           <Route path="inbox/:reportId" element={<InboxPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           <Route path="problems" element={<ProblemsPage />} />
           <Route path="problems/:problemId" element={<ProblemDetailPage />} />
           {productRoutes.map((route) => (

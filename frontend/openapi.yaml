@@ -401,6 +401,241 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/workspaces/{workspace_id}/channels/:
+    post:
+      operationId: workspaces_channels_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChannelInput'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChannelInput'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChannelInput'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/connections/:
+    get:
+      operationId: workspaces_connections_list
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Connection'
+          description: ''
+  /api/workspaces/{workspace_id}/connections/{provider}/disconnect/:
+    post:
+      operationId: workspaces_connections_disconnect_create
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Disconnect'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Disconnect'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Disconnect'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/connections/{provider}/refresh/:
+    post:
+      operationId: workspaces_connections_refresh_create
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Version'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Version'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Version'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/connections/{provider}/setup/:
+    post:
+      operationId: workspaces_connections_setup_create
+      parameters:
+      - in: path
+        name: provider
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Setup'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Setup'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Setup'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/URL'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/delete/:
+    post:
+      operationId: workspaces_delete_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Delete'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Delete'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Delete'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/invitations/:
     get:
       operationId: workspaces_invitations_list
@@ -1414,6 +1649,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/delete/:
+    post:
+      operationId: workspaces_reports_delete_create
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeleteReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeleteReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeleteReport'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/reports/{report_id}/dismiss/:
     post:
       operationId: workspaces_reports_dismiss_create
@@ -1698,6 +1980,7 @@ components:
   schemas:
     ActivityActionEnum:
       enum:
+      - report.deleted
       - report.created
       - report.updated
       - report.assigned
@@ -1711,6 +1994,7 @@ components:
       - problem.fix_confirmed
       type: string
       description: |-
+        * `report.deleted` - Report deleted
         * `report.created` - Report created
         * `report.updated` - Report updated
         * `report.assigned` - Report assigned
@@ -1735,6 +2019,111 @@ components:
       required:
       - assignee_id
       - expected_version
+    Channel:
+      type: object
+      properties:
+        channel_id:
+          type: string
+        name:
+          type: string
+        is_private:
+          type: boolean
+        verified_at:
+          type: string
+          format: date-time
+      required:
+      - channel_id
+      - is_private
+      - name
+      - verified_at
+    ChannelInput:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        channel_id:
+          type: string
+          maxLength: 64
+          pattern: ^[CG][A-Z0-9]+$
+        remove:
+          type: boolean
+          default: false
+        consent:
+          type: boolean
+          default: false
+      required:
+      - channel_id
+      - version
+    ConfirmationEnum:
+      enum:
+      - DISCONNECT
+      type: string
+      description: '* `DISCONNECT` - DISCONNECT'
+    Connection:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/ProviderEnum'
+        identity:
+          type: string
+        external_id:
+          type: string
+        status:
+          $ref: '#/components/schemas/ConnectionStatusEnum'
+        scopes:
+          type: array
+          items:
+            type: string
+        error_code:
+          type: string
+        error_detail:
+          type: string
+        last_success_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_reconciled_at:
+          type: string
+          format: date-time
+          nullable: true
+        repository:
+          type: string
+        visibility:
+          type: string
+        version:
+          type: integer
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/Channel'
+        operations:
+          $ref: '#/components/schemas/OperationCounts'
+      required:
+      - channels
+      - error_code
+      - error_detail
+      - external_id
+      - identity
+      - last_reconciled_at
+      - last_success_at
+      - operations
+      - provider
+      - repository
+      - scopes
+      - status
+      - version
+      - visibility
+    ConnectionStatusEnum:
+      enum:
+      - active
+      - error
+      - disconnected
+      type: string
+      description: |-
+        * `active` - Active
+        * `error` - Needs attention
+        * `disconnected` - Disconnected
     CreateProblemForReport:
       type: object
       properties:
@@ -1754,6 +2143,35 @@ components:
       required:
       - expected_version
       - title
+    Delete:
+      type: object
+      properties:
+        confirmation:
+          type: string
+      required:
+      - confirmation
+    DeleteReport:
+      type: object
+      properties:
+        confirmation:
+          type: string
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - confirmation
+      - version
+    Disconnect:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        confirmation:
+          $ref: '#/components/schemas/ConfirmationEnum'
+      required:
+      - confirmation
+      - version
     Error:
       type: object
       properties:
@@ -1771,9 +2189,17 @@ components:
       type: object
       properties:
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/HealthStatusEnum'
       required:
       - status
+    HealthStatusEnum:
+      enum:
+      - ok
+      - unavailable
+      type: string
+      description: |-
+        * `ok` - ok
+        * `unavailable` - unavailable
     InvitationAccept:
       type: object
       properties:
@@ -1922,6 +2348,19 @@ components:
     NullEnum:
       enum:
       - null
+    OperationCounts:
+      type: object
+      properties:
+        queued:
+          type: integer
+        failed:
+          type: integer
+        uncertain:
+          type: integer
+      required:
+      - failed
+      - queued
+      - uncertain
     PaginatedProblemActivityList:
       type: object
       required:
@@ -2249,6 +2688,14 @@ components:
       - id
       - state
       - title
+    ProviderEnum:
+      enum:
+      - slack
+      - github
+      type: string
+      description: |-
+        * `slack` - Slack
+        * `github` - GitHub
     RecordReference:
       type: object
       properties:
@@ -2420,14 +2867,17 @@ components:
       required:
       - memberships
       - user
-    StatusEnum:
-      enum:
-      - ok
-      - unavailable
-      type: string
-      description: |-
-        * `ok` - ok
-        * `unavailable` - unavailable
+    Setup:
+      type: object
+      properties:
+        repository:
+          type: string
+          default: ''
+          pattern: ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$
+        consent:
+          type: boolean
+      required:
+      - consent
     Token:
       type: object
       properties:
@@ -2454,6 +2904,22 @@ components:
         * `new` - New
         * `linked` - Linked
         * `dismissed` - Dismissed
+    URL:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+      required:
+      - url
+    Version:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - version
     Versioned:
       type: object
       properties:

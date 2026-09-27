@@ -186,6 +186,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/channels/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_channels_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/connections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_connections_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/connections/{provider}/disconnect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_connections_disconnect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/connections/{provider}/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_connections_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/connections/{provider}/setup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_connections_setup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/delete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_delete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/invitations/": {
         parameters: {
             query?: never;
@@ -462,6 +558,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/delete/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_reports_delete_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/reports/{report_id}/dismiss/": {
         parameters: {
             query?: never;
@@ -535,7 +647,8 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
-         * @description * `report.created` - Report created
+         * @description * `report.deleted` - Report deleted
+         *     * `report.created` - Report created
          *     * `report.updated` - Report updated
          *     * `report.assigned` - Report assigned
          *     * `report.linked` - Report linked
@@ -548,18 +661,74 @@ export interface components {
          *     * `problem.fix_confirmed` - Problem fix confirmed
          * @enum {string}
          */
-        ActivityActionEnum: "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed";
+        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed";
         AssignReport: {
             expected_version: number;
             /** Format: uuid */
             assignee_id: string | null;
         };
+        Channel: {
+            channel_id: string;
+            name: string;
+            is_private: boolean;
+            /** Format: date-time */
+            verified_at: string;
+        };
+        ChannelInput: {
+            version: number;
+            channel_id: string;
+            /** @default false */
+            remove: boolean;
+            /** @default false */
+            consent: boolean;
+        };
+        /**
+         * @description * `DISCONNECT` - DISCONNECT
+         * @enum {string}
+         */
+        ConfirmationEnum: "DISCONNECT";
+        Connection: {
+            provider: components["schemas"]["ProviderEnum"];
+            identity: string;
+            external_id: string;
+            status: components["schemas"]["ConnectionStatusEnum"];
+            scopes: string[];
+            error_code: string;
+            error_detail: string;
+            /** Format: date-time */
+            last_success_at: string | null;
+            /** Format: date-time */
+            last_reconciled_at: string | null;
+            repository: string;
+            visibility: string;
+            version: number;
+            channels: components["schemas"]["Channel"][];
+            operations: components["schemas"]["OperationCounts"];
+        };
+        /**
+         * @description * `active` - Active
+         *     * `error` - Needs attention
+         *     * `disconnected` - Disconnected
+         * @enum {string}
+         */
+        ConnectionStatusEnum: "active" | "error" | "disconnected";
         CreateProblemForReport: {
             expected_version: number;
             title: string;
             summary?: string;
             /** Format: uuid */
             owner_id?: string | null;
+        };
+        Delete: {
+            confirmation: string;
+        };
+        DeleteReport: {
+            confirmation: string;
+            version: number;
+        };
+        Disconnect: {
+            version: number;
+            confirmation: components["schemas"]["ConfirmationEnum"];
         };
         Error: {
             detail: string;
@@ -569,8 +738,14 @@ export interface components {
             };
         };
         Health: {
-            status: components["schemas"]["StatusEnum"];
+            status: components["schemas"]["HealthStatusEnum"];
         };
+        /**
+         * @description * `ok` - ok
+         *     * `unavailable` - unavailable
+         * @enum {string}
+         */
+        HealthStatusEnum: "ok" | "unavailable";
         InvitationAccept: {
             token: string;
             full_name?: string;
@@ -639,6 +814,11 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        OperationCounts: {
+            queued: number;
+            failed: number;
+            uncertain: number;
+        };
         PaginatedProblemActivityList: {
             /** @example 123 */
             count: number;
@@ -786,6 +966,12 @@ export interface components {
             title: string;
             state: components["schemas"]["ProblemStateEnum"];
         };
+        /**
+         * @description * `slack` - Slack
+         *     * `github` - GitHub
+         * @enum {string}
+         */
+        ProviderEnum: "slack" | "github";
         RecordReference: {
             /** Format: uuid */
             id: string;
@@ -861,12 +1047,11 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
-        /**
-         * @description * `ok` - ok
-         *     * `unavailable` - unavailable
-         * @enum {string}
-         */
-        StatusEnum: "ok" | "unavailable";
+        Setup: {
+            /** @default  */
+            repository: string;
+            consent: boolean;
+        };
         Token: {
             token: string;
         };
@@ -881,6 +1066,13 @@ export interface components {
          * @enum {string}
          */
         TriageStateEnum: "new" | "linked" | "dismissed";
+        URL: {
+            /** Format: uri */
+            url: string;
+        };
+        Version: {
+            version: number;
+        };
         Versioned: {
             expected_version: number;
         };
@@ -1244,6 +1436,225 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    workspaces_channels_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChannelInput"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChannelInput"];
+                "multipart/form-data": components["schemas"]["ChannelInput"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_connections_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Connection"][];
+                };
+            };
+        };
+    };
+    workspaces_connections_disconnect_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Disconnect"];
+                "application/x-www-form-urlencoded": components["schemas"]["Disconnect"];
+                "multipart/form-data": components["schemas"]["Disconnect"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_connections_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Version"];
+                "application/x-www-form-urlencoded": components["schemas"]["Version"];
+                "multipart/form-data": components["schemas"]["Version"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_connections_setup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Setup"];
+                "application/x-www-form-urlencoded": components["schemas"]["Setup"];
+                "multipart/form-data": components["schemas"]["Setup"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["URL"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_delete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Delete"];
+                "application/x-www-form-urlencoded": components["schemas"]["Delete"];
+                "multipart/form-data": components["schemas"]["Delete"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2242,6 +2653,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportConflict"];
+                };
+            };
+        };
+    };
+    workspaces_reports_delete_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteReport"];
+                "application/x-www-form-urlencoded": components["schemas"]["DeleteReport"];
+                "multipart/form-data": components["schemas"]["DeleteReport"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

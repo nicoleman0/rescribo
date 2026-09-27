@@ -162,6 +162,7 @@ class ReportSource(models.Model):
 
 class Activity(models.Model):
     class Action(models.TextChoices):
+        REPORT_DELETED = "report.deleted", "Report deleted"
         REPORT_CREATED = "report.created", "Report created"
         REPORT_UPDATED = "report.updated", "Report updated"
         REPORT_ASSIGNED = "report.assigned", "Report assigned"
@@ -224,6 +225,7 @@ class ReportNotificationOperation(models.Model):
         CANCELLED = "cancelled", "Cancelled"
 
     class InvalidationReason(models.TextChoices):
+        DISCONNECTED = "disconnected", "Connection disconnected"
         REASSIGNED = "reassigned", "Report reassigned"
         MOVED = "moved", "Report moved to another problem"
         UNLINKED = "unlinked", "Report ungrouped"
