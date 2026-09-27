@@ -25,7 +25,7 @@ Success means completing that workflow reliably with real Slack and GitHub test 
 - Search, filter, assign, edit, group, ungroup, and dismiss reports.
 - Create or link a GitHub issue, observe its status, and recover from missed updates.
 - Human review of fix availability; employee notification and separate customer follow-up tracking.
-- AI match suggestions with evidence and editable follow-up drafts. Manual operation remains available.
+- Local match suggestions with evidence and editable follow-up drafts. Manual operation remains available.
 - Activity history, connection health, retry/recovery controls, seeded demo, automated tests, deployment instructions, and evaluation results.
 
 ### Deferred
@@ -43,7 +43,7 @@ Success means completing that workflow reliably with real Slack and GitHub test 
 3. GitHub issue closed, fix available, employee notified, customer contacted, and customer confirmed are distinct facts.
 4. Importing an already captured source message returns the existing report. It does not silently change the report or reset follow-up.
 5. Every business record, lookup, background job, suggestion, and external operation belongs to a verified workspace.
-6. A model proposes; application code validates; a person approves business changes and outbound content.
+6. The local matcher suggests; Django validates; a person approves any report-to-problem link and outbound content.
 
 ## 3. Integration options checked
 
@@ -80,7 +80,7 @@ Slack distribution is a separate launch concern. Develop in a test workspace, th
 
 1. A signed shortcut identifies the Slack team, actor, channel, and selected message. Verify the raw-body signature and timestamp before trusting it. [S2, S8]
 2. The actor must be linked to an active product membership. First-time linking uses a short-lived, single-use code generated in the logged-in web account and entered into a Slack modal. Bind redemption to the signed Slack actor and installed team; do not match by display name or email.
-3. Acknowledge immediately and open the modal using the short-lived trigger. Do not run AI, fetch history, or wait for GitHub in this path.
+3. Acknowledge immediately and open the modal using the short-lived trigger. Do not run matching, fetch history, or wait for GitHub in this path.
 4. Show a preview and editable report title, optional customer organisation/contact reference, affected version, and additional context. The selected-message snapshot remains separate from edited report text.
 5. On submit, validate membership, source approval, and fields. A successful modal submission means the report and its activity entry are committed. A database failure returns a visible error, not a success acknowledgement.
 6. Persist short-lived capture context server-side and put only its opaque ID in modal metadata. Expired context requires starting the shortcut again. Never let modal metadata choose an arbitrary workspace or source message.
@@ -126,7 +126,7 @@ The snapshot includes only the selected message's text and source identifiers. A
 | Problems | Searchable list with report count, owner, internal status, external issue status, and attention indicators. |
 | Problem detail | Editable summary, linked reports with provenance, GitHub link/create flow, fix review, activity history, and report reassignment. |
 | Follow-ups | Needs approval, delivery failed/uncertain, awaiting customer contact, awaiting confirmation, and completed; exact-message preview and individual actions. |
-| Settings | Membership/invites, Slack account linking, connections and channels, GitHub repository, AI enablement, disconnect, and deletion controls. |
+| Settings | Membership/invites, Slack account linking, connections and channels, GitHub repository, disconnect, and deletion controls. |
 
 Use a desktop-first responsive layout that remains usable on mobile. Forms need labels, keyboard operation, visible focus, and inline errors. Every asynchronous screen has loading, empty, error, and retry states. Preserve unsaved drafts on recoverable failures. Refresh background state with bounded polling; websockets are not required.
 
@@ -146,7 +146,7 @@ These are ownership boundaries and required records, not a requirement for one D
 | Follow-up | Report, resolution revision, intended employee, draft/version, employee-delivery state, customer-contact state, outcome and timestamps. Unique report + resolution revision. |
 | Activity | Workspace, actor/system identity, action, record reference, time, minimal change metadata. |
 | Inbound receipt / External operation | Provider delivery or action key, workspace/connection, processing state, attempts, next attempt, remote result IDs, safe error. |
-| AI suggestion/run | Workspace, input record versions, candidate IDs, evidence, model/prompt version, outcome, timing, token usage where available, user decision. |
+| Match suggestion/run | Workspace, input record versions, retrieved candidate IDs, evidence references, algorithm/configuration version, outcome, timing, safe error, user decision. |
 
 Enforce source uniqueness in PostgreSQL. Scope every foreign-key assignment to the workspace, including background tasks. Apply workspace filters before search, aggregation, or candidate selection. Never rely on UUID secrecy as authorisation.
 
@@ -171,7 +171,7 @@ Enforce source uniqueness in PostgreSQL. Scope every foreign-key assignment to t
 - **Storage:** PostgreSQL for business state, search, receipts, operations, and audit history.
 - **Background execution:** Celery with Redis, plus one Celery Beat scheduler. Use established task/retry machinery rather than creating a queue framework. Business operation state remains in PostgreSQL. [T5]
 - **Integrations:** Slack's Python SDK for API calls/signature helpers; a dedicated GitHub HTTP client. Provider-specific auth, payload validation, and error translation stay in their modules.
-- **AI:** one configured provider/model initially, behind typed decision and generation boundaries. Start with bounded calls; LangGraph is not required by the agreed workflow. Operator-supplied credentials or a compatible local endpoint; AI can be disabled.
+- **Matching:** PostgreSQL retrieves same-workspace candidates; a maintained local Rust component deterministically scores and ranks them. Django owns workflow and persistence.
 - **Tooling:** uv and npm lockfiles; Python/TypeScript formatting and static checks; pytest, frontend component tests, and Playwright journey tests. Pin compatible supported versions during implementation.
 
 Django is proposed over FastAPI because this product has substantial account, permission, data-editing, and migration work. React remains responsible for the product interface. A separate Node backend is unnecessary for this design.
@@ -184,7 +184,7 @@ Django is proposed over FastAPI because this product has substantial account, pe
 | Feedback | Reports, problems, state transitions, grouping, resolution, follow-up, and business activity. |
 | Integrations/Slack | OAuth, source validation, shortcuts/modals, Slack payloads, and bot delivery. |
 | Integrations/GitHub | Installation verification, credentials, issue operations, webhooks, and reconciliation. |
-| AI | Candidate ranking, structured suggestions/drafts, evidence validation, and evaluation. |
+| Matching | Rust scoring/ranking contract and algorithm evaluation. Django retrieves candidates, validates references, persists runs/suggestions, and applies human decisions. |
 | Operations | Receipt deduplication, durable operation records, dispatch, recovery, and connection health. |
 
 - Keep HTTP handlers and Celery tasks thin. Both call the same application use cases so permissions and state rules are not duplicated.
@@ -210,7 +210,7 @@ flowchart LR
     Worker --> DB
     Worker --> SlackAPI[Slack API]
     Worker --> GitHubAPI[GitHub API]
-    Worker --> Model[Configured model]
+    Worker --> Matcher[Local Rust matcher]
 ```
 
 Serve browser and API under one origin. Use secure HttpOnly session cookies and CSRF protection on browser writes, including login. OAuth callbacks use state validation; signed webhook routes have their own verification, not a blanket CSRF exemption. [T3, T4]
@@ -229,61 +229,50 @@ Serve browser and API under one origin. Use secure HttpOnly session cookies and 
 - Revalidate access at use time. Disconnect deletes usable credentials and stops pending sends; it does not silently erase stored reports. Reconnection does not automatically release obsolete approvals.
 - Store secrets encrypted with a maintained cryptography library and an operator-managed key outside the database. Never log tokens, response URLs, invite codes, raw message bodies, or customer content.
 - Temporary capture contexts expire after 15 minutes. Successful raw webhook payloads, if needed for processing, are purged within seven days; retain only minimal deduplication/status metadata afterwards. Keep business records until owner deletion; document backup expiry separately.
-- Owners can delete reports and their snapshots/AI artefacts; retain only content-free deletion metadata. Workspace deletion revokes/stops integrations and removes tenant data. Do not automatically delete upstream messages or issues.
+- Owners can delete reports and their snapshots/matching artefacts; retain only content-free deletion metadata. Workspace deletion revokes/stops integrations and removes tenant data. Do not automatically delete upstream messages or issues.
 
-## 10. AI behaviour and evaluation
+## 10. Matching behaviour and evaluation
 
 ### Matching
 
-1. Retrieve candidates from the same workspace using PostgreSQL text search over problem titles, summaries, and linked report descriptions.
-2. Send a bounded candidate set and the new report to the configured model, omitting customer contact details unless essential and explicitly enabled.
-3. Return up to three suggested problem IDs, a short explanation, and evidence references, or abstain.
-4. Validate IDs and evidence against the supplied candidate set. Invalid output becomes an unavailable suggestion, not a business mutation.
-5. Record accept/reject decisions. Never label a model's self-reported number as a calibrated probability.
+1. Django retrieves a bounded set of open, same-workspace problems from PostgreSQL text search over problem titles, summaries, and linked report descriptions. The initial candidate limit is ten; evaluation may justify changing it.
+2. Django sends the new report and those candidates to a local Rust executable. The Rust component has no database, network, or business-workflow access.
+3. Rust returns ordered suggestions with deterministic feature scores and evidence references, or an explicit abstention. Django checks every problem and evidence reference against the exact supplied set before persistence.
+4. Suggestions are advisory. An authenticated member accepts or rejects them. Acceptance calls the normal report-linking use case; matching cannot link, dismiss, or change a problem.
 
-This first retrieval method may miss paraphrases. Measure candidate recall before attributing a missed match to the model. Add semantic retrieval only if the evaluation demonstrates the need; keep it behind the candidate retrieval boundary.
+Retrieval and ranking are separate stages. PostgreSQL may omit a relevant problem; Rust cannot rank a candidate it did not receive. Report candidate recall independently and do not describe a retrieval miss as a ranking failure.
 
-### Initial Jev matching design
+The initial ranker is deterministic and lexical. It may combine normalized token overlap, weighted title/summary/report-field overlap, exact phrase or rare-token overlap, and explicit penalties for conflicting version terms when both inputs contain versions. Normalize Unicode consistently, tokenize with a documented language-neutral rule, and treat empty inputs explicitly. Derive signal weights and abstention thresholds from the development corpus and freeze them before held-out evaluation. Do not claim the score is a calibrated probability.
 
-- Use OpenRouter with one operator-managed `OPENROUTER_API_KEY`. Workspace owners enable AI per workspace; users do not supply keys. Missing credentials make AI unavailable without failing application health checks.
-- Pin `typesafe/jev-1.13`. Model upgrades are explicit and require a new evaluation run. [J1]
-- Run matching asynchronously after report creation or a relevant edit. Store the report version with the run, check it before the provider call and before saving, and discard stale results. Provider failure never rolls back report capture.
-- Retrieve the top ten candidates from the same workspace with PostgreSQL text search. Include problem titles, summaries, and bounded linked-report excerpts. Exclude customer contact details and provider identifiers.
-- Send one bounded Decisions request containing:
-  - one Choice across the candidate problem IDs plus `no_match`;
-  - one Noul per candidate asking whether it represents the same underlying problem; and
-  - one Choice per candidate selecting the strongest supplied evidence reference or `no_evidence`. [J2]
-- Rank with the relative Choice distribution and gate with each candidate's independent Noul result. Do not assume those judgments must agree. Derive thresholds from the development dataset, then freeze them before held-out evaluation.
-- Build the explanation in code from validated IDs and the selected source reference. Jev does not generate explanation text. Reject unknown candidate or evidence IDs.
-- Return at most three suggestions. A person accepts or rejects them; Jev cannot link, dismiss, or otherwise mutate a report or problem.
-- Keep provider-specific transport in `integrations/openrouter`. The AI module owns retrieval, questions, result validation, thresholds, persistence, and evaluation. Use the existing `httpx` dependency for the OpenRouter Decisions endpoint rather than adding the TypeSafe SDK, which uses TypeSafe's API and credentials.
-- Send `provider.zdr: true` and `provider.data_collection: "deny"`. Never log credentials, request bodies, response bodies, report text, or evidence text. [J3]
-- Record an AI matching run with workspace/report IDs, report version, model and question-set versions, supplied candidate/evidence IDs, typed answers, usage, latency, status, and a safe error. Do not duplicate report text in the run record.
-- Store each suggestion as a workspace-scoped relation to its run and problem, with rank, Choice probability, Noul probability, evidence reference, and pending/accepted/rejected outcome. Database constraints and application checks prevent cross-workspace or duplicate suggestions.
-- Expose only the latest non-stale run through the report API. Use separate authenticated actions for retry, accept, and reject. Acceptance calls the normal report-linking use case; the AI module does not own that transition.
+Each evidence item identifies a supplied source by typed record kind and UUID plus a bounded field name; it contains no generated quotation. Django verifies it and renders any explanation from that source. Stable sorting uses descending score then ascending problem UUID. Return no more than three suggestions. Abstain when no candidate clears the evaluated threshold or the top candidates are too close under a development-set rule. A score indicates only this ranker's relative lexical evidence.
 
-The OpenRouter Decisions API is currently alpha. Contain request and response changes in the adapter, validate responses at that boundary, keep sanitised contract fixtures, and use capped retries for retryable provider failures. [J4]
+Deterministic lexical matching cannot reliably recognize paraphrases with little shared vocabulary, interpret negation, or distinguish similar wording that describes different underlying problems. Surface shared terms and source evidence so a person can judge. Local embeddings are a possible future retrieval or ranking improvement only after a labelled evaluation shows a specific gap; they are not an initial dependency.
 
-Because the repository is still an environment scaffold, record this design now but do not build persistence, tasks, or UI ahead of the report/problem/workspace foundations. The first implementation is an opt-in live contract check using synthetic data and the operator's OpenRouter key. It verifies the pinned model, Choice, Noul, evidence selection, privacy fields, response validation, and failure handling. Full product integration remains milestone D after the manual workflow and isolation foundations exist.
+Run matching asynchronously after report creation or a matching-relevant edit. Report capture commits independently; a queue or matcher failure records an unavailable/failed run and leaves the report usable for manual search and grouping. Preserve distinct failure codes for retrieval failure, ranking executable failure, invalid contract output, timeout, and stale input. Retry transient infrastructure failures with bounded Celery retries; do not retry validation failures indefinitely. Expose only the latest completed non-stale result and provide an authenticated retry action.
+
+Snapshot the report version and each supplied candidate's ID/version when retrieval completes. Before ranking, discard work if the report is edited, linked, dismissed, or otherwise no longer eligible. Before saving, recheck report and candidate versions and workspace ownership in a transaction; mark stale results and enqueue a fresh run when appropriate. Retries reuse the same snapshot only while all versions still match. Human acceptance rechecks versions through the normal linking use case.
+
+The run record is workspace-scoped and stores report/candidate versions, algorithm and config versions, stable candidate order, status/failure category, timings for retrieval and ranking, and creation/completion times. Suggestions store rank, raw deterministic score, validated evidence references, and pending/accepted/rejected outcome. Avoid report content, customer details, raw payloads, and free-form exception text in logs. Operational measurements include retrieval candidate recall in evaluation, retrieval/ranking failure counts, abstentions, suggestion coverage, acceptance/rejection rates, stale discards, retries, and stage latency. These are descriptive measurements, not quality claims by themselves.
+
+See [ADR 0003](adr/0003-local-rust-matcher.md) for the Python/Rust boundary, JSON contract and limits, crate/build/CI policy, and staged acceptance criteria.
 
 ### Drafting
 
-- Jev is not used for drafting. The initial product uses the deterministic follow-up template. A separate generative model and evaluation are later work if deterministic drafting proves insufficient.
+- Follow-up drafts use the deterministic template. Any future generative drafting is separate work and requires its own evaluation.
 - Use only the report and human-approved resolution details. Do not invent release dates, versions, causes, or customer promises.
-- Treat report/issue text as untrusted data. No model tools, external page fetches, or authority to write to integrations.
+- Treat report/issue text as untrusted data. No matching component has external network access or authority to write to integrations.
 - Display editable output with the resolution it was based on. Changed inputs invalidate the draft approval.
-- Default AI off until an owner enables it and sees which configured provider receives the selected text. Manual search/grouping and a deterministic follow-up template remain available.
-- Bound input/output size, concurrency, timeout, and daily per-workspace calls. Record model/prompt versions, latency, and usage where the provider reports it.
+- Matching runs locally without provider credentials or per-workspace enablement. Manual search/grouping remains available.
+- Bound draft input/output separately if a generation feature is proposed. Matching limits and measurements are defined above.
 
 ### Evaluation deliverable
 
-- Version a labelled synthetic dataset with genuine matches, no-match reports, similar symptoms with different causes, missing context, misleading version details, and prompt-injection text.
+- Version a labelled dataset with genuine matches, no-match reports, paraphrases, negation, similar wording with different causes, missing context, misleading version details, and realistic report lengths. Keep synthetic and any approved redacted real evaluation data distinct.
 - Separate development and held-out cases. Derive case counts from fixtures, not hard-coded expectations.
-- Report candidate recall@k, top-suggestion precision, suggestion coverage, abstention behaviour, and evidence validity. Compare against text-search-only ranking.
-- For Jev matching, also report top-three recall and evidence-selection accuracy. Tune thresholds on the development set only, then freeze them for the held-out run.
+- Report candidate recall@k, top-suggestion precision, suggestion coverage, abstention behaviour, and evidence validity. Compare against PostgreSQL text-search ordering on the same retrieved candidate pool; separately report end-to-end retrieval recall.
+- For matching, also report top-three recall, evidence-reference validity, abstention, and the fraction of gold matches absent from retrieved candidates. Tune weights and abstention rules on development data only, then freeze them for held-out evaluation.
 - Evaluate drafts for unsupported claims and omission of required fix details. Manually inspect a documented sample.
-- Proposed release bar: at least 90% top-suggestion precision on a held-out set containing at least 30 non-abstained suggestions, 100% valid record references, and no unsupported claims in the reviewed draft set. Report sample sizes and coverage; high precision from near-total abstention is not success.
-- If matching does not beat the baseline meaningfully, ship manual/search matching and label AI experimental. Do not hide the result or claim validated AI quality.
+- Set acceptance gates before held-out results are inspected. Require zero invalid references and deterministic reproducibility across repeated runs. Set acceptable precision, coverage, and minimum evaluable sample size from product risk and review capacity before evaluation; do not invent results or arbitrary targets here. If gates are not met, retain manual search and do not claim matching quality.
 
 ## 11. Accounts, deployment, and demo
 
@@ -293,7 +282,7 @@ Because the repository is still an environment scaffold, record this design now 
 - Package web, worker, scheduler, PostgreSQL, and Redis in Docker Compose. Terminate HTTPS at the deployment proxy. External callbacks require a stable HTTPS URL; document a development tunnel and its secret-handling implications.
 - Include migrations, health/readiness checks, structured logs, backup/restore instructions, and a restore smoke test. Add trace correlation from request/event through operation and outbound API attempt; exclude report text and secrets from telemetry.
 - Start with a container deployment on infrastructure the developer controls. A managed-cloud deployment is a later learning milestone, not a prerequisite for the functional MVP.
-- Seed a separate demo workspace with fictitious companies, reports, issues, mistakes, and failures. Display a demo label. Demo mutations must never call real integrations or a paid model by default.
+- Seed a separate demo workspace with fictitious companies, reports, issues, mistakes, and failures. Display a demo label. Demo mutations must never call real integrations by default.
 - Public demonstration uses isolated demo data and disabled integration setup/outbound capabilities. Do not expose the private test workspace or credentials.
 
 ## 12. Delivery sequence and acceptance criteria
@@ -309,7 +298,7 @@ These are build milestones, not estimates or a task-by-task implementation plan.
 - Record tested app settings, granted scopes, observed payloads after sanitisation, and any platform limitations. Update this spec if observed behaviour differs from documentation.
 - Consolidated sanitised evidence lives in [`LIVE_INTEGRATION_EVIDENCE.md`](LIVE_INTEGRATION_EVIDENCE.md), separate from mocked tests. Slack capture, channel revalidation, permalink retrieval, and both GitHub checks have live runs. Account linking and the delayed bot DM (issue #26) are not yet exercised live.
 
-### B. Product without AI
+### B. Core product workflow
 
 - A real owner can invite a member who signs up in a separate browser session.
 - Capture a Slack report; manually create a second report; group both into a problem; ungroup/reassign without losing provenance.
@@ -327,24 +316,24 @@ These are build milestones, not estimates or a task-by-task implementation plan.
 - Concurrent edits, stale drafts, report reassignment, and a late report linked to an already fixed problem obey section 7.
 - Verify deletion and retention jobs remove content from primary storage and document backup retention.
 
-### D. AI and portfolio delivery
+### D. Local matching and portfolio delivery
 
-- Before the product AI work, run the synthetic live Jev/OpenRouter contract check described in section 10. Keep it opt-in and separate from the normal test suite.
-- Run the held-out evaluation and publish the actual results with model/prompt configuration and limitations.
-- Verify invalid IDs, injected instructions, provider timeout, disabled AI, and exhausted budget leave manual work functional.
+- Implement the versioned Rust matcher contract and deterministic baseline after manual workflow and workspace isolation are established.
+- Run contract/integration tests and a held-out evaluation against PostgreSQL search alone before enabling suggestions by default.
+- Verify malformed input/output, executable missing/crash/timeout, stale inputs, empty candidate sets, and queue failure leave report capture and manual work functional.
 - Demonstrate the complete live Slack/GitHub journey. Keep live evidence separate from mocked integration tests and synthetic evaluation.
 - Deliver a seeded demo, short walkthrough, architecture/decision notes, setup and recovery runbook, and CI checks.
 - Document measured timings and test conditions rather than claiming production scale or real user adoption.
 
 ### Definition of MVP complete
 
-The live workflow in milestone B works; milestone C passes; AI meets its stated bar or is explicitly experimental/disabled; the demo and setup instructions are reproducible. A second intake connector is not required to call this first workflow complete, but broad integration support must not be claimed until additional connectors exist.
+The live workflow in milestone B works; milestone C passes; local matching meets predeclared evaluation gates or remains unavailable with manual matching supported; the demo and setup instructions are reproducible. A second intake connector is not required to call this first workflow complete, but broad integration support must not be claimed until additional connectors exist.
 
 ## 13. Review decisions
 
 - Confirmed: internal team inbox; Slack first; GitHub engineering tracking; Python backend; React + TypeScript frontend.
 - Proposed in this spec: Django/DRF, Celery/Redis, direct employee DMs, selected public/private channels with explicit publication, and invite-only app accounts.
-- Confirmed: the product is named Rescribo and the initial matching model is pinned to `typesafe/jev-1.13` through OpenRouter. Hosting provider selection remains an implementation decision.
+- Confirmed: the product is named Rescribo. Matching uses the local Rust design in section 10. Hosting provider selection remains an implementation decision.
 - Reusability, modularity, DRY, and maintainability are primary code-quality requirements.
 
 ## Sources
@@ -374,7 +363,3 @@ Checked 20 September 2026. API support is documentation-verified; live feasibili
 - [T3: Django authentication](https://docs.djangoproject.com/en/5.2/topics/auth/default/)
 - [T4: DRF authentication](https://www.django-rest-framework.org/api-guide/authentication/)
 - [T5: Celery and Django](https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html)
-- [J1: Jev 1.13 on OpenRouter](https://openrouter.ai/typesafe/jev-1.13/)
-- [J2: TypeSafe primitives](https://docs.typesafe.ai/primitives)
-- [J3: OpenRouter privacy controls](https://openrouter.ai/docs/guides/get-started/sovereign-ai)
-- [J4: OpenRouter Decisions API integration](https://github.com/OpenRouterTeam/ai-sdk-provider)

@@ -39,6 +39,7 @@ Future mutating browser calls must send the CSRF token with session cookies. The
 - Celery executes background work; Redis is its broker/result backend. PostgreSQL remains the future business-operation source of truth.
 - Provider SDKs and HTTP clients live behind integration modules. Do not put provider payloads into the core workflow API.
 - Use shared application functions for operations invoked by both web requests and workers.
+- Planned matching keeps PostgreSQL retrieval and business workflow in Django; a local Rust executable ranks only supplied candidates. See [ADR 0003](adr/0003-local-rust-matcher.md). This boundary is design only and is not implemented.
 
 The environment includes Slack SDK, HTTPX, and cryptography dependencies for the next milestone. No provider app is registered and no live outbound business action exists yet.
 
@@ -55,7 +56,7 @@ The environment includes Slack SDK, HTTPX, and cryptography dependencies for the
 
 The readiness test uses real PostgreSQL and Redis. Failure tests inject dependency errors and assert that responses do not expose internals. Component tests isolate browser presentation. Playwright checks the real browser -> Vite proxy -> Django -> PostgreSQL/Redis path. The worker smoke script exercises Redis and an actual worker separately.
 
-This environment does not implement the full MVP's tenant isolation, durable operations, provider authentication, AI evaluation, or production hardening. Those requirements remain in the spec and must be tested with their corresponding features.
+This environment does not implement the full MVP's tenant isolation, durable operations, provider authentication, local Rust matching, matching evaluation, or production hardening. Those requirements remain in the spec and must be tested with their corresponding features.
 
 ## Frontend screenshots
 

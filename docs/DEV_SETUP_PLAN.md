@@ -22,3 +22,5 @@ Run `task check`, `task test`, `task build`, `task schema-check`, and `task e2e`
 ## Constraints
 
 Use modular, maintainable code and shared typed contracts. Keep secrets in ignored `.env` files. Use supported pinned toolchains and commit lockfiles. Do not implement empty modules for future features. All accounts and integrations are future milestones in the MVP spec.
+
+Local Rust matching is a later product milestone, not part of this completed environment scaffold. Its package, runtime, and CI design is in [ADR 0003](adr/0003-local-rust-matcher.md).
