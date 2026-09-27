@@ -18,7 +18,23 @@ from accounts.views import (
     PasswordResetRedeemView,
     SessionView,
 )
-from feedback.views import MemberDirectoryView, ReportDetailView, ReportListView
+from feedback.views import (
+    MemberDirectoryView,
+    ProblemActivityListView,
+    ProblemDetailView,
+    ProblemEditView,
+    ProblemListView,
+    ProblemOwnerView,
+    ProblemReportListView,
+    ReportAssignView,
+    ReportCreateProblemView,
+    ReportDetailView,
+    ReportDismissView,
+    ReportLinkView,
+    ReportListView,
+    ReportRestoreView,
+    ReportUnlinkView,
+)
 from health.views import LiveView, ReadyView
 
 urlpatterns = [
@@ -85,6 +101,51 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/",
         ReportDetailView.as_view(),
         name="report-detail",
+    ),
+    *[
+        path(
+            f"api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/{action}/",
+            view,
+            name=name,
+        )
+        for action, view, name in (
+            ("link", ReportLinkView.as_view(), "report-link"),
+            ("create-problem", ReportCreateProblemView.as_view(), "report-create-problem"),
+            ("unlink", ReportUnlinkView.as_view(), "report-unlink"),
+            ("dismiss", ReportDismissView.as_view(), "report-dismiss"),
+            ("restore", ReportRestoreView.as_view(), "report-restore"),
+            ("assign", ReportAssignView.as_view(), "report-assign"),
+        )
+    ],
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/",
+        ProblemListView.as_view(),
+        name="problem-list",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/",
+        ProblemDetailView.as_view(),
+        name="problem-detail",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/reports/",
+        ProblemReportListView.as_view(),
+        name="problem-reports",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/activity/",
+        ProblemActivityListView.as_view(),
+        name="problem-activity",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/edit/",
+        ProblemEditView.as_view(),
+        name="problem-edit",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/assign-owner/",
+        ProblemOwnerView.as_view(),
+        name="problem-assign-owner",
     ),
     path("api/schema/", SpectacularAPIView.as_view(authentication_classes=[]), name="schema"),
 ]

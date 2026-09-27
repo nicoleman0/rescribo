@@ -20,7 +20,7 @@ class InboxFilters:
     source_kind: str | None = None
 
 
-def _workspace_reports(*, actor: Membership) -> QuerySet[Report]:
+def workspace_reports(*, actor: Membership) -> QuerySet[Report]:
     # The workspace filter is applied before any search or filter condition.
     return Report.objects.filter(workspace_id=actor.workspace_id).select_related(
         "source", "submitted_by__user", "assignee__user", "problem"
@@ -28,7 +28,7 @@ def _workspace_reports(*, actor: Membership) -> QuerySet[Report]:
 
 
 def search_reports(*, actor: Membership, filters: InboxFilters) -> QuerySet[Report]:
-    reports = _workspace_reports(actor=actor)
+    reports = workspace_reports(actor=actor)
     text = filters.text.strip()
     if text:
         reports = reports.filter(
@@ -55,7 +55,7 @@ def search_reports(*, actor: Membership, filters: InboxFilters) -> QuerySet[Repo
 
 def get_report(*, actor: Membership, report_id: UUID) -> Report:
     try:
-        return _workspace_reports(actor=actor).get(pk=report_id)
+        return workspace_reports(actor=actor).get(pk=report_id)
     except Report.DoesNotExist as error:
         raise NotFound(record="report") from error
 

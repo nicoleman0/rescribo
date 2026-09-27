@@ -776,6 +776,325 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/:
+    get:
+      operationId: workspaces_problems_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: q
+        schema:
+          type: string
+          maxLength: 200
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProblemListItemList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/:
+    get:
+      operationId: workspaces_problems_retrieve
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/activity/:
+    get:
+      operationId: workspaces_problems_activity_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedProblemActivityList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/assign-owner/:
+    post:
+      operationId: workspaces_problems_assign_owner_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProblemOwner'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProblemOwner'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProblemOwner'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/edit/:
+    post:
+      operationId: workspaces_problems_edit_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProblemEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProblemEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProblemEdit'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/reports/:
+    get:
+      operationId: workspaces_problems_reports_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReportDetailList'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/reports/:
     get:
       operationId: workspaces_reports_list
@@ -949,8 +1268,486 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/assign/:
+    post:
+      operationId: workspaces_reports_assign_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AssignReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AssignReport'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/create-problem/:
+    post:
+      operationId: workspaces_reports_create_problem_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProblemForReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateProblemForReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateProblemForReport'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/dismiss/:
+    post:
+      operationId: workspaces_reports_dismiss_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/link/:
+    post:
+      operationId: workspaces_reports_link_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LinkReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LinkReport'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/restore/:
+    post:
+      operationId: workspaces_reports_restore_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/unlink/:
+    post:
+      operationId: workspaces_reports_unlink_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
 components:
   schemas:
+    ActivityActionEnum:
+      enum:
+      - report.created
+      - report.updated
+      - report.assigned
+      - report.linked
+      - report.unlinked
+      - report.dismissed
+      - report.restored
+      - problem.created
+      - problem.updated
+      - problem.state_changed
+      - problem.fix_confirmed
+      type: string
+      description: |-
+        * `report.created` - Report created
+        * `report.updated` - Report updated
+        * `report.assigned` - Report assigned
+        * `report.linked` - Report linked
+        * `report.unlinked` - Report unlinked
+        * `report.dismissed` - Report dismissed
+        * `report.restored` - Report restored
+        * `problem.created` - Problem created
+        * `problem.updated` - Problem updated
+        * `problem.state_changed` - Problem state changed
+        * `problem.fix_confirmed` - Problem fix confirmed
+    AssignReport:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        assignee_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - assignee_id
+      - expected_version
+    CreateProblemForReport:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 200
+        summary:
+          type: string
+          maxLength: 10000
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - expected_version
+      - title
     Error:
       type: object
       properties:
@@ -1038,6 +1835,18 @@ components:
       - accept_url
       - email
       - id
+    LinkReport:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        problem_id:
+          type: string
+          format: uuid
+      required:
+      - expected_version
+      - problem_id
     Login:
       type: object
       properties:
@@ -1100,6 +1909,78 @@ components:
       - full_name
       - id
       - role
+    NullEnum:
+      enum:
+      - null
+    PaginatedProblemActivityList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemActivity'
+    PaginatedProblemListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProblemListItem'
+    PaginatedReportDetailList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReportDetail'
     PaginatedReportListItemList:
       type: object
       required:
@@ -1146,6 +2027,204 @@ components:
       required:
       - password
       - token
+    ProblemActivity:
+      type: object
+      description: Activity with its ID references resolved to names the member may
+        already read.
+      properties:
+        id:
+          type: string
+          format: uuid
+        action:
+          $ref: '#/components/schemas/ActivityActionEnum'
+        actor:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+        actor_system:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        report:
+          allOf:
+          - $ref: '#/components/schemas/RecordReference'
+          nullable: true
+          readOnly: true
+        from_problem:
+          allOf:
+          - $ref: '#/components/schemas/RecordReference'
+          nullable: true
+          readOnly: true
+        to_problem:
+          allOf:
+          - $ref: '#/components/schemas/RecordReference'
+          nullable: true
+          readOnly: true
+        from_assignee:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+          readOnly: true
+        to_assignee:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+          readOnly: true
+        changed_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        state:
+          nullable: true
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/ProblemStateEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - action
+      - actor
+      - actor_system
+      - changed_fields
+      - created_at
+      - from_assignee
+      - from_problem
+      - id
+      - report
+      - state
+      - to_assignee
+      - to_problem
+    ProblemConflict:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ProblemDetail'
+      required:
+      - current
+      - detail
+      - reason
+    ProblemDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary:
+          type: string
+        state:
+          $ref: '#/components/schemas/ProblemStateEnum'
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+        report_count:
+          type: integer
+        needs_review:
+          type: boolean
+        resolution_revision:
+          type: integer
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - needs_review
+      - owner
+      - report_count
+      - resolution_revision
+      - state
+      - summary
+      - title
+      - updated_at
+      - version
+    ProblemEdit:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 200
+        summary:
+          type: string
+          maxLength: 10000
+      required:
+      - expected_version
+    ProblemListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        summary_excerpt:
+          type: string
+          readOnly: true
+        state:
+          $ref: '#/components/schemas/ProblemStateEnum'
+        owner:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+        report_count:
+          type: integer
+        needs_review:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - id
+      - needs_review
+      - owner
+      - report_count
+      - state
+      - summary_excerpt
+      - title
+    ProblemOwner:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        owner_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - expected_version
+      - owner_id
+    ProblemStateEnum:
+      enum:
+      - open
+      - in_progress
+      - fix_available
+      - not_planned
+      type: string
+      description: |-
+        * `open` - Open
+        * `in_progress` - In progress
+        * `fix_available` - Fix available
+        * `not_planned` - Not planned
     ProblemSummary:
       type: object
       properties:
@@ -1155,11 +2234,38 @@ components:
         title:
           type: string
         state:
-          $ref: '#/components/schemas/StateEnum'
+          $ref: '#/components/schemas/ProblemStateEnum'
       required:
       - id
       - state
       - title
+    RecordReference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+      required:
+      - id
+      - title
+    ReportConflict:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ReportDetail'
+      required:
+      - current
+      - detail
+      - reason
     ReportDetail:
       type: object
       properties:
@@ -1304,18 +2410,6 @@ components:
       required:
       - memberships
       - user
-    StateEnum:
-      enum:
-      - open
-      - in_progress
-      - fix_available
-      - not_planned
-      type: string
-      description: |-
-        * `open` - Open
-        * `in_progress` - In progress
-        * `fix_available` - Fix available
-        * `not_planned` - Not planned
     StatusEnum:
       enum:
       - ok
@@ -1350,6 +2444,14 @@ components:
         * `new` - New
         * `linked` - Linked
         * `dismissed` - Dismissed
+    Versioned:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
   securitySchemes:
     sessionCookie:
       type: apiKey

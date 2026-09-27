@@ -109,7 +109,11 @@ CSRF_FAILURE_VIEW = "accounts.views.csrf_failure"
 SPECTACULAR_SETTINGS = {
     "TITLE": "Rescribo API",
     "VERSION": "0.1.0",
-    "ENUM_NAME_OVERRIDES": {"ReportSourceKindEnum": "feedback.models.ReportSource.Kind"},
+    "ENUM_NAME_OVERRIDES": {
+        "ReportSourceKindEnum": "feedback.models.ReportSource.Kind",
+        "ProblemStateEnum": "feedback.models.Problem.State",
+        "ActivityActionEnum": "feedback.models.Activity.Action",
+    },
 }
 CELERY_BROKER_URL = REDIS_URL
 CELERY_RESULT_BACKEND = REDIS_URL
