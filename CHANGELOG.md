@@ -10,6 +10,7 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 - Problems list with search, owner, status, report count, and review flag. Problem detail with editable title and summary, owner, linked reports with provenance, per-report assignment, and activity (#9).
 - `ReportNotificationOperation` records prepared employee notifications. Reassignment, moves, and ungrouping cancel unsent ones and keep sent history. No production path creates them yet ([ADR 0004](docs/adr/0004-report-notification-cancellation.md), #9).
 - Problem timelines record reports linked, moved, ungrouped, and reassigned, so removal history stays on the problem (#9).
+- Serif wordmark banner and concise product overview in the README; moved local setup instructions to `docs/LOCAL_DEVELOPMENT.md`.
 - Inbox with paginated reports, text and customer search, status/assignee/source filters, and a report detail panel showing provenance, assignee, triage state, and related problem (#6).
 - Manual report capture through the shared report workflow. Unsaved drafts survive failed requests and reloads in the same tab (#6).
 - Workspace report list, detail, and create endpoints, plus a member directory readable by all members (#6).
@@ -28,7 +29,7 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 - UI foundation shell screenshots now capture the Follow-ups placeholder, because the Inbox and Problems show live data (#6, #9).
 - CI uploads Playwright screenshot differences when the browser checks fail (#6).
-- The custom user model replaces Django's `auth_user`. Existing local databases must be recreated before `task migrate`. See the README (#37).
+- The custom user model replaces Django's `auth_user`. Existing local databases must be recreated before `task migrate`. See `docs/LOCAL_DEVELOPMENT.md` (#37).
 - Product access now requires an active workspace membership. `is_superuser` alone grants none (#37).
 
 ### Security
