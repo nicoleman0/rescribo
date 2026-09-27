@@ -1,4 +1,4 @@
-import type { ReportQuery, SourceKind, TriageState } from '@/api/reports'
+import type { InboxQuery, SourceKind, TriageState } from '@/api/reports'
 
 export const triageStates: { value: TriageState; label: string }[] = [
   { value: 'new', label: 'New' },
@@ -23,27 +23,21 @@ const filterKeys = [
 
 export type FilterKey = (typeof filterKeys)[number]
 
-function oneOf<T extends string>(
-  value: string | null,
-  options: { value: T }[],
-): T | undefined {
-  return options.find((option) => option.value === value)?.value
-}
-
-/** Read inbox filters from the URL, dropping values the API would reject. */
-export function queryFromParams(params: URLSearchParams): ReportQuery {
+/** Read inbox filters from the URL. Enum values pass through unvalidated so
+ * the API response can drive the invalid-filters state. */
+export function queryFromParams(params: URLSearchParams): InboxQuery {
   const page = Number.parseInt(params.get('page') ?? '', 10)
   return {
     q: params.get('q')?.trim() || undefined,
     customer: params.get('customer')?.trim() || undefined,
-    triage_state: oneOf(params.get('triage_state'), triageStates),
+    triage_state: params.get('triage_state')?.trim() || undefined,
     assignee: params.get('assignee') || undefined,
-    source_kind: oneOf(params.get('source_kind'), sourceKinds),
+    source_kind: params.get('source_kind')?.trim() || undefined,
     page: Number.isInteger(page) && page > 1 ? page : undefined,
   }
 }
 
-export function hasActiveFilters(query: ReportQuery): boolean {
+export function hasActiveFilters(query: InboxQuery): boolean {
   return filterKeys.some((key) => Boolean(query[key]))
 }
 

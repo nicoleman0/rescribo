@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Search, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
-import { listMembers, reportKeys, type ReportQuery } from '@/api/reports'
+import { listMembers, reportKeys, type InboxQuery } from '@/api/reports'
 import { Field, SelectField } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import {
@@ -21,7 +21,7 @@ export function ReportFilterBar({
   query,
 }: {
   workspaceId: string
-  query: ReportQuery
+  query: InboxQuery
 }) {
   const [params, setParams] = useSearchParams()
   const [text, setText] = useState(query.q ?? '')

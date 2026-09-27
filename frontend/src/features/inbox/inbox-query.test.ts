@@ -7,7 +7,7 @@ import {
   withPage,
 } from './inbox-query'
 
-test('reads only filter values the API accepts', () => {
+test('passes URL filters through so the API validates them', () => {
   const query = queryFromParams(
     new URLSearchParams(
       'q=+csv+&triage_state=archived&source_kind=slack&page=0',
@@ -16,7 +16,7 @@ test('reads only filter values the API accepts', () => {
   expect(query).toEqual({
     q: 'csv',
     customer: undefined,
-    triage_state: undefined,
+    triage_state: 'archived',
     assignee: undefined,
     source_kind: 'slack',
     page: undefined,
@@ -25,6 +25,14 @@ test('reads only filter values the API accepts', () => {
   expect(hasActiveFilters(queryFromParams(new URLSearchParams('page=2')))).toBe(
     false,
   )
+})
+
+test('treats blank enum filters as unset', () => {
+  const query = queryFromParams(
+    new URLSearchParams('triage_state=&source_kind=+'),
+  )
+  expect(query.triage_state).toBeUndefined()
+  expect(query.source_kind).toBeUndefined()
 })
 
 test('filter changes reset the page and keep unrelated parameters', () => {

@@ -155,6 +155,21 @@ test('explains invalid filters from the URL', async () => {
   ).toBeInTheDocument()
 })
 
+test('explains an unknown triage state from the URL', async () => {
+  stubApi({
+    [reportsPath]: () =>
+      json(
+        { detail: 'Check the submitted fields.', reason: 'invalid_request' },
+        400,
+      ),
+    [membersPath]: () => json([]),
+  })
+  renderWorkspaceRoutes(routes, '/inbox?triage_state=archived')
+  expect(
+    await screen.findByText('These filters are not valid'),
+  ).toBeInTheDocument()
+})
+
 const detail: ReportDetail = {
   ...listItem,
   description: 'Export stops halfway.',

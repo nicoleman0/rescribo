@@ -15,9 +15,16 @@ export type ReportQuery = NonNullable<
   operations['workspaces_reports_list']['parameters']['query']
 >
 
+/** Inbox filters as sent to the API. Enum values stay unvalidated on the
+ * client so the server response can drive the invalid-filters state. */
+export type InboxQuery = Omit<ReportQuery, 'triage_state' | 'source_kind'> & {
+  triage_state?: string
+  source_kind?: string
+}
+
 export const reportKeys = {
   all: (workspaceId: string) => ['workspaces', workspaceId, 'reports'] as const,
-  list: (workspaceId: string, query: ReportQuery) =>
+  list: (workspaceId: string, query: InboxQuery) =>
     [...reportKeys.all(workspaceId), 'list', query] as const,
   detail: (workspaceId: string, reportId: string) =>
     [...reportKeys.all(workspaceId), 'detail', reportId] as const,
@@ -25,7 +32,7 @@ export const reportKeys = {
     ['workspaces', workspaceId, 'members'] as const,
 }
 
-function queryString(query: ReportQuery): string {
+function queryString(query: InboxQuery): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) {
     if (value !== undefined && value !== '') params.set(key, String(value))
@@ -34,7 +41,7 @@ function queryString(query: ReportQuery): string {
   return encoded ? `?${encoded}` : ''
 }
 
-export const listReports = (workspaceId: string, query: ReportQuery) =>
+export const listReports = (workspaceId: string, query: InboxQuery) =>
   apiRequest<ReportPage>(
     `workspaces/${workspaceId}/reports/${queryString(query)}`,
   )
