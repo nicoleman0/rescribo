@@ -1,8 +1,8 @@
-import { AxeBuilder } from '@axe-core/playwright'
 import { expect, test, type Browser, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { axeViolations } from './axe.js'
 
 const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 const seedPath = path.join(authDir, 'seed.json')
@@ -143,7 +143,8 @@ test.describe('Report triage', () => {
     await expect(activity(page)).toContainText(
       `assigned ${manualTitle} to Member`,
     )
-    await assignee.selectOption({ index: 2 })
+    // The member list order is not defined, so reassign by label, not index.
+    await assignee.selectOption({ label: 'Owner' })
     await manualItem.getByRole('button', { name: 'Save assignee' }).click()
     await expect(activity(page)).toContainText(
       `assigned ${manualTitle} to Owner`,
@@ -284,7 +285,7 @@ test.describe('Report triage', () => {
     await create.focus()
     await page.keyboard.press('Enter')
     await expect(page.getByLabel('Problem title')).toHaveValue(title)
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
     await page.getByRole('button', { name: 'Cancel' }).focus()
     await page.keyboard.press('Enter')
     await expect(create).toBeFocused()
@@ -302,15 +303,15 @@ test.describe('Report triage', () => {
     await expect(
       page.getByRole('status', { name: 'Loading problems' }),
     ).toHaveCount(0)
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
     await page.getByRole('button', { name: 'Cancel' }).click()
 
     await openProblem(page, title)
     await expect(activity(page)).toContainText('created the problem')
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
     await page.goto('/problems')
     await expect(page.getByRole('list', { name: 'Problems' })).toBeVisible()
-    expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
     const search = page.getByRole('searchbox', { name: 'Search problems' })
     await search.focus()
     await page.keyboard.type(title)
