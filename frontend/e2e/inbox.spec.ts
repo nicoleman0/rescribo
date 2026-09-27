@@ -65,6 +65,7 @@ test.describe('Inbox', () => {
       detail.getByRole('region', { name: 'Provenance' }),
     ).toContainText('Manual entry by')
     await detail.getByRole('link', { name: 'Back to reports' }).click()
+    await expect(page).toHaveURL(/\/inbox$/)
 
     await page.getByRole('searchbox', { name: 'Search reports' }).fill(marker)
     await page.keyboard.press('Enter')
