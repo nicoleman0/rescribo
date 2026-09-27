@@ -1205,6 +1205,12 @@ paths:
       security:
       - sessionCookie: []
       responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
         '201':
           content:
             application/json:
@@ -1862,6 +1868,9 @@ components:
     ManualReport:
       type: object
       properties:
+        submission_key:
+          type: string
+          format: uuid
         title:
           type: string
           maxLength: 200
@@ -1878,6 +1887,7 @@ components:
           type: string
           maxLength: 100
       required:
+      - submission_key
       - title
     MemberSummary:
       type: object

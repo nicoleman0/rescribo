@@ -68,6 +68,7 @@ class ReportDetailSerializer(serializers.Serializer):
 
 
 class ManualReportSerializer(serializers.Serializer):
+    submission_key = serializers.UUIDField()
     title = serializers.CharField(max_length=200)
     description = serializers.CharField(max_length=10000, required=False, allow_blank=True)
     customer_label = serializers.CharField(max_length=200, required=False, allow_blank=True)
@@ -85,6 +86,7 @@ class ManualReportSerializer(serializers.Serializer):
             customer_contact_reference=data.get("customer_contact_reference", ""),
             affected_version=data.get("affected_version", ""),
             source=None,
+            submission_key=data["submission_key"],
         )
 
 

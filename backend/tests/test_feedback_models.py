@@ -78,3 +78,32 @@ def test_manual_sources_and_problem_constraints() -> None:
             record_type=Activity.RecordType.REPORT,
             record_id=problem.pk,
         )
+
+
+def test_manual_submission_key_constraints() -> None:
+    from uuid import uuid4
+
+    actor = make_membership()
+    key = uuid4()
+    ReportSource.objects.create(
+        report=raw_report(actor), workspace=actor.workspace, kind="manual", submission_key=key
+    )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        ReportSource.objects.create(
+            report=raw_report(actor), workspace=actor.workspace, kind="manual", submission_key=key
+        )
+    with pytest.raises(IntegrityError), transaction.atomic():
+        ReportSource.objects.create(
+            report=raw_report(actor),
+            workspace=actor.workspace,
+            kind="slack",
+            submission_key=uuid4(),
+            external_workspace_id="T1",
+            external_channel_id="C1",
+            external_message_id="1.2",
+        )
+    for _ in range(2):
+        source = ReportSource.objects.create(
+            report=raw_report(actor), workspace=actor.workspace, kind="manual"
+        )
+        assert source.submission_key is None

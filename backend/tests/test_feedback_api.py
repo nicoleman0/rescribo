@@ -1,5 +1,6 @@
 from datetime import timedelta
 from typing import Any
+from uuid import uuid4
 
 import pytest
 from builders import make_membership, make_problem, make_report, make_user, make_workspace
@@ -7,8 +8,14 @@ from django.test import Client
 
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
-from feedback.models import Activity, Report
-from feedback.reports import assign_report, dismiss_report, link_report
+from feedback.models import Activity, Report, ReportSource
+from feedback.reports import (
+    ReportChanges,
+    assign_report,
+    dismiss_report,
+    link_report,
+    update_report,
+)
 from feedback.submissions import SourceSnapshot
 
 pytestmark = pytest.mark.django_db
@@ -41,6 +48,7 @@ def test_manual_capture_uses_the_report_workflow(client: Client) -> None:
     response = client.post(
         reports_url(actor),
         {
+            "submission_key": str(uuid4()),
             "title": "  CSV export fails  ",
             "description": "Export stops at 50%.",
             "customer_label": "Acme",
@@ -66,7 +74,7 @@ def test_manual_capture_rejects_blank_title_and_oversized_fields(client: Client)
     sign_in(client, actor)
     response = client.post(
         reports_url(actor),
-        {"title": "   ", "affected_version": "v" * 101},
+        {"title": "   ", "affected_version": "v" * 101, "submission_key": str(uuid4())},
         content_type="application/json",
     )
     assert response.status_code == 400
@@ -250,3 +258,97 @@ def test_member_directory_lists_active_workspace_members(client: Client) -> None
     rows = response.json()
     assert [row["display_name"] for row in rows] == ["Unnamed member", "Ada", "Test Member"]
     assert all(set(row) == {"id", "display_name"} for row in rows)
+
+
+def test_manual_capture_replays_committed_submission(client: Client) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    payload = {"title": "Lost response", "submission_key": "b40f0b92-532a-4bf2-a078-0b17c55db250"}
+    first = client.post(reports_url(actor), payload, content_type="application/json")
+    replay = client.post(reports_url(actor), payload, content_type="application/json")
+    assert first.status_code == 201
+    assert replay.status_code == 200
+    assert replay.json()["id"] == first.json()["id"]
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 1
+
+
+@pytest.mark.parametrize("key", [{}, {"submission_key": None}, {"submission_key": "invalid"}])
+def test_manual_key_validation(client: Client, key: dict[str, Any]) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    response = client.post(
+        reports_url(actor), {"title": "Invalid key", **key}, content_type="application/json"
+    )
+    assert response.status_code == 400
+    assert response.json()["reason"] == "invalid_request"
+    assert set(response.json()["field_errors"]) == {"submission_key"}
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 0
+
+
+def test_manual_api_keys_are_workspace_scoped(client: Client) -> None:
+    actor = make_membership()
+    other = make_membership(user=actor.user, workspace=make_workspace(slug="other"))
+    sign_in(client, actor)
+    payload = {"title": "Same draft", "submission_key": str(uuid4())}
+    first = client.post(reports_url(actor), payload, content_type="application/json")
+    second = client.post(reports_url(other), payload, content_type="application/json")
+    assert first.status_code == second.status_code == 201
+    assert first.json()["id"] != second.json()["id"]
+    for membership, original in ((actor, first), (other, second)):
+        replay = client.post(reports_url(membership), payload, content_type="application/json")
+        assert replay.status_code == 200
+        assert replay.json() == original.json()
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 2
+
+
+@pytest.mark.parametrize("access", ["revoked", "foreign", "anonymous"])
+def test_manual_replay_checks_access(client: Client, access: str) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    payload = {"title": "Private report", "submission_key": str(uuid4())}
+    assert (
+        client.post(reports_url(actor), payload, content_type="application/json").status_code == 201
+    )
+    if access == "revoked":
+        Membership.objects.filter(pk=actor.pk).update(is_active=False, revoked_at=actor.created_at)
+    elif access == "foreign":
+        stranger = make_membership(
+            user=make_user(email="stranger@example.test"), workspace=make_workspace(slug="other")
+        )
+        sign_in(client, stranger)
+    else:
+        client.logout()
+    response = client.post(reports_url(actor), payload, content_type="application/json")
+    assert response.status_code == (401 if access == "anonymous" else 404)
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 1
+
+
+def test_manual_api_replay_returns_current_persisted_state(client: Client) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    payload = {"title": "Original", "submission_key": str(uuid4())}
+    first = client.post(reports_url(actor), payload, content_type="application/json")
+    report = Report.objects.get(pk=first.json()["id"])
+    update_report(
+        actor=actor,
+        report_id=report.pk,
+        expected_version=1,
+        changes=ReportChanges(title="Edited", description="Edited description"),
+    )
+    assign_report(actor=actor, report_id=report.pk, expected_version=2, assignee_id=actor.pk)
+    problem = make_problem(actor=actor)
+    link_report(actor=actor, report_id=report.pk, expected_version=3, problem_id=problem.pk)
+    expected = client.get(f"{reports_url(actor)}{report.pk}/").json()
+    before = Report.objects.values().get(pk=report.pk)
+    count = Activity.objects.count()
+    replay = client.post(
+        reports_url(actor),
+        {**payload, "title": "Retry edit", "description": "Stale"},
+        content_type="application/json",
+    )
+    assert replay.status_code == 200 and replay.json() == expected
+    assert "submission_key" not in replay.json()
+    assert "submission_key" not in replay.json()["provenance"]
+    assert Report.objects.values().get(pk=report.pk) == before
+    assert Activity.objects.count() == count
+    assert Report.objects.count() == ReportSource.objects.count() == 1

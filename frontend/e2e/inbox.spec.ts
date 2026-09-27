@@ -1,6 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -94,7 +95,10 @@ test.describe('Inbox', () => {
 
     await page.getByLabel('Source').selectOption('')
     await expectSearch(page, '')
-    await page.getByLabel('Assignee').selectOption('unassigned')
+    await page
+      .getByRole('region', { name: 'Search and filter reports' })
+      .getByLabel('Assignee')
+      .selectOption('unassigned')
     await expectSearch(page, '?assignee=unassigned')
     await page.getByLabel('Status').selectOption('new')
     await expectSearch(page, '?assignee=unassigned&triage_state=new')
@@ -123,7 +127,9 @@ test.describe('Inbox', () => {
     await page.getByLabel('Title').fill('Draft that must survive')
     await page.getByLabel('Contact reference').fill('CRM-42')
     await page.getByRole('button', { name: 'Create report' }).click()
-    await expect(page.getByText('The report was not created')).toBeVisible()
+    await expect(
+      page.getByText('Could not confirm report creation'),
+    ).toBeVisible()
     await expect(page.getByText(/Could not reach Rescribo/)).toBeVisible()
     await expect(page.getByLabel('Title')).toHaveValue(
       'Draft that must survive',
@@ -140,6 +146,86 @@ test.describe('Inbox', () => {
     await expect(page.getByLabel('Title')).toHaveValue('')
     await page.reload()
     await expect(page.getByText('Restored your unsaved draft')).toHaveCount(0)
+  })
+
+  test('retries a committed report after its response is lost and the page reloads', async ({
+    page,
+  }) => {
+    const marker = `Lost response ${randomUUID()}`
+    let committedId = ''
+    let submissionKey = ''
+    let reportsUrl = ''
+    let workspaceId = ''
+    await page.route('**/api/workspaces/*/reports/', async (route) => {
+      const request = route.request()
+      if (
+        request.method() !== 'POST' ||
+        request.postDataJSON().title !== marker
+      ) {
+        await route.continue()
+        return
+      }
+      submissionKey = request.postDataJSON().submission_key
+      reportsUrl = request.url()
+      workspaceId = new URL(reportsUrl).pathname.split('/')[3]
+      const response = await route.fetch({ maxRetries: 0 })
+      expect(response.status()).toBe(201)
+      committedId = (await response.json()).id
+      expect(committedId).toMatch(/^[0-9a-f-]{36}$/)
+      await route.abort('failed')
+    })
+    await page.goto('/inbox/new')
+    await page.getByLabel('Title').fill(marker)
+    await page
+      .getByLabel('Description')
+      .fill('Synthetic committed request, lost response.')
+    await page.getByRole('button', { name: 'Create report' }).click()
+    await expect(
+      page.getByText('Could not confirm report creation'),
+    ).toBeVisible()
+    await expect(page.getByLabel('Title')).toHaveValue(marker)
+    await page.unroute('**/api/workspaces/*/reports/')
+    await page.reload()
+    await expect(page.getByText('Restored your unsaved draft')).toBeVisible()
+    await expect(page.getByLabel('Title')).toHaveValue(marker)
+    const restoredKey = await page.evaluate(
+      (id) =>
+        JSON.parse(sessionStorage.getItem(`rescribo:report-draft:${id}`)!)
+          .submission_key,
+      workspaceId,
+    )
+    expect(restoredKey).toBe(submissionKey)
+    const retryResponse = page.waitForResponse(
+      (response) =>
+        response.url() === reportsUrl && response.request().method() === 'POST',
+    )
+    await page.getByRole('button', { name: 'Create report' }).click()
+    const replay = await retryResponse
+    expect(replay.request().postDataJSON().submission_key).toBe(submissionKey)
+    expect(replay.status()).toBe(200)
+    expect((await replay.json()).id).toBe(committedId)
+    await expect(page).toHaveURL(new RegExp(`/inbox/${committedId}$`))
+    await expect(
+      page.getByRole('region', { name: 'Report detail' }),
+    ).toContainText(marker)
+    expect(
+      await page.evaluate(
+        (id) => sessionStorage.getItem(`rescribo:report-draft:${id}`),
+        workspaceId,
+      ),
+    ).toBeNull()
+    await page.getByRole('link', { name: 'Back to reports' }).click()
+    await page.getByRole('searchbox', { name: 'Search reports' }).fill(marker)
+    await page.getByRole('button', { name: 'Search' }).click()
+    await expect(reportList(page).getByRole('listitem')).toHaveCount(1)
+    await expect(reportList(page)).toContainText(marker)
+    const listing = await page.request.get(
+      `${reportsUrl}?q=${encodeURIComponent(marker)}`,
+    )
+    expect(listing.status()).toBe(200)
+    const body = await listing.json()
+    expect(body.count).toBe(1)
+    expect(body.results[0].id).toBe(committedId)
   })
 
   test('shows an error with retry when the inbox cannot load', async ({

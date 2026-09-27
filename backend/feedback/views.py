@@ -85,7 +85,12 @@ class ReportListView(ListModelMixin, WorkspaceView, GenericAPIView):
 
     @extend_schema(
         request=ManualReportSerializer,
-        responses={201: ReportDetailSerializer, 400: ErrorSerializer, **READ_ERRORS},
+        responses={
+            200: ReportDetailSerializer,
+            201: ReportDetailSerializer,
+            400: ErrorSerializer,
+            **READ_ERRORS,
+        },
     )
     def post(self, request: Request, workspace_id: UUID) -> Response:
         data = ManualReportSerializer(data=request.data)
@@ -102,7 +107,7 @@ class ReportListView(ListModelMixin, WorkspaceView, GenericAPIView):
                 status=400,
             )
         report = get_report(actor=self.membership, report_id=result.report.pk)
-        return Response(ReportDetailSerializer(report).data, status=201)
+        return Response(ReportDetailSerializer(report).data, status=201 if result.created else 200)
 
 
 class ReportDetailView(WorkspaceView):

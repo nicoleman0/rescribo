@@ -100,3 +100,61 @@ def test_one_expected_version_admits_one_decision() -> None:
     new_activity = Activity.objects.count() - activity_before
     assert new_activity == 2
     assert not Activity.objects.filter(record_id=second.pk, action="report.linked").exists()
+
+
+def test_competing_manual_submissions_converge() -> None:
+    from uuid import uuid4
+
+    from feedback.models import ReportSource
+    from feedback.reports import SubmitResult, submit_report
+    from feedback.submissions import ReportSubmission
+
+    actor = make_membership()
+    draft = ReportSubmission("Concurrent capture", "", "", "", "", None, uuid4())
+    inserted = threading.Event()
+    release = threading.Event()
+    challenger_pid: list[int] = []
+    outcomes: dict[str, Any] = {}
+
+    def run(name: str) -> None:
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET statement_timeout = '15s'")
+            if name == "holder":
+                with transaction.atomic():
+                    outcomes[name] = submit_report(actor=actor, submission=draft)
+                    inserted.set()
+                    if not release.wait(WAIT_SECONDS):
+                        raise TimeoutError("Challenger never reached the uniqueness constraint.")
+            else:
+                challenger_pid.append(backend_pid())
+                if not inserted.wait(WAIT_SECONDS):
+                    raise TimeoutError("Holder never inserted the source.")
+                outcomes[name] = submit_report(actor=actor, submission=draft)
+        except Exception as error:
+            outcomes[name] = error
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=run, args=(name,)) for name in ("holder", "challenger")]
+    queued = threading.Event()
+    try:
+        for thread in threads:
+            thread.start()
+        assert inserted.wait(WAIT_SECONDS)
+        for _ in range(WAIT_SECONDS * 100):
+            if challenger_pid and waiting_on_lock(challenger_pid[0]):
+                queued.set()
+                break
+            queued.wait(0.01)
+    finally:
+        release.set()
+        for thread in threads:
+            thread.join(WAIT_SECONDS * 2)
+    assert all(not thread.is_alive() for thread in threads)
+    assert queued.is_set(), "Challenger did not compete for the database identity."
+    assert isinstance(outcomes["holder"], SubmitResult), outcomes
+    assert isinstance(outcomes["challenger"], SubmitResult), outcomes
+    assert outcomes["holder"].created and not outcomes["challenger"].created
+    assert outcomes["holder"].report.pk == outcomes["challenger"].report.pk
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 1

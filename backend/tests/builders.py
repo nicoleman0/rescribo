@@ -1,6 +1,7 @@
 """Small explicit builders for account and feedback tests."""
 
 from typing import Any
+from uuid import uuid4
 
 from accounts.models import Membership, User, Workspace
 from feedback.models import Problem, Report, ReportNotificationOperation
@@ -50,6 +51,7 @@ def make_report(*, actor: Membership | None = None, source: Any = None, **overri
         customer_contact_reference=overrides.pop("customer_contact_reference", ""),
         affected_version=overrides.pop("affected_version", ""),
         source=source,
+        submission_key=overrides.pop("submission_key", uuid4() if source is None else None),
     )
     if overrides:
         raise ValueError(f"Unsupported report overrides: {', '.join(overrides)}")

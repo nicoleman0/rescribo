@@ -32,6 +32,10 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 - The custom user model replaces Django's `auth_user`. Existing local databases must be recreated before `task migrate`. See `docs/LOCAL_DEVELOPMENT.md` (#37).
 - Product access now requires an active workspace membership. `is_superuser` alone grants none (#37).
 
+### Fixed
+
+- Retrying a manual report after a lost response returns the original report. Draft submission keys survive same-tab reloads and reset after success or discard (#41).
+
 ### Security
 
 - Owner-issued password resets are limited at issue and redeem time, and a new reset invalidates earlier ones (#37).

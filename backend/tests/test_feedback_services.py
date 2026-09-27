@@ -1,5 +1,7 @@
 from dataclasses import replace
+from typing import Any
 from unittest.mock import patch
+from uuid import uuid4
 
 import pytest
 from builders import make_membership, make_report, make_user, make_workspace
@@ -17,7 +19,7 @@ from feedback.errors import (
     TitleRequired,
     VersionConflict,
 )
-from feedback.models import Activity, Problem, Report
+from feedback.models import Activity, Problem, Report, ReportSource
 from feedback.problems import (
     ProblemChanges,
     assign_problem_owner,
@@ -44,7 +46,15 @@ pytestmark = pytest.mark.django_db
 def submission(
     *, title: str = "Captured report", source: SourceSnapshot | None = None
 ) -> ReportSubmission:
-    return ReportSubmission(title, "Description", "Customer", "Contact", "1.0", source)
+    return ReportSubmission(
+        title,
+        "Description",
+        "Customer",
+        "Contact",
+        "1.0",
+        source,
+        uuid4() if source is None else None,
+    )
 
 
 def slack_source(message: str = "171234.1") -> SourceSnapshot:
@@ -420,3 +430,61 @@ def test_activity_never_stores_report_content() -> None:
     )
     activities = Activity.objects.filter(record_id=report.pk)
     assert all(marker not in str(item.metadata) for item in activities)
+
+
+def test_manual_replay_preserves_current_report_and_source() -> None:
+    actor = make_membership()
+    draft = submission()
+    first = submit_report(actor=actor, submission=draft)
+    report = update_report(
+        actor=actor,
+        report_id=first.report.pk,
+        expected_version=1,
+        changes=ReportChanges(title="Edited", description="Current description"),
+    )
+    assign_report(actor=actor, report_id=report.pk, expected_version=2, assignee_id=actor.pk)
+    problem = create_problem(actor=actor, title="Linked problem")
+    link_report(actor=actor, report_id=report.pk, expected_version=3, problem_id=problem.pk)
+    before = Report.objects.values().get(pk=report.pk)
+    source_before = dict(ReportSource.objects.values().get(report_id=report.pk))
+    activity_count = Activity.objects.count()
+    replay = submit_report(actor=actor, submission=replace(draft, title="Retry edits"))
+    assert not replay.created and replay.report.pk == report.pk
+    assert replay.report.title == "Edited" and replay.report.version == 4
+    assert Report.objects.values().get(pk=report.pk) == before
+    assert ReportSource.objects.values().get(report_id=report.pk) == source_before
+    assert Activity.objects.count() == activity_count
+    assert Report.objects.count() == ReportSource.objects.count() == 1
+
+
+def test_manual_identity_is_key_and_workspace_not_content() -> None:
+    actor = make_membership()
+    draft = submission()
+    first = submit_report(actor=actor, submission=draft)
+    replay = submit_report(actor=actor, submission=draft)
+    distinct = submit_report(actor=actor, submission=replace(draft, submission_key=uuid4()))
+    other = make_membership(user=actor.user, workspace=make_workspace(slug="other", name="Other"))
+    independent = submit_report(actor=other, submission=draft)
+    assert first.created and distinct.created and independent.created
+    assert not replay.created and replay.report.pk == first.report.pk
+    assert len({first.report.pk, distinct.report.pk, independent.report.pk}) == 3
+    assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 3
+
+
+@pytest.mark.parametrize("key", [None, "malformed"])
+def test_manual_submission_requires_uuid(key: Any) -> None:
+    actor = make_membership()
+    with pytest.raises(ValueError, match="submission_key"):
+        submit_report(actor=actor, submission=replace(submission(), submission_key=key))
+    assert not Report.objects.exists()
+
+
+def test_unrelated_submission_integrity_failure_is_not_hidden() -> None:
+    from django.db import IntegrityError
+
+    actor = make_membership()
+    with patch("feedback.reports.ReportSource.objects.create", side_effect=IntegrityError("other")):
+        with pytest.raises(IntegrityError, match="other"):
+            submit_report(actor=actor, submission=submission())
+    assert not Report.objects.exists()
+    assert not Activity.objects.exists()

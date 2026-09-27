@@ -108,6 +108,7 @@ class ReportSource(models.Model):
         Workspace, on_delete=models.CASCADE, related_name="report_sources"
     )
     kind = models.CharField(max_length=12, choices=Kind.choices)
+    submission_key = models.UUIDField(null=True, blank=True)
     external_workspace_id = models.CharField(max_length=64, blank=True, default="")
     external_channel_id = models.CharField(max_length=64, blank=True, default="")
     external_message_id = models.CharField(max_length=64, blank=True, default="")
@@ -129,6 +130,15 @@ class ReportSource(models.Model):
                 ],
                 condition=~Q(kind="manual"),
                 name="unique_external_report_source",
+            ),
+            models.UniqueConstraint(
+                fields=["workspace", "submission_key"],
+                condition=Q(kind="manual", submission_key__isnull=False),
+                name="unique_manual_report_submission",
+            ),
+            models.CheckConstraint(
+                condition=Q(kind="manual") | Q(submission_key__isnull=True),
+                name="submission_key_only_for_manual",
             ),
             models.CheckConstraint(
                 condition=(

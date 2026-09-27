@@ -616,6 +616,8 @@ export interface components {
             password: string;
         };
         ManualReport: {
+            /** Format: uuid */
+            submission_key: string;
             title: string;
             description?: string;
             customer_label?: string;
@@ -2028,6 +2030,14 @@ export interface operations {
             };
         };
         responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDetail"];
+                };
+            };
             201: {
                 headers: {
                     [name: string]: unknown;
