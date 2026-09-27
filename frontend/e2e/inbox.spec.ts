@@ -31,6 +31,15 @@ const reportList = (page: Page) => page.getByRole('list', { name: 'Reports' })
 const expectSearch = (page: Page, search: string) =>
   expect.poll(() => new URL(page.url()).search).toBe(search)
 
+// The URL clears before the filter bar re-renders, so also wait for the button
+// to go; input before that lands in the old bar and is lost.
+async function clearFilters(page: Page) {
+  const clear = page.getByRole('button', { name: 'Clear filters' })
+  await clear.click()
+  await expectSearch(page, '')
+  await expect(clear).toHaveCount(0)
+}
+
 test.describe('Inbox', () => {
   test.beforeEach(async ({ page }) => signIn(page))
 
@@ -63,8 +72,7 @@ test.describe('Inbox', () => {
     await expect(reportList(page).getByRole('listitem')).toHaveCount(1)
     await expect(reportList(page)).toContainText(marker)
 
-    await page.getByRole('button', { name: 'Clear filters' }).click()
-    await expectSearch(page, '')
+    await clearFilters(page)
     await page
       .getByRole('searchbox', { name: 'Customer' })
       .fill('seeded customer')
@@ -73,8 +81,7 @@ test.describe('Inbox', () => {
     await expect(reportList(page).getByRole('listitem')).toHaveCount(1)
     await expect(reportList(page)).toContainText(seededTitle)
 
-    await page.getByRole('button', { name: 'Clear filters' }).click()
-    await expectSearch(page, '')
+    await clearFilters(page)
     await page.getByLabel('Source').selectOption('slack')
     await expectSearch(page, '?source_kind=slack')
     await expect(reportList(page)).toContainText(seededTitle)
