@@ -11,6 +11,9 @@ from django.utils import timezone
 from accounts.models import Membership
 from feedback.errors import AlreadyLinked, InvalidSourceKind, NoChanges, TitleRequired
 from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.models import ReportNotificationOperation as Operation
+from feedback.notifications import invalidate_pending_notifications
+from feedback.problems import create_problem
 from feedback.services import (
     finish_mutation,
     locked_report,
@@ -162,17 +165,30 @@ def assign_report(
         previous = report.assignee_id
         report.assignee = assignee
         finish_mutation(row=report, now=current, update_fields=["assignee"])
+        invalidate_pending_notifications(
+            report=report, reason=Operation.InvalidationReason.REASSIGNED, now=current
+        )
+        change = {
+            "from_assignee_id": _id(previous),
+            "to_assignee_id": _id(assignee.pk if assignee else None),
+        }
         write_activity(
             actor=actor,
             action=Activity.Action.REPORT_ASSIGNED,
             record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
-            metadata={
-                "from_assignee_id": str(previous) if previous else None,
-                "to_assignee_id": str(assignee.pk) if assignee else None,
-            },
+            metadata=change,
             now=current,
         )
+        if report.problem_id is not None:
+            _write_problem_activity(
+                actor=actor,
+                action=Activity.Action.REPORT_ASSIGNED,
+                problem_id=report.problem_id,
+                report=report,
+                metadata=change,
+                now=current,
+            )
         return report
 
 
@@ -193,23 +209,69 @@ def link_report(
         )
         if report.problem_id == problem.pk:
             raise AlreadyLinked()
-        to_state = check_report_transition(action="link", from_state=report.triage_state)
-        previous = report.problem_id
-        report.problem = problem
-        report.triage_state = to_state
-        finish_mutation(row=report, now=current, update_fields=["problem", "triage_state"])
-        write_activity(
-            actor=actor,
-            action=Activity.Action.REPORT_LINKED,
-            record_type=Activity.RecordType.REPORT,
-            record_id=report.pk,
-            metadata={
-                "from_problem_id": str(previous) if previous else None,
-                "to_problem_id": str(problem.pk),
-            },
-            now=current,
+        return _link_locked_report(actor=actor, report=report, problem=problem, now=current)
+
+
+def create_problem_and_link_report(
+    *,
+    actor: Membership,
+    report_id: UUID,
+    expected_version: int,
+    title: str,
+    summary: str = "",
+    owner_id: UUID | None = None,
+    now: datetime | None = None,
+) -> Report:
+    """Create a problem and link the report to it, or change nothing."""
+    current = now or timezone.now()
+    with transaction.atomic():
+        report = locked_report(actor=actor, report_id=report_id)
+        require_version(row=report, expected_version=expected_version)
+        # Reject an illegal link before the problem exists.
+        check_report_transition(action="link", from_state=report.triage_state)
+        problem = create_problem(
+            actor=actor, title=title, summary=summary, owner_id=owner_id, now=current
         )
-        return report
+        return _link_locked_report(actor=actor, report=report, problem=problem, now=current)
+
+
+def _link_locked_report(
+    *, actor: Membership, report: Report, problem: Problem, now: datetime
+) -> Report:
+    to_state = check_report_transition(action="link", from_state=report.triage_state)
+    previous = report.problem_id
+    report.problem = problem
+    report.triage_state = to_state
+    finish_mutation(row=report, now=now, update_fields=["problem", "triage_state"])
+    if previous is not None:
+        invalidate_pending_notifications(
+            report=report, reason=Operation.InvalidationReason.MOVED, now=now
+        )
+        _write_problem_activity(
+            actor=actor,
+            action=Activity.Action.REPORT_UNLINKED,
+            problem_id=previous,
+            report=report,
+            metadata={"to_problem_id": str(problem.pk)},
+            now=now,
+        )
+    write_activity(
+        actor=actor,
+        action=Activity.Action.REPORT_LINKED,
+        record_type=Activity.RecordType.REPORT,
+        record_id=report.pk,
+        metadata={"from_problem_id": _id(previous), "to_problem_id": str(problem.pk)},
+        now=now,
+    )
+    _write_problem_activity(
+        actor=actor,
+        action=Activity.Action.REPORT_LINKED,
+        problem_id=problem.pk,
+        report=report,
+        metadata={"from_problem_id": _id(previous)},
+        now=now,
+    )
+    return report
 
 
 def unlink_report(
@@ -256,11 +318,16 @@ def _report_transition(
         report = locked_report(actor=actor, report_id=report_id)
         require_version(row=report, expected_version=expected_version)
         state = check_report_transition(action=action, from_state=report.triage_state)
+        previous_problem = report.problem_id
         report.triage_state = state
         update_fields = ["triage_state"]
+        metadata: dict[str, str | None] = {}
         if action == "unlink":
+            if previous_problem is None:
+                raise AssertionError("A linked report must reference a problem.")
             report.problem = None
             update_fields.append("problem")
+            metadata = {"from_problem_id": _id(previous_problem)}
         finish_mutation(row=report, now=current, update_fields=update_fields)
         activity_action = {
             "unlink": Activity.Action.REPORT_UNLINKED,
@@ -272,6 +339,42 @@ def _report_transition(
             action=activity_action,
             record_type=Activity.RecordType.REPORT,
             record_id=report.pk,
+            metadata=metadata,
             now=current,
         )
+        if previous_problem is not None and action == "unlink":
+            invalidate_pending_notifications(
+                report=report, reason=Operation.InvalidationReason.UNLINKED, now=current
+            )
+            _write_problem_activity(
+                actor=actor,
+                action=Activity.Action.REPORT_UNLINKED,
+                problem_id=previous_problem,
+                report=report,
+                metadata={"to_problem_id": None},
+                now=current,
+            )
         return report
+
+
+def _write_problem_activity(
+    *,
+    actor: Membership,
+    action: str,
+    problem_id: UUID,
+    report: Report,
+    metadata: dict[str, str | None],
+    now: datetime,
+) -> None:
+    write_activity(
+        actor=actor,
+        action=action,
+        record_type=Activity.RecordType.PROBLEM,
+        record_id=problem_id,
+        metadata={"report_id": str(report.pk), **metadata},
+        now=now,
+    )
+
+
+def _id(value: UUID | None) -> str | None:
+    return str(value) if value is not None else None

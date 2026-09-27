@@ -27,6 +27,8 @@ Use management commands for reading or writing product rows. Use `scripts/` CLIs
 
 `feedback` owns report and problem records, transitions, provenance, and activity. Mutations take a resolved active `Membership`, scope reads and references to its workspace, and check row versions under a transaction. HTTP handlers and workers should call these use cases. Activity metadata records field names and state or ID changes, not customer content.
 
+`feedback.notifications` cancels prepared report notifications when a report is reassigned, moved, or ungrouped. It runs inside the report mutation transaction after the report row lock. See [ADR 0004](adr/0004-report-notification-cancellation.md).
+
 `feedback.inbox` owns inbox reads. It applies the workspace filter before search and filters, so a foreign report is never counted or matched. Manual capture calls `submit_report` with no source snapshot, the same use case Slack capture uses.
 
 ## Shared contracts
