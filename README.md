@@ -26,3 +26,9 @@ Rescribo is an early development scaffold. Workspace accounts, invitations, the 
 - [Local development guide](docs/LOCAL_DEVELOPMENT.md)
 - [Architecture and development conventions](docs/DEVELOPMENT.md)
 - [Implementation milestone](https://github.com/nicoleman0/rescribo/milestone/1)
+
+## License
+
+Copyright (C) 2026 Nicholas Coleman.
+
+Rescribo is licensed under the [GNU Affero General Public License v3.0](LICENSE). A commercial license is available for organizations that want to embed or host Rescribo without the AGPL's source-sharing obligations — see [LICENSING.md](LICENSING.md).
