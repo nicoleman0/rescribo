@@ -1,15 +1,23 @@
 import type { InboxQuery, SourceKind, TriageState } from '@/api/reports'
 
-export const triageStates: { value: TriageState; label: string }[] = [
-  { value: 'new', label: 'New' },
-  { value: 'linked', label: 'Linked' },
-  { value: 'dismissed', label: 'Dismissed' },
-]
+export const triageLabels: Record<TriageState, string> = {
+  new: 'New',
+  linked: 'Linked',
+  dismissed: 'Dismissed',
+}
 
-export const sourceKinds: { value: SourceKind; label: string }[] = [
-  { value: 'slack', label: 'Slack' },
-  { value: 'manual', label: 'Manual entry' },
-]
+export const sourceLabels: Record<SourceKind, string> = {
+  slack: 'Slack',
+  manual: 'Manual entry',
+}
+
+export const triageStates = (Object.keys(triageLabels) as TriageState[]).map(
+  (value) => ({ value, label: triageLabels[value] }),
+)
+
+export const sourceKinds = (Object.keys(sourceLabels) as SourceKind[]).map(
+  (value) => ({ value, label: sourceLabels[value] }),
+)
 
 export const UNASSIGNED = 'unassigned'
 

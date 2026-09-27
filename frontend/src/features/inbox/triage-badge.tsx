@@ -1,6 +1,6 @@
 import type { TriageState } from '@/api/reports'
 import { Badge } from '@/components/ui/badge'
-import { triageStates } from './inbox-query'
+import { triageLabels } from './inbox-query'
 
 const triageClasses: Record<TriageState, string> = {
   new: 'bg-primary text-primary-foreground',
@@ -9,9 +9,5 @@ const triageClasses: Record<TriageState, string> = {
 }
 
 export function TriageBadge({ state }: { state: TriageState }) {
-  return (
-    <Badge className={triageClasses[state]}>
-      {triageStates.find((item) => item.value === state)?.label ?? state}
-    </Badge>
-  )
+  return <Badge className={triageClasses[state]}>{triageLabels[state]}</Badge>
 }
