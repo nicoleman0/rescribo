@@ -1,4 +1,5 @@
 export type ApiError = Error & {
+  status?: number
   reason?: string
   fieldErrors?: Record<string, string[]>
 }
@@ -29,6 +30,7 @@ export async function apiRequest<T>(path: string, body?: unknown): Promise<T> {
       field_errors?: Record<string, string[]>
     }
     const error = new Error(payload.detail ?? 'The request failed.') as ApiError
+    error.status = response.status
     error.reason = payload.reason
     error.fieldErrors = payload.field_errors
     throw error

@@ -30,6 +30,16 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: task e2e
+      - name: Upload screenshot differences
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshot-diffs
+          path: |
+            frontend/test-results/**/*-actual.png
+            frontend/test-results/**/*-diff.png
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Worker smoke check
         run: |
           setsid task worker > /tmp/feedback-worker.log 2>&1 &

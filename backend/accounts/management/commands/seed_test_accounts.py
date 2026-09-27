@@ -13,6 +13,9 @@ from django.utils import timezone
 
 from accounts.models import Invitation, Membership, PasswordReset, Workspace
 from accounts.tokens import issue_token
+from feedback.models import Activity, Problem, Report
+from feedback.reports import submit_report
+from feedback.submissions import ReportSubmission, SourceSnapshot
 
 
 class Command(BaseCommand):
@@ -25,6 +28,9 @@ class Command(BaseCommand):
     def handle(self, *args: object, **options: Any) -> None:
         slug = "e2e-test"
         workspace, _ = Workspace.objects.get_or_create(slug=slug, defaults={"name": "E2E Test"})
+        Activity.objects.filter(workspace=workspace).delete()
+        Report.objects.filter(workspace=workspace).delete()
+        Problem.objects.filter(workspace=workspace).delete()
         Invitation.objects.filter(workspace=workspace).delete()
         PasswordReset.objects.filter(workspace=workspace).delete()
         Membership.objects.filter(workspace=workspace).delete()
@@ -61,6 +67,26 @@ class Command(BaseCommand):
             token_digest=expired.digest,
             created_by_membership=owner,
             expires_at=expired.expires_at,
+        )
+        submit_report(
+            actor=owner,
+            submission=ReportSubmission(
+                title="Synthetic Slack report",
+                description="Seeded for browser tests.",
+                customer_label="Seeded Customer Ltd",
+                customer_contact_reference="",
+                affected_version="",
+                source=SourceSnapshot(
+                    kind="slack",
+                    external_workspace_id="T0E2E",
+                    external_channel_id="C0E2E",
+                    external_message_id="1700000000.000100",
+                    permalink="",
+                    author_external_id="U0E2E",
+                    author_display_name="Synthetic Author",
+                    snapshot_text="Synthetic captured message.",
+                ),
+            ),
         )
         result = {
             "workspace_id": str(workspace.pk),

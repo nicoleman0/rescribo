@@ -18,6 +18,7 @@ from accounts.views import (
     PasswordResetRedeemView,
     SessionView,
 )
+from feedback.views import MemberDirectoryView, ReportDetailView, ReportListView
 from health.views import LiveView, ReadyView
 
 urlpatterns = [
@@ -69,6 +70,21 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/memberships/<uuid:membership_id>/password-reset/",
         MembershipPasswordResetView.as_view(),
         name="membership-password-reset",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/members/",
+        MemberDirectoryView.as_view(),
+        name="member-directory",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/",
+        ReportListView.as_view(),
+        name="report-list",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/",
+        ReportDetailView.as_view(),
+        name="report-detail",
     ),
     path("api/schema/", SpectacularAPIView.as_view(authentication_classes=[]), name="schema"),
 ]
