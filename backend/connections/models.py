@@ -71,3 +71,10 @@ class SetupState(models.Model):
     repository = models.CharField(max_length=200, blank=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True)
+
+
+class GitHubWebhookReceipt(models.Model):
+    """Dedupes inbound GitHub deliveries. #15 owns the durable, cross-provider replacement."""
+
+    delivery_id = models.CharField(max_length=64, primary_key=True)
+    received_at = models.DateTimeField(default=timezone.now)

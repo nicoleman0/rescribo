@@ -234,6 +234,7 @@ class ReportNotificationOperation(models.Model):
         REASSIGNED = "reassigned", "Report reassigned"
         MOVED = "moved", "Report moved to another problem"
         UNLINKED = "unlinked", "Report ungrouped"
+        ISSUE_REOPENED = "issue_reopened", "Linked GitHub issue reopened"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(

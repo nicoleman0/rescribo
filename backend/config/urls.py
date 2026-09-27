@@ -23,6 +23,7 @@ from connections.views import (
     ChannelView,
     ConnectionListView,
     DisconnectView,
+    GitHubWebhookView,
     RefreshView,
     ReportDeleteView,
     SetupView,
@@ -72,6 +73,11 @@ urlpatterns = [
     path(
         "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/delete/",
         ReportDeleteView.as_view(),
+    ),
+    path(
+        "api/integrations/github/webhook/",
+        GitHubWebhookView.as_view(),
+        name="github-webhook",
     ),
     path("admin/", admin.site.urls),
     path("api/health/live/", LiveView.as_view(), name="health-live"),

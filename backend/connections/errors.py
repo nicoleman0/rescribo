@@ -50,4 +50,11 @@ ERROR_DETAILS = {
     "provider_unavailable": (
         "Check app installation, permissions and network access, then retry or reconnect."
     ),
+    "access_lost": (
+        "GitHub access was lost: the installation or selected repository was removed. "
+        "Reinstall the App on this repository, then reconnect."
+    ),
+    "installation_suspended": (
+        "The GitHub App installation is suspended. Unsuspend it in GitHub, then refresh."
+    ),
 }
