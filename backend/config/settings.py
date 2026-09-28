@@ -124,6 +124,12 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 3600
+CELERY_BEAT_SCHEDULE = {
+    "reconcile-github-issues": {
+        "task": "feedback.tasks.reconcile_github_issues",
+        "schedule": 900.0,
+    },
+}
 
 RESCRIBO_CREDENTIAL_KEY = env("RESCRIBO_CREDENTIAL_KEY", default="")
 RESCRIBO_SLACK_CLIENT_ID = env("RESCRIBO_SLACK_CLIENT_ID", default="")

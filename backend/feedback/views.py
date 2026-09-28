@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.views import ErrorSerializer, WorkspaceView
-from feedback.engineering_issues import create_issue, link_issue, preview_issue
+from feedback.engineering_issues import create_issue, link_issue, preview_issue, refresh_issue
 from feedback.errors import FeedbackError, NotFound, TitleRequired
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
 from feedback.inbox import get_report, search_reports, workspace_directory
@@ -416,3 +416,13 @@ class ProblemIssueCreateView(ProblemActionView):
             body=data["body"],
         )
         return issue.problem
+
+
+@extend_schema_view(post=problem_action_schema(VersionedSerializer))
+class ProblemIssueRefreshView(ProblemActionView):
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        return refresh_issue(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
+        )

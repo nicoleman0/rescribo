@@ -18,6 +18,7 @@ from feedback.errors import (
     IssueCreationUncertain,
     IssueProviderUnavailable,
     IssueReferenceRejected,
+    NotFound,
     TitleRequired,
 )
 from feedback.models import Activity, EngineeringIssue, Problem, Report
@@ -167,6 +168,31 @@ def create_issue(
             now=current,
             action=Activity.Action.ENGINEERING_ISSUE_CREATED,
         )
+
+
+def refresh_issue(*, actor: Membership, problem_id: UUID, expected_version: int) -> Problem:
+    problem = get_problem(actor=actor, problem_id=problem_id)
+    require_version(row=problem, expected_version=expected_version)
+    issue = (
+        EngineeringIssue.objects.filter(
+            workspace_id=actor.workspace_id, problem=problem, active=True
+        )
+        .select_related("connection")
+        .first()
+    )
+    if issue is None:
+        raise NotFound(record="engineering_issue")
+    apply_issue_webhook(
+        installation_id=issue.connection.external_id,
+        event=IssueEvent(
+            action="edited",
+            number=issue.number,
+            repository=issue.connection.repository,
+            state_reason=None,
+            updated_at=timezone.now().isoformat(),
+        ),
+    )
+    return get_problem(actor=actor, problem_id=problem_id)
 
 
 def _supersede_and_create(
