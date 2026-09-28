@@ -1,22 +1,38 @@
 """Owner settings endpoints and session-bound OAuth callbacks."""
 
+import logging
 from collections.abc import Callable
+from dataclasses import asdict
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
+from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
 from connections import providers, services
 from connections.models import Connection
 from feedback.deletion import delete_report, delete_workspace
 from feedback.errors import VersionConflict
+from integrations.github_app.webhooks import (
+    InvalidWebhookPayload,
+    InvalidWebhookSignature,
+    parse_delivery,
+    verify_webhook_signature,
+)
 from integrations.slack.errors import ChannelRejected
+from operations.models import InboundReceipt
+from operations.tasks import process_inbound_receipt
+
+logger = logging.getLogger(__name__)
 
 
 class ChannelSerializer(serializers.Serializer):
@@ -28,6 +44,7 @@ class ChannelSerializer(serializers.Serializer):
 
 class OperationCountsSerializer(serializers.Serializer):
     queued = serializers.IntegerField()
+    running = serializers.IntegerField()
     failed = serializers.IntegerField()
     uncertain = serializers.IntegerField()
 
@@ -251,3 +268,63 @@ class WorkspaceDeleteView(OwnerWorkspaceView):
         data = DeleteSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         return translated(lambda: delete_workspace(self.membership, **data.validated_data))
+
+
+class GitHubWebhookView(APIView):
+    """Shared across every workspace; the payload's installation ID resolves the connection.
+
+    The signature is verified against the raw body before any JSON parsing, and
+    the view carries no CSRF exemption of its own: DRF's APIView already skips
+    Django's CSRF middleware for unauthenticated views, so nothing extra is added.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    body_limit = 1_000_000
+
+    @staticmethod
+    def _dispatch(receipt_id: str) -> None:
+        try:
+            process_inbound_receipt.delay(receipt_id)
+        except Exception:
+            logger.warning("GitHub receipt dispatch deferred to the durable dispatcher")
+
+    @extend_schema(exclude=True)
+    def post(self, request: Request) -> Response:
+        secret = settings.RESCRIBO_GITHUB_WEBHOOK_SECRET
+        if not secret:
+            # An operator configuration gap, not a bad request: fail closed with 500 so
+            # GitHub's delivery retries once the secret is set, rather than giving up.
+            return Response(status=500)
+        if len(request.body) > self.body_limit:
+            return Response(status=413)
+        try:
+            verify_webhook_signature(
+                secret=secret.encode(),
+                body=request.body,
+                signature_header=request.headers.get("X-Hub-Signature-256"),
+            )
+        except InvalidWebhookSignature:
+            return Response(status=401)
+        delivery_id = request.headers.get("X-GitHub-Delivery", "")
+        if not delivery_id or len(delivery_id) > 128:
+            return Response(status=400)
+        try:
+            delivery = parse_delivery(request.headers, request.body)
+        except InvalidWebhookPayload:
+            return Response(status=400)
+        if delivery is None:
+            return Response(status=204)
+        try:
+            with transaction.atomic():
+                receipt, created = InboundReceipt.objects.get_or_create(
+                    provider=InboundReceipt.Provider.GITHUB,
+                    delivery_id=delivery_id,
+                    defaults=asdict(delivery),
+                )
+        except DatabaseError:
+            logger.warning("GitHub receipt could not be persisted")
+            return Response(status=500)
+        if created:
+            transaction.on_commit(lambda: self._dispatch(str(receipt.pk)))
+        return Response(status=202)

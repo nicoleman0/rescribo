@@ -16,6 +16,16 @@ export type ProblemQuery = NonNullable<
 >
 
 export const problemKeys = {
+  githubOperation: (
+    workspaceId: string,
+    problemId: string,
+    operationId: string,
+  ) =>
+    [
+      ...problemKeys.detail(workspaceId, problemId),
+      'github-operation',
+      operationId,
+    ] as const,
   all: (workspaceId: string) =>
     ['workspaces', workspaceId, 'problems'] as const,
   list: (workspaceId: string, query: ProblemQuery) =>

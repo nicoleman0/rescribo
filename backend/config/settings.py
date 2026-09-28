@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "accounts",
     "feedback",
     "connections",
+    "operations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -114,6 +115,7 @@ SPECTACULAR_SETTINGS = {
         "ReportSourceKindEnum": "feedback.models.ReportSource.Kind",
         "ProblemStateEnum": "feedback.models.Problem.State",
         "ActivityActionEnum": "feedback.models.Activity.Action",
+        "ExternalOperationStateEnum": "operations.models.ExternalOperation.State",
     },
 }
 CELERY_BROKER_URL = REDIS_URL
@@ -124,6 +126,20 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 3600
+CELERY_TASK_DEFAULT_QUEUE = env("RESCRIBO_CELERY_DEFAULT_QUEUE", default="celery")
+RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS = int(
+    env("RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS", default=900)
+)
+CELERY_BEAT_SCHEDULE = {
+    "dispatch-durable-github-operations": {
+        "task": "operations.tasks.dispatch_due_operations",
+        "schedule": 60.0,
+    },
+    "reconcile-github-issues": {
+        "task": "feedback.tasks.reconcile_github_issues",
+        "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
+    },
+}
 
 RESCRIBO_CREDENTIAL_KEY = env("RESCRIBO_CREDENTIAL_KEY", default="")
 RESCRIBO_SLACK_CLIENT_ID = env("RESCRIBO_SLACK_CLIENT_ID", default="")
@@ -133,3 +149,4 @@ RESCRIBO_GITHUB_CLIENT_ID = env("RESCRIBO_GITHUB_CLIENT_ID", default="")
 RESCRIBO_GITHUB_CLIENT_SECRET = env("RESCRIBO_GITHUB_CLIENT_SECRET", default="")
 RESCRIBO_GITHUB_APP_ID = env("RESCRIBO_GITHUB_APP_ID", default="")
 RESCRIBO_GITHUB_PRIVATE_KEY = env("RESCRIBO_GITHUB_PRIVATE_KEY", default="")
+RESCRIBO_GITHUB_WEBHOOK_SECRET = env("RESCRIBO_GITHUB_WEBHOOK_SECRET", default="")

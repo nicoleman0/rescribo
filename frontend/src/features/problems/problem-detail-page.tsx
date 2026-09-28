@@ -1,5 +1,9 @@
-import { useId, useRef, useState, type FormEvent } from 'react'
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import {
@@ -33,6 +37,7 @@ import { PageNav } from './page-nav'
 import { reportCountLabel } from './problem-format'
 import { ProblemActivityList } from './problem-activity'
 import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
+import { GitHubIssueSection } from './github-issue-section'
 import { useProblemMutation } from './use-problem-mutation'
 
 const PROBLEM_REFRESH_MS = 30_000
@@ -40,13 +45,32 @@ const PROBLEM_REFRESH_MS = 30_000
 export function ProblemDetailPage() {
   const { workspace } = useWorkspace()
   const { problemId = '' } = useParams()
+  const client = useQueryClient()
   const problem = useQuery({
     queryKey: problemKeys.detail(workspace.id, problemId),
     queryFn: () => getProblem(workspace.id, problemId),
     retry: (failures, error) =>
       (error as ApiError).status !== 404 && failures < 2,
-    refetchInterval: PROBLEM_REFRESH_MS,
+    refetchInterval: (query) => {
+      const issueStatus = query.state.data?.engineering_issue?.refresh_status
+      const createStatus = query.state.data?.current_create_operation?.state
+      return issueStatus === 'pending' ||
+        issueStatus === 'running' ||
+        createStatus === 'queued' ||
+        createStatus === 'running'
+        ? 2_000
+        : PROBLEM_REFRESH_MS
+    },
+    refetchIntervalInBackground: false,
   })
+  useEffect(
+    () => () => {
+      void client.cancelQueries({
+        queryKey: problemKeys.detail(workspace.id, problemId),
+      })
+    },
+    [client, problemId, workspace.id],
+  )
   return (
     <div className="grid max-w-4xl gap-6">
       <Button
@@ -92,6 +116,8 @@ function ProblemBody({
     <article className="grid gap-6">
       <ProblemHeader workspaceId={workspaceId} problem={problem} />
       <OwnerForm workspaceId={workspaceId} problem={problem} />
+      <Separator />
+      <GitHubIssueSection workspaceId={workspaceId} problem={problem} />
       <Separator />
       <LinkedReports workspaceId={workspaceId} problem={problem} />
       <Separator />

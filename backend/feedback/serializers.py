@@ -1,17 +1,22 @@
 """API contracts for feedback reads, manual capture, and triage."""
 
+from datetime import timedelta
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from accounts.models import Membership
 from accounts.views import ErrorSerializer
+from connections.errors import ERROR_DETAILS
 from feedback.inbox import InboxFilters
-from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.models import Activity, EngineeringIssue, Problem, Report, ReportSource
 from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
+from operations.models import ExternalOperation
 
 UNASSIGNED = "unassigned"
 
@@ -132,7 +137,88 @@ class ProblemFilterSerializer(serializers.Serializer):
     q = serializers.CharField(max_length=200, required=False, allow_blank=True)
 
 
-class ProblemListItemSerializer(serializers.Serializer):
+class ExternalOperationSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    state = serializers.ChoiceField(choices=ExternalOperation.State.choices)
+    destination = serializers.CharField()
+    remote_issue_id = serializers.CharField()
+    remote_number = serializers.IntegerField(allow_null=True)
+    remote_url = serializers.CharField()
+    safe_error = serializers.CharField()
+    recovery_requested = serializers.BooleanField()
+    error_detail = serializers.SerializerMethodField()
+
+    def get_error_detail(self, operation: ExternalOperation) -> str:
+        return OPERATION_ERROR_DETAILS.get(
+            operation.safe_error,
+            "Check the GitHub repository and connection before trying again."
+            if operation.safe_error
+            else "",
+        )
+
+    created_at = serializers.DateTimeField()
+    approved_at = serializers.DateTimeField(allow_null=True)
+    completed_at = serializers.DateTimeField(allow_null=True)
+
+
+class EngineeringIssueSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    number = serializers.IntegerField()
+    url = serializers.CharField()
+    title = serializers.CharField()
+    state = serializers.ChoiceField(choices=EngineeringIssue.State.choices)
+    state_reason = serializers.CharField()
+    access = serializers.ChoiceField(choices=EngineeringIssue.Access.choices)
+    repository = serializers.CharField(source="connection.repository")
+    provider_updated_at = serializers.DateTimeField()
+    last_synced_at = serializers.DateTimeField(source="last_successful_sync_at", allow_null=True)
+    last_attempted_sync_at = serializers.DateTimeField(allow_null=True)
+    refresh_status = serializers.SerializerMethodField()
+    access_reason = serializers.SerializerMethodField()
+    access_detail = serializers.SerializerMethodField()
+    sync_error = serializers.CharField()
+    stale = serializers.SerializerMethodField()
+    stale_after = serializers.SerializerMethodField()
+
+    def get_refresh_status(self, issue: EngineeringIssue) -> str:
+        if issue.sync_lease_token is not None:
+            return "running"
+        if issue.sync_requested_generation > issue.sync_completed_generation:
+            return "pending"
+        return "idle"
+
+    def get_access_reason(self, issue: EngineeringIssue) -> str:
+        return issue.access_reason
+
+    def get_access_detail(self, issue: EngineeringIssue) -> str:
+        reason = issue.access_reason
+        return ERROR_DETAILS.get(
+            reason, "Check the GitHub connection and refresh this issue." if reason else ""
+        )
+
+    def get_stale_after(self, issue: EngineeringIssue) -> Any:
+        if issue.last_successful_sync_at is None:
+            return None
+        return issue.last_successful_sync_at + timedelta(
+            seconds=2 * settings.RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS
+        )
+
+    def get_stale(self, issue: EngineeringIssue) -> bool:
+        stale_after = self.get_stale_after(issue)
+        return stale_after is None or stale_after < timezone.now()
+
+
+class ProblemIssueSerializer(serializers.Serializer):
+    engineering_issue = serializers.SerializerMethodField()
+
+    @extend_schema_field(EngineeringIssueSerializer(allow_null=True))
+    def get_engineering_issue(self, problem: Problem) -> Any:
+        active = getattr(problem, "active_issues", None)
+        issue = active[0] if active else None
+        return EngineeringIssueSerializer(issue).data if issue is not None else None
+
+
+class ProblemListItemSerializer(ProblemIssueSerializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
     summary_excerpt = serializers.SerializerMethodField()
@@ -149,7 +235,7 @@ class ProblemListItemSerializer(serializers.Serializer):
         return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
 
 
-class ProblemDetailSerializer(serializers.Serializer):
+class ProblemDetailSerializer(ProblemIssueSerializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
     summary = serializers.CharField()
@@ -161,6 +247,21 @@ class ProblemDetailSerializer(serializers.Serializer):
     version = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
+    current_create_operation = serializers.SerializerMethodField()
+
+    @extend_schema_field(ExternalOperationSerializer(allow_null=True))
+    def get_current_create_operation(self, problem: Problem) -> Any:
+        operation = (
+            ExternalOperation.objects.filter(
+                workspace_id=problem.workspace_id,
+                problem_id=problem.pk,
+                kind=ExternalOperation.Kind.GITHUB_ISSUE_CREATE,
+            )
+            .exclude(state__in=["draft", "cancelled"])
+            .order_by("-created_at")
+            .first()
+        )
+        return ExternalOperationSerializer(operation).data if operation is not None else None
 
 
 class RecordReferenceSerializer(serializers.Serializer):
@@ -260,9 +361,93 @@ class ProblemOwnerSerializer(VersionedSerializer):
     owner_id = serializers.UUIDField(allow_null=True)
 
 
+class LinkIssueSerializer(VersionedSerializer):
+    reference = serializers.CharField(max_length=500)
+    replace = serializers.BooleanField(required=False, default=False)
+
+
+class IssuePreviewSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    body = serializers.CharField()
+
+
+class IssueDraftSerializer(serializers.Serializer):
+    draft_id = serializers.UUIDField(required=False)
+    expected_version = serializers.IntegerField(min_value=1)
+    title = serializers.CharField(
+        max_length=ExternalOperation.TITLE_LIMIT, required=False, allow_blank=False
+    )
+    body = serializers.CharField(
+        max_length=ExternalOperation.BODY_LIMIT, required=False, allow_blank=True
+    )
+
+
+class IssueDraftResultSerializer(serializers.Serializer):
+    marker = serializers.CharField()
+    id = serializers.UUIDField()
+    draft_version = serializers.IntegerField()
+    expires_at = serializers.DateTimeField()
+    title = serializers.CharField()
+    body = serializers.CharField()
+    repository = serializers.CharField()
+    visibility = serializers.CharField()
+
+
+class IssueApproveSerializer(serializers.Serializer):
+    draft_id = serializers.UUIDField()
+    draft_version = serializers.IntegerField(min_value=1)
+    approved = serializers.BooleanField()
+
+
+class IssueRecoverySerializer(serializers.Serializer):
+    reference = serializers.CharField(max_length=500, required=False, allow_blank=False)
+
+
+class IssueRefreshSerializer(serializers.Serializer):
+    issue_id = serializers.UUIDField()
+
+
+class IssueRefreshStatusSerializer(serializers.Serializer):
+    issue_id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=["pending", "running", "idle"])
+
+
+class IssueRecoveryResultSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    state = serializers.ChoiceField(choices=ExternalOperation.State.choices)
+
+
 class ReportConflictSerializer(ErrorSerializer):
     current = ReportDetailSerializer()
 
 
 class ProblemConflictSerializer(ErrorSerializer):
     current = ProblemDetailSerializer()
+
+
+class IssueLinkConflictSerializer(ProblemConflictSerializer):
+    problem_id = serializers.UUIDField(required=False)
+
+
+class IssueAbandonSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=2000, allow_blank=False)
+
+
+OPERATION_ERROR_DETAILS = {
+    "marker_not_found": (
+        "No matching issue was found. Check the repository before stopping recovery."
+    ),
+    "multiple_marker_matches": (
+        "Several issues match this request. Enter the issue reference you want to recover."
+    ),
+    "recovered_binding_conflict": (
+        "The issue exists, but the selected repository or problem link "
+        "changed. Review the issue before stopping recovery."
+    ),
+    "recovery_unavailable": "GitHub could not be checked. Retry after checking the connection.",
+    "worker_lease_expired": (
+        "The worker stopped before recording the result. Check whether GitHub created the issue."
+    ),
+    "write_outcome_unknown": "GitHub did not confirm the result. Check whether the issue exists.",
+    "manually_resolved": "Recovery was stopped after a member reviewed the result.",
+}

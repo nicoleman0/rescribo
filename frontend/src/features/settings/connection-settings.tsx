@@ -68,7 +68,8 @@ export function ConnectionSettings({
             ) : null}
           </dl>
           <p className="text-sm text-muted-foreground">
-            Queued: {connection.operations.queued}. Failed:{' '}
+            Queued: {connection.operations.queued}. Running:{' '}
+            {connection.operations.running}. Failed:{' '}
             {connection.operations.failed}. Uncertain:{' '}
             {connection.operations.uncertain}.
           </p>

@@ -16,11 +16,18 @@ Set these outside the repository:
   `RESCRIBO_SLACK_CLIENT_SECRET`.
 - `RESCRIBO_GITHUB_APP_ID`, `RESCRIBO_GITHUB_CLIENT_ID`,
   `RESCRIBO_GITHUB_CLIENT_SECRET`, `RESCRIBO_GITHUB_PRIVATE_KEY` (PEM text).
+- `RESCRIBO_GITHUB_WEBHOOK_SECRET`: the secret configured on the GitHub App's
+  webhook. Verifies `X-Hub-Signature-256` on `/api/integrations/github/webhook/`.
+- `RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS`: issue refresh interval in
+  seconds. Defaults to `900` (15 minutes).
 - `RESCRIBO_PUBLIC_BASE_URL`: the externally reachable application origin.
 
 Register each workspace's callback URL with the relevant application:
 `{origin}/api/workspaces/{workspace-id}/connections/slack/callback/` and
 `{origin}/api/workspaces/{workspace-id}/connections/github/callback/`.
+Register `{origin}/api/integrations/github/webhook/` as the GitHub App's webhook
+URL; it is shared by every workspace and resolves the connection from the
+delivery's installation ID.
 Use HTTPS outside local development. Exclude callback query strings and request
 bodies from proxy/application access logs. Never enable provider debug logging.
 
@@ -57,10 +64,11 @@ erase backups.
 ## Integration boundaries
 
 This PR supplies persisted connection settings and the existing notification
-operation cancellation rules. Production capture (#12), issue sync (#10),
-delivery (#14), durable operation dispatch (#15), and retention/restore (#20)
-remain separate issues. No matching records exist yet; their deletion must be
-connected to these use cases when #23 introduces them.
+operation cancellation rules. GitHub issue link, create, receipt, and sync
+records are described in [the GitHub workflow guide](GITHUB_WORKFLOW.md).
+Slack notification delivery (#14), the general durable operation lifecycle
+(#15), and retention/restore (#20) remain separate work. No matching records
+exist yet; their deletion must be connected when #23 introduces them.
 
 New senders must recheck active membership, connection status/binding and
 notification validity immediately before provider IO. Use the lock order
@@ -68,7 +76,8 @@ workspace, connection, report, notification. GitHub operations must mint only
 repository-restricted tokens from a currently active binding; never retain a
 usable token outside that guarded operation. Channel capture must revalidate
 approval at use time. Settings checks do not count as issue reconciliation.
-GitHub operation counts are zero until issue operations are persisted.
+GitHub operation counts include queued, running, failed, and uncertain issue
+creates. They do not include draft previews.
 
 Automated provider tests mock SDK/API responses. They do not verify a live OAuth
 installation or a live send. Browser tests use a separate synthetic workspace.

@@ -55,7 +55,7 @@ task scheduler
 
 Open [the frontend](http://127.0.0.1:5173). Its status page checks the API, PostgreSQL, and Redis through Vite's same-origin proxy. `task worker-check` separately verifies a real Celery task round trip.
 
-The host worker uses Celery's single-process `solo` pool for portable local debugging. The container worker uses a two-process pool. The scheduler has no business schedules yet. It is wired for the reconciliation jobs described in the spec.
+The host worker uses Celery's single-process `solo` pool for portable local debugging. The container worker uses a two-process pool. Beat dispatches durable GitHub work every minute and queues linked issue reconciliation at the configured 15-minute interval. See [GitHub workflow operations](GITHUB_WORKFLOW.md).
 
 ## Checks
 
@@ -102,7 +102,7 @@ No app account is created by setup. Create the first product owner with `task bo
 
 `task e2e` seeds synthetic accounts in the reserved `e2e-test` workspace and resets that workspace's test data. Do not use that slug for real work.
 
-Slack and GitHub credentials are not needed to start. Local matching is planned but is not implemented in this scaffold. The first product milestone is live integration feasibility using test apps and disposable data. Follow section 12 of the spec before claiming provider support.
+Slack and GitHub credentials are not needed to start. Local matching is planned but is not implemented in this scaffold. Mocked tests do not prove the product path against GitHub; use a disposable repository and record sanitized evidence before making live-provider claims.
 
 Milestone A work is split by the issues in the [GitHub milestone](https://github.com/nicoleman0/rescribo/milestone/1). The opt-in [GitHub App installation check](GITHUB_INSTALLATION_CHECK.md) covers the first issue without adding credentials to the application or repository.
 

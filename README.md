@@ -12,13 +12,13 @@ Rescribo is being built to help teams turn customer reports into engineering wor
 
 ## The workflow
 
-- **Capture:** Record a customer report. Manual entry is available; Slack capture is planned.
-- **Connect:** Group related reports and link them to GitHub issues. This workflow is in development.
+- **Capture:** Record a customer report. Manual entry is available; Slack capture has a separate implementation path.
+- **Connect:** Group related reports, link a GitHub issue, or review and approve a new issue before publication.
 - **Follow up:** Review fixes and track customer outcomes. This workflow is planned.
 
 ## Project status
 
-Rescribo is an early development scaffold. Workspace accounts, invitations, the report inbox, and manual report entry are implemented. Slack and GitHub integrations, problem grouping, and follow-up tracking are not yet available.
+Rescribo is an early development scaffold. Workspace accounts, invitations, the report inbox, problem grouping, and the GitHub issue workflow are implemented. Live GitHub provider behaviour for the product path remains to be verified with a disposable repository. Fix confirmation and customer follow-up are planned.
 
 ## Links
 

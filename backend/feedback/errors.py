@@ -1,6 +1,7 @@
 """Errors raised by feedback domain use cases."""
 
 from typing import Any
+from uuid import UUID
 
 
 class FeedbackError(Exception):
@@ -61,3 +62,42 @@ class InvalidTransition(FeedbackError):
         self.action = action
         self.from_state = from_state
         super().__init__()
+
+
+class ConnectionNotReady(FeedbackError):
+    reason = "connection_not_ready"
+
+
+class IssueReferenceRejected(FeedbackError, ValueError):
+    reason = "issue_reference_rejected"
+
+    def __init__(self, *, detail: str) -> None:
+        self.detail = detail
+        super().__init__()
+
+
+class IssueAlreadyLinked(FeedbackError):
+    reason = "issue_already_linked"
+
+
+class IssueAlreadyLinkedElsewhere(FeedbackError):
+    reason = "issue_linked_elsewhere"
+
+    def __init__(self, *, problem_id: UUID, problem_title: str) -> None:
+        self.problem_id = problem_id
+        self.problem_title = problem_title
+        super().__init__()
+
+
+class IssueProviderUnavailable(FeedbackError):
+    reason = "issue_provider_unavailable"
+
+
+class IssueCreateUnresolved(FeedbackError):
+    reason = "issue_create_unresolved"
+
+
+class IssueOperationError(FeedbackError):
+    def __init__(self, reason: str, *, detail: str) -> None:
+        self.detail = detail
+        super().__init__(reason)

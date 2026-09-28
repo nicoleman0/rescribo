@@ -8,8 +8,9 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from integrations.github_app.client import GitHubAppClient
+from integrations.github_app.client import GitHubAPIError, GitHubAppClient
 from integrations.github_app.issues import (
+    EngineeringIssueSnapshot,
     IssueLinkError,
     parse_issue_reference,
     resolve_issue_link,
@@ -43,12 +44,14 @@ def make_client(
 
 
 ISSUE_PAYLOAD = {
+    "id": 555,
     "number": 7,
     "title": "Export button does nothing",
     "state": "open",
     "state_reason": None,
     "html_url": "https://github.com/owner/disposable/issues/7",
     "repository_url": "https://api.github.com/repos/owner/disposable",
+    "repository": {"id": 999, "full_name": "owner/disposable"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -106,14 +109,23 @@ def test_resolve_issue_link_returns_sanitised_issue(private_key: bytes) -> None:
 
     linked = resolve_issue_link(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         reference="https://github.com/owner/disposable/issues/7",
     )
 
-    assert linked.number == 7
-    assert linked.state == "open"
-    assert linked.repository == "owner/disposable"
+    assert linked == EngineeringIssueSnapshot(
+        issue_id="555",
+        number=7,
+        title="Export button does nothing",
+        url="https://github.com/owner/disposable/issues/7",
+        state="open",
+        state_reason=None,
+        updated_at="2026-09-20T21:00:00Z",
+        repository_id="999",
+        repository_name="owner/disposable",
+    )
 
 
 def test_resolve_issue_link_rejects_pull_requests(private_key: bytes) -> None:
@@ -129,6 +141,7 @@ def test_resolve_issue_link_rejects_pull_requests(private_key: bytes) -> None:
     with pytest.raises(IssueLinkError, match="Pull requests"):
         resolve_issue_link(
             make_client(private_key, handler),
+            expected_repository_id="999",
             installation_token="installation-token",
             expected_repository="owner/disposable",
             reference="7",
@@ -142,6 +155,7 @@ def test_resolve_issue_link_rejects_issues_from_other_repositories(private_key: 
     with pytest.raises(IssueLinkError, match="other/repository"):
         resolve_issue_link(
             make_client(private_key, handler),
+            expected_repository_id="999",
             installation_token="installation-token",
             expected_repository="owner/disposable",
             reference="https://github.com/other/repository/issues/7",
@@ -155,6 +169,7 @@ def test_resolve_issue_link_rejects_unknown_issues(private_key: bytes) -> None:
     with pytest.raises(IssueLinkError, match="not found"):
         resolve_issue_link(
             make_client(private_key, handler),
+            expected_repository_id="999",
             installation_token="installation-token",
             expected_repository="owner/disposable",
             reference="7",
@@ -168,6 +183,7 @@ def test_resolve_issue_link_rejects_moved_issues(private_key: bytes) -> None:
     with pytest.raises(IssueLinkError, match="not found"):
         resolve_issue_link(
             make_client(private_key, handler),
+            expected_repository_id="999",
             installation_token="installation-token",
             expected_repository="owner/disposable",
             reference="7",
@@ -203,11 +219,12 @@ def issue_payload(action: str, *, state_reason: str | None = "completed") -> dic
     return {
         "action": action,
         "issue": {
+            "id": 555,
             "number": 7,
             "state_reason": state_reason,
             "updated_at": "2026-09-20T21:05:00Z",
         },
-        "repository": {"full_name": "owner/disposable"},
+        "repository": {"id": 999, "full_name": "owner/disposable"},
     }
 
 
@@ -219,6 +236,8 @@ def test_parse_issue_event_tracks_close_reopen_edit_delete() -> None:
         repository="owner/disposable",
         state_reason="completed",
         updated_at="2026-09-20T21:05:00Z",
+        repository_id="999",
+        issue_id="555",
     )
     assert parse_issue_event(issue_payload("opened")) is None
     assert parse_issue_event(issue_payload("labeled")) is None
@@ -237,16 +256,19 @@ def test_parse_installation_event_flags_access_loss() -> None:
     assert unsuspended is not None and unsuspended.access_lost is False
     removed = parse_installation_event(
         "installation_repositories",
-        {"action": "removed", "repositories_removed": [{"full_name": "owner/disposable"}]},
+        {
+            "action": "removed",
+            "repositories_removed": [{"id": 999, "full_name": "owner/disposable"}],
+        },
     )
     assert removed is not None
     assert removed.access_lost is True
     assert removed.repositories_removed == ("owner/disposable",)
     added = parse_installation_event(
         "installation_repositories",
-        {"action": "added", "repositories_added": [{"full_name": "owner/disposable"}]},
+        {"action": "added", "repositories_added": [{"id": 999, "full_name": "owner/disposable"}]},
     )
-    assert added is None
+    assert added is not None and added.access_lost is False
     assert parse_installation_event("ping", {"zen": "Keep it logically awesome."}) is None
 
 
@@ -271,6 +293,7 @@ def test_apply_issue_event_fetches_current_state(private_key: bytes) -> None:
 
     outcome = apply_issue_event(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         event=closed_event(),
@@ -279,9 +302,10 @@ def test_apply_issue_event_fetches_current_state(private_key: bytes) -> None:
 
     assert outcome.applied is True
     assert outcome.access == "ok"
-    assert outcome.state == "closed"
-    assert outcome.state_reason == "not_planned"
-    assert outcome.updated_at == "2026-09-20T21:05:00Z"
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.state == "closed"
+    assert outcome.snapshot.state_reason == "not_planned"
+    assert outcome.snapshot.updated_at == "2026-09-20T21:05:00Z"
 
 
 def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
@@ -293,6 +317,7 @@ def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
 
     outcome = apply_issue_event(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         event=closed_event(),
@@ -301,7 +326,8 @@ def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
 
     assert outcome.applied is False
     assert outcome.access == "ok"
-    assert outcome.updated_at == "2026-09-20T21:30:00Z"
+    assert outcome.snapshot is not None
+    assert outcome.snapshot.updated_at == "2026-09-20T21:00:00Z"
 
 
 def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: bytes) -> None:
@@ -310,6 +336,7 @@ def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: 
 
     outcome = apply_issue_event(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         event=closed_event(),
@@ -318,7 +345,7 @@ def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: 
 
     assert outcome.applied is False
     assert outcome.access == "access_lost"
-    assert outcome.state is None
+    assert outcome.snapshot is None
 
 
 def test_apply_issue_event_maps_moved_issues_to_access_lost(private_key: bytes) -> None:
@@ -327,6 +354,7 @@ def test_apply_issue_event_maps_moved_issues_to_access_lost(private_key: bytes) 
 
     outcome = apply_issue_event(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         event=closed_event(),
@@ -344,6 +372,8 @@ def test_apply_issue_event_treats_transferred_foreign_repository_as_access_lost(
         raise AssertionError("A transferred event must not fetch from the destination repository.")
 
     event = IssueEvent(
+        repository_id="999",
+        issue_id="555",
         action="transferred",
         number=7,
         repository="other/destination",
@@ -352,6 +382,7 @@ def test_apply_issue_event_treats_transferred_foreign_repository_as_access_lost(
     )
     outcome = apply_issue_event(
         make_client(private_key, handler),
+        expected_repository_id="999",
         installation_token="installation-token",
         expected_repository="owner/disposable",
         event=event,
@@ -367,6 +398,8 @@ def test_apply_issue_event_rejects_events_for_other_repositories(private_key: by
         raise AssertionError("Events for other repositories must be rejected before any request.")
 
     foreign = IssueEvent(
+        repository_id="999",
+        issue_id="555",
         action="closed",
         number=7,
         repository="other/repository",
@@ -376,6 +409,7 @@ def test_apply_issue_event_rejects_events_for_other_repositories(private_key: by
     with pytest.raises(InvalidWebhookPayload, match="other/repository"):
         apply_issue_event(
             make_client(private_key, handler),
+            expected_repository_id="999",
             installation_token="installation-token",
             expected_repository="owner/disposable",
             event=foreign,
@@ -392,3 +426,31 @@ def test_installation_lifecycle_client_calls(private_key: bytes) -> None:
 
     client = make_client(private_key, handler)
     client.delete_installation(installation_id=42)
+
+
+@pytest.mark.parametrize(
+    "status,headers,limited,delay",
+    [
+        (403, {"X-RateLimit-Remaining": "4999", "X-RateLimit-Reset": "9999999999"}, False, None),
+        (403, {"X-RateLimit-Remaining": "0", "Retry-After": "30"}, True, 30),
+        (403, {"Retry-After": "30"}, True, 30),
+        (429, {"Retry-After": "30"}, True, 30),
+    ],
+)
+@pytest.mark.parametrize("listing", [False, True])
+def test_rate_limit_metadata_is_shared_by_reads_and_listing(
+    private_key: bytes,
+    status: int,
+    headers: dict[str, str],
+    limited: bool,
+    delay: int | None,
+    listing: bool,
+) -> None:
+    client = make_client(private_key, lambda request: httpx.Response(status, headers=headers))
+    with pytest.raises(GitHubAPIError) as caught:
+        if listing:
+            client.list_issues(installation_token="token", owner="owner", name="disposable", page=1)
+        else:
+            client.get_issue(installation_token="token", owner="owner", name="disposable", number=7)
+    assert caught.value.rate_limited is limited
+    assert caught.value.retry_after_seconds == delay

@@ -6,6 +6,8 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ### Added
 
+- GitHub issue links, reviewed create previews, durable create operations, signed lifecycle receipts, manual refresh, and scheduled reconciliation for problem detail (#10).
+- GitHub workflow setup and recovery notes in `docs/GITHUB_WORKFLOW.md` (#10).
 - Report triage: link to an existing problem, create a problem and link in one step, move, ungroup, dismiss, restore, and assign or clear the assignee from the Inbox (#9).
 - Problems list with search, owner, status, report count, and review flag. Problem detail with editable title and summary, owner, linked reports with provenance, per-report assignment, and activity (#9).
 - `ReportNotificationOperation` records prepared employee notifications. Reassignment, moves, and ungrouping cancel unsent ones and keep sent history. No production path creates them yet ([ADR 0004](docs/adr/0004-report-notification-cancellation.md), #9).

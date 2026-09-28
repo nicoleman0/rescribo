@@ -45,6 +45,28 @@ def write_activity(
     )
 
 
+def write_system_activity(
+    *,
+    workspace_id: UUID,
+    actor_system: str,
+    action: str,
+    record_type: str,
+    record_id: UUID,
+    metadata: dict[str, Any] | None = None,
+    now: datetime | None = None,
+) -> Activity:
+    """Record an activity for a change no member made, such as a webhook or scheduled sync."""
+    return Activity.objects.create(
+        workspace_id=workspace_id,
+        actor_system=actor_system,
+        action=action,
+        record_type=record_type,
+        record_id=record_id,
+        metadata=metadata or {},
+        created_at=now or timezone.now(),
+    )
+
+
 def locked_report(*, actor: Membership, report_id: UUID) -> Report:
     try:
         return Report.objects.select_for_update(of=("self",)).get(

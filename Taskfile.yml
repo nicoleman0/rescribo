@@ -137,6 +137,11 @@ tasks:
     cmds:
       - uv run python scripts/check_worker.py
 
+  github-product-worker-check:
+    desc: Verify durable GitHub work recovers through a restarted Celery worker
+    cmds:
+      - uv run python scripts/check_github_product_worker.py
+
   github-installation-check:
     desc: Run the opt-in live GitHub App installation feasibility check
     cmds:

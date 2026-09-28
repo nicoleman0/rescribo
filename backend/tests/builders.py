@@ -3,8 +3,11 @@
 from typing import Any
 from uuid import uuid4
 
+from django.utils import timezone
+
 from accounts.models import Membership, User, Workspace
-from feedback.models import Problem, Report, ReportNotificationOperation
+from connections.models import Connection
+from feedback.models import EngineeringIssue, Problem, Report, ReportNotificationOperation
 
 
 def make_user(**overrides: Any) -> User:
@@ -79,3 +82,47 @@ def make_notification(
         )
     values.update(overrides)
     return ReportNotificationOperation.objects.create(**values)
+
+
+def make_connection(*, workspace: Workspace | None = None, **overrides: Any) -> Connection:
+    values: dict[str, Any] = {
+        "workspace": workspace or make_workspace(),
+        "provider": Connection.Provider.GITHUB,
+        "external_id": "42",
+        "identity": "acme",
+        "status": Connection.Status.ACTIVE,
+        "repository": "acme/widgets",
+        "repository_id": "999",
+        "visibility": "private",
+    }
+    values.update(overrides)
+    return Connection.objects.create(**values)
+
+
+def make_engineering_issue(
+    *,
+    problem: Problem,
+    connection: Connection | None = None,
+    created_by: Membership | None = None,
+    **overrides: Any,
+) -> EngineeringIssue:
+    connection = connection or make_connection(workspace=problem.workspace)
+    created_by = created_by or make_membership(
+        workspace=problem.workspace, user=make_user(email=f"{uuid4()}@example.test")
+    )
+    values: dict[str, Any] = {
+        "workspace": problem.workspace,
+        "problem": problem,
+        "connection": connection,
+        "repository_id": connection.repository_id,
+        "connection_installation_id": connection.external_id,
+        "issue_id": "555",
+        "number": 7,
+        "url": "https://github.com/acme/widgets/issues/7",
+        "title": "Example issue",
+        "state": EngineeringIssue.State.OPEN,
+        "provider_updated_at": timezone.now(),
+        "created_by": created_by,
+    }
+    values.update(overrides)
+    return EngineeringIssue.objects.create(**values)

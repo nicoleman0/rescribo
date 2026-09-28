@@ -34,6 +34,7 @@ class Connection(models.Model):
     repository_id = models.CharField(max_length=64, blank=True)
     visibility = models.CharField(max_length=16, blank=True)
     version = models.PositiveIntegerField(default=1)
+    binding_revision = models.PositiveIntegerField(default=1)
 
     class Meta:
         constraints = [

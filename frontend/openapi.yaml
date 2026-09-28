@@ -1285,6 +1285,485 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/approve/:
+    post:
+      operationId: workspaces_problems_issue_approve_create
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueApprove'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueApprove'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueApprove'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalOperation'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/link/:
+    post:
+      operationId: workspaces_problems_issue_link_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LinkIssue'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueLinkConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/:
+    get:
+      operationId: workspaces_problems_issue_operations_retrieve
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalOperation'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/abandon/:
+    post:
+      operationId: workspaces_problems_issue_operations_abandon_create
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalOperation'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/reconcile/:
+    post:
+      operationId: workspaces_problems_issue_operations_reconcile_create
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueRecoveryResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/preview/:
+    get:
+      operationId: workspaces_problems_issue_preview_retrieve
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssuePreview'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+    post:
+      operationId: workspaces_problems_issue_preview_create
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueDraft'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueDraft'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueDraft'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueDraftResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/refresh/:
+    post:
+      operationId: workspaces_problems_issue_refresh_create
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueRefreshStatus'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/reports/:
     get:
       operationId: workspaces_problems_reports_list
@@ -1978,6 +2457,22 @@ paths:
           description: ''
 components:
   schemas:
+    AccessEnum:
+      enum:
+      - ok
+      - inaccessible
+      - disconnected
+      - access_lost
+      - suspended
+      - deleted
+      type: string
+      description: |-
+        * `ok` - OK
+        * `inaccessible` - Inaccessible
+        * `disconnected` - Disconnected
+        * `access_lost` - Access lost
+        * `suspended` - Suspended
+        * `deleted` - Deleted
     ActivityActionEnum:
       enum:
       - report.deleted
@@ -1992,6 +2487,9 @@ components:
       - problem.updated
       - problem.state_changed
       - problem.fix_confirmed
+      - engineering_issue.linked
+      - engineering_issue.created
+      - engineering_issue.unlinked
       type: string
       description: |-
         * `report.deleted` - Report deleted
@@ -2006,6 +2504,9 @@ components:
         * `problem.updated` - Problem updated
         * `problem.state_changed` - Problem state changed
         * `problem.fix_confirmed` - Problem fix confirmed
+        * `engineering_issue.linked` - Engineering issue linked
+        * `engineering_issue.created` - Engineering issue created
+        * `engineering_issue.unlinked` - Engineering issue unlinked
     AssignReport:
       type: object
       properties:
@@ -2172,6 +2673,79 @@ components:
       required:
       - confirmation
       - version
+    EngineeringIssue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: integer
+        url:
+          type: string
+        title:
+          type: string
+        state:
+          $ref: '#/components/schemas/EngineeringIssueStateEnum'
+        state_reason:
+          type: string
+        access:
+          $ref: '#/components/schemas/AccessEnum'
+        repository:
+          type: string
+        provider_updated_at:
+          type: string
+          format: date-time
+        last_synced_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_attempted_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+        refresh_status:
+          type: string
+          readOnly: true
+        access_reason:
+          type: string
+          readOnly: true
+        access_detail:
+          type: string
+          readOnly: true
+        sync_error:
+          type: string
+        stale:
+          type: boolean
+          readOnly: true
+        stale_after:
+          readOnly: true
+      required:
+      - access
+      - access_detail
+      - access_reason
+      - id
+      - last_attempted_sync_at
+      - last_synced_at
+      - number
+      - provider_updated_at
+      - refresh_status
+      - repository
+      - stale
+      - stale_after
+      - state
+      - state_reason
+      - sync_error
+      - title
+      - url
+    EngineeringIssueStateEnum:
+      enum:
+      - open
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `closed` - Closed
     Error:
       type: object
       properties:
@@ -2185,6 +2759,72 @@ components:
       required:
       - detail
       - reason
+    ExternalOperation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/ExternalOperationStateEnum'
+        destination:
+          type: string
+        remote_issue_id:
+          type: string
+        remote_number:
+          type: integer
+          nullable: true
+        remote_url:
+          type: string
+        safe_error:
+          type: string
+        recovery_requested:
+          type: boolean
+        error_detail:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - approved_at
+      - completed_at
+      - created_at
+      - destination
+      - error_detail
+      - id
+      - recovery_requested
+      - remote_issue_id
+      - remote_number
+      - remote_url
+      - safe_error
+      - state
+    ExternalOperationStateEnum:
+      enum:
+      - draft
+      - queued
+      - running
+      - succeeded
+      - failed
+      - uncertain
+      - cancelled
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `queued` - Queued
+        * `running` - Running
+        * `succeeded` - Succeeded
+        * `failed` - Failed
+        * `uncertain` - Uncertain
+        * `cancelled` - Cancelled
     Health:
       type: object
       properties:
@@ -2267,6 +2907,166 @@ components:
       - accept_url
       - email
       - id
+    IssueAbandon:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 2000
+      required:
+      - reason
+    IssueApprove:
+      type: object
+      properties:
+        draft_id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+        approved:
+          type: boolean
+      required:
+      - approved
+      - draft_id
+      - draft_version
+    IssueDraft:
+      type: object
+      properties:
+        draft_id:
+          type: string
+          format: uuid
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 256
+        body:
+          type: string
+          maxLength: 10000
+      required:
+      - expected_version
+    IssueDraftResult:
+      type: object
+      properties:
+        marker:
+          type: string
+        id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+        title:
+          type: string
+        body:
+          type: string
+        repository:
+          type: string
+        visibility:
+          type: string
+      required:
+      - body
+      - draft_version
+      - expires_at
+      - id
+      - marker
+      - repository
+      - title
+      - visibility
+    IssueLinkConflict:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ProblemDetail'
+        problem_id:
+          type: string
+          format: uuid
+      required:
+      - current
+      - detail
+      - reason
+    IssuePreview:
+      type: object
+      properties:
+        title:
+          type: string
+        body:
+          type: string
+      required:
+      - body
+      - title
+    IssueRecovery:
+      type: object
+      properties:
+        reference:
+          type: string
+          maxLength: 500
+    IssueRecoveryResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/ExternalOperationStateEnum'
+      required:
+      - id
+      - state
+    IssueRefresh:
+      type: object
+      properties:
+        issue_id:
+          type: string
+          format: uuid
+      required:
+      - issue_id
+    IssueRefreshStatus:
+      type: object
+      properties:
+        issue_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/IssueRefreshStatusStatusEnum'
+      required:
+      - issue_id
+      - status
+    IssueRefreshStatusStatusEnum:
+      enum:
+      - pending
+      - running
+      - idle
+      type: string
+      description: |-
+        * `pending` - pending
+        * `running` - running
+        * `idle` - idle
+    LinkIssue:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        reference:
+          type: string
+          maxLength: 500
+        replace:
+          type: boolean
+          default: false
+      required:
+      - expected_version
+      - reference
     LinkReport:
       type: object
       properties:
@@ -2353,6 +3153,8 @@ components:
       properties:
         queued:
           type: integer
+        running:
+          type: integer
         failed:
           type: integer
         uncertain:
@@ -2360,6 +3162,7 @@ components:
       required:
       - failed
       - queued
+      - running
       - uncertain
     PaginatedProblemActivityList:
       type: object
@@ -2563,6 +3366,11 @@ components:
     ProblemDetail:
       type: object
       properties:
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
         id:
           type: string
           format: uuid
@@ -2590,8 +3398,15 @@ components:
         updated_at:
           type: string
           format: date-time
+        current_create_operation:
+          allOf:
+          - $ref: '#/components/schemas/ExternalOperation'
+          nullable: true
+          readOnly: true
       required:
       - created_at
+      - current_create_operation
+      - engineering_issue
       - id
       - needs_review
       - owner
@@ -2619,6 +3434,11 @@ components:
     ProblemListItem:
       type: object
       properties:
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
         id:
           type: string
           format: uuid
@@ -2642,6 +3462,7 @@ components:
           format: date-time
       required:
       - created_at
+      - engineering_issue
       - id
       - needs_review
       - owner
