@@ -128,11 +128,14 @@ def bind_connection(actor: Membership, provider: str, code: str, repository: str
     row, _ = Connection.objects.select_for_update().get_or_create(
         workspace_id=actor.workspace_id, provider=provider
     )
+    old_binding = (row.external_id, row.repository_id, row.repository)
     cancel_notifications(actor)
     if row.external_id != values["external_id"]:
         row.channels.all().delete()
     for key, value in values.items():
         setattr(row, key, value)
+    if old_binding != (row.external_id, row.repository_id, row.repository):
+        row.binding_revision += 1
     row.status = Connection.Status.ACTIVE
     row.error_code = ""
     row.last_success_at = timezone.now()
@@ -161,6 +164,7 @@ def disconnect(actor: Membership, provider: str, version: int) -> None:
         row.credential = ""
         # Removing the installation binding prevents future installation-token minting.
         row.external_id = ""
+        row.binding_revision += 1
         row.status = Connection.Status.DISCONNECTED
         row.error_code = ""
         row.version += 1
@@ -220,15 +224,29 @@ def refresh_connection(actor: Membership, provider: str, version: int) -> None:
 
 def connection_payload(row: Connection) -> dict[str, Any]:
     from feedback.models import ReportNotificationOperation
+    from operations.models import ExternalOperation
 
-    counts = {
-        state: ReportNotificationOperation.objects.filter(
-            workspace_id=row.workspace_id, state=state
-        ).count()
-        if row.provider == "slack"
-        else 0
-        for state in ("queued", "failed", "uncertain")
-    }
+    if row.provider == "github":
+        counts = {
+            state: ExternalOperation.objects.filter(
+                workspace_id=row.workspace_id,
+                kind=ExternalOperation.Kind.GITHUB_ISSUE_CREATE,
+                state=operation_state,
+            ).count()
+            for state, operation_state in (
+                ("queued", ExternalOperation.State.QUEUED),
+                ("running", ExternalOperation.State.RUNNING),
+                ("failed", ExternalOperation.State.FAILED),
+                ("uncertain", ExternalOperation.State.UNCERTAIN),
+            )
+        }
+    else:
+        counts = {"running": 0} | {
+            state: ReportNotificationOperation.objects.filter(
+                workspace_id=row.workspace_id, state=state
+            ).count()
+            for state in ("queued", "failed", "uncertain")
+        }
     return {
         key: getattr(row, key)
         for key in (

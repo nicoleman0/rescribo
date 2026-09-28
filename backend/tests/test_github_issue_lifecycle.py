@@ -51,6 +51,7 @@ ISSUE_PAYLOAD = {
     "state_reason": None,
     "html_url": "https://github.com/owner/disposable/issues/7",
     "repository_url": "https://api.github.com/repos/owner/disposable",
+    "repository": {"id": 999, "full_name": "owner/disposable"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -121,6 +122,8 @@ def test_resolve_issue_link_returns_sanitised_issue(private_key: bytes) -> None:
         state="open",
         state_reason=None,
         updated_at="2026-09-20T21:00:00Z",
+        repository_id="999",
+        repository_name="owner/disposable",
     )
 
 
@@ -211,11 +214,12 @@ def issue_payload(action: str, *, state_reason: str | None = "completed") -> dic
     return {
         "action": action,
         "issue": {
+            "id": 555,
             "number": 7,
             "state_reason": state_reason,
             "updated_at": "2026-09-20T21:05:00Z",
         },
-        "repository": {"full_name": "owner/disposable"},
+        "repository": {"id": 999, "full_name": "owner/disposable"},
     }
 
 
@@ -227,6 +231,8 @@ def test_parse_issue_event_tracks_close_reopen_edit_delete() -> None:
         repository="owner/disposable",
         state_reason="completed",
         updated_at="2026-09-20T21:05:00Z",
+        repository_id="999",
+        issue_id="555",
     )
     assert parse_issue_event(issue_payload("opened")) is None
     assert parse_issue_event(issue_payload("labeled")) is None
@@ -245,16 +251,19 @@ def test_parse_installation_event_flags_access_loss() -> None:
     assert unsuspended is not None and unsuspended.access_lost is False
     removed = parse_installation_event(
         "installation_repositories",
-        {"action": "removed", "repositories_removed": [{"full_name": "owner/disposable"}]},
+        {
+            "action": "removed",
+            "repositories_removed": [{"id": 999, "full_name": "owner/disposable"}],
+        },
     )
     assert removed is not None
     assert removed.access_lost is True
     assert removed.repositories_removed == ("owner/disposable",)
     added = parse_installation_event(
         "installation_repositories",
-        {"action": "added", "repositories_added": [{"full_name": "owner/disposable"}]},
+        {"action": "added", "repositories_added": [{"id": 999, "full_name": "owner/disposable"}]},
     )
-    assert added is None
+    assert added is not None and added.access_lost is False
     assert parse_installation_event("ping", {"zen": "Keep it logically awesome."}) is None
 
 

@@ -476,7 +476,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/create/": {
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/approve/": {
         parameters: {
             query?: never;
             header?: never;
@@ -485,8 +485,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Run one problem use case and return the updated problem. */
-        post: operations["workspaces_problems_issue_create_create"];
+        post: operations["workspaces_problems_issue_approve_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -510,6 +509,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_problems_issue_operations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/reconcile/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_problems_issue_operations_reconcile_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/preview/": {
         parameters: {
             query?: never;
@@ -519,7 +550,7 @@ export interface paths {
         };
         get: operations["workspaces_problems_issue_preview_retrieve"];
         put?: never;
-        post?: never;
+        post: operations["workspaces_problems_issue_preview_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -535,7 +566,6 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** @description Run one problem use case and return the updated problem. */
         post: operations["workspaces_problems_issue_refresh_create"];
         delete?: never;
         options?: never;
@@ -715,12 +745,14 @@ export interface components {
     schemas: {
         /**
          * @description * `ok` - OK
+         *     * `inaccessible` - Inaccessible
+         *     * `disconnected` - Disconnected
          *     * `access_lost` - Access lost
          *     * `suspended` - Suspended
          *     * `deleted` - Deleted
          * @enum {string}
          */
-        AccessEnum: "ok" | "access_lost" | "suspended" | "deleted";
+        AccessEnum: "ok" | "inaccessible" | "disconnected" | "access_lost" | "suspended" | "deleted";
         /**
          * @description * `report.deleted` - Report deleted
          *     * `report.created` - Report created
@@ -790,11 +822,6 @@ export interface components {
          * @enum {string}
          */
         ConnectionStatusEnum: "active" | "error" | "disconnected";
-        CreateIssue: {
-            expected_version: number;
-            title: string;
-            body: string;
-        };
         CreateProblemForReport: {
             expected_version: number;
             title: string;
@@ -822,11 +849,18 @@ export interface components {
             state: components["schemas"]["EngineeringIssueStateEnum"];
             state_reason: string;
             access: components["schemas"]["AccessEnum"];
+            repository: string;
             /** Format: date-time */
             provider_updated_at: string;
             /** Format: date-time */
             last_synced_at: string | null;
+            /** Format: date-time */
+            last_attempted_sync_at: string | null;
+            readonly refresh_status: string;
+            readonly access_reason: string;
             sync_error: string;
+            readonly stale: boolean;
+            readonly stale_after: unknown;
         };
         /**
          * @description * `open` - Open
@@ -840,6 +874,22 @@ export interface components {
             field_errors?: {
                 [key: string]: unknown;
             };
+        };
+        ExternalOperation: {
+            /** Format: uuid */
+            id: string;
+            state: string;
+            destination: string;
+            remote_issue_id: string;
+            remote_number: number | null;
+            remote_url: string;
+            safe_error: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            approved_at: string | null;
+            /** Format: date-time */
+            completed_at: string | null;
         };
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
@@ -884,15 +934,27 @@ export interface components {
             /** Format: uri */
             accept_url: string;
         };
-        IssueCreationUncertain: {
-            detail: string;
-            reason: string;
-            field_errors?: {
-                [key: string]: unknown;
-            };
-            current: components["schemas"]["ProblemDetail"];
+        IssueApprove: {
             /** Format: uuid */
-            operation_id: string;
+            draft_id: string;
+            draft_version: number;
+            approved: boolean;
+        };
+        IssueDraft: {
+            expected_version: number;
+            title?: string;
+            body?: string;
+        };
+        IssueDraftResult: {
+            /** Format: uuid */
+            id: string;
+            draft_version: number;
+            /** Format: date-time */
+            expires_at: string;
+            title: string;
+            body: string;
+            repository: string;
+            visibility: string;
         };
         IssueLinkConflict: {
             detail: string;
@@ -908,9 +970,35 @@ export interface components {
             title: string;
             body: string;
         };
+        IssueRecovery: {
+            reference?: string;
+        };
+        IssueRecoveryResult: {
+            /** Format: uuid */
+            id: string;
+            state: string;
+        };
+        IssueRefresh: {
+            /** Format: uuid */
+            issue_id: string;
+        };
+        IssueRefreshStatus: {
+            /** Format: uuid */
+            issue_id: string;
+            status: components["schemas"]["IssueRefreshStatusStatusEnum"];
+        };
+        /**
+         * @description * `pending` - pending
+         *     * `running` - running
+         *     * `idle` - idle
+         * @enum {string}
+         */
+        IssueRefreshStatusStatusEnum: "pending" | "running" | "idle";
         LinkIssue: {
             expected_version: number;
             reference: string;
+            /** @default false */
+            replace: boolean;
         };
         LinkReport: {
             expected_version: number;
@@ -948,6 +1036,7 @@ export interface components {
         NullEnum: null;
         OperationCounts: {
             queued: number;
+            running: number;
             failed: number;
             uncertain: number;
         };
@@ -1062,6 +1151,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
+            readonly current_create_operation: components["schemas"]["ExternalOperation"] | null;
         };
         ProblemEdit: {
             expected_version: number;
@@ -1079,6 +1169,7 @@ export interface components {
             needs_review: boolean;
             /** Format: date-time */
             created_at: string;
+            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
         };
         ProblemOwner: {
             expected_version: number;
@@ -2454,7 +2545,7 @@ export interface operations {
             };
         };
     };
-    workspaces_problems_issue_create_create: {
+    workspaces_problems_issue_approve_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -2466,18 +2557,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateIssue"];
-                "application/x-www-form-urlencoded": components["schemas"]["CreateIssue"];
-                "multipart/form-data": components["schemas"]["CreateIssue"];
+                "application/json": components["schemas"]["IssueApprove"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueApprove"];
+                "multipart/form-data": components["schemas"]["IssueApprove"];
             };
         };
         responses: {
-            201: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProblemDetail"];
+                    "application/json": components["schemas"]["ExternalOperation"];
                 };
             };
             400: {
@@ -2510,14 +2601,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
-                };
-            };
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IssueCreationUncertain"];
                 };
             };
         };
@@ -2590,6 +2673,106 @@ export interface operations {
             };
         };
     };
+    workspaces_problems_issue_operations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalOperation"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_problems_issue_operations_reconcile_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["IssueRecovery"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueRecovery"];
+                "multipart/form-data": components["schemas"]["IssueRecovery"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IssueRecoveryResult"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     workspaces_problems_issue_preview_retrieve: {
         parameters: {
             query?: never;
@@ -2628,7 +2811,7 @@ export interface operations {
             };
         };
     };
-    workspaces_problems_issue_refresh_create: {
+    workspaces_problems_issue_preview_create: {
         parameters: {
             query?: never;
             header?: never;
@@ -2640,18 +2823,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Versioned"];
-                "application/x-www-form-urlencoded": components["schemas"]["Versioned"];
-                "multipart/form-data": components["schemas"]["Versioned"];
+                "application/json": components["schemas"]["IssueDraft"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueDraft"];
+                "multipart/form-data": components["schemas"]["IssueDraft"];
             };
         };
         responses: {
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProblemDetail"];
+                    "application/json": components["schemas"]["IssueDraftResult"];
                 };
             };
             400: {
@@ -2686,12 +2869,64 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
-            409: {
+        };
+    };
+    workspaces_problems_issue_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueRefresh"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueRefresh"];
+                "multipart/form-data": components["schemas"]["IssueRefresh"];
+            };
+        };
+        responses: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProblemConflict"];
+                    "application/json": components["schemas"]["IssueRefreshStatus"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

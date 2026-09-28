@@ -216,6 +216,16 @@ function ProblemList({ page }: { page: ProblemPage }) {
               <span className="flex shrink-0 flex-wrap justify-end gap-1">
                 {problem.needs_review ? <NeedsReviewBadge /> : null}
                 <ProblemStateBadge state={problem.state} />
+                {problem.engineering_issue ? (
+                  <span className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground">
+                    GitHub #{problem.engineering_issue.number} ·{' '}
+                    {problem.engineering_issue.state}
+                    {problem.engineering_issue.stale ? ' · Stale' : ''}
+                    {problem.engineering_issue.access !== 'ok'
+                      ? ' · Access issue'
+                      : ''}
+                  </span>
+                ) : null}
               </span>
             </span>
             {problem.summary_excerpt ? (

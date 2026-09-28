@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "accounts",
     "feedback",
     "connections",
+    "operations",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -124,10 +125,17 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 CELERY_RESULT_EXPIRES = 3600
+RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS = int(
+    env("RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS", default=900)
+)
 CELERY_BEAT_SCHEDULE = {
+    "dispatch-durable-github-operations": {
+        "task": "operations.tasks.dispatch_due_operations",
+        "schedule": 60.0,
+    },
     "reconcile-github-issues": {
         "task": "feedback.tasks.reconcile_github_issues",
-        "schedule": 900.0,
+        "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
     },
 }
 

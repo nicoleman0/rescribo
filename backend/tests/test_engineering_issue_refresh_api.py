@@ -10,7 +10,6 @@ from django.test import Client
 
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
-from feedback.models import EngineeringIssue
 
 pytestmark = pytest.mark.django_db
 
@@ -22,6 +21,7 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": "completed",
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
+    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:05:00Z",
 }
 
@@ -47,11 +47,11 @@ def patched_client(*, get_issue: dict[str, Any] | None = None) -> Any:
     return factory
 
 
-def test_refresh_syncs_current_state_and_returns_it(client: Client) -> None:
+def test_refresh_queues_a_coalesced_sync_request(client: Client) -> None:
     actor = make_membership()
     connection = make_connection(workspace=actor.workspace)
     problem = make_problem(actor=actor)
-    make_engineering_issue(
+    issue = make_engineering_issue(
         problem=problem,
         connection=connection,
         created_by=actor,
@@ -64,18 +64,17 @@ def test_refresh_syncs_current_state_and_returns_it(client: Client) -> None:
     try:
         response = client.post(
             refresh_url(actor, problem.pk),
-            {"expected_version": problem.version},
+            {"issue_id": str(issue.pk)},
             content_type="application/json",
         )
     finally:
         factory.stop()
 
-    assert response.status_code == 200
-    body = response.json()
-    assert body["engineering_issue"]["state"] == "closed"
-    assert body["engineering_issue"]["state_reason"] == "completed"
-    issue = EngineeringIssue.objects.get(problem=problem, active=True)
-    assert issue.last_synced_at is not None
+    assert response.status_code == 202
+    issue.refresh_from_db()
+    assert response.json()["issue_id"] == str(issue.pk)
+    assert response.json()["status"] == "pending"
+    assert issue.sync_requested_generation == 1
 
 
 def test_refresh_without_a_linked_issue_is_not_found(client: Client) -> None:
@@ -85,14 +84,14 @@ def test_refresh_without_a_linked_issue_is_not_found(client: Client) -> None:
 
     response = client.post(
         refresh_url(actor, problem.pk),
-        {"expected_version": problem.version},
+        {"issue_id": str(problem.pk)},
         content_type="application/json",
     )
 
     assert response.status_code == 404
 
 
-def test_refresh_rejects_stale_problem_version(client: Client) -> None:
+def test_refresh_rejects_old_issue_id(client: Client) -> None:
     actor = make_membership()
     connection = make_connection(workspace=actor.workspace)
     problem = make_problem(actor=actor)
@@ -105,8 +104,10 @@ def test_refresh_rejects_stale_problem_version(client: Client) -> None:
     sign_in(client, actor)
 
     response = client.post(
-        refresh_url(actor, problem.pk), {"expected_version": 999}, content_type="application/json"
+        refresh_url(actor, problem.pk),
+        {"issue_id": str(problem.pk)},
+        content_type="application/json",
     )
 
     assert response.status_code == 409
-    assert response.json()["reason"] == "version_conflict"
+    assert response.status_code == 409

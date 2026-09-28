@@ -1285,10 +1285,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
-  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/create/:
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/approve/:
     post:
-      operationId: workspaces_problems_issue_create_create
-      description: Run one problem use case and return the updated problem.
+      operationId: workspaces_problems_issue_approve_create
       parameters:
       - in: path
         name: problem_id
@@ -1308,28 +1307,22 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateIssue'
+              $ref: '#/components/schemas/IssueApprove'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/CreateIssue'
+              $ref: '#/components/schemas/IssueApprove'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/CreateIssue'
+              $ref: '#/components/schemas/IssueApprove'
         required: true
       security:
       - sessionCookie: []
       responses:
-        '201':
+        '202':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
-          description: ''
-        '409':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/IssueCreationUncertain'
+                $ref: '#/components/schemas/ExternalOperation'
           description: ''
         '400':
           content:
@@ -1425,6 +1418,119 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/:
+    get:
+      operationId: workspaces_problems_issue_operations_retrieve
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalOperation'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/reconcile/:
+    post:
+      operationId: workspaces_problems_issue_operations_reconcile_create
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueRecovery'
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueRecoveryResult'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/issue/preview/:
     get:
       operationId: workspaces_problems_issue_preview_retrieve
@@ -1464,10 +1570,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
-  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/refresh/:
     post:
-      operationId: workspaces_problems_issue_refresh_create
-      description: Run one problem use case and return the updated problem.
+      operationId: workspaces_problems_issue_preview_create
       parameters:
       - in: path
         name: problem_id
@@ -1487,28 +1591,85 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/IssueDraft'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/IssueDraft'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/IssueDraft'
         required: true
       security:
       - sessionCookie: []
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProblemDetail'
+                $ref: '#/components/schemas/IssueDraftResult'
           description: ''
-        '409':
+        '400':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ProblemConflict'
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/refresh/:
+    post:
+      operationId: workspaces_problems_issue_refresh_create
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueRefresh'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueRefreshStatus'
           description: ''
         '400':
           content:
@@ -2230,12 +2391,16 @@ components:
     AccessEnum:
       enum:
       - ok
+      - inaccessible
+      - disconnected
       - access_lost
       - suspended
       - deleted
       type: string
       description: |-
         * `ok` - OK
+        * `inaccessible` - Inaccessible
+        * `disconnected` - Disconnected
         * `access_lost` - Access lost
         * `suspended` - Suspended
         * `deleted` - Deleted
@@ -2391,22 +2556,6 @@ components:
         * `active` - Active
         * `error` - Needs attention
         * `disconnected` - Disconnected
-    CreateIssue:
-      type: object
-      properties:
-        expected_version:
-          type: integer
-          minimum: 1
-        title:
-          type: string
-          maxLength: 256
-        body:
-          type: string
-          maxLength: 10000
-      required:
-      - body
-      - expected_version
-      - title
     CreateProblemForReport:
       type: object
       properties:
@@ -2473,6 +2622,8 @@ components:
           type: string
         access:
           $ref: '#/components/schemas/AccessEnum'
+        repository:
+          type: string
         provider_updated_at:
           type: string
           format: date-time
@@ -2480,14 +2631,35 @@ components:
           type: string
           format: date-time
           nullable: true
+        last_attempted_sync_at:
+          type: string
+          format: date-time
+          nullable: true
+        refresh_status:
+          type: string
+          readOnly: true
+        access_reason:
+          type: string
+          readOnly: true
         sync_error:
           type: string
+        stale:
+          type: boolean
+          readOnly: true
+        stale_after:
+          readOnly: true
       required:
       - access
+      - access_reason
       - id
+      - last_attempted_sync_at
       - last_synced_at
       - number
       - provider_updated_at
+      - refresh_status
+      - repository
+      - stale
+      - stale_after
       - state
       - state_reason
       - sync_error
@@ -2514,6 +2686,47 @@ components:
       required:
       - detail
       - reason
+    ExternalOperation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+        destination:
+          type: string
+        remote_issue_id:
+          type: string
+        remote_number:
+          type: integer
+          nullable: true
+        remote_url:
+          type: string
+        safe_error:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - approved_at
+      - completed_at
+      - created_at
+      - destination
+      - id
+      - remote_issue_id
+      - remote_number
+      - remote_url
+      - safe_error
+      - state
     Health:
       type: object
       properties:
@@ -2596,26 +2809,62 @@ components:
       - accept_url
       - email
       - id
-    IssueCreationUncertain:
+    IssueApprove:
       type: object
       properties:
-        detail:
-          type: string
-        reason:
-          type: string
-        field_errors:
-          type: object
-          additionalProperties: {}
-        current:
-          $ref: '#/components/schemas/ProblemDetail'
-        operation_id:
+        draft_id:
           type: string
           format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+        approved:
+          type: boolean
       required:
-      - current
-      - detail
-      - operation_id
-      - reason
+      - approved
+      - draft_id
+      - draft_version
+    IssueDraft:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+          maxLength: 256
+        body:
+          type: string
+          maxLength: 10000
+      required:
+      - expected_version
+    IssueDraftResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+        expires_at:
+          type: string
+          format: date-time
+        title:
+          type: string
+        body:
+          type: string
+        repository:
+          type: string
+        visibility:
+          type: string
+      required:
+      - body
+      - draft_version
+      - expires_at
+      - id
+      - repository
+      - title
+      - visibility
     IssueLinkConflict:
       type: object
       properties:
@@ -2645,6 +2894,52 @@ components:
       required:
       - body
       - title
+    IssueRecovery:
+      type: object
+      properties:
+        reference:
+          type: string
+          maxLength: 500
+    IssueRecoveryResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          type: string
+      required:
+      - id
+      - state
+    IssueRefresh:
+      type: object
+      properties:
+        issue_id:
+          type: string
+          format: uuid
+      required:
+      - issue_id
+    IssueRefreshStatus:
+      type: object
+      properties:
+        issue_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/IssueRefreshStatusStatusEnum'
+      required:
+      - issue_id
+      - status
+    IssueRefreshStatusStatusEnum:
+      enum:
+      - pending
+      - running
+      - idle
+      type: string
+      description: |-
+        * `pending` - pending
+        * `running` - running
+        * `idle` - idle
     LinkIssue:
       type: object
       properties:
@@ -2654,6 +2949,9 @@ components:
         reference:
           type: string
           maxLength: 500
+        replace:
+          type: boolean
+          default: false
       required:
       - expected_version
       - reference
@@ -2743,6 +3041,8 @@ components:
       properties:
         queued:
           type: integer
+        running:
+          type: integer
         failed:
           type: integer
         uncertain:
@@ -2750,6 +3050,7 @@ components:
       required:
       - failed
       - queued
+      - running
       - uncertain
     PaginatedProblemActivityList:
       type: object
@@ -2985,8 +3286,14 @@ components:
           - $ref: '#/components/schemas/EngineeringIssue'
           nullable: true
           readOnly: true
+        current_create_operation:
+          allOf:
+          - $ref: '#/components/schemas/ExternalOperation'
+          nullable: true
+          readOnly: true
       required:
       - created_at
+      - current_create_operation
       - engineering_issue
       - id
       - needs_review
@@ -3036,8 +3343,14 @@ components:
         created_at:
           type: string
           format: date-time
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
       required:
       - created_at
+      - engineering_issue
       - id
       - needs_review
       - owner

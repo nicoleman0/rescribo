@@ -40,6 +40,7 @@ const problem: ProblemListItem = {
   report_count: 2,
   needs_review: false,
   created_at: '2026-09-20T10:00:00Z',
+  engineering_issue: null,
 }
 
 const base = '/api/workspaces/ws-1'

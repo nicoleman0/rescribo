@@ -132,21 +132,17 @@ class ProblemFilterSerializer(serializers.Serializer):
     q = serializers.CharField(max_length=200, required=False, allow_blank=True)
 
 
-class ProblemListItemSerializer(serializers.Serializer):
+class ExternalOperationSerializer(serializers.Serializer):
     id = serializers.UUIDField()
-    title = serializers.CharField()
-    summary_excerpt = serializers.SerializerMethodField()
-    state = serializers.ChoiceField(choices=Problem.State.choices)
-    owner = MemberSummarySerializer(allow_null=True)
-    report_count = serializers.IntegerField()
-    needs_review = serializers.BooleanField()
+    state = serializers.CharField()
+    destination = serializers.CharField()
+    remote_issue_id = serializers.CharField()
+    remote_number = serializers.IntegerField(allow_null=True)
+    remote_url = serializers.CharField()
+    safe_error = serializers.CharField()
     created_at = serializers.DateTimeField()
-
-    def get_summary_excerpt(self, problem: Problem) -> str:
-        summary = " ".join(problem.summary.split())
-        if len(summary) <= SUMMARY_EXCERPT_LENGTH:
-            return summary
-        return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
+    approved_at = serializers.DateTimeField(allow_null=True)
+    completed_at = serializers.DateTimeField(allow_null=True)
 
 
 class EngineeringIssueSerializer(serializers.Serializer):
@@ -157,9 +153,81 @@ class EngineeringIssueSerializer(serializers.Serializer):
     state = serializers.ChoiceField(choices=EngineeringIssue.State.choices)
     state_reason = serializers.CharField()
     access = serializers.ChoiceField(choices=EngineeringIssue.Access.choices)
+    repository = serializers.CharField(source="connection.repository")
     provider_updated_at = serializers.DateTimeField()
-    last_synced_at = serializers.DateTimeField(allow_null=True)
+    last_synced_at = serializers.DateTimeField(source="last_successful_sync_at", allow_null=True)
+    last_attempted_sync_at = serializers.DateTimeField(allow_null=True)
+    refresh_status = serializers.SerializerMethodField()
+    access_reason = serializers.SerializerMethodField()
     sync_error = serializers.CharField()
+    stale = serializers.SerializerMethodField()
+    stale_after = serializers.SerializerMethodField()
+
+    def get_refresh_status(self, issue: EngineeringIssue) -> str:
+        if issue.sync_lease_token is not None:
+            return "running"
+        if issue.sync_requested_generation > issue.sync_completed_generation:
+            return "pending"
+        return "idle"
+
+    def get_access_reason(self, issue: EngineeringIssue) -> str:
+        if issue.connection.status == "disconnected" or not issue.connection.external_id:
+            return "disconnected"
+        if (
+            issue.connection_installation_id != issue.connection.external_id
+            or issue.repository_id != issue.connection.repository_id
+        ):
+            return "binding_changed"
+        return issue.sync_error or issue.connection.error_code
+
+    def get_stale_after(self, issue: EngineeringIssue) -> Any:
+        from datetime import timedelta
+
+        from django.conf import settings
+
+        if issue.last_successful_sync_at is None:
+            return None
+        return issue.last_successful_sync_at + timedelta(
+            seconds=settings.RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS
+        )
+
+    def get_stale(self, issue: EngineeringIssue) -> bool:
+        from datetime import timedelta
+
+        from django.conf import settings
+        from django.utils import timezone
+
+        last_success = issue.last_successful_sync_at
+        return (
+            last_success is None
+            or last_success
+            + timedelta(seconds=settings.RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS)
+            < timezone.now()
+        )
+
+
+class ProblemListItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    summary_excerpt = serializers.SerializerMethodField()
+    state = serializers.ChoiceField(choices=Problem.State.choices)
+    owner = MemberSummarySerializer(allow_null=True)
+    report_count = serializers.IntegerField()
+    needs_review = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+    engineering_issue = serializers.SerializerMethodField()
+
+    @extend_schema_field(EngineeringIssueSerializer(allow_null=True))
+    def get_engineering_issue(self, problem: Problem) -> Any:
+        active = getattr(problem, "active_issues", None)
+        issue = active[0] if active else None
+        return EngineeringIssueSerializer(issue).data if issue is not None else None
+
+    def get_summary_excerpt(self, problem: Problem) -> str:
+        summary = " ".join(problem.summary.split())
+        if len(summary) <= SUMMARY_EXCERPT_LENGTH:
+            return summary
+        return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
 
 
 class ProblemDetailSerializer(serializers.Serializer):
@@ -175,12 +243,29 @@ class ProblemDetailSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     engineering_issue = serializers.SerializerMethodField()
+    current_create_operation = serializers.SerializerMethodField()
 
     @extend_schema_field(EngineeringIssueSerializer(allow_null=True))
     def get_engineering_issue(self, problem: Problem) -> Any:
         active = getattr(problem, "active_issues", None)
         issue = active[0] if active else None
         return EngineeringIssueSerializer(issue).data if issue is not None else None
+
+    @extend_schema_field(ExternalOperationSerializer(allow_null=True))
+    def get_current_create_operation(self, problem: Problem) -> Any:
+        from operations.models import ExternalOperation
+
+        operation = (
+            ExternalOperation.objects.filter(
+                workspace_id=problem.workspace_id,
+                problem_id=problem.pk,
+                kind=ExternalOperation.Kind.GITHUB_ISSUE_CREATE,
+            )
+            .exclude(state__in=["draft", "cancelled"])
+            .order_by("-created_at")
+            .first()
+        )
+        return ExternalOperationSerializer(operation).data if operation is not None else None
 
 
 class RecordReferenceSerializer(serializers.Serializer):
@@ -282,11 +367,52 @@ class ProblemOwnerSerializer(VersionedSerializer):
 
 class LinkIssueSerializer(VersionedSerializer):
     reference = serializers.CharField(max_length=500)
+    replace = serializers.BooleanField(required=False, default=False)
 
 
 class IssuePreviewSerializer(serializers.Serializer):
     title = serializers.CharField()
     body = serializers.CharField()
+
+
+class IssueDraftSerializer(serializers.Serializer):
+    expected_version = serializers.IntegerField(min_value=1)
+    title = serializers.CharField(max_length=256, required=False, allow_blank=False)
+    body = serializers.CharField(max_length=10000, required=False, allow_blank=True)
+
+
+class IssueDraftResultSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    draft_version = serializers.IntegerField()
+    expires_at = serializers.DateTimeField()
+    title = serializers.CharField()
+    body = serializers.CharField()
+    repository = serializers.CharField()
+    visibility = serializers.CharField()
+
+
+class IssueApproveSerializer(serializers.Serializer):
+    draft_id = serializers.UUIDField()
+    draft_version = serializers.IntegerField(min_value=1)
+    approved = serializers.BooleanField()
+
+
+class IssueRecoverySerializer(serializers.Serializer):
+    reference = serializers.CharField(max_length=500, required=False, allow_blank=False)
+
+
+class IssueRefreshSerializer(serializers.Serializer):
+    issue_id = serializers.UUIDField()
+
+
+class IssueRefreshStatusSerializer(serializers.Serializer):
+    issue_id = serializers.UUIDField()
+    status = serializers.ChoiceField(choices=["pending", "running", "idle"])
+
+
+class IssueRecoveryResultSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    state = serializers.CharField()
 
 
 class CreateIssueSerializer(VersionedSerializer):

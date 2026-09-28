@@ -22,6 +22,7 @@ const listItem: ProblemListItem = {
   report_count: 2,
   needs_review: true,
   created_at: '2026-09-20T10:00:00Z',
+  engineering_issue: null,
 }
 
 const detail: ProblemDetail = {
@@ -37,6 +38,7 @@ const detail: ProblemDetail = {
   created_at: '2026-09-20T10:00:00Z',
   updated_at: '2026-09-20T10:00:00Z',
   engineering_issue: null,
+  current_create_operation: null,
 }
 
 const linkedReport: ReportDetail = {

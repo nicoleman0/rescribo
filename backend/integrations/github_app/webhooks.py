@@ -37,6 +37,8 @@ class IssueEvent:
     repository: str
     state_reason: str | None
     updated_at: str
+    repository_id: str = ""
+    issue_id: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -55,11 +57,30 @@ def parse_issue_event(payload: Mapping[str, Any]) -> IssueEvent | None:
     if not isinstance(issue, dict) or not isinstance(repository, dict):
         raise InvalidWebhookPayload("The issues event lacks issue or repository data.")
     number = issue.get("number")
+    issue_id = issue.get("id")
     full_name = repository.get("full_name")
+    repository_id = repository.get("id")
     updated_at = issue.get("updated_at")
     state_reason = issue.get("state_reason")
-    if not (isinstance(number, int) and isinstance(full_name, str) and isinstance(updated_at, str)):
+    if not (
+        isinstance(number, int)
+        and not isinstance(number, bool)
+        and number > 0
+        and isinstance(issue_id, int)
+        and not isinstance(issue_id, bool)
+        and issue_id > 0
+        and isinstance(repository_id, int)
+        and not isinstance(repository_id, bool)
+        and repository_id > 0
+        and isinstance(full_name, str)
+        and "/" in full_name
+        and isinstance(updated_at, str)
+    ):
         raise InvalidWebhookPayload("The issues event has an invalid issue payload.")
+    try:
+        provider_time(updated_at)
+    except (ValueError, OverflowError) as error:
+        raise InvalidWebhookPayload("The issues event has an invalid updated_at value.") from error
     if state_reason is not None and not isinstance(state_reason, str):
         raise InvalidWebhookPayload("The issues event has an invalid state_reason.")
     return IssueEvent(
@@ -68,6 +89,8 @@ def parse_issue_event(payload: Mapping[str, Any]) -> IssueEvent | None:
         repository=full_name,
         state_reason=state_reason,
         updated_at=updated_at,
+        repository_id=str(repository_id),
+        issue_id=str(issue_id),
     )
 
 
@@ -77,6 +100,8 @@ class InstallationEvent:
     action: str
     repositories_removed: tuple[str, ...]
     access_lost: bool
+    repositories_removed_ids: tuple[str, ...] = ()
+    repositories_added_ids: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -98,21 +123,30 @@ def parse_installation_event(
         )
     if event_name == "installation_repositories":
         action = payload.get("action")
-        if action != "removed":
+        if action not in {"removed", "added"}:
             return None
-        removed = payload.get("repositories_removed")
+        field = "repositories_removed" if action == "removed" else "repositories_added"
+        removed = payload.get(field)
         if not isinstance(removed, list):
             raise InvalidWebhookPayload("The installation_repositories event is malformed.")
-        names = tuple(
-            repository["full_name"]
+        if any(
+            not isinstance(repository, dict)
+            or not isinstance(repository.get("id"), int)
+            or isinstance(repository.get("id"), bool)
+            or repository["id"] <= 0
+            or not isinstance(repository.get("full_name"), str)
             for repository in removed
-            if isinstance(repository, dict) and isinstance(repository.get("full_name"), str)
-        )
+        ):
+            raise InvalidWebhookPayload("The installation_repositories event is malformed.")
+        names = tuple(repository["full_name"] for repository in removed)
+        ids = tuple(str(repository["id"]) for repository in removed)
         return InstallationEvent(
             event=event_name,
-            action="removed",
+            action=action,
             repositories_removed=names,
-            access_lost=True,
+            access_lost=action == "removed",
+            repositories_removed_ids=ids if action == "removed" else (),
+            repositories_added_ids=ids if action == "added" else (),
         )
     return None
 
@@ -141,8 +175,10 @@ def apply_issue_event(
     *,
     installation_token: str,
     expected_repository: str,
+    expected_repository_id: str = "",
     event: IssueEvent,
     stored_updated_at: str | None,
+    stored_state: str | None = None,
 ) -> IssueStateOutcome:
     """Apply a verified issues event after fetching current state from GitHub.
 
@@ -179,7 +215,15 @@ def apply_issue_event(
             )
         raise
     snapshot = parse_issue_payload(issue, error=InvalidWebhookPayload)
-    applied = stored_updated_at is None or provider_time(snapshot.updated_at) > provider_time(
-        stored_updated_at
+    if expected_repository_id and snapshot.repository_id != expected_repository_id:
+        raise InvalidWebhookPayload("The fetched issue belongs to another repository identity.")
+    if event.issue_id and snapshot.issue_id != event.issue_id:
+        raise InvalidWebhookPayload("The fetched issue has a different stable identity.")
+    fetched_time = provider_time(snapshot.updated_at)
+    stored_time = provider_time(stored_updated_at) if stored_updated_at else None
+    applied = (
+        stored_time is None
+        or fetched_time > stored_time
+        or (fetched_time == stored_time and snapshot.state != stored_state)
     )
     return IssueStateOutcome(number=event.number, applied=applied, access="ok", snapshot=snapshot)

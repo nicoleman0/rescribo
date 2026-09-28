@@ -235,6 +235,7 @@ class ReportNotificationOperation(models.Model):
         MOVED = "moved", "Report moved to another problem"
         UNLINKED = "unlinked", "Report ungrouped"
         ISSUE_REOPENED = "issue_reopened", "Linked GitHub issue reopened"
+        ISSUE_RELINKED = "issue_relinked", "GitHub issue link replaced"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(
@@ -296,6 +297,8 @@ class EngineeringIssue(models.Model):
 
     class Access(models.TextChoices):
         OK = "ok", "OK"
+        INACCESSIBLE = "inaccessible", "Inaccessible"
+        DISCONNECTED = "disconnected", "Disconnected"
         ACCESS_LOST = "access_lost", "Access lost"
         SUSPENDED = "suspended", "Suspended"
         DELETED = "deleted", "Deleted"
@@ -318,6 +321,17 @@ class EngineeringIssue(models.Model):
     access = models.CharField(max_length=16, choices=Access.choices, default=Access.OK)
     provider_updated_at = models.DateTimeField()
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_attempted_sync_at = models.DateTimeField(null=True, blank=True)
+    last_successful_sync_at = models.DateTimeField(null=True, blank=True)
+    connection_binding_revision = models.PositiveIntegerField(default=1)
+    connection_installation_id = models.CharField(max_length=64, blank=True, default="")
+    last_applied_reopen_event_at = models.DateTimeField(null=True, blank=True)
+    sync_lease_token = models.UUIDField(null=True, blank=True)
+    sync_lease_expires_at = models.DateTimeField(null=True, blank=True)
+    sync_requested_generation = models.PositiveBigIntegerField(default=0)
+    sync_completed_generation = models.PositiveBigIntegerField(default=0)
+    sync_attempts = models.PositiveIntegerField(default=0)
+    sync_retry_at = models.DateTimeField(null=True, blank=True)
     sync_error = models.CharField(max_length=200, blank=True, default="")
     active = models.BooleanField(default=True)
     created_by = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="+")
@@ -330,9 +344,7 @@ class EngineeringIssue(models.Model):
                 fields=["problem"], condition=Q(active=True), name="one_active_issue_per_problem"
             ),
             models.UniqueConstraint(
-                fields=["workspace", "repository_id", "issue_id"],
-                condition=Q(active=True),
-                name="one_active_problem_per_issue",
+                fields=["workspace", "issue_id"], name="one_problem_per_github_issue"
             ),
         ]
         indexes = [models.Index(fields=["workspace", "active"], name="eng_issue_ws_active_idx")]

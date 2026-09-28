@@ -2,6 +2,7 @@ import base64
 import json
 import time
 from collections.abc import Mapping
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -12,9 +13,18 @@ from cryptography.hazmat.primitives.asymmetric import padding, rsa
 class GitHubAPIError(RuntimeError):
     """A safe GitHub API error which does not include response content."""
 
-    def __init__(self, operation: str, status_code: int) -> None:
+    def __init__(
+        self,
+        operation: str,
+        status_code: int,
+        *,
+        retry_after_seconds: int | None = None,
+        rate_limited: bool = False,
+    ) -> None:
         super().__init__(f"GitHub {operation} failed with HTTP {status_code}.")
         self.status_code = status_code
+        self.retry_after_seconds = retry_after_seconds
+        self.rate_limited = rate_limited
 
 
 def _base64url(value: bytes) -> str:
@@ -64,7 +74,25 @@ class GitHubAppClient:
             params=params,
         )
         if response.is_error or response.is_redirect:
-            raise GitHubAPIError(operation, response.status_code)
+            retry_after: int | None = None
+            raw_retry_after = response.headers.get("Retry-After")
+            if raw_retry_after and raw_retry_after.isdigit():
+                retry_after = int(raw_retry_after)
+            elif response.headers.get("X-RateLimit-Reset", "").isdigit():
+                reset_at = int(response.headers["X-RateLimit-Reset"])
+                retry_after = max(0, reset_at - int(datetime.now(UTC).timestamp()))
+            rate_limited = response.status_code == 429 or (
+                response.status_code == 403
+                and (
+                    response.headers.get("X-RateLimit-Remaining") == "0" or retry_after is not None
+                )
+            )
+            raise GitHubAPIError(
+                operation,
+                response.status_code,
+                retry_after_seconds=retry_after,
+                rate_limited=rate_limited,
+            )
         if response.status_code == 204 or not response.content:
             return {}
         data = response.json()
@@ -120,14 +148,27 @@ class GitHubAppClient:
         )
 
     def create_installation_token(
-        self, *, installation_id: int, repository: str
+        self,
+        *,
+        installation_id: int,
+        repository: str | None = None,
+        repository_id: str | None = None,
     ) -> tuple[str, str]:
+        if (repository is None) == (repository_id is None):
+            raise ValueError("Supply exactly one selected repository name or ID.")
+        selection: dict[str, Any]
+        if repository_id is not None and repository_id.isdigit() and int(repository_id) > 0:
+            selection = {"repository_ids": [int(repository_id)]}
+        elif repository is not None:
+            selection = {"repositories": [repository]}
+        else:
+            raise ValueError("A positive stable GitHub repository ID is required.")
         data = self._request(
             "POST",
             f"/app/installations/{installation_id}/access_tokens",
             operation="installation token creation",
             json_body={
-                "repositories": [repository],
+                **selection,
                 "permissions": {"issues": "write", "metadata": "read"},
             },
         )
@@ -143,6 +184,18 @@ class GitHubAppClient:
             f"/repos/{owner}/{name}",
             token=installation_token,
             operation="selected repository lookup",
+        )
+
+    def get_repository_by_id(
+        self, *, installation_token: str, repository_id: str
+    ) -> dict[str, Any]:
+        if not repository_id.isdigit() or int(repository_id) <= 0:
+            raise ValueError("A stable GitHub repository ID is required.")
+        return self._request(
+            "GET",
+            f"/repositories/{repository_id}",
+            token=installation_token,
+            operation="repository identity lookup",
         )
 
     def create_issue(
@@ -171,6 +224,28 @@ class GitHubAppClient:
             token=installation_token,
             operation="issue lookup",
         )
+
+    def list_issues(
+        self, *, installation_token: str, owner: str, name: str, page: int
+    ) -> tuple[list[dict[str, Any]], bool]:
+        """Return one repository issues page and whether another page may exist."""
+        response = self._http.get(
+            f"/repos/{owner}/{name}/issues",
+            headers={
+                "Accept": "application/vnd.github+json",
+                "Authorization": f"Bearer {installation_token}",
+                "X-GitHub-Api-Version": "2026-03-10",
+            },
+            params={"state": "all", "per_page": 100, "page": page},
+        )
+        if response.is_error or response.is_redirect:
+            raise GitHubAPIError("issue listing", response.status_code)
+        data = response.json()
+        if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+            raise RuntimeError("GitHub returned an invalid issue list.")
+        link = response.headers.get("Link", "")
+        has_next = any('rel="next"' in part for part in link.split(","))
+        return data, has_next
 
     def update_issue_state(
         self, *, installation_token: str, owner: str, name: str, number: int, state: str

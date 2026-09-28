@@ -115,6 +115,7 @@ def make_engineering_issue(
         "problem": problem,
         "connection": connection,
         "repository_id": connection.repository_id,
+        "connection_installation_id": connection.external_id,
         "issue_id": "555",
         "number": 7,
         "url": "https://github.com/acme/widgets/issues/7",

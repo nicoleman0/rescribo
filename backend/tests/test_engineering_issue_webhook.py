@@ -1,6 +1,6 @@
 """Tests for applying verified GitHub issue and installation webhook events."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -33,6 +33,7 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": None,
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
+    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -45,6 +46,7 @@ def github_mock(
 ) -> MagicMock:
     client = MagicMock()
     client.create_installation_token.return_value = ("installation-token", "expires")
+    client.get_repository_by_id.return_value = {"id": 999, "full_name": "acme/widgets"}
     if get_issue_error is not None:
         client.get_issue.side_effect = get_issue_error
     else:
@@ -66,6 +68,8 @@ def issue_event(*, action: str, state_reason: str | None = None, updated_at: str
         repository="acme/widgets",
         state_reason=state_reason,
         updated_at=updated_at,
+        repository_id="999",
+        issue_id="555",
     )
 
 
@@ -146,13 +150,19 @@ def test_reopened_event_returns_fix_available_problem_to_in_progress() -> None:
     assert confirmed.state == Problem.State.FIX_AVAILABLE
     pending = make_notification(report=report, state="queued")
     sent = make_notification(report=report, state="sent")
-    reopened = {**ISSUE_PAYLOAD, "state": "open", "state_reason": None}
+    reopen_time = timezone.now() + timedelta(seconds=5)
+    reopened = {
+        **ISSUE_PAYLOAD,
+        "state": "open",
+        "state_reason": None,
+        "updated_at": reopen_time.isoformat(),
+    }
 
     factory = patched_client(github_mock(get_issue=reopened))
     try:
         apply_issue_webhook(
             installation_id=connection.external_id,
-            event=issue_event(action="reopened", updated_at="2026-09-20T21:10:00Z"),
+            event=issue_event(action="reopened", updated_at=reopen_time.isoformat()),
         )
     finally:
         factory.stop()
@@ -185,6 +195,8 @@ def test_stale_delivery_does_not_regress_state_or_timestamp() -> None:
         state_reason="completed",
         provider_updated_at=stored_time,
     )
+    problem.fix_confirmed_at = stored_time + timedelta(days=1)
+    problem.save(update_fields=["fix_confirmed_at"])
     # GitHub's current answer is now OLDER than what we already stored (a replayed
     # or out-of-order delivery), so the fetch must not roll state backward.
     stale_fetch = {
@@ -233,7 +245,7 @@ def test_inaccessible_issue_is_marked_access_lost_not_closed() -> None:
         factory.stop()
 
     issue.refresh_from_db()
-    assert issue.access == EngineeringIssue.Access.ACCESS_LOST
+    assert issue.access == EngineeringIssue.Access.INACCESSIBLE
     assert issue.state == "open"  # unchanged: unknown, not closed
 
 

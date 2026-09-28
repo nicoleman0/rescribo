@@ -21,6 +21,7 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": None,
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
+    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -40,6 +41,7 @@ def github_mock(*, issue: dict[str, Any] | None = None) -> MagicMock:
     client = MagicMock()
     client.create_installation_token.return_value = ("installation-token", "expires")
     client.get_issue.return_value = issue if issue is not None else dict(ISSUE_PAYLOAD)
+    client.get_repository_by_id.return_value = {"id": 999, "full_name": "acme/widgets"}
     return client
 
 
@@ -51,11 +53,17 @@ def patched_client(client: MagicMock) -> Any:
 
 
 def link(
-    client: Client, actor: Membership, problem: Any, *, reference: str = "7", version: int = 1
+    client: Client,
+    actor: Membership,
+    problem: Any,
+    *,
+    reference: str = "7",
+    version: int = 1,
+    replace: bool = False,
 ) -> Any:
     return client.post(
         link_url(actor, problem.pk),
-        {"reference": reference, "expected_version": version},
+        {"reference": reference, "expected_version": version, "replace": replace},
         content_type="application/json",
     )
 
@@ -117,7 +125,7 @@ def test_link_rejects_issue_from_other_repository(client: Client) -> None:
     assert response.json()["reason"] == "issue_reference_rejected"
 
 
-def test_link_rejects_relinking_the_same_issue_to_the_same_problem(client: Client) -> None:
+def test_linking_the_same_current_issue_is_a_noop_success(client: Client) -> None:
     actor = make_membership()
     make_connection(workspace=actor.workspace)
     problem = make_problem(actor=actor)
@@ -131,8 +139,7 @@ def test_link_rejects_relinking_the_same_issue_to_the_same_problem(client: Clien
     finally:
         factory.stop()
 
-    assert second.status_code == 409
-    assert second.json()["reason"] == "issue_already_linked"
+    assert second.status_code == 200
     assert EngineeringIssue.objects.filter(problem=problem, active=True).count() == 1
 
 
@@ -167,10 +174,17 @@ def test_link_supersedes_the_problems_existing_active_issue(client: Client) -> N
     try:
         first = link(client, actor, problem)
         assert first.status_code == 200
-        other_issue = {**ISSUE_PAYLOAD, "id": 999, "number": 9}
+        other_issue = {
+            **ISSUE_PAYLOAD,
+            "id": 999,
+            "number": 9,
+            "html_url": "https://github.com/acme/widgets/issues/9",
+        }
         factory.stop()
         factory = patched_client(github_mock(issue=other_issue))
-        second = link(client, actor, problem, reference="9", version=first.json()["version"])
+        second = link(
+            client, actor, problem, reference="9", version=first.json()["version"], replace=True
+        )
     finally:
         factory.stop()
 

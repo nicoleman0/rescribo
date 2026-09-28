@@ -15,7 +15,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.views import ErrorSerializer, WorkspaceView
-from feedback.engineering_issues import create_issue, link_issue, preview_issue, refresh_issue
+from feedback.engineering_issues import link_issue, preview_issue, refresh_issue
 from feedback.errors import FeedbackError, NotFound, TitleRequired
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
 from feedback.inbox import get_report, search_reports, workspace_directory
@@ -39,12 +39,18 @@ from feedback.reports import (
 )
 from feedback.serializers import (
     AssignReportSerializer,
-    CreateIssueSerializer,
     CreateProblemForReportSerializer,
+    ExternalOperationSerializer,
     InboxFilterSerializer,
-    IssueCreationUncertainSerializer,
+    IssueApproveSerializer,
+    IssueDraftResultSerializer,
+    IssueDraftSerializer,
     IssueLinkConflictSerializer,
     IssuePreviewSerializer,
+    IssueRecoveryResultSerializer,
+    IssueRecoverySerializer,
+    IssueRefreshSerializer,
+    IssueRefreshStatusSerializer,
     LinkIssueSerializer,
     LinkReportSerializer,
     ManualReportSerializer,
@@ -61,6 +67,13 @@ from feedback.serializers import (
     ReportListItemSerializer,
     VersionedSerializer,
 )
+from operations.github_issue_create import (
+    approve_draft,
+    create_draft,
+    exact_body,
+    operation_for_member,
+)
+from operations.models import ExternalOperation
 
 READ_ERRORS = {401: ErrorSerializer, 404: ErrorSerializer}
 WRITE_ERRORS = {
@@ -379,6 +392,7 @@ class ProblemIssueLinkView(ProblemActionView):
             problem_id=problem_id,
             expected_version=data["expected_version"],
             reference=data["reference"],
+            replace=data["replace"],
         )
         return issue.problem
 
@@ -392,37 +406,119 @@ class ProblemIssuePreviewView(WorkspaceView):
             raise exceptions.NotFound() from None
         return Response(IssuePreviewSerializer(preview).data)
 
-
-@extend_schema_view(
-    post=extend_schema(
-        request=CreateIssueSerializer,
-        responses={
-            201: ProblemDetailSerializer,
-            409: IssueCreationUncertainSerializer,
-            **WRITE_ERRORS,
-        },
+    @method_decorator(csrf_protect)
+    @extend_schema(
+        request=IssueDraftSerializer,
+        responses={201: IssueDraftResultSerializer, **WRITE_ERRORS},
     )
-)
-class ProblemIssueCreateView(ProblemActionView):
-    input_serializer = CreateIssueSerializer
-    success_status = 201
-
-    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
-        issue = create_issue(
+    def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
+        data = IssueDraftSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        operation = create_draft(
             actor=self.membership,
             problem_id=problem_id,
-            expected_version=data["expected_version"],
-            title=data["title"],
-            body=data["body"],
+            **data.validated_data,
         )
-        return issue.problem
+        response = {
+            "id": operation.pk,
+            "draft_version": operation.draft_version,
+            "expires_at": operation.expires_at,
+            "title": operation.title,
+            "body": exact_body(operation),
+            "repository": operation.destination,
+            "visibility": operation.connection.visibility,
+        }
+        return Response(IssueDraftResultSerializer(response).data, status=201)
 
 
-@extend_schema_view(post=problem_action_schema(VersionedSerializer))
-class ProblemIssueRefreshView(ProblemActionView):
-    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
-        return refresh_issue(
+@method_decorator(csrf_protect, name="dispatch")
+class ProblemIssueApproveView(WorkspaceView):
+    @extend_schema(
+        request=IssueApproveSerializer, responses={202: ExternalOperationSerializer, **WRITE_ERRORS}
+    )
+    def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
+        data = IssueApproveSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        operation = approve_draft(
+            actor=self.membership, problem_id=problem_id, **data.validated_data
+        )
+        return Response(ExternalOperationSerializer(operation).data, status=202)
+
+
+class ProblemExternalOperationView(WorkspaceView):
+    @extend_schema(responses={200: ExternalOperationSerializer, **READ_ERRORS})
+    def get(
+        self, request: Request, workspace_id: UUID, problem_id: UUID, operation_id: UUID
+    ) -> Response:
+        operation = operation_for_member(
             actor=self.membership,
             problem_id=problem_id,
-            expected_version=data["expected_version"],
+            operation_id=operation_id,
         )
+        return Response(ExternalOperationSerializer(operation).data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ProblemIssueRecoveryView(WorkspaceView):
+    @extend_schema(
+        request=IssueRecoverySerializer,
+        responses={202: IssueRecoveryResultSerializer, **WRITE_ERRORS},
+    )
+    def post(
+        self, request: Request, workspace_id: UUID, problem_id: UUID, operation_id: UUID
+    ) -> Response:
+        data = IssueRecoverySerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        operation = operation_for_member(
+            actor=self.membership,
+            problem_id=problem_id,
+            operation_id=operation_id,
+        )
+        if operation.state != ExternalOperation.State.UNCERTAIN:
+            return Response({"reason": "operation_not_uncertain"}, status=409)
+        reference = data.validated_data.get("reference", "")
+        if reference:
+            from integrations.github_app.issues import parse_issue_reference
+
+            try:
+                parse_issue_reference(
+                    reference, expected_repository=operation.connection.repository
+                )
+            except ValueError:
+                return Response({"reason": "issue_reference_rejected"}, status=400)
+        operation.recovery_reference = reference
+        operation.save(update_fields=["recovery_reference"])
+        from operations.tasks import reconcile_github_issue_create
+
+        reconcile_github_issue_create.delay(str(operation.pk))
+        return Response({"id": operation.pk, "state": operation.state}, status=202)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class ProblemIssueRefreshView(WorkspaceView):
+    @extend_schema(
+        request=IssueRefreshSerializer,
+        responses={202: IssueRefreshStatusSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
+        data = IssueRefreshSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            issue = refresh_issue(
+                actor=self.membership,
+                problem_id=problem_id,
+                expected_issue_id=data.validated_data["issue_id"],
+            )
+        except NotFound:
+            raise exceptions.NotFound() from None
+        except FeedbackError as error:
+            return feedback_error_response(
+                error,
+                current=lambda: (
+                    ProblemDetailSerializer(
+                        get_problem(actor=self.membership, problem_id=problem_id)
+                    ).data
+                ),
+            )
+        status = "running" if issue.sync_lease_token else "pending"
+        return Response({"issue_id": issue.pk, "status": status}, status=202)
