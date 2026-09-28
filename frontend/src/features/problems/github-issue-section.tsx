@@ -53,13 +53,12 @@ export function GitHubIssueSection({
     setBusy(true)
     setError(null)
     try {
-      const updated = await refreshGitHubIssue(workspaceId, problem.id, {
+      await refreshGitHubIssue(workspaceId, problem.id, {
         issue_id: issue?.id ?? '',
       })
       void client.invalidateQueries({
         queryKey: problemKeys.detail(workspaceId, problem.id),
       })
-      if (updated.status === 'pending') setBusy(false)
     } catch (cause) {
       setError(cause as ApiError)
     } finally {

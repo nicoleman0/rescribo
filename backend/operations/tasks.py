@@ -1,6 +1,6 @@
 """Leased GitHub issue operations and recovery tasks."""
 
-from datetime import timedelta
+import logging
 from uuid import UUID, uuid4
 
 import httpx
@@ -10,7 +10,11 @@ from django.utils import timezone
 
 from accounts.models import Membership, Workspace
 from connections.models import Connection
-from feedback.engineering_issues import _supersede_and_create
+from feedback.engineering_issues import (
+    apply_installation_webhook,
+    apply_issue_webhook,
+    record_created_issue,
+)
 from feedback.models import Activity, EngineeringIssue, Problem
 from integrations.github_app.client import GitHubAPIError
 from integrations.github_app.issues import (
@@ -18,9 +22,15 @@ from integrations.github_app.issues import (
     parse_issue_payload,
     parse_issue_reference,
 )
+from integrations.github_app.repository import selected_repository
 from integrations.github_app.settings import github_client
+from integrations.github_app.webhooks import InstallationEvent, IssueEvent
+from operations.dispatch import dispatch_task
 from operations.github_issue_create import LEASE_TTL, exact_body, marker_for
 from operations.models import ExternalOperation, InboundReceipt
+from operations.retries import MAX_ATTEMPTS, next_retry_at
+
+logger = logging.getLogger(__name__)
 
 
 def _mark(operation_id: UUID, token: UUID, *, state: str, safe_error: str) -> None:
@@ -128,81 +138,46 @@ def process_github_issue_create(operation_id: str) -> None:
             )
             return
 
-    owner, name = connection.repository.split("/", 1)
+    write_started = False
     try:
-        with github_client() as client:
-            token_value, _ = client.create_installation_token(
-                installation_id=int(operation.connection.external_id),
+        with (
+            github_client() as client,
+            selected_repository(
+                client,
+                installation_id=connection.external_id,
                 repository_id=operation.repository_id,
+            ) as (token_value, canonical),
+        ):
+            owner, name = canonical.split("/", 1)
+            write_started = True
+            created = client.create_issue(
+                installation_token=token_value,
+                owner=owner,
+                name=name,
+                title=operation.title,
+                body=exact_body(operation),
             )
-            try:
-                try:
-                    repository = client.get_repository_by_id(
-                        installation_token=token_value,
-                        repository_id=operation.repository_id,
-                    )
-                except Exception:
-                    _mark(
-                        operation_uuid,
-                        token,
-                        state=ExternalOperation.State.FAILED,
-                        safe_error="repository_unavailable",
-                    )
-                    return
-                if str(repository.get("id")) != operation.connection.repository_id:
-                    _mark(
-                        operation_uuid,
-                        token,
-                        state=ExternalOperation.State.FAILED,
-                        safe_error="repository_identity_changed",
-                    )
-                    return
-                canonical = repository.get("full_name")
-                if not isinstance(canonical, str) or canonical.count("/") != 1:
-                    _mark(
-                        operation_uuid,
-                        token,
-                        state=ExternalOperation.State.FAILED,
-                        safe_error="repository_identity_changed",
-                    )
-                    return
-                owner, name = canonical.split("/", 1)
-                created = client.create_issue(
-                    installation_token=token_value,
-                    owner=owner,
-                    name=name,
-                    title=operation.title,
-                    body=exact_body(operation),
-                )
-            finally:
-                try:
-                    client.revoke_installation_token(token=token_value)
-                except Exception:
-                    pass
-        snapshot = parse_issue_payload(created, error=IssueLinkError)
-    except httpx.TimeoutException:
+            snapshot = parse_issue_payload(created, error=IssueLinkError)
+            # Preserve known remote IDs even if the lease expires or linking rolls back.
+            ExternalOperation.objects.filter(pk=operation_uuid).update(
+                remote_issue_id=snapshot.issue_id,
+                remote_number=snapshot.number,
+                remote_url=snapshot.url,
+            )
+    except Exception as error:
+        ambiguous = write_started and not isinstance(
+            error, (httpx.ConnectTimeout, httpx.ConnectError, httpx.PoolTimeout)
+        )
+        if isinstance(error, GitHubAPIError) and error.status_code < 500:
+            ambiguous = False
+        logger.warning("GitHub create failed during %s", "write" if write_started else "preflight")
         _mark(
             operation_uuid,
             token,
-            state=ExternalOperation.State.UNCERTAIN,
-            safe_error="write_timeout",
-        )
-        return
-    except GitHubAPIError as error:
-        state = (
-            ExternalOperation.State.UNCERTAIN
-            if error.status_code >= 500
-            else ExternalOperation.State.FAILED
-        )
-        _mark(operation_uuid, token, state=state, safe_error="provider_error")
-        return
-    except Exception:
-        # A malformed success or transport failure after dispatch may follow a write.
-        _mark(
-            operation_uuid,
-            token,
-            state=ExternalOperation.State.UNCERTAIN,
-            safe_error="write_outcome_unknown",
+            state=ExternalOperation.State.UNCERTAIN
+            if ambiguous
+            else ExternalOperation.State.FAILED,
+            safe_error="write_outcome_unknown" if ambiguous else "provider_unavailable",
         )
         return
 
@@ -243,7 +218,7 @@ def process_github_issue_create(operation_id: str) -> None:
             member = Membership.objects.get(
                 pk=operation.requester_id, workspace_id=operation.workspace_id
             )
-            issue = _supersede_and_create(
+            issue = record_created_issue(
                 actor=member,
                 problem=problem,
                 connection=connection,
@@ -274,6 +249,7 @@ def process_github_issue_create(operation_id: str) -> None:
             connection.last_success_at = timezone.now()
             connection.save(update_fields=["last_success_at"])
     except Exception:
+        logger.warning("GitHub create result could not be linked")
         # The POST already returned success. Never submit it a second time.
         _mark(
             operation_uuid,
@@ -286,6 +262,9 @@ def process_github_issue_create(operation_id: str) -> None:
 @shared_task
 def dispatch_due_operations() -> None:
     now = timezone.now()
+    ExternalOperation.objects.filter(
+        state=ExternalOperation.State.DRAFT, expires_at__lte=now
+    ).delete()
     ids = list(
         ExternalOperation.objects.filter(
             state=ExternalOperation.State.QUEUED,
@@ -298,8 +277,8 @@ def dispatch_due_operations() -> None:
         process_github_issue_create.delay(str(operation_id))
     receipts = (
         InboundReceipt.objects.filter(
-            status=InboundReceipt.Status.PENDING,
-            retry_at__lte=now,
+            models.Q(status=InboundReceipt.Status.PENDING, retry_at__lte=now)
+            | models.Q(status=InboundReceipt.Status.RUNNING, lease_expires_at__lte=now)
         )
         .order_by("retry_at")
         .values_list("pk", flat=True)[:200]
@@ -319,15 +298,17 @@ def dispatch_due_operations() -> None:
         .order_by("last_attempted_sync_at")
         .values_list("pk", flat=True)[:200]
     )
-    from feedback.tasks import sync_github_issue
-
     for issue_id in pending_issue_ids:
-        sync_github_issue.delay(str(issue_id))
-    recovery_ids = ExternalOperation.objects.filter(
-        state=ExternalOperation.State.UNCERTAIN,
-        recovery_reference__gt="",
-        due_at__lte=now,
-    ).values_list("pk", flat=True)[:200]
+        dispatch_task("feedback.tasks.sync_github_issue", str(issue_id))
+    recovery_ids = (
+        ExternalOperation.objects.filter(
+            state=ExternalOperation.State.UNCERTAIN,
+            recovery_requested=True,
+            due_at__lte=now,
+        )
+        .filter(models.Q(lease_expires_at__isnull=True) | models.Q(lease_expires_at__lte=now))
+        .values_list("pk", flat=True)[:200]
+    )
     for operation_id in recovery_ids:
         reconcile_github_issue_create.delay(str(operation_id))
     # A running lease that expires after a POST is uncertain; it is never resent.
@@ -351,7 +332,10 @@ def process_inbound_receipt(receipt_id: str) -> None:
     token = uuid4()
     with transaction.atomic():
         receipt = InboundReceipt.objects.select_for_update().filter(pk=receipt_uuid).first()
-        if receipt is None or receipt.status == InboundReceipt.Status.SUCCEEDED:
+        if receipt is None or receipt.status in {
+            InboundReceipt.Status.SUCCEEDED,
+            InboundReceipt.Status.FAILED,
+        }:
             return
         if receipt.retry_at > now:
             return
@@ -372,20 +356,13 @@ def process_inbound_receipt(receipt_id: str) -> None:
         attempts = receipt.attempts
     try:
         if event_name == "issues":
-            from integrations.github_app.webhooks import IssueEvent
-
             issue_event = IssueEvent(**normalized)
-            from feedback.engineering_issues import apply_issue_webhook
-
             apply_issue_webhook(installation_id=installation_id, event=issue_event)
         elif event_name in {"installation", "installation_repositories"}:
-            from integrations.github_app.webhooks import InstallationEvent
-
             installation_event = InstallationEvent(**normalized)
-            from feedback.engineering_issues import apply_installation_webhook
-
             apply_installation_webhook(installation_id=installation_id, event=installation_event)
     except Exception:
+        logger.warning("Inbound GitHub receipt processing failed")
         with transaction.atomic():
             current = (
                 InboundReceipt.objects.select_for_update()
@@ -398,10 +375,12 @@ def process_inbound_receipt(receipt_id: str) -> None:
             if current is None:
                 return
             current.status = (
-                InboundReceipt.Status.FAILED if attempts >= 12 else InboundReceipt.Status.PENDING
+                InboundReceipt.Status.FAILED
+                if attempts >= MAX_ATTEMPTS
+                else InboundReceipt.Status.PENDING
             )
             current.safe_error = "processing_failed"
-            current.retry_at = now + timedelta(seconds=min(3600, 2 ** min(attempts, 10)))
+            current.retry_at = next_retry_at(now=now, attempts=attempts)
             current.lease_token = None
             current.lease_expires_at = None
             current.save(
@@ -432,25 +411,16 @@ def revalidate_github_connection(connection_id: str) -> None:
     )
     if hint is None or not hint["external_id"] or not hint["repository"]:
         return
-    owner, name = hint["repository"].split("/", 1)
-    repository: dict[str, object] | None = None
     try:
-        with github_client() as client:
-            token, _ = client.create_installation_token(
-                installation_id=int(hint["external_id"]), repository_id=hint["repository_id"]
-            )
-            try:
-                repository = client.get_repository_by_id(
-                    installation_token=token, repository_id=hint["repository_id"]
-                )
-            finally:
-                client.revoke_installation_token(token=token)
-        if str(repository.get("id")) != hint["repository_id"]:
-            return
-        canonical = repository.get("full_name")
-        if not isinstance(canonical, str) or canonical.count("/") != 1:
-            return
+        with (
+            github_client() as client,
+            selected_repository(
+                client, installation_id=hint["external_id"], repository_id=hint["repository_id"]
+            ) as (_, canonical),
+        ):
+            pass
     except Exception:
+        logger.warning("GitHub connection revalidation failed")
         return
     issue_ids: list[str] = []
     with transaction.atomic():
@@ -481,75 +451,59 @@ def revalidate_github_connection(connection_id: str) -> None:
             issue.sync_requested_generation += 1
             issue.save(update_fields=["sync_requested_generation"])
             issue_ids.append(str(issue.pk))
-    from feedback.tasks import sync_github_issue
-
     for issue_id in issue_ids:
-        try:
-            sync_github_issue.delay(issue_id)
-        except Exception:
-            continue
+        dispatch_task("feedback.tasks.sync_github_issue", issue_id)
 
 
 def _recover(operation: ExternalOperation) -> list[dict[str, object]]:
-    owner, name = operation.connection.repository.split("/", 1)
-    with github_client() as client:
-        token, _ = client.create_installation_token(
-            installation_id=int(operation.connection.external_id),
+    with (
+        github_client() as client,
+        selected_repository(
+            client,
+            installation_id=operation.connection.external_id,
             repository_id=operation.repository_id,
-        )
-        try:
-            repository = client.get_repository_by_id(
-                installation_token=token, repository_id=operation.repository_id
+        ) as (token, canonical),
+    ):
+        owner, name = canonical.split("/", 1)
+        if operation.recovery_reference:
+            number = parse_issue_reference(
+                operation.recovery_reference,
+                expected_repository=canonical,
             )
+            row = client.get_issue(
+                installation_token=token,
+                owner=owner,
+                name=name,
+                number=number,
+            )
+            body = row.get("body")
             if (
-                str(repository.get("id")) != operation.repository_id
-                or not isinstance(repository.get("full_name"), str)
-                or repository["full_name"].count("/") != 1
+                "pull_request" in row
+                or not isinstance(body, str)
+                or marker_for(operation.pk) not in body
             ):
                 return []
-            canonical = repository["full_name"]
-            owner, name = canonical.split("/", 1)
-            if operation.recovery_reference:
-                number = parse_issue_reference(
-                    operation.recovery_reference,
-                    expected_repository=canonical,
-                )
-                row = client.get_issue(
-                    installation_token=token,
-                    owner=owner,
-                    name=name,
-                    number=number,
-                )
+            return [row]
+        matches: list[dict[str, object]] = []
+        page = 1
+        while True:
+            rows, has_next = client.list_issues(
+                installation_token=token,
+                owner=owner,
+                name=name,
+                page=page,
+            )
+            for row in rows:
+                if "pull_request" in row:
+                    continue
                 body = row.get("body")
-                if (
-                    "pull_request" in row
-                    or not isinstance(body, str)
-                    or marker_for(operation.pk) not in body
-                ):
-                    return []
-                return [row]
-            matches: list[dict[str, object]] = []
-            page = 1
-            while True:
-                rows, has_next = client.list_issues(
-                    installation_token=token,
-                    owner=owner,
-                    name=name,
-                    page=page,
-                )
-                for row in rows:
-                    if "pull_request" in row:
-                        continue
-                    body = row.get("body")
-                    if isinstance(body, str) and marker_for(operation.pk) in body:
-                        matches.append(row)
-                if not has_next:
-                    return matches
-                page += 1
-                if page > 1000:
-                    raise RuntimeError("Issue pagination exceeded its safety limit.")
-        finally:
-            client.revoke_installation_token(token=token)
+                if isinstance(body, str) and marker_for(operation.pk) in body:
+                    matches.append(row)
+            if not has_next:
+                return matches
+            page += 1
+            if page > 1000:
+                raise RuntimeError("Issue pagination exceeded its safety limit.")
 
 
 @shared_task
@@ -560,15 +514,41 @@ def reconcile_github_issue_create(operation_id: str) -> None:
     )
     if hint is None or hint.state != ExternalOperation.State.UNCERTAIN:
         return
+    claim = uuid4()
+    now = timezone.now()
+    with transaction.atomic():
+        operation = ExternalOperation.objects.select_for_update().get(pk=operation_id_uuid)
+        if operation.state != ExternalOperation.State.UNCERTAIN or operation.due_at > now:
+            return
+        if operation.lease_expires_at and operation.lease_expires_at > now:
+            return
+        operation.recovery_attempts += 1
+        operation.lease_token = claim
+        operation.lease_expires_at = now + LEASE_TTL
+        operation.save(update_fields=["recovery_attempts", "lease_token", "lease_expires_at"])
+        hint.recovery_reference = operation.recovery_reference
+        attempts = operation.recovery_attempts
     try:
         matches = _recover(hint)
-    except Exception:
-        return
-    if len(matches) != 1:
-        return
-    try:
+        if len(matches) != 1:
+            _finish_recovery(
+                operation_id_uuid,
+                claim,
+                "marker_not_found" if not matches else "multiple_marker_matches",
+                attempts=attempts,
+            )
+            return
         snapshot = parse_issue_payload(matches[0], error=IssueLinkError)
-    except IssueLinkError:
+    except Exception as error:
+        logger.warning("GitHub issue recovery failed")
+        retry_after = error.retry_after_seconds if isinstance(error, GitHubAPIError) else None
+        _finish_recovery(
+            operation_id_uuid,
+            claim,
+            "recovery_unavailable",
+            attempts=attempts,
+            retry_after=retry_after,
+        )
         return
     with transaction.atomic():
         Workspace.objects.select_for_update().get(pk=hint.workspace_id)
@@ -577,8 +557,20 @@ def reconcile_github_issue_create(operation_id: str) -> None:
             pk=hint.problem_id, workspace_id=hint.workspace_id
         )
         operation = ExternalOperation.objects.select_for_update().get(pk=operation_id_uuid)
-        if operation.state != ExternalOperation.State.UNCERTAIN:
+        if operation.state != ExternalOperation.State.UNCERTAIN or operation.lease_token != claim:
             return
+        operation.recovery_requested = False
+        operation.recovery_reference = ""
+        operation.lease_token = None
+        operation.lease_expires_at = None
+        operation.save(
+            update_fields=[
+                "recovery_requested",
+                "recovery_reference",
+                "lease_token",
+                "lease_expires_at",
+            ]
+        )
         if (
             connection.binding_revision != operation.binding_revision
             or connection.repository_id != operation.repository_id
@@ -595,7 +587,7 @@ def reconcile_github_issue_create(operation_id: str) -> None:
         member = Membership.objects.get(
             pk=operation.requester_id, workspace_id=operation.workspace_id
         )
-        issue = _supersede_and_create(
+        issue = record_created_issue(
             actor=member,
             problem=problem,
             connection=connection,
@@ -619,3 +611,23 @@ def reconcile_github_issue_create(operation_id: str) -> None:
                 "safe_error",
             ]
         )
+
+
+def _finish_recovery(
+    operation_id: UUID,
+    claim: UUID,
+    error: str,
+    *,
+    attempts: int,
+    retry_after: int | None = None,
+) -> None:
+    ExternalOperation.objects.filter(
+        pk=operation_id, state=ExternalOperation.State.UNCERTAIN, lease_token=claim
+    ).update(
+        recovery_requested=False,
+        recovery_reference="",
+        safe_error=error,
+        lease_token=None,
+        lease_expires_at=None,
+        due_at=next_retry_at(now=timezone.now(), attempts=attempts, retry_after=retry_after),
+    )

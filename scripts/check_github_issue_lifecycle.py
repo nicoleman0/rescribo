@@ -145,13 +145,19 @@ def issue_access_state(
 
 
 def expect_link_rejection(
-    client: GitHubAppClient, *, installation_token: str, repository: str, reference: str
+    client: GitHubAppClient,
+    *,
+    installation_token: str,
+    repository: str,
+    repository_id: str,
+    reference: str,
 ) -> str:
     try:
         resolve_issue_link(
             client,
             installation_token=installation_token,
             expected_repository=repository,
+            expected_repository_id=repository_id,
             reference=reference,
         )
     except IssueLinkError:
@@ -236,6 +242,11 @@ def run(args: argparse.Namespace) -> None:
                 installation_id=probe.installation_id, repository=name
             )
             evidence["phases"]["installation"]["token_expires_at"] = token_expires_at
+            repository_id = str(
+                client.get_repository(
+                    installation_token=installation_token, owner=owner, name=name
+                )["id"]
+            )
             print(f"Installation active for {repository}.")
 
             # Phase 2: create and read an issue in the selected repository.
@@ -267,6 +278,7 @@ def run(args: argparse.Namespace) -> None:
                 client,
                 installation_token=installation_token,
                 expected_repository=repository,
+                expected_repository_id=repository_id,
                 reference=f"https://github.com/{repository}/issues/{number}",
             )
             link_evidence: dict[str, Any] = {"self_link": linked.as_dict()}
@@ -275,6 +287,7 @@ def run(args: argparse.Namespace) -> None:
                     client,
                     installation_token=installation_token,
                     repository=repository,
+                    repository_id=repository_id,
                     reference=args.pull_request_url,
                 )
             else:
@@ -284,6 +297,7 @@ def run(args: argparse.Namespace) -> None:
                     client,
                     installation_token=installation_token,
                     repository=repository,
+                    repository_id=repository_id,
                     reference=args.other_issue_url,
                 )
             else:
@@ -314,6 +328,7 @@ def run(args: argparse.Namespace) -> None:
                 client,
                 installation_token=installation_token,
                 expected_repository=repository,
+                expected_repository_id=repository_id,
                 event=closed_event,
                 stored_updated_at=str(fetched["updated_at"]),
             )
@@ -335,6 +350,7 @@ def run(args: argparse.Namespace) -> None:
                 client,
                 installation_token=installation_token,
                 expected_repository=repository,
+                expected_repository_id=repository_id,
                 event=reopened_event,
                 stored_updated_at=closed_outcome.snapshot.updated_at,
             )

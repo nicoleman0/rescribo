@@ -9,7 +9,6 @@ from unittest.mock import patch
 import pytest
 from django.test import Client, TestCase, override_settings
 
-from connections.models import GitHubWebhookReceipt
 from operations.models import InboundReceipt
 
 pytestmark = pytest.mark.django_db
@@ -71,7 +70,7 @@ def test_valid_delivery_persists_only_normalized_fields_then_dispatches(client: 
     assert receipt.normalized["issue_id"] == "555"
     assert receipt.normalized["repository_id"] == "999"
     assert "sender" not in receipt.normalized
-    assert GitHubWebhookReceipt.objects.filter(delivery_id="d-1").exists()
+    assert InboundReceipt.objects.filter(delivery_id="d-1").exists()
 
 
 @override_settings(RESCRIBO_GITHUB_WEBHOOK_SECRET=SECRET)
@@ -85,7 +84,7 @@ def test_bad_signature_is_rejected_before_storage_or_processing(client: Client) 
     assert response.status_code == 401
     task.assert_not_called()
     assert not InboundReceipt.objects.exists()
-    assert not GitHubWebhookReceipt.objects.exists()
+    assert not InboundReceipt.objects.exists()
 
 
 @override_settings(RESCRIBO_GITHUB_WEBHOOK_SECRET=SECRET)

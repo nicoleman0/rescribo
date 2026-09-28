@@ -55,6 +55,10 @@ class ExternalOperation(models.Model):
         UNCERTAIN = "uncertain", "Uncertain"
         CANCELLED = "cancelled", "Cancelled"
 
+    UNRESOLVED_STATES = (State.QUEUED, State.RUNNING, State.UNCERTAIN)
+    TITLE_LIMIT = 256
+    BODY_LIMIT = 10000
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     kind = models.CharField(max_length=32, choices=Kind.choices)
     workspace = models.ForeignKey("accounts.Workspace", on_delete=models.CASCADE)
@@ -63,8 +67,8 @@ class ExternalOperation(models.Model):
     requester = models.ForeignKey("accounts.Membership", on_delete=models.PROTECT)
     action_key = models.UUIDField()
     state = models.CharField(max_length=16, choices=State.choices, default=State.DRAFT)
-    title = models.CharField(max_length=256)
-    body = models.TextField(max_length=10000)
+    title = models.CharField(max_length=TITLE_LIMIT)
+    body = models.TextField(max_length=BODY_LIMIT)
     destination = models.CharField(max_length=200)
     repository_id = models.CharField(max_length=64, blank=True, default="")
     problem_version = models.PositiveIntegerField()
@@ -79,6 +83,16 @@ class ExternalOperation(models.Model):
     remote_number = models.PositiveIntegerField(null=True, blank=True)
     remote_url = models.URLField(max_length=500, blank=True)
     safe_error = models.CharField(max_length=64, blank=True)
+    recovery_requested = models.BooleanField(default=False)
+    recovery_attempts = models.PositiveIntegerField(default=0)
+    resolved_by = models.ForeignKey(
+        "accounts.Membership",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="resolved_issue_operations",
+    )
+    resolution_reason = models.TextField(blank=True, max_length=2000)
     recovery_reference = models.CharField(max_length=500, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     approved_at = models.DateTimeField(null=True, blank=True)

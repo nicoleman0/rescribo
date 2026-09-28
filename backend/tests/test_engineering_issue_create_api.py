@@ -92,7 +92,8 @@ def test_preview_persists_exact_content_and_never_writes_to_github(client: Clien
     assert draft.state == ExternalOperation.State.DRAFT
     assert draft.title == "Edited"
     assert draft.body == "Exact draft"
-    assert response.json()["body"].endswith(f"<!-- rescribo-operation:{draft.pk} -->")
+    assert response.json()["body"] == "Exact draft"
+    assert response.json()["marker"] == f"<!-- rescribo-operation:{draft.pk} -->"
 
 
 def test_preview_rejects_blank_title_and_requires_connection(client: Client) -> None:
@@ -146,4 +147,48 @@ def test_approval_queues_same_persisted_draft_and_replay_is_idempotent(client: C
 def patch_task_dispatch() -> Any:
     from unittest.mock import patch
 
-    return patch("operations.github_issue_create._dispatch_create")
+    return patch("operations.github_issue_create.dispatch_task")
+
+
+def test_create_returns_connection_reason_and_version_conflicts(client: Client) -> None:
+    actor = make_membership()
+    problem = make_problem(actor=actor)
+    sign_in(client, actor)
+    response = client.post(
+        issue_url(actor, problem.pk, "preview"),
+        {"expected_version": problem.version},
+        content_type="application/json",
+    )
+    assert response.status_code == 400
+    assert response.json()["reason"] == "connection_not_ready"
+    assert response.json()["field_errors"] == {}
+    make_connection(workspace=actor.workspace)
+    response = client.post(
+        issue_url(actor, problem.pk, "preview"),
+        {"expected_version": problem.version + 1},
+        content_type="application/json",
+    )
+    assert response.status_code == 409
+    assert response.json()["reason"] == "version_conflict"
+    assert response.json()["current"]["id"] == str(problem.pk)
+
+
+def test_stale_approval_returns_current_problem(client: Client) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    sign_in(client, actor)
+    draft = client.post(
+        issue_url(actor, problem.pk, "preview"),
+        {"expected_version": problem.version},
+        content_type="application/json",
+    ).json()
+    problem.version += 1
+    problem.save()
+    response = client.post(
+        issue_url(actor, problem.pk, "approve"),
+        {"draft_id": draft["id"], "draft_version": draft["draft_version"], "approved": True},
+        content_type="application/json",
+    )
+    assert response.status_code == 409
+    assert response.json()["current"]["version"] == problem.version

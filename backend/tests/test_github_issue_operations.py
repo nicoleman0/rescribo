@@ -5,12 +5,28 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
-from builders import make_connection, make_membership, make_problem
+from builders import make_connection, make_membership, make_problem, make_user, make_workspace
 
+from feedback.errors import (
+    IssueCreateUnresolved,
+    IssueOperationError,
+    NotFound,
+    VersionConflict,
+)
 from feedback.models import EngineeringIssue
-from operations.github_issue_create import approve_draft, create_draft
+from integrations.github_app.client import GitHubAPIError
+from operations.github_issue_create import (
+    abandon_creation,
+    approve_draft,
+    create_draft,
+    request_recovery,
+)
 from operations.models import ExternalOperation
-from operations.tasks import process_github_issue_create, reconcile_github_issue_create
+from operations.tasks import (
+    dispatch_due_operations,
+    process_github_issue_create,
+    reconcile_github_issue_create,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -117,3 +133,174 @@ def test_marker_recovery_paginates_and_ignores_pull_requests() -> None:
     assert operation.state == ExternalOperation.State.SUCCEEDED
     assert client.list_issues.call_count == 2
     assert EngineeringIssue.objects.get(problem=problem, active=True).issue_id == "555"
+
+
+@pytest.mark.parametrize("stage", ["create_installation_token", "get_repository_by_id"])
+@pytest.mark.parametrize(
+    "error",
+    [httpx.ConnectTimeout("timeout"), GitHubAPIError("preflight", 502), ValueError("bad identity")],
+)
+def test_preflight_failure_is_terminal_without_post(stage: str, error: Exception) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider()
+    getattr(client, stage).side_effect = error
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.FAILED
+    client.create_issue.assert_not_called()
+    create_draft(actor=actor, problem_id=problem.pk, expected_version=problem.version)
+
+
+def test_connect_timeout_during_post_is_known_not_sent() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = fake_provider(
+            create_error=httpx.ConnectTimeout("connect")
+        )
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.FAILED
+
+
+@pytest.mark.parametrize("expire_lease", [False, True])
+def test_success_preserves_remote_identity_when_linking_cannot_finish(expire_lease: bool) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider()
+
+    def created(**kwargs: Any) -> dict[str, Any]:
+        if expire_lease:
+            ExternalOperation.objects.filter(pk=operation.pk).update(
+                state="uncertain", lease_token=None
+            )
+        return dict(CREATED_ISSUE)
+
+    client.create_issue.side_effect = created
+    with (
+        patch("operations.tasks.github_client") as factory,
+        patch(
+            "operations.tasks.record_created_issue",
+            side_effect=RuntimeError("database link failed"),
+        ),
+    ):
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.UNCERTAIN
+    assert operation.remote_issue_id == "555"
+    assert operation.remote_number == 7
+    assert operation.remote_url == CREATED_ISSUE["html_url"]
+
+
+def test_missing_marker_stops_dispatch_and_records_feedback() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    operation.state = ExternalOperation.State.UNCERTAIN
+    operation.save()
+    request_recovery(actor=actor, problem_id=problem.pk, operation_id=operation.pk, reference="7")
+    client = fake_provider()
+    client.get_issue.return_value = {**CREATED_ISSUE, "body": "Hand-filed issue"}
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        reconcile_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.safe_error == "marker_not_found"
+    assert operation.recovery_attempts == 1
+    assert operation.recovery_reference == ""
+    assert not operation.recovery_requested
+    with patch("operations.tasks.reconcile_github_issue_create.delay") as dispatch:
+        dispatch_due_operations()
+        dispatch_due_operations()
+    dispatch.assert_not_called()
+    abandon_creation(
+        actor=actor,
+        problem_id=problem.pk,
+        operation_id=operation.pk,
+        reason="Checked GitHub; issue was filed by hand.",
+    )
+    operation.refresh_from_db()
+    assert operation.resolved_by == actor
+    assert operation.resolution_reason
+    create_draft(actor=actor, problem_id=problem.pk, expected_version=problem.version)
+
+
+def test_abandon_cannot_cross_workspace_or_cancel_running_write() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    with pytest.raises(IssueOperationError):
+        abandon_creation(
+            actor=actor, problem_id=problem.pk, operation_id=operation.pk, reason="Checked"
+        )
+    operation.state = ExternalOperation.State.UNCERTAIN
+    operation.save()
+    other = make_membership(
+        workspace=make_workspace(slug="other"), user=make_user(email="other@example.test")
+    )
+    with pytest.raises(NotFound):
+        abandon_creation(
+            actor=other, problem_id=problem.pk, operation_id=operation.pk, reason="Checked"
+        )
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.UNCERTAIN
+
+
+def test_abandoning_an_uncertain_create_records_the_member_and_unblocks_the_problem() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    operation.state = ExternalOperation.State.UNCERTAIN
+    operation.save()
+    with pytest.raises(IssueCreateUnresolved):
+        create_draft(actor=actor, problem_id=problem.pk, expected_version=problem.version)
+
+    abandon_creation(
+        actor=actor,
+        problem_id=problem.pk,
+        operation_id=operation.pk,
+        reason="No issue in acme/widgets",
+    )
+
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.CANCELLED
+    assert operation.resolved_by == actor
+    assert operation.resolution_reason == "No issue in acme/widgets"
+    assert create_draft(actor=actor, problem_id=problem.pk, expected_version=problem.version)
+
+
+def test_edited_preview_updates_draft_and_invalidates_old_approval() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    first = create_draft(actor=actor, problem_id=problem.pk, expected_version=problem.version)
+    edited = create_draft(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        draft_id=first.pk,
+        body="Revised",
+    )
+    assert edited.pk == first.pk
+    assert edited.draft_version == first.draft_version + 1
+    with pytest.raises(VersionConflict):
+        approve_draft(
+            actor=actor,
+            problem_id=problem.pk,
+            draft_id=first.pk,
+            draft_version=first.draft_version,
+            approved=True,
+        )

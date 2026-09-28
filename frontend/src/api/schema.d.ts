@@ -525,6 +525,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/abandon/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_problems_issue_operations_abandon_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/reconcile/": {
         parameters: {
             query?: never;
@@ -858,6 +874,7 @@ export interface components {
             last_attempted_sync_at: string | null;
             readonly refresh_status: string;
             readonly access_reason: string;
+            readonly access_detail: string;
             sync_error: string;
             readonly stale: boolean;
             readonly stale_after: unknown;
@@ -878,12 +895,14 @@ export interface components {
         ExternalOperation: {
             /** Format: uuid */
             id: string;
-            state: string;
+            state: components["schemas"]["ExternalOperationStateEnum"];
             destination: string;
             remote_issue_id: string;
             remote_number: number | null;
             remote_url: string;
             safe_error: string;
+            recovery_requested: boolean;
+            readonly error_detail: string;
             /** Format: date-time */
             created_at: string;
             /** Format: date-time */
@@ -891,6 +910,17 @@ export interface components {
             /** Format: date-time */
             completed_at: string | null;
         };
+        /**
+         * @description * `draft` - Draft
+         *     * `queued` - Queued
+         *     * `running` - Running
+         *     * `succeeded` - Succeeded
+         *     * `failed` - Failed
+         *     * `uncertain` - Uncertain
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        ExternalOperationStateEnum: "draft" | "queued" | "running" | "succeeded" | "failed" | "uncertain" | "cancelled";
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
         };
@@ -934,6 +964,9 @@ export interface components {
             /** Format: uri */
             accept_url: string;
         };
+        IssueAbandon: {
+            reason: string;
+        };
         IssueApprove: {
             /** Format: uuid */
             draft_id: string;
@@ -941,11 +974,14 @@ export interface components {
             approved: boolean;
         };
         IssueDraft: {
+            /** Format: uuid */
+            draft_id?: string;
             expected_version: number;
             title?: string;
             body?: string;
         };
         IssueDraftResult: {
+            marker: string;
             /** Format: uuid */
             id: string;
             draft_version: number;
@@ -976,7 +1012,7 @@ export interface components {
         IssueRecoveryResult: {
             /** Format: uuid */
             id: string;
-            state: string;
+            state: components["schemas"]["ExternalOperationStateEnum"];
         };
         IssueRefresh: {
             /** Format: uuid */
@@ -1136,6 +1172,7 @@ export interface components {
             current: components["schemas"]["ProblemDetail"];
         };
         ProblemDetail: {
+            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
             /** Format: uuid */
             id: string;
             title: string;
@@ -1150,7 +1187,6 @@ export interface components {
             created_at: string;
             /** Format: date-time */
             updated_at: string;
-            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
             readonly current_create_operation: components["schemas"]["ExternalOperation"] | null;
         };
         ProblemEdit: {
@@ -1159,6 +1195,7 @@ export interface components {
             summary?: string;
         };
         ProblemListItem: {
+            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
             /** Format: uuid */
             id: string;
             title: string;
@@ -1169,7 +1206,6 @@ export interface components {
             needs_review: boolean;
             /** Format: date-time */
             created_at: string;
-            readonly engineering_issue: components["schemas"]["EngineeringIssue"] | null;
         };
         ProblemOwner: {
             expected_version: number;
@@ -2695,6 +2731,67 @@ export interface operations {
                 };
             };
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_problems_issue_operations_abandon_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueAbandon"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueAbandon"];
+                "multipart/form-data": components["schemas"]["IssueAbandon"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExternalOperation"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

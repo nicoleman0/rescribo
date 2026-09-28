@@ -115,6 +115,7 @@ SPECTACULAR_SETTINGS = {
         "ReportSourceKindEnum": "feedback.models.ReportSource.Kind",
         "ProblemStateEnum": "feedback.models.Problem.State",
         "ActivityActionEnum": "feedback.models.Activity.Action",
+        "ExternalOperationStateEnum": "operations.models.ExternalOperation.State",
     },
 }
 CELERY_BROKER_URL = REDIS_URL

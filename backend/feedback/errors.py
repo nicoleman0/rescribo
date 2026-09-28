@@ -93,15 +93,11 @@ class IssueProviderUnavailable(FeedbackError):
     reason = "issue_provider_unavailable"
 
 
-class IssueCreationUncertain(FeedbackError):
-    """GitHub did not confirm creation before the request timed out.
+class IssueCreateUnresolved(FeedbackError):
+    reason = "issue_create_unresolved"
 
-    The write may have succeeded remotely; no EngineeringIssue row is created here.
-    Recovering the operation_id against GitHub's issue list is durable work for #15/#18.
-    """
 
-    reason = "issue_creation_uncertain"
-
-    def __init__(self, *, operation_id: UUID) -> None:
-        self.operation_id = operation_id
-        super().__init__()
+class IssueOperationError(FeedbackError):
+    def __init__(self, reason: str, *, detail: str) -> None:
+        self.detail = detail
+        super().__init__(reason)

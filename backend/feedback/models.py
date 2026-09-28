@@ -320,10 +320,8 @@ class EngineeringIssue(models.Model):
     state_reason = models.CharField(max_length=32, blank=True, default="")
     access = models.CharField(max_length=16, choices=Access.choices, default=Access.OK)
     provider_updated_at = models.DateTimeField()
-    last_synced_at = models.DateTimeField(null=True, blank=True)
     last_attempted_sync_at = models.DateTimeField(null=True, blank=True)
     last_successful_sync_at = models.DateTimeField(null=True, blank=True)
-    connection_binding_revision = models.PositiveIntegerField(default=1)
     connection_installation_id = models.CharField(max_length=64, blank=True, default="")
     last_applied_reopen_event_at = models.DateTimeField(null=True, blank=True)
     sync_lease_token = models.UUIDField(null=True, blank=True)
@@ -349,9 +347,44 @@ class EngineeringIssue(models.Model):
         ]
         indexes = [models.Index(fields=["workspace", "active"], name="eng_issue_ws_active_idx")]
 
+    @property
+    def binding_changed(self) -> bool:
+        return (
+            self.connection_installation_id != self.connection.external_id
+            or self.repository_id != self.connection.repository_id
+        )
+
+    @property
+    def access_reason(self) -> str:
+        if (
+            self.connection.status == Connection.Status.DISCONNECTED
+            or not self.connection.external_id
+        ):
+            return "disconnected"
+        if self.binding_changed:
+            return "binding_changed"
+        return self.sync_error or self.connection.error_code
+
     def save(self, *args: Any, **kwargs: Any) -> None:
         # Cross-table invariants cannot be expressed as a PostgreSQL CHECK constraint.
-        assert self.workspace_id == self.problem.workspace_id, (
-            "An engineering issue must share its problem's workspace."
-        )
+        if self.workspace_id != self.problem.workspace_id:
+            raise ValueError("An engineering issue must share its problem's workspace.")
         super().save(*args, **kwargs)
+
+
+class IssueReconciliation(models.Model):
+    connection = models.OneToOneField(Connection, on_delete=models.CASCADE)
+    started_at = models.DateTimeField(default=timezone.now)
+    binding_revision = models.PositiveIntegerField()
+
+
+class IssueReconciliationTarget(models.Model):
+    run = models.ForeignKey(IssueReconciliation, on_delete=models.CASCADE, related_name="targets")
+    issue = models.ForeignKey(EngineeringIssue, on_delete=models.CASCADE)
+    generation = models.PositiveBigIntegerField()
+    done = models.BooleanField(default=False)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["run", "issue"], name="unique_issue_reconcile_target")
+        ]

@@ -1,12 +1,10 @@
 """Linking, creating, and syncing the GitHub issue for a problem."""
 
-import random
-from dataclasses import replace
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
 from django.conf import settings
-from django.db import IntegrityError, transaction
+from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import Membership, Workspace
@@ -16,6 +14,7 @@ from feedback.errors import (
     ConnectionNotReady,
     IssueAlreadyLinked,
     IssueAlreadyLinkedElsewhere,
+    IssueCreateUnresolved,
     IssueProviderUnavailable,
     IssueReferenceRejected,
     NotFound,
@@ -31,24 +30,24 @@ from feedback.services import (
     write_activity,
     write_system_activity,
 )
-from integrations.github_app.client import GitHubAPIError, GitHubAppClient
+from integrations.github_app.client import GitHubAPIError
 from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
     provider_time,
     resolve_issue_link,
 )
+from integrations.github_app.repository import OPERATION_LEASE_SECONDS, selected_repository
 from integrations.github_app.settings import github_client
-from integrations.github_app.webhooks import InstallationEvent, IssueEvent
-from integrations.github_app.webhooks import apply_issue_event as fetch_issue_event_outcome
+from integrations.github_app.webhooks import InstallationEvent, IssueEvent, fetch_current_issue
+from operations.dispatch import dispatch_task
+from operations.models import ExternalOperation
+from operations.retries import next_retry_at
 
 SYSTEM_ACTOR = "github_webhook"
 
 
-def _active_github_connection(actor: Membership) -> Connection:
-    connection = Connection.objects.filter(
-        workspace_id=actor.workspace_id, provider=Connection.Provider.GITHUB
-    ).first()
+def require_active_connection(connection: Connection | None) -> Connection:
     if (
         connection is None
         or connection.status != Connection.Status.ACTIVE
@@ -58,12 +57,12 @@ def _active_github_connection(actor: Membership) -> Connection:
     return connection
 
 
-def _installation_token(client: GitHubAppClient, connection: Connection) -> str:
-    _, name = connection.repository.split("/", 1)
-    token, _ = client.create_installation_token(
-        installation_id=int(connection.external_id), repository_id=connection.repository_id
+def _active_github_connection(actor: Membership) -> Connection:
+    return require_active_connection(
+        Connection.objects.filter(
+            workspace_id=actor.workspace_id, provider=Connection.Provider.GITHUB
+        ).first()
     )
-    return token
 
 
 def link_issue(
@@ -86,19 +85,14 @@ def link_issue(
         connection.repository,
     )
     try:
-        with github_client() as client:
-            token = _installation_token(client, connection)
-            repository = client.get_repository_by_id(
-                installation_token=token,
+        with (
+            github_client() as client,
+            selected_repository(
+                client,
+                installation_id=connection.external_id,
                 repository_id=connection.repository_id,
-            )
-            canonical = repository.get("full_name")
-            if (
-                str(repository.get("id")) != connection.repository_id
-                or not isinstance(canonical, str)
-                or canonical.count("/") != 1
-            ):
-                raise IssueLinkError("The selected repository identity changed.")
+            ) as (token, canonical),
+        ):
             snapshot = resolve_issue_link(
                 client,
                 installation_token=token,
@@ -127,20 +121,18 @@ def link_issue(
             raise IssueProviderUnavailable()
         problem = locked_problem(actor=actor, problem_id=problem_id)
         require_version(row=problem, expected_version=expected_version)
-        from operations.models import ExternalOperation
-
         if ExternalOperation.objects.filter(
             problem=problem,
-            state__in=["queued", "running", "uncertain"],
+            state__in=ExternalOperation.UNRESOLVED_STATES,
         ).exists():
-            raise IssueAlreadyLinked()
+            raise IssueCreateUnresolved()
         ExternalOperation.objects.filter(
             problem=problem,
             state=ExternalOperation.State.DRAFT,
         ).update(
             state=ExternalOperation.State.CANCELLED, safe_error="issue_linked", completed_at=current
         )
-        return _supersede_and_create(
+        return record_created_issue(
             actor=actor,
             problem=problem,
             connection=connection,
@@ -153,10 +145,10 @@ def link_issue(
 
 def preview_issue(*, actor: Membership, problem_id: UUID) -> dict[str, str]:
     problem = get_problem(actor=actor, problem_id=problem_id)
-    return {"title": problem.title, "body": _default_body(problem)}
+    return {"title": problem.title, "body": default_issue_body(problem)}
 
 
-def _default_body(problem: Problem) -> str:
+def default_issue_body(problem: Problem) -> str:
     link = f"{settings.RESCRIBO_PUBLIC_BASE_URL}/problems/{problem.pk}"
     summary = problem.summary.strip()
     parts = [summary] if summary else []
@@ -204,22 +196,15 @@ def refresh_issue(
         ):
             locked_issue.sync_requested_generation += 1
             locked_issue.save(update_fields=["sync_requested_generation"])
-        generation = locked_issue.sync_requested_generation
         transaction.on_commit(lambda: _dispatch_issue_sync(locked_issue.pk))
-    locked_issue.sync_requested_generation = generation
     return locked_issue
 
 
 def _dispatch_issue_sync(issue_id: UUID) -> None:
-    try:
-        from feedback.tasks import sync_github_issue
-
-        sync_github_issue.delay(str(issue_id))
-    except Exception:
-        return
+    dispatch_task("feedback.tasks.sync_github_issue", str(issue_id))
 
 
-def _supersede_and_create(
+def record_created_issue(
     *,
     actor: Membership,
     problem: Problem,
@@ -251,14 +236,6 @@ def _supersede_and_create(
     ):
         return existing
     if existing is not None and not replace:
-        raise IssueAlreadyLinked()
-    if (
-        existing is None
-        and not replace
-        and EngineeringIssue.objects.filter(
-            workspace_id=actor.workspace_id, problem=problem, active=True
-        ).exists()
-    ):
         raise IssueAlreadyLinked()
     if existing is not None:
         existing.active = False
@@ -302,9 +279,7 @@ def _supersede_and_create(
         provider_updated_at=provider_time(snapshot.updated_at),
         last_attempted_sync_at=now,
         last_successful_sync_at=now,
-        connection_binding_revision=connection.binding_revision,
         connection_installation_id=connection.external_id,
-        last_synced_at=now,
         created_by=actor,
         created_at=now,
     )
@@ -317,7 +292,6 @@ def _supersede_and_create(
         historical.state = snapshot.state
         historical.state_reason = snapshot.state_reason or ""
         historical.provider_updated_at = provider_time(snapshot.updated_at)
-        historical.connection_binding_revision = connection.binding_revision
         historical.connection_installation_id = connection.external_id
         historical.active = True
         historical.unlinked_at = None
@@ -325,15 +299,9 @@ def _supersede_and_create(
         historical.sync_error = ""
         historical.last_attempted_sync_at = now
         historical.last_successful_sync_at = now
-        historical.last_synced_at = now
         historical.save()
     else:
-        try:
-            issue.save()
-        except IntegrityError as error:
-            raise _conflicting_link(
-                actor=actor, repository_id=connection.repository_id, issue_id=snapshot.issue_id
-            ) from error
+        issue.save()
     write_activity(
         actor=actor,
         action=action,
@@ -343,28 +311,15 @@ def _supersede_and_create(
         now=now,
     )
     if issue.state == EngineeringIssue.State.CLOSED:
-        _apply_problem_consequences(
+        apply_problem_consequences(
             issue=issue,
             problem=problem,
             state=issue.state,
             previous_state=EngineeringIssue.State.OPEN,
             now=now,
+            actor=actor,
         )
     return issue
-
-
-def _conflicting_link(
-    *, actor: Membership, repository_id: str, issue_id: str
-) -> IssueAlreadyLinkedElsewhere:
-    other = (
-        EngineeringIssue.objects.filter(workspace_id=actor.workspace_id, issue_id=issue_id)
-        .select_related("problem")
-        .first()
-    )
-    assert other is not None, "Unique violation without a conflicting active row."
-    return IssueAlreadyLinkedElsewhere(
-        problem_id=other.problem_id, problem_title=other.problem.title
-    )
 
 
 def apply_issue_webhook(
@@ -372,266 +327,261 @@ def apply_issue_webhook(
 ) -> None:
     """Fetch current state outside row locks and apply it under a fenced issue lease."""
     current = now or timezone.now()
-    connections = Connection.objects.filter(
-        provider=Connection.Provider.GITHUB, external_id=installation_id
-    ).order_by("workspace_id", "id")
-    for candidate in connections:
-        candidates = EngineeringIssue.objects.filter(
-            workspace_id=candidate.workspace_id,
-            connection_id=candidate.pk,
-            active=True,
+    candidates = EngineeringIssue.objects.filter(
+        connection__provider=Connection.Provider.GITHUB,
+        connection__external_id=installation_id,
+        issue_id=event.issue_id,
+        active=True,
+    )
+    if event.action != "transferred":
+        candidates = candidates.filter(repository_id=event.repository_id)
+    for issue_id in candidates.order_by("workspace_id", "pk").values_list("pk", flat=True):
+        sync_issue(issue_id=issue_id, event=event, now=current, actor_system=SYSTEM_ACTOR)
+
+
+def sync_issue(
+    *,
+    issue_id: UUID,
+    event: IssueEvent | None = None,
+    now: datetime | None = None,
+    actor_system: str = "github_reconciliation",
+) -> None:
+    current = now or timezone.now()
+    hint = (
+        EngineeringIssue.objects.filter(pk=issue_id, active=True)
+        .values("pk", "problem_id", "workspace_id", "connection_id")
+        .first()
+    )
+    if hint is None:
+        return
+    claim = uuid4()
+    target_generation = 0
+    with transaction.atomic():
+        Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+        connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
+        problem = Problem.objects.select_for_update().get(pk=hint["problem_id"])
+        issue = EngineeringIssue.objects.select_for_update().get(pk=hint["pk"])
+        if event is not None:
+            issue.sync_requested_generation += 1
+        if issue.sync_retry_at and issue.sync_retry_at > current:
+            issue.save(update_fields=["sync_requested_generation"])
+            return
+        if (
+            issue.sync_lease_token
+            and issue.sync_lease_expires_at
+            and issue.sync_lease_expires_at > current
+        ):
+            issue.save(update_fields=["sync_requested_generation"])
+            return
+        if (
+            issue.connection_installation_id != connection.external_id
+            or issue.repository_id != connection.repository_id
+        ):
+            _settle_unsynced(
+                issue,
+                access=EngineeringIssue.Access.DISCONNECTED
+                if connection.status == Connection.Status.DISCONNECTED
+                else EngineeringIssue.Access.INACCESSIBLE,
+                error="binding_changed",
+            )
+            return
+        # A transfer is not followed into another repository. Stable issue ID
+        # lets us mark the old link inaccessible even when its repo ID changed.
+        if (
+            event is not None
+            and event.action == "transferred"
+            and event.repository_id
+            and event.repository_id != issue.repository_id
+        ):
+            _settle_unsynced(
+                issue, access=EngineeringIssue.Access.INACCESSIBLE, error="issue_transferred"
+            )
+            return
+        if connection.status != Connection.Status.ACTIVE:
+            _settle_unsynced(
+                issue,
+                access=EngineeringIssue.Access.DISCONNECTED
+                if connection.status == Connection.Status.DISCONNECTED
+                else EngineeringIssue.Access.SUSPENDED
+                if "suspend" in connection.error_code
+                else EngineeringIssue.Access.INACCESSIBLE,
+                error=connection.error_code or "connection_unavailable",
+            )
+            return
+        issue.sync_lease_token = claim
+        issue.sync_lease_expires_at = current + timedelta(seconds=OPERATION_LEASE_SECONDS)
+        issue.sync_attempts += 1
+        target_generation = issue.sync_requested_generation
+        issue.last_attempted_sync_at = current
+        issue.save(
+            update_fields=[
+                "sync_requested_generation",
+                "sync_lease_token",
+                "sync_lease_expires_at",
+                "last_attempted_sync_at",
+                "sync_attempts",
+            ]
         )
-        if event.issue_id:
-            candidates = candidates.filter(issue_id=event.issue_id)
-        else:
-            candidates = candidates.filter(number=event.number)
-        if event.repository_id and event.action != "transferred":
-            candidates = candidates.filter(repository_id=event.repository_id)
-        for hint in candidates.values("pk", "problem_id", "workspace_id"):
-            claim = uuid4()
-            target_generation = 0
-            with transaction.atomic():
-                Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
-                connection = Connection.objects.select_for_update().get(pk=candidate.pk)
-                problem = Problem.objects.select_for_update().get(pk=hint["problem_id"])
-                issue = EngineeringIssue.objects.select_for_update().get(pk=hint["pk"])
-                issue.sync_requested_generation += 1
-                if (
-                    issue.sync_lease_token
-                    and issue.sync_lease_expires_at
-                    and issue.sync_lease_expires_at > current
-                ):
-                    issue.save(update_fields=["sync_requested_generation"])
-                    continue
-                if (
-                    issue.connection_installation_id != connection.external_id
-                    or issue.repository_id != connection.repository_id
-                ):
-                    issue.access = (
-                        EngineeringIssue.Access.DISCONNECTED
-                        if connection.status == Connection.Status.DISCONNECTED
-                        else EngineeringIssue.Access.INACCESSIBLE
-                    )
-                    issue.sync_error = "binding_changed"
-                    issue.sync_completed_generation = issue.sync_requested_generation
-                    issue.save(
-                        update_fields=[
-                            "access",
-                            "sync_error",
-                            "sync_requested_generation",
-                            "sync_completed_generation",
-                        ]
-                    )
-                    continue
-                # A transfer is not followed into another repository. Stable issue ID
-                # lets us mark the old link inaccessible even when its repo ID changed.
-                if (
-                    event.action == "transferred"
-                    and event.repository_id
-                    and event.repository_id != issue.repository_id
-                ):
-                    issue.access = EngineeringIssue.Access.INACCESSIBLE
-                    issue.sync_error = "issue_transferred"
-                    issue.sync_completed_generation = issue.sync_requested_generation
-                    issue.save(
-                        update_fields=[
-                            "access",
-                            "sync_error",
-                            "sync_requested_generation",
-                            "sync_completed_generation",
-                        ]
-                    )
-                    continue
-                if connection.status != Connection.Status.ACTIVE:
-                    issue.access = (
-                        EngineeringIssue.Access.DISCONNECTED
-                        if connection.status == Connection.Status.DISCONNECTED
-                        else EngineeringIssue.Access.SUSPENDED
-                        if "suspend" in connection.error_code
-                        else EngineeringIssue.Access.INACCESSIBLE
-                    )
-                    issue.sync_error = connection.error_code or "connection_unavailable"
-                    issue.sync_completed_generation = issue.sync_requested_generation
-                    issue.save(
-                        update_fields=[
-                            "access",
-                            "sync_error",
-                            "sync_requested_generation",
-                            "sync_completed_generation",
-                        ]
-                    )
-                    continue
-                issue.sync_lease_token = claim
-                issue.sync_lease_expires_at = current + timedelta(seconds=45)
-                issue.sync_attempts += 1
-                target_generation = issue.sync_requested_generation
-                issue.last_attempted_sync_at = current
-                issue.save(
-                    update_fields=[
-                        "sync_requested_generation",
-                        "sync_lease_token",
-                        "sync_lease_expires_at",
-                        "last_attempted_sync_at",
-                        "sync_attempts",
-                    ]
-                )
 
-            try:
-                with github_client() as client:
-                    token = _installation_token(client, connection)
-                    repository = client.get_repository_by_id(
-                        installation_token=token,
-                        repository_id=connection.repository_id,
-                    )
-                    canonical = repository.get("full_name")
-                    if (
-                        str(repository.get("id")) != connection.repository_id
-                        or not isinstance(canonical, str)
-                        or canonical.count("/") != 1
-                    ):
-                        raise GitHubAPIError("repository identity lookup", 404)
-                    event_for_repository = event
-                    if event.repository_id:
-                        if event.repository_id != connection.repository_id:
-                            raise GitHubAPIError("repository identity lookup", 404)
-                        event_for_repository = replace(event, repository=canonical)
-                    outcome = fetch_issue_event_outcome(
-                        client,
-                        installation_token=token,
-                        expected_repository=canonical,
-                        expected_repository_id=connection.repository_id,
-                        event=event_for_repository,
-                        stored_updated_at=issue.provider_updated_at.isoformat(),
-                        stored_state=issue.state,
-                    )
-            except PROVIDER_ERRORS as error:
-                rate_limited = isinstance(error, GitHubAPIError) and error.rate_limited
-                _finish_issue_sync_failure(
-                    issue_id=issue.pk,
-                    connection_id=connection.pk,
-                    problem_id=problem.pk,
-                    workspace_id=connection.workspace_id,
-                    claim=claim,
-                    now=current,
-                    error_code="rate_limited" if rate_limited else "provider_unavailable",
-                    retry_after_seconds=(
-                        error.retry_after_seconds
-                        if isinstance(error, GitHubAPIError) and error.rate_limited
-                        else None
-                    ),
-                )
-                continue
+    try:
+        with (
+            github_client() as client,
+            selected_repository(
+                client,
+                installation_id=connection.external_id,
+                repository_id=connection.repository_id,
+            ) as (token, canonical),
+        ):
+            outcome = fetch_current_issue(
+                client,
+                installation_token=token,
+                expected_repository=canonical,
+                expected_repository_id=connection.repository_id,
+                number=issue.number,
+                issue_id=issue.issue_id,
+                stored_updated_at=issue.provider_updated_at.isoformat(),
+                stored_state=issue.state,
+            )
+    except (*PROVIDER_ERRORS, IssueLinkError, ValueError) as error:
+        rate_limited = isinstance(error, GitHubAPIError) and error.rate_limited
+        _finish_issue_sync_failure(
+            issue_id=issue.pk,
+            connection_id=connection.pk,
+            problem_id=problem.pk,
+            workspace_id=connection.workspace_id,
+            claim=claim,
+            now=current,
+            error_code="rate_limited"
+            if rate_limited
+            else "inaccessible"
+            if isinstance(error, GitHubAPIError) and error.status_code in {401, 403, 404, 410}
+            else "provider_unavailable",
+            retry_after_seconds=(
+                error.retry_after_seconds
+                if isinstance(error, GitHubAPIError) and error.rate_limited
+                else None
+            ),
+        )
+        return
 
-            with transaction.atomic():
-                Workspace.objects.select_for_update().get(pk=connection.workspace_id)
-                locked_connection = Connection.objects.select_for_update().get(pk=connection.pk)
-                problem = Problem.objects.select_for_update().get(pk=problem.pk)
-                issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
-                if issue.sync_lease_token != claim:
-                    continue
-                if (
-                    issue.connection_installation_id != locked_connection.external_id
-                    or locked_connection.repository_id != issue.repository_id
-                ):
-                    issue.access = EngineeringIssue.Access.INACCESSIBLE
-                    issue.sync_error = "binding_changed"
-                    issue.sync_lease_token = None
-                    issue.sync_lease_expires_at = None
-                    issue.save(
-                        update_fields=[
-                            "access",
-                            "sync_error",
-                            "sync_lease_token",
-                            "sync_lease_expires_at",
-                        ]
-                    )
-                    continue
-                previous_state = issue.state
-                issue.access = (
-                    EngineeringIssue.Access.INACCESSIBLE
-                    if outcome.access == "access_lost"
-                    else EngineeringIssue.Access.OK
-                )
-                if event.action == "deleted" and outcome.access == "access_lost":
-                    issue.access = EngineeringIssue.Access.DELETED
-                issue.last_synced_at = current
-                issue.last_successful_sync_at = (
-                    current if outcome.access == "ok" else issue.last_successful_sync_at
-                )
-                if outcome.access == "ok":
-                    issue.sync_attempts = 0
-                    issue.sync_retry_at = None
-                issue.sync_error = "inaccessible" if outcome.access == "access_lost" else ""
-                issue.sync_completed_generation = target_generation
-                issue.sync_lease_token = None
-                issue.sync_lease_expires_at = None
-                update_fields = [
-                    "access",
-                    "last_synced_at",
-                    "last_successful_sync_at",
-                    "sync_error",
-                    "sync_completed_generation",
-                    "sync_attempts",
-                    "sync_retry_at",
-                    "sync_lease_token",
-                    "sync_lease_expires_at",
-                ]
-                if outcome.applied and outcome.snapshot is not None:
-                    issue.state = outcome.snapshot.state
-                    issue.state_reason = outcome.snapshot.state_reason or ""
-                    issue.title = outcome.snapshot.title
-                    issue.url = outcome.snapshot.url
-                    issue.provider_updated_at = provider_time(outcome.snapshot.updated_at)
-                    update_fields += [
-                        "state",
-                        "state_reason",
-                        "title",
-                        "url",
-                        "provider_updated_at",
-                    ]
-                issue.save(update_fields=update_fields)
-                if outcome.access == "ok":
-                    issue.connection_binding_revision = locked_connection.binding_revision
-                    issue.connection_installation_id = locked_connection.external_id
-                    update_fields.extend(
-                        ["connection_binding_revision", "connection_installation_id"]
-                    )
-                    locked_connection.last_success_at = current
-                    connection_fields = ["last_success_at"]
-                    if (
-                        outcome.snapshot
-                        and locked_connection.repository != outcome.snapshot.repository_name
-                    ):
-                        locked_connection.repository = outcome.snapshot.repository_name
-                        connection_fields.append("repository")
-                    locked_connection.save(update_fields=connection_fields)
-                state_changed = outcome.applied and issue.state != previous_state
-                reopen_event_at = (
-                    provider_time(event.updated_at) if event.action == "reopened" else None
-                )
-                if (
-                    reopen_event_at is not None
-                    and issue.last_applied_reopen_event_at is not None
-                    and reopen_event_at <= issue.last_applied_reopen_event_at
-                ):
-                    reopen_event_at = None
-                if (
-                    state_changed
-                    and previous_state == EngineeringIssue.State.CLOSED
-                    and issue.state == EngineeringIssue.State.OPEN
-                ):
-                    reopen_event_at = (
-                        provider_time(outcome.snapshot.updated_at) if outcome.snapshot else None
-                    )
-                if state_changed or reopen_event_at is not None:
-                    _apply_problem_consequences(
-                        issue=issue,
-                        problem=problem,
-                        state=issue.state,
-                        previous_state=previous_state,
-                        now=current,
-                        reopen_event_at=reopen_event_at,
-                    )
+    with transaction.atomic():
+        Workspace.objects.select_for_update().get(pk=connection.workspace_id)
+        locked_connection = Connection.objects.select_for_update().get(pk=connection.pk)
+        problem = Problem.objects.select_for_update().get(pk=problem.pk)
+        issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
+        if issue.sync_lease_token != claim:
+            return
+        if (
+            issue.connection_installation_id != locked_connection.external_id
+            or locked_connection.repository_id != issue.repository_id
+        ):
+            _settle_unsynced(
+                issue, access=EngineeringIssue.Access.INACCESSIBLE, error="binding_changed"
+            )
+            return
+        previous_state = issue.state
+        issue.access = (
+            EngineeringIssue.Access.INACCESSIBLE
+            if outcome.access == "access_lost"
+            else EngineeringIssue.Access.OK
+        )
+        if event is not None and event.action == "deleted" and outcome.access == "access_lost":
+            issue.access = EngineeringIssue.Access.DELETED
+        issue.last_successful_sync_at = (
+            current if outcome.access == "ok" else issue.last_successful_sync_at
+        )
+        if outcome.access == "ok":
+            issue.sync_attempts = 0
+            issue.sync_retry_at = None
+        issue.sync_error = "inaccessible" if outcome.access == "access_lost" else ""
+        issue.sync_completed_generation = target_generation
+        issue.sync_lease_token = None
+        issue.sync_lease_expires_at = None
+        update_fields = [
+            "access",
+            "last_successful_sync_at",
+            "sync_error",
+            "sync_completed_generation",
+            "sync_attempts",
+            "sync_retry_at",
+            "sync_lease_token",
+            "sync_lease_expires_at",
+        ]
+        if outcome.applied and outcome.snapshot is not None:
+            issue.state = outcome.snapshot.state
+            issue.state_reason = outcome.snapshot.state_reason or ""
+            issue.title = outcome.snapshot.title
+            issue.url = outcome.snapshot.url
+            issue.provider_updated_at = provider_time(outcome.snapshot.updated_at)
+            update_fields += [
+                "state",
+                "state_reason",
+                "title",
+                "url",
+                "provider_updated_at",
+            ]
+        if outcome.access == "ok":
+            issue.connection_installation_id = locked_connection.external_id
+            update_fields.append("connection_installation_id")
+            locked_connection.last_success_at = current
+            connection_fields = ["last_success_at"]
+            if (
+                outcome.snapshot
+                and locked_connection.repository != outcome.snapshot.repository_name
+            ):
+                locked_connection.repository = outcome.snapshot.repository_name
+                connection_fields.append("repository")
+            locked_connection.save(update_fields=connection_fields)
+        issue.save(update_fields=update_fields)
+        state_changed = outcome.applied and issue.state != previous_state
+        reopen_event_at = (
+            provider_time(event.updated_at)
+            if event is not None and event.action == "reopened"
+            else None
+        )
+        if (
+            reopen_event_at is not None
+            and issue.last_applied_reopen_event_at is not None
+            and reopen_event_at <= issue.last_applied_reopen_event_at
+        ):
+            reopen_event_at = None
+        if (
+            state_changed
+            and previous_state == EngineeringIssue.State.CLOSED
+            and issue.state == EngineeringIssue.State.OPEN
+        ):
+            reopen_event_at = (
+                provider_time(outcome.snapshot.updated_at) if outcome.snapshot else None
+            )
+        if state_changed or reopen_event_at is not None:
+            apply_problem_consequences(
+                issue=issue,
+                problem=problem,
+                state=issue.state,
+                previous_state=previous_state,
+                now=current,
+                reopen_event_at=reopen_event_at,
+                actor_system=actor_system,
+            )
+
+
+def _settle_unsynced(issue: EngineeringIssue, *, access: str, error: str) -> None:
+    """Record why the issue cannot sync and complete every pending generation."""
+    issue.access = access
+    issue.sync_error = error
+    issue.sync_completed_generation = issue.sync_requested_generation
+    issue.sync_lease_token = None
+    issue.sync_lease_expires_at = None
+    issue.save(
+        update_fields=[
+            "access",
+            "sync_error",
+            "sync_requested_generation",
+            "sync_completed_generation",
+            "sync_lease_token",
+            "sync_lease_expires_at",
+        ]
+    )
 
 
 def _finish_issue_sync_failure(
@@ -652,14 +602,12 @@ def _finish_issue_sync_failure(
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue_id)
         if issue.sync_lease_token != claim:
             return
-        if error_code != "rate_limited":
+        if error_code == "inaccessible":
             issue.access = EngineeringIssue.Access.INACCESSIBLE
         issue.sync_error = error_code
-        delay = retry_after_seconds
-        if delay is None:
-            delay = min(3600, 2 ** min(issue.sync_attempts, 10))
-        delay += random.randint(0, max(1, min(delay // 4, 60)))
-        issue.sync_retry_at = now + timedelta(seconds=delay)
+        issue.sync_retry_at = next_retry_at(
+            now=now, attempts=issue.sync_attempts, retry_after=retry_after_seconds
+        )
         issue.sync_lease_token = None
         issue.sync_lease_expires_at = None
         issue.save(
@@ -673,7 +621,7 @@ def _finish_issue_sync_failure(
         )
 
 
-def _apply_problem_consequences(
+def apply_problem_consequences(
     *,
     issue: EngineeringIssue,
     problem: Problem,
@@ -681,6 +629,8 @@ def _apply_problem_consequences(
     previous_state: str,
     now: datetime,
     reopen_event_at: datetime | None = None,
+    actor: Membership | None = None,
+    actor_system: str = SYSTEM_ACTOR,
 ) -> None:
     if state == EngineeringIssue.State.CLOSED and previous_state != EngineeringIssue.State.CLOSED:
         changed: list[str] = []
@@ -689,13 +639,14 @@ def _apply_problem_consequences(
             changed.append("needs_review")
         if changed:
             finish_mutation(row=problem, now=now, update_fields=changed)
-        write_system_activity(
+        _write_consequence_activity(
+            actor=actor,
             workspace_id=problem.workspace_id,
-            actor_system=SYSTEM_ACTOR,
+            actor_system=actor_system,
             action=Activity.Action.PROBLEM_UPDATED,
             record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
-            metadata={"fields": changed or ["needs_review"], "reason": "issue_closed"},
+            metadata={"fields": changed, "reason": "issue_closed"},
             now=now,
         )
     if reopen_event_at is None:
@@ -720,16 +671,17 @@ def _apply_problem_consequences(
         invalidate_pending_notifications(
             report=report, reason=Operation.InvalidationReason.ISSUE_REOPENED, now=now
         )
-    write_system_activity(
+    _write_consequence_activity(
+        actor=actor,
         workspace_id=problem.workspace_id,
-        actor_system=SYSTEM_ACTOR,
+        actor_system=actor_system,
         action=Activity.Action.PROBLEM_STATE_CHANGED
         if reopened_a_fix
         else Activity.Action.PROBLEM_UPDATED,
         record_type=Activity.RecordType.PROBLEM,
         record_id=problem.pk,
         metadata={
-            "fields": changed or ["needs_review"],
+            "fields": changed,
             "reason": "issue_reopened",
             "provider_event_at": reopen_event_at.isoformat(),
         },
@@ -741,7 +693,6 @@ def apply_installation_webhook(
     *, installation_id: str, event: InstallationEvent, now: datetime | None = None
 ) -> None:
     """Fan out lifecycle events only to connections bound to this installation."""
-    current = now or timezone.now()
     connection_ids = (
         Connection.objects.filter(provider=Connection.Provider.GITHUB, external_id=installation_id)
         .order_by("workspace_id", "id")
@@ -792,13 +743,38 @@ def apply_installation_webhook(
                 issue = EngineeringIssue.objects.select_for_update().get(pk=issue_hint["pk"])
                 issue.access = issue_access
                 issue.sync_error = connection.error_code
-                issue.last_synced_at = current
-                issue.save(update_fields=["access", "sync_error", "last_synced_at"])
+                issue.save(update_fields=["access", "sync_error"])
     for revalidate_id in revalidate:
-        try:
-            from operations.tasks import revalidate_github_connection
+        dispatch_task("operations.tasks.revalidate_github_connection", revalidate_id)
 
-            revalidate_github_connection.delay(revalidate_id)
-        except Exception:
-            # The next periodic reconciliation and manual refresh remain available.
-            continue
+
+def _write_consequence_activity(
+    *,
+    actor: Membership | None,
+    workspace_id: UUID,
+    actor_system: str,
+    action: str,
+    record_type: str,
+    record_id: UUID,
+    metadata: dict[str, object],
+    now: datetime,
+) -> None:
+    if actor is not None:
+        write_activity(
+            actor=actor,
+            action=action,
+            record_type=record_type,
+            record_id=record_id,
+            metadata=metadata,
+            now=now,
+        )
+    else:
+        write_system_activity(
+            workspace_id=workspace_id,
+            actor_system=actor_system,
+            action=action,
+            record_type=record_type,
+            record_id=record_id,
+            metadata=metadata,
+            now=now,
+        )

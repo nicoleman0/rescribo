@@ -21,12 +21,13 @@ const problem: ProblemDetail = {
   current_create_operation: null,
 }
 
-const draft = (title: string, body: string, id = 'draft-1') => ({
+const draft = (title: string, body: string, id = 'draft-1', version = 1) => ({
   id,
-  draft_version: 1,
+  draft_version: version,
   expires_at: '2026-09-20T10:15:00Z',
   title,
   body,
+  marker: `<!-- rescribo-operation:${id} -->`,
   repository: 'acme/widgets',
   visibility: 'private',
 })
@@ -41,14 +42,15 @@ test('shows the exact persisted preview and posts only after explicit approval',
       const body = JSON.parse(String(init?.body)) as {
         title?: string
         body?: string
+        draft_id?: string
       }
       previewBodies.push(JSON.stringify(body))
-      const marker = `<!-- rescribo-operation:${previewBodies.length === 1 ? 'draft-1' : 'draft-2'} -->`
       return json(
         draft(
           body.title ?? 'Export fails',
-          `${body.body ?? problem.summary}\n\n${marker}`,
-          `draft-${previewBodies.length}`,
+          body.body ?? problem.summary,
+          body.draft_id ?? 'draft-1',
+          previewBodies.length,
         ),
         201,
       )
@@ -118,15 +120,16 @@ test('shows the exact persisted preview and posts only after explicit approval',
     2,
   )
   expect(
-    screen.getByText('<!-- rescribo-operation:draft-2 -->'),
+    screen.getByText('<!-- rescribo-operation:draft-1 -->'),
   ).toBeInTheDocument()
   expect(previewBodies).toHaveLength(2)
+  expect(JSON.parse(previewBodies[1])).toMatchObject({ draft_id: 'draft-1' })
   fireEvent.click(screen.getByRole('button', { name: 'Publish issue' }))
 
   await waitFor(() =>
     expect(approvalBody).toEqual({
-      draft_id: 'draft-2',
-      draft_version: 1,
+      draft_id: 'draft-1',
+      draft_version: 2,
       approved: true,
     }),
   )

@@ -219,7 +219,7 @@ def test_stale_delivery_does_not_regress_state_or_timestamp() -> None:
     assert issue.state == "closed" and issue.state_reason == "completed"
     assert issue.provider_updated_at == stored_time
     assert issue.access == EngineeringIssue.Access.OK
-    assert issue.last_synced_at is not None
+    assert issue.last_attempted_sync_at is not None
     assert problem.needs_review is False  # the stale "reopen" was never applied
 
 

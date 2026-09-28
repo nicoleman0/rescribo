@@ -1463,6 +1463,75 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/abandon/:
+    post:
+      operationId: workspaces_problems_issue_operations_abandon_create
+      parameters:
+      - in: path
+        name: operation_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueAbandon'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalOperation'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/issue/operations/{operation_id}/reconcile/:
     post:
       operationId: workspaces_problems_issue_operations_reconcile_create
@@ -2641,6 +2710,9 @@ components:
         access_reason:
           type: string
           readOnly: true
+        access_detail:
+          type: string
+          readOnly: true
         sync_error:
           type: string
         stale:
@@ -2650,6 +2722,7 @@ components:
           readOnly: true
       required:
       - access
+      - access_detail
       - access_reason
       - id
       - last_attempted_sync_at
@@ -2693,7 +2766,7 @@ components:
           type: string
           format: uuid
         state:
-          type: string
+          $ref: '#/components/schemas/ExternalOperationStateEnum'
         destination:
           type: string
         remote_issue_id:
@@ -2705,6 +2778,11 @@ components:
           type: string
         safe_error:
           type: string
+        recovery_requested:
+          type: boolean
+        error_detail:
+          type: string
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -2721,12 +2799,32 @@ components:
       - completed_at
       - created_at
       - destination
+      - error_detail
       - id
+      - recovery_requested
       - remote_issue_id
       - remote_number
       - remote_url
       - safe_error
       - state
+    ExternalOperationStateEnum:
+      enum:
+      - draft
+      - queued
+      - running
+      - succeeded
+      - failed
+      - uncertain
+      - cancelled
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `queued` - Queued
+        * `running` - Running
+        * `succeeded` - Succeeded
+        * `failed` - Failed
+        * `uncertain` - Uncertain
+        * `cancelled` - Cancelled
     Health:
       type: object
       properties:
@@ -2809,6 +2907,14 @@ components:
       - accept_url
       - email
       - id
+    IssueAbandon:
+      type: object
+      properties:
+        reason:
+          type: string
+          maxLength: 2000
+      required:
+      - reason
     IssueApprove:
       type: object
       properties:
@@ -2827,6 +2933,9 @@ components:
     IssueDraft:
       type: object
       properties:
+        draft_id:
+          type: string
+          format: uuid
         expected_version:
           type: integer
           minimum: 1
@@ -2841,6 +2950,8 @@ components:
     IssueDraftResult:
       type: object
       properties:
+        marker:
+          type: string
         id:
           type: string
           format: uuid
@@ -2862,6 +2973,7 @@ components:
       - draft_version
       - expires_at
       - id
+      - marker
       - repository
       - title
       - visibility
@@ -2907,7 +3019,7 @@ components:
           type: string
           format: uuid
         state:
-          type: string
+          $ref: '#/components/schemas/ExternalOperationStateEnum'
       required:
       - id
       - state
@@ -3254,6 +3366,11 @@ components:
     ProblemDetail:
       type: object
       properties:
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
         id:
           type: string
           format: uuid
@@ -3281,11 +3398,6 @@ components:
         updated_at:
           type: string
           format: date-time
-        engineering_issue:
-          allOf:
-          - $ref: '#/components/schemas/EngineeringIssue'
-          nullable: true
-          readOnly: true
         current_create_operation:
           allOf:
           - $ref: '#/components/schemas/ExternalOperation'
@@ -3322,6 +3434,11 @@ components:
     ProblemListItem:
       type: object
       properties:
+        engineering_issue:
+          allOf:
+          - $ref: '#/components/schemas/EngineeringIssue'
+          nullable: true
+          readOnly: true
         id:
           type: string
           format: uuid
@@ -3343,11 +3460,6 @@ components:
         created_at:
           type: string
           format: date-time
-        engineering_issue:
-          allOf:
-          - $ref: '#/components/schemas/EngineeringIssue'
-          nullable: true
-          readOnly: true
       required:
       - created_at
       - engineering_issue

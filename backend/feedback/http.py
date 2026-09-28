@@ -15,7 +15,8 @@ from feedback.errors import (
     InvalidTransition,
     IssueAlreadyLinked,
     IssueAlreadyLinkedElsewhere,
-    IssueCreationUncertain,
+    IssueCreateUnresolved,
+    IssueOperationError,
     IssueProviderUnavailable,
     IssueReferenceRejected,
     NoChanges,
@@ -30,6 +31,7 @@ CONFLICT_DETAILS: dict[type[FeedbackError], str] = {
     AlreadyLinked: "The report is already linked to this problem.",
     IssueAlreadyLinked: "This issue is already linked to this problem.",
     NoChanges: "Nothing would change.",
+    IssueCreateUnresolved: "Resolve pending issue creation before linking or creating an issue.",
 }
 
 
@@ -108,19 +110,9 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
             },
             status=409,
         )
-    if isinstance(error, IssueCreationUncertain):
+    if isinstance(error, IssueOperationError):
         return Response(
-            {
-                "detail": (
-                    "GitHub did not confirm this issue was created in time. Check the "
-                    "repository for a duplicate before trying again."
-                ),
-                "reason": error.reason,
-                "field_errors": {},
-                "operation_id": str(error.operation_id),
-                "current": current(),
-            },
-            status=409,
+            {"detail": error.detail, "reason": error.reason, "field_errors": {}}, status=400
         )
     detail = CONFLICT_DETAILS.get(type(error))
     if detail is None:

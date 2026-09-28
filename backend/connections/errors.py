@@ -37,6 +37,14 @@ def safe_provider_error(error: Exception) -> SetupError:
 
 
 ERROR_DETAILS = {
+    "binding_changed": "The selected repository changed. Relink the issue to verify access.",
+    "rate_limited": "GitHub asked us to wait. The status will refresh after that delay.",
+    "disconnected": "Reconnect GitHub in workspace settings, then refresh.",
+    "issue_transferred": (
+        "This issue moved to another repository. Review the link and selected repository."
+    ),
+    "inaccessible": "GitHub could not grant access to this issue. Check permissions, then refresh.",
+    "repository_removed": "Restore this repository in the GitHub App installation, then reconnect.",
     "missing_scopes": "Grant the required app permissions and reconnect.",
     "identity_mismatch": "The connected identity changed. Reconnect to verify it.",
     "repository_changed": (

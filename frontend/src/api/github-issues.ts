@@ -4,20 +4,25 @@ import { apiRequest } from './request'
 import type { components } from './schema'
 
 export type EngineeringIssue = components['schemas']['EngineeringIssue']
-export type IssuePreview = components['schemas']['IssueDraftResult']
+export type IssueDraft = components['schemas']['IssueDraftResult']
 export type ExternalOperation = components['schemas']['ExternalOperation']
 type Schemas = components['schemas']
 
 const path = (workspaceId: string, problemId: string) =>
   `workspaces/${workspaceId}/problems/${problemId}/issue/`
 
-export async function previewGitHubIssue(
+export async function saveGitHubIssueDraft(
   workspaceId: string,
   problemId: string,
-  input: { expected_version: number; title?: string; body?: string },
+  input: {
+    expected_version: number
+    title?: string
+    body?: string
+    draft_id?: string
+  },
 ) {
   await csrf()
-  return apiRequest<IssuePreview>(
+  return apiRequest<IssueDraft>(
     `${path(workspaceId, problemId)}preview/`,
     input,
   )
@@ -78,5 +83,18 @@ export async function refreshGitHubIssue(
   return apiRequest<Schemas['IssueRefreshStatus']>(
     `${path(workspaceId, problemId)}refresh/`,
     input,
+  )
+}
+
+export async function abandonGitHubOperation(
+  workspaceId: string,
+  problemId: string,
+  operationId: string,
+  reason: string,
+) {
+  await csrf()
+  return apiRequest<ExternalOperation>(
+    `${path(workspaceId, problemId)}operations/${operationId}/abandon/`,
+    { reason },
   )
 }

@@ -35,9 +35,6 @@ class Connection(models.Model):
     visibility = models.CharField(max_length=16, blank=True)
     version = models.PositiveIntegerField(default=1)
     binding_revision = models.PositiveIntegerField(default=1)
-    reconciliation_started_at = models.DateTimeField(null=True, blank=True)
-    reconciliation_binding_revision = models.PositiveIntegerField(default=0)
-    reconciliation_targets = models.JSONField(default=list)
 
     class Meta:
         constraints = [
@@ -75,10 +72,3 @@ class SetupState(models.Model):
     repository = models.CharField(max_length=200, blank=True)
     expires_at = models.DateTimeField()
     used_at = models.DateTimeField(null=True)
-
-
-class GitHubWebhookReceipt(models.Model):
-    """Dedupes inbound GitHub deliveries. #15 owns the durable, cross-provider replacement."""
-
-    delivery_id = models.CharField(max_length=64, primary_key=True)
-    received_at = models.DateTimeField(default=timezone.now)

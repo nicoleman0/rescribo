@@ -35,6 +35,7 @@ from feedback.views import (
     ProblemDetailView,
     ProblemEditView,
     ProblemExternalOperationView,
+    ProblemIssueAbandonView,
     ProblemIssueApproveView,
     ProblemIssueLinkView,
     ProblemIssuePreviewView,
@@ -210,6 +211,11 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/operations/<uuid:operation_id>/",
         ProblemExternalOperationView.as_view(),
         name="problem-issue-operation",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/operations/<uuid:operation_id>/abandon/",
+        ProblemIssueAbandonView.as_view(),
+        name="problem-issue-abandon",
     ),
     path(
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/operations/<uuid:operation_id>/reconcile/",

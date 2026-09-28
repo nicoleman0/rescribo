@@ -51,7 +51,7 @@ class GitHubAppClient:
         self._app_id = app_id
         self._private_key = private_key
 
-    def _request(
+    def _request_response(
         self,
         method: str,
         path: str,
@@ -60,7 +60,7 @@ class GitHubAppClient:
         operation: str,
         json_body: Mapping[str, Any] | None = None,
         params: Mapping[str, str | int] | None = None,
-    ) -> dict[str, Any]:
+    ) -> httpx.Response:
         auth_token = token or create_app_jwt(self._app_id, self._private_key)
         response = self._http.request(
             method,
@@ -74,25 +74,42 @@ class GitHubAppClient:
             params=params,
         )
         if response.is_error or response.is_redirect:
-            retry_after: int | None = None
             raw_retry_after = response.headers.get("Retry-After")
-            if raw_retry_after and raw_retry_after.isdigit():
-                retry_after = int(raw_retry_after)
-            elif response.headers.get("X-RateLimit-Reset", "").isdigit():
-                reset_at = int(response.headers["X-RateLimit-Reset"])
-                retry_after = max(0, reset_at - int(datetime.now(UTC).timestamp()))
             rate_limited = response.status_code == 429 or (
                 response.status_code == 403
                 and (
-                    response.headers.get("X-RateLimit-Remaining") == "0" or retry_after is not None
+                    response.headers.get("X-RateLimit-Remaining") == "0"
+                    or raw_retry_after is not None
                 )
             )
+            retry_after: int | None = None
+            if rate_limited:
+                if raw_retry_after and raw_retry_after.isdigit():
+                    retry_after = int(raw_retry_after)
+                elif response.headers.get("X-RateLimit-Reset", "").isdigit():
+                    reset_at = int(response.headers["X-RateLimit-Reset"])
+                    retry_after = max(0, reset_at - int(datetime.now(UTC).timestamp()))
             raise GitHubAPIError(
                 operation,
                 response.status_code,
                 retry_after_seconds=retry_after,
                 rate_limited=rate_limited,
             )
+        return response
+
+    def _request(
+        self,
+        method: str,
+        path: str,
+        *,
+        token: str | None = None,
+        operation: str,
+        json_body: Mapping[str, Any] | None = None,
+        params: Mapping[str, str | int] | None = None,
+    ) -> dict[str, Any]:
+        response = self._request_response(
+            method, path, token=token, operation=operation, json_body=json_body, params=params
+        )
         if response.status_code == 204 or not response.content:
             return {}
         data = response.json()
@@ -229,17 +246,13 @@ class GitHubAppClient:
         self, *, installation_token: str, owner: str, name: str, page: int
     ) -> tuple[list[dict[str, Any]], bool]:
         """Return one repository issues page and whether another page may exist."""
-        response = self._http.get(
+        response = self._request_response(
+            "GET",
             f"/repos/{owner}/{name}/issues",
-            headers={
-                "Accept": "application/vnd.github+json",
-                "Authorization": f"Bearer {installation_token}",
-                "X-GitHub-Api-Version": "2026-03-10",
-            },
+            token=installation_token,
+            operation="issue listing",
             params={"state": "all", "per_page": 100, "page": page},
         )
-        if response.is_error or response.is_redirect:
-            raise GitHubAPIError("issue listing", response.status_code)
         data = response.json()
         if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
             raise RuntimeError("GitHub returned an invalid issue list.")

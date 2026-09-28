@@ -75,7 +75,7 @@ def test_issue_uniqueness_is_workspace_scoped() -> None:
     assert other_issue.pk is not None
 
 
-def test_save_asserts_workspace_matches_problem_workspace() -> None:
+def test_save_rejects_workspace_mismatch() -> None:
     actor = make_membership()
     problem = make_problem(actor=actor)
     other_actor = make_membership(
@@ -84,7 +84,7 @@ def test_save_asserts_workspace_matches_problem_workspace() -> None:
     )
     connection = make_connection(workspace=other_actor.workspace)
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(ValueError):
         EngineeringIssue.objects.create(
             workspace=other_actor.workspace,
             problem=problem,

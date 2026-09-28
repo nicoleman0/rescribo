@@ -1,12 +1,13 @@
 """Owner settings endpoints and session-bound OAuth callbacks."""
 
-import json
+import logging
 from collections.abc import Callable
+from dataclasses import asdict
 from typing import Any
 from uuid import UUID
 
 from django.conf import settings
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.http import HttpResponseRedirect
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
@@ -18,20 +19,20 @@ from rest_framework.views import APIView
 
 from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
 from connections import providers, services
-from connections.models import Connection, GitHubWebhookReceipt
+from connections.models import Connection
 from feedback.deletion import delete_report, delete_workspace
 from feedback.errors import VersionConflict
-from integrations.github_app.issues import provider_time
 from integrations.github_app.webhooks import (
     InvalidWebhookPayload,
     InvalidWebhookSignature,
-    parse_installation_event,
-    parse_issue_event,
+    parse_delivery,
     verify_webhook_signature,
 )
 from integrations.slack.errors import ChannelRejected
 from operations.models import InboundReceipt
 from operations.tasks import process_inbound_receipt
+
+logger = logging.getLogger(__name__)
 
 
 class ChannelSerializer(serializers.Serializer):
@@ -96,17 +97,6 @@ class DeleteSerializer(serializers.Serializer):
 
 class DeleteReportSerializer(DeleteSerializer):
     version = serializers.IntegerField(min_value=1)
-
-
-def _provider_time_or_none(value: Any) -> Any:
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise InvalidWebhookPayload("The provider timestamp is malformed.")
-    try:
-        return provider_time(value)
-    except (ValueError, OverflowError) as error:
-        raise InvalidWebhookPayload("The provider timestamp is malformed.") from error
 
 
 def translated(action: Callable[[], Any]) -> Response:
@@ -297,8 +287,7 @@ class GitHubWebhookView(APIView):
         try:
             process_inbound_receipt.delay(receipt_id)
         except Exception:
-            # The persisted pending receipt is redispatched by the periodic task.
-            return
+            logger.warning("GitHub receipt dispatch deferred to the durable dispatcher")
 
     @extend_schema(exclude=True)
     def post(self, request: Request) -> Response:
@@ -307,6 +296,8 @@ class GitHubWebhookView(APIView):
             # An operator configuration gap, not a bad request: fail closed with 500 so
             # GitHub's delivery retries once the secret is set, rather than giving up.
             return Response(status=500)
+        if len(request.body) > self.body_limit:
+            return Response(status=413)
         try:
             verify_webhook_signature(
                 secret=secret.encode(),
@@ -315,70 +306,24 @@ class GitHubWebhookView(APIView):
             )
         except InvalidWebhookSignature:
             return Response(status=401)
-        if len(request.body) > self.body_limit:
-            return Response(status=413)
         delivery_id = request.headers.get("X-GitHub-Delivery", "")
         if not delivery_id or len(delivery_id) > 128:
             return Response(status=400)
         try:
-            payload = json.loads(request.body)
-        except json.JSONDecodeError:
+            delivery = parse_delivery(request.headers, request.body)
+        except InvalidWebhookPayload:
             return Response(status=400)
-        if not isinstance(payload, dict):
-            return Response(status=400)
-        event_name = request.headers.get("X-GitHub-Event", "")
-        try:
-            if event_name == "issues":
-                parsed = parse_issue_event(payload)
-                if parsed is None:
-                    return Response(status=204)
-                normalized = parsed.as_dict()
-                provider_at = parsed.updated_at
-                action = parsed.action
-                repository_id = parsed.repository_id
-                issue_id = parsed.issue_id
-            elif event_name in {"installation", "installation_repositories"}:
-                parsed_installation = parse_installation_event(event_name, payload)
-                if parsed_installation is None:
-                    return Response(status=204)
-                normalized = parsed_installation.as_dict()
-                action = parsed_installation.action
-                provider_at = payload.get("installation", {}).get("updated_at")
-                repository_ids = parsed_installation.repositories_removed_ids
-                repository_id = repository_ids[0] if len(repository_ids) == 1 else ""
-                issue_id = ""
-            else:
-                return Response(status=204)
-            provider_at = _provider_time_or_none(provider_at)
-        except InvalidWebhookPayload, AttributeError, TypeError:
-            return Response(status=400)
-        installation = payload.get("installation")
-        installation_id = installation.get("id") if isinstance(installation, dict) else None
-        if (
-            not isinstance(installation_id, int)
-            or isinstance(installation_id, bool)
-            or installation_id <= 0
-        ):
-            return Response(status=400)
+        if delivery is None:
+            return Response(status=204)
         try:
             with transaction.atomic():
-                GitHubWebhookReceipt.objects.get_or_create(
-                    delivery_id=delivery_id,
-                )
                 receipt, created = InboundReceipt.objects.get_or_create(
                     provider=InboundReceipt.Provider.GITHUB,
                     delivery_id=delivery_id,
-                    defaults={
-                        "event": event_name,
-                        "action": action,
-                        "installation_id": str(installation_id),
-                        "repository_id": repository_id,
-                        "issue_id": issue_id,
-                        "normalized": normalized,
-                        "provider_at": provider_at,
-                    },
+                    defaults=asdict(delivery),
                 )
-        except Exception:
+        except DatabaseError:
+            logger.warning("GitHub receipt could not be persisted")
             return Response(status=500)
         if created:
             transaction.on_commit(lambda: self._dispatch(str(receipt.pk)))

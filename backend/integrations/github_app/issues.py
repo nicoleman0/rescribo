@@ -131,7 +131,7 @@ def resolve_issue_link(
     *,
     installation_token: str,
     expected_repository: str,
-    expected_repository_id: str = "",
+    expected_repository_id: str,
     reference: str,
 ) -> EngineeringIssueSnapshot:
     """Fetch and validate an existing issue for linking.
@@ -154,7 +154,7 @@ def resolve_issue_link(
     if "pull_request" in issue:
         raise IssueLinkError("Pull requests cannot be linked as issues.")
     snapshot = parse_issue_payload(issue, error=IssueLinkError)
-    if expected_repository_id and snapshot.repository_id != expected_repository_id:
+    if snapshot.repository_id != expected_repository_id:
         raise IssueLinkError("The issue belongs to a different repository identity.")
     if snapshot.number != number:
         raise IssueLinkError("GitHub returned a different issue number.")

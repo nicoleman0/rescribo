@@ -42,9 +42,9 @@ export function GitHubIssueStatus({ issue }: { issue: EngineeringIssue }) {
         {issue.refresh_status === 'pending' ? ' · Refresh queued' : ''}
         {issue.refresh_status === 'running' ? ' · Refreshing' : ''}
       </p>
-      {issue.access_reason ? (
+      {issue.access_detail ? (
         <p role="status" className="text-sm text-muted-foreground">
-          {issue.access_reason.replaceAll('_', ' ')}
+          {issue.access_detail}
         </p>
       ) : null}
     </div>

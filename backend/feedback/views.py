@@ -42,6 +42,7 @@ from feedback.serializers import (
     CreateProblemForReportSerializer,
     ExternalOperationSerializer,
     InboxFilterSerializer,
+    IssueAbandonSerializer,
     IssueApproveSerializer,
     IssueDraftResultSerializer,
     IssueDraftSerializer,
@@ -68,12 +69,13 @@ from feedback.serializers import (
     VersionedSerializer,
 )
 from operations.github_issue_create import (
+    abandon_creation,
     approve_draft,
     create_draft,
-    exact_body,
+    marker_for,
     operation_for_member,
+    request_recovery,
 )
-from operations.models import ExternalOperation
 
 READ_ERRORS = {401: ErrorSerializer, 404: ErrorSerializer}
 WRITE_ERRORS = {
@@ -397,7 +399,19 @@ class ProblemIssueLinkView(ProblemActionView):
         return issue.problem
 
 
-class ProblemIssuePreviewView(WorkspaceView):
+class IssueOperationView(WorkspaceView):
+    def operation_error(self, error: FeedbackError, problem_id: UUID) -> Response:
+        return feedback_error_response(
+            error,
+            current=lambda: (
+                ProblemDetailSerializer(
+                    get_problem(actor=self.membership, problem_id=problem_id)
+                ).data
+            ),
+        )
+
+
+class ProblemIssuePreviewView(IssueOperationView):
     @extend_schema(responses={200: IssuePreviewSerializer, **READ_ERRORS})
     def get(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
         try:
@@ -414,17 +428,21 @@ class ProblemIssuePreviewView(WorkspaceView):
     def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
         data = IssueDraftSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        operation = create_draft(
-            actor=self.membership,
-            problem_id=problem_id,
-            **data.validated_data,
-        )
+        try:
+            operation = create_draft(
+                actor=self.membership,
+                problem_id=problem_id,
+                **data.validated_data,
+            )
+        except FeedbackError as error:
+            return self.operation_error(error, problem_id)
         response = {
             "id": operation.pk,
             "draft_version": operation.draft_version,
             "expires_at": operation.expires_at,
             "title": operation.title,
-            "body": exact_body(operation),
+            "body": operation.body,
+            "marker": marker_for(operation.pk),
             "repository": operation.destination,
             "visibility": operation.connection.visibility,
         }
@@ -432,34 +450,40 @@ class ProblemIssuePreviewView(WorkspaceView):
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class ProblemIssueApproveView(WorkspaceView):
+class ProblemIssueApproveView(IssueOperationView):
     @extend_schema(
         request=IssueApproveSerializer, responses={202: ExternalOperationSerializer, **WRITE_ERRORS}
     )
     def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
         data = IssueApproveSerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        operation = approve_draft(
-            actor=self.membership, problem_id=problem_id, **data.validated_data
-        )
+        try:
+            operation = approve_draft(
+                actor=self.membership, problem_id=problem_id, **data.validated_data
+            )
+        except FeedbackError as error:
+            return self.operation_error(error, problem_id)
         return Response(ExternalOperationSerializer(operation).data, status=202)
 
 
-class ProblemExternalOperationView(WorkspaceView):
+class ProblemExternalOperationView(IssueOperationView):
     @extend_schema(responses={200: ExternalOperationSerializer, **READ_ERRORS})
     def get(
         self, request: Request, workspace_id: UUID, problem_id: UUID, operation_id: UUID
     ) -> Response:
-        operation = operation_for_member(
-            actor=self.membership,
-            problem_id=problem_id,
-            operation_id=operation_id,
-        )
+        try:
+            operation = operation_for_member(
+                actor=self.membership,
+                problem_id=problem_id,
+                operation_id=operation_id,
+            )
+        except FeedbackError as error:
+            return self.operation_error(error, problem_id)
         return Response(ExternalOperationSerializer(operation).data)
 
 
 @method_decorator(csrf_protect, name="dispatch")
-class ProblemIssueRecoveryView(WorkspaceView):
+class ProblemIssueRecoveryView(IssueOperationView):
     @extend_schema(
         request=IssueRecoverySerializer,
         responses={202: IssueRecoveryResultSerializer, **WRITE_ERRORS},
@@ -469,29 +493,38 @@ class ProblemIssueRecoveryView(WorkspaceView):
     ) -> Response:
         data = IssueRecoverySerializer(data=request.data)
         data.is_valid(raise_exception=True)
-        operation = operation_for_member(
-            actor=self.membership,
-            problem_id=problem_id,
-            operation_id=operation_id,
-        )
-        if operation.state != ExternalOperation.State.UNCERTAIN:
-            return Response({"reason": "operation_not_uncertain"}, status=409)
-        reference = data.validated_data.get("reference", "")
-        if reference:
-            from integrations.github_app.issues import parse_issue_reference
+        try:
+            operation = request_recovery(
+                actor=self.membership,
+                problem_id=problem_id,
+                operation_id=operation_id,
+                **data.validated_data,
+            )
+        except FeedbackError as error:
+            return self.operation_error(error, problem_id)
+        return Response(IssueRecoveryResultSerializer(operation).data, status=202)
 
-            try:
-                parse_issue_reference(
-                    reference, expected_repository=operation.connection.repository
-                )
-            except ValueError:
-                return Response({"reason": "issue_reference_rejected"}, status=400)
-        operation.recovery_reference = reference
-        operation.save(update_fields=["recovery_reference"])
-        from operations.tasks import reconcile_github_issue_create
 
-        reconcile_github_issue_create.delay(str(operation.pk))
-        return Response({"id": operation.pk, "state": operation.state}, status=202)
+@method_decorator(csrf_protect, name="dispatch")
+class ProblemIssueAbandonView(IssueOperationView):
+    @extend_schema(
+        request=IssueAbandonSerializer, responses={200: ExternalOperationSerializer, **WRITE_ERRORS}
+    )
+    def post(
+        self, request: Request, workspace_id: UUID, problem_id: UUID, operation_id: UUID
+    ) -> Response:
+        data = IssueAbandonSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            operation = abandon_creation(
+                actor=self.membership,
+                problem_id=problem_id,
+                operation_id=operation_id,
+                **data.validated_data,
+            )
+        except FeedbackError as error:
+            return self.operation_error(error, problem_id)
+        return Response(ExternalOperationSerializer(operation).data)
 
 
 @method_decorator(csrf_protect, name="dispatch")

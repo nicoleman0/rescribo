@@ -1,7 +1,9 @@
 import hashlib
 import hmac
+import json
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass
+from datetime import datetime
 from typing import Any, Literal
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient
@@ -37,8 +39,8 @@ class IssueEvent:
     repository: str
     state_reason: str | None
     updated_at: str
-    repository_id: str = ""
-    issue_id: str = ""
+    repository_id: str
+    issue_id: str
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -143,7 +145,7 @@ def parse_installation_event(
         return InstallationEvent(
             event=event_name,
             action=action,
-            repositories_removed=names,
+            repositories_removed=names if action == "removed" else (),
             access_lost=action == "removed",
             repositories_removed_ids=ids if action == "removed" else (),
             repositories_added_ids=ids if action == "added" else (),
@@ -175,7 +177,7 @@ def apply_issue_event(
     *,
     installation_token: str,
     expected_repository: str,
-    expected_repository_id: str = "",
+    expected_repository_id: str,
     event: IssueEvent,
     stored_updated_at: str | None,
     stored_state: str | None = None,
@@ -200,24 +202,47 @@ def apply_issue_event(
         raise InvalidWebhookPayload(
             f"The event belongs to {event.repository}, not {expected_repository}."
         )
+    return fetch_current_issue(
+        client,
+        installation_token=installation_token,
+        expected_repository=expected_repository,
+        expected_repository_id=expected_repository_id,
+        number=event.number,
+        issue_id=event.issue_id,
+        stored_updated_at=stored_updated_at,
+        stored_state=stored_state,
+    )
+
+
+def fetch_current_issue(
+    client: GitHubAppClient,
+    *,
+    installation_token: str,
+    expected_repository: str,
+    expected_repository_id: str,
+    number: int,
+    issue_id: str,
+    stored_updated_at: str | None,
+    stored_state: str | None = None,
+) -> IssueStateOutcome:
     owner, _, name = expected_repository.partition("/")
     try:
         issue = client.get_issue(
             installation_token=installation_token,
             owner=owner,
             name=name,
-            number=event.number,
+            number=number,
         )
     except GitHubAPIError as error:
         if error.status_code in {301, 404, 410}:
             return IssueStateOutcome(
-                number=event.number, applied=False, access="access_lost", snapshot=None
+                number=number, applied=False, access="access_lost", snapshot=None
             )
         raise
     snapshot = parse_issue_payload(issue, error=InvalidWebhookPayload)
-    if expected_repository_id and snapshot.repository_id != expected_repository_id:
+    if snapshot.repository_id != expected_repository_id:
         raise InvalidWebhookPayload("The fetched issue belongs to another repository identity.")
-    if event.issue_id and snapshot.issue_id != event.issue_id:
+    if snapshot.issue_id != issue_id:
         raise InvalidWebhookPayload("The fetched issue has a different stable identity.")
     fetched_time = provider_time(snapshot.updated_at)
     stored_time = provider_time(stored_updated_at) if stored_updated_at else None
@@ -226,4 +251,66 @@ def apply_issue_event(
         or fetched_time > stored_time
         or (fetched_time == stored_time and snapshot.state != stored_state)
     )
-    return IssueStateOutcome(number=event.number, applied=applied, access="ok", snapshot=snapshot)
+    return IssueStateOutcome(number=number, applied=applied, access="ok", snapshot=snapshot)
+
+
+@dataclass(frozen=True)
+class NormalizedDelivery:
+    event: str
+    action: str
+    installation_id: str
+    repository_id: str
+    issue_id: str
+    normalized: dict[str, Any]
+    provider_at: datetime | None
+
+
+def parse_delivery(headers: Mapping[str, str], body: bytes) -> NormalizedDelivery | None:
+    try:
+        payload = json.loads(body)
+    except (ValueError, UnicodeDecodeError) as error:
+        raise InvalidWebhookPayload("The delivery must contain JSON.") from error
+    if not isinstance(payload, dict):
+        raise InvalidWebhookPayload("The delivery must be an object.")
+    event_name = headers.get("X-GitHub-Event", "")
+    if event_name == "issues":
+        parsed = parse_issue_event(payload)
+        if parsed is None:
+            return None
+        normalized = parsed.as_dict()
+        action, repository_id, issue_id = parsed.action, parsed.repository_id, parsed.issue_id
+        provider_at = provider_time(parsed.updated_at)
+    elif event_name in {"installation", "installation_repositories"}:
+        installation_event = parse_installation_event(event_name, payload)
+        if installation_event is None:
+            return None
+        normalized = installation_event.as_dict()
+        action = installation_event.action
+        ids = (
+            installation_event.repositories_removed_ids + installation_event.repositories_added_ids
+        )
+        repository_id, issue_id = ids[0] if len(ids) == 1 else "", ""
+        provider_at = None
+    else:
+        return None
+    installation = payload.get("installation")
+    if not isinstance(installation, dict):
+        raise InvalidWebhookPayload("The delivery lacks an installation.")
+    installation_id = installation.get("id")
+    if (
+        not isinstance(installation_id, int)
+        or isinstance(installation_id, bool)
+        or installation_id <= 0
+    ):
+        raise InvalidWebhookPayload("The installation identity is invalid.")
+    if event_name != "issues" and installation.get("updated_at") is not None:
+        raw_time = installation["updated_at"]
+        if not isinstance(raw_time, str):
+            raise InvalidWebhookPayload("The provider timestamp is malformed.")
+        try:
+            provider_at = provider_time(raw_time)
+        except (ValueError, OverflowError) as error:
+            raise InvalidWebhookPayload("The provider timestamp is malformed.") from error
+    return NormalizedDelivery(
+        event_name, action, str(installation_id), repository_id, issue_id, normalized, provider_at
+    )

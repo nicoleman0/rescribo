@@ -161,3 +161,58 @@ def test_sync_worker_applies_closed_state_from_provider() -> None:
     assert issue.state == "closed"
     assert issue.last_successful_sync_at is not None
     assert problem.needs_review is True
+
+
+def test_empty_connection_completes_reconciliation() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    reconcile_github_issues()
+    connection.refresh_from_db()
+    assert connection.last_reconciled_at is not None
+
+
+def test_retry_after_is_respected_by_webhook_and_scheduled_sync() -> None:
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from feedback.engineering_issues import apply_issue_webhook
+    from integrations.github_app.webhooks import IssueEvent
+
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(problem=problem, connection=connection, created_by=actor)
+    issue.sync_retry_at = timezone.now() + timedelta(minutes=10)
+    issue.save()
+    event = IssueEvent(
+        action="closed",
+        number=issue.number,
+        repository=connection.repository,
+        repository_id=issue.repository_id,
+        issue_id=issue.issue_id,
+        state_reason=None,
+        updated_at=timezone.now().isoformat(),
+    )
+    with patch("feedback.engineering_issues.github_client") as factory:
+        sync_github_issue(str(issue.pk))
+        apply_issue_webhook(installation_id=connection.external_id, event=event)
+    factory.assert_not_called()
+    issue.refresh_from_db()
+    assert issue.sync_requested_generation > issue.sync_completed_generation
+
+
+def test_transient_outage_does_not_change_access() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(problem=problem, connection=connection, created_by=actor)
+    factory = patched_client(error=GitHubAPIError("lookup", 502))
+    try:
+        sync_github_issue(str(issue.pk))
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    assert issue.access == EngineeringIssue.Access.OK
+    assert issue.sync_error == "provider_unavailable"
+    assert issue.sync_retry_at is not None

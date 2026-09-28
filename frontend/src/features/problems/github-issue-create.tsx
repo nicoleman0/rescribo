@@ -3,16 +3,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { getProblem, problemKeys, type ProblemDetail } from '@/api/problems'
 import {
   approveGitHubIssue,
+  abandonGitHubOperation,
   getGitHubOperation,
-  previewGitHubIssue,
+  saveGitHubIssueDraft,
   reconcileGitHubOperation,
-  type IssuePreview,
+  type IssueDraft,
 } from '@/api/github-issues'
 import type { ApiError } from '@/api/request'
 import { Field, TextareaField } from '@/components/forms/field'
 import { touchTarget } from '@/components/layout/touch-target'
 import { ActionError } from '@/components/states/action-error'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { applyProblem } from '@/api/cache'
 import { Link } from 'react-router-dom'
@@ -30,26 +30,21 @@ export function GitHubIssueCreate({
   const [title, setTitle] = useState(problem.title)
   const [body, setBody] = useState('')
   const [previewed, setPreviewed] = useState(false)
-  const [draft, setDraft] = useState<IssuePreview | null>(null)
+  const [draft, setDraft] = useState<IssueDraft | null>(null)
   const [operationId, setOperationId] = useState(
     problem.current_create_operation?.id ?? '',
   )
   const [recoveryReference, setRecoveryReference] = useState('')
+  const [resolutionReason, setResolutionReason] = useState('')
   const [error, setError] = useState<ApiError | null>(null)
   const [busy, setBusy] = useState(false)
   const operation = useQuery({
-    queryKey: [
-      'workspaces',
-      workspaceId,
-      'problems',
-      problem.id,
-      'github-operation',
-      operationId,
-    ],
+    queryKey: problemKeys.githubOperation(workspaceId, problem.id, operationId),
     queryFn: () => getGitHubOperation(workspaceId, problem.id, operationId),
     enabled: Boolean(operationId),
     refetchInterval: (query) =>
-      ['queued', 'running'].includes(query.state.data?.state ?? '')
+      ['queued', 'running'].includes(query.state.data?.state ?? '') ||
+      query.state.data?.recovery_requested
         ? 2000
         : false,
     refetchIntervalInBackground: false,
@@ -67,16 +62,12 @@ export function GitHubIssueCreate({
     setBusy(true)
     setError(null)
     try {
-      const result = await previewGitHubIssue(workspaceId, problem.id, {
+      const result = await saveGitHubIssueDraft(workspaceId, problem.id, {
         expected_version: problem.version,
       })
       setDraft(result)
       setTitle(result.title)
-      setBody(
-        result.body
-          .replace(/\n?<!-- rescribo-operation:[^>]+ -->/g, '')
-          .trimEnd(),
-      )
+      setBody(result.body)
       setPreviewed(false)
       setEditing(true)
     } catch (cause) {
@@ -91,20 +82,15 @@ export function GitHubIssueCreate({
     setBusy(true)
     setError(null)
     try {
-      const result = await previewGitHubIssue(workspaceId, problem.id, {
+      const result = await saveGitHubIssueDraft(workspaceId, problem.id, {
         expected_version: problem.version,
         title,
-        body: body
-          .replace(/\n?<!-- rescribo-operation:[^>]+ -->/g, '')
-          .trimEnd(),
+        body,
+        draft_id: draft?.id,
       })
       setDraft(result)
       setTitle(result.title)
-      setBody(
-        result.body
-          .replace(/\n?<!-- rescribo-operation:[^>]+ -->/g, '')
-          .trimEnd(),
-      )
+      setBody(result.body)
       setPreviewed(true)
     } catch (cause) {
       setError(cause as ApiError)
@@ -153,6 +139,27 @@ export function GitHubIssueCreate({
     }
   }
 
+  async function stopRecovery() {
+    setBusy(true)
+    setError(null)
+    try {
+      await abandonGitHubOperation(
+        workspaceId,
+        problem.id,
+        operationId,
+        resolutionReason,
+      )
+      const latest = await getProblem(workspaceId, problem.id)
+      applyProblem(client, workspaceId, latest)
+      setOperationId('')
+      setEditing(false)
+    } catch (cause) {
+      setError(cause as ApiError)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (operationId && operation.data) {
     if (operation.data.state === 'succeeded') {
       return (
@@ -181,7 +188,7 @@ export function GitHubIssueCreate({
           <Field
             id={`${id}-recovery-reference`}
             label="Existing issue reference (optional)"
-            hint="Use this if the issue exists but automatic recovery did not find it. It must contain the operation marker."
+            hint="Recover an issue created by this request. To link an issue filed by hand, first review the repository and stop recovery below."
             value={recoveryReference}
             onChange={(event) => setRecoveryReference(event.target.value)}
           />
@@ -191,9 +198,33 @@ export function GitHubIssueCreate({
               disabled={busy}
               onClick={() => void checkResult(recoveryReference || undefined)}
             >
-              {busy ? 'Checking…' : 'Check creation result'}
+              {busy || operation.data.recovery_requested
+                ? 'Checking…'
+                : 'Check creation result'}
             </Button>
           </div>
+          {operation.data.error_detail ? (
+            <p role="status" className="text-sm text-muted-foreground">
+              {operation.data.error_detail}
+            </p>
+          ) : null}
+          <TextareaField
+            id={`${id}-resolution-reason`}
+            label="What did you check?"
+            hint="Review GitHub for a created issue. Stopping recovery allows a new link or create request and may lead to a duplicate if an issue already exists."
+            value={resolutionReason}
+            maxLength={2000}
+            onChange={(event) => setResolutionReason(event.target.value)}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className={touchTarget}
+            disabled={busy || !resolutionReason.trim()}
+            onClick={() => void stopRecovery()}
+          >
+            Stop recovery and unblock this problem
+          </Button>
           {error ? (
             <ActionError
               error={error}
@@ -337,7 +368,7 @@ export function GitHubIssueCreate({
           <h4 className="font-medium break-words">{title}</h4>
           <p className="whitespace-pre-wrap break-words text-sm">{body}</p>
           <p className="border-t border-border pt-2 font-mono text-xs text-muted-foreground">
-            {draft?.body.match(/<!-- rescribo-operation:[^>]+ -->/)?.[0]}
+            {draft?.marker}
           </p>
         </div>
       ) : null}
@@ -348,15 +379,6 @@ export function GitHubIssueCreate({
             title="The issue was not created"
             record="problem"
           />
-          {error.reason === 'issue_creation_uncertain' ? (
-            <Alert>
-              <AlertTitle>GitHub may have created the issue</AlertTitle>
-              <AlertDescription>
-                Check GitHub before trying again. This request may have reached
-                GitHub.
-              </AlertDescription>
-            </Alert>
-          ) : null}
         </>
       ) : null}
       <div className="flex flex-wrap gap-2">
