@@ -459,6 +459,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/confirm-fix/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_problems_confirm_fix_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/edit/": {
         parameters: {
             query?: never;
@@ -648,6 +664,23 @@ export interface paths {
         put?: never;
         /** @description Run one report triage use case and return the updated report. */
         post: operations["workspaces_reports_assign_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/confirm-fix-applies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one report triage use case and return the updated report. */
+        post: operations["workspaces_reports_confirm_fix_applies_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -921,6 +954,12 @@ export interface components {
          * @enum {string}
          */
         ExternalOperationStateEnum: "draft" | "queued" | "running" | "succeeded" | "failed" | "uncertain" | "cancelled";
+        FixConfirmation: {
+            expected_version: number;
+            fix_note: string;
+            fix_version: string;
+            evidence_url?: string;
+        };
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
         };
@@ -1182,6 +1221,12 @@ export interface components {
             report_count: number;
             needs_review: boolean;
             resolution_revision: number;
+            fix_note: string;
+            fix_version: string;
+            fix_evidence_url: string;
+            /** Format: date-time */
+            fix_confirmed_at: string | null;
+            fix_confirmed_by: components["schemas"]["MemberSummary"] | null;
             version: number;
             /** Format: date-time */
             created_at: string;
@@ -1246,6 +1291,7 @@ export interface components {
             current: components["schemas"]["ReportDetail"];
         };
         ReportDetail: {
+            readonly follow_up_revision: number | null;
             /** Format: uuid */
             id: string;
             title: string;
@@ -2513,6 +2559,66 @@ export interface operations {
             };
         };
     };
+    workspaces_problems_confirm_fix_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FixConfirmation"];
+                "application/x-www-form-urlencoded": components["schemas"]["FixConfirmation"];
+                "multipart/form-data": components["schemas"]["FixConfirmation"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemConflict"];
+                };
+            };
+        };
+    };
     workspaces_problems_edit_create: {
         parameters: {
             query?: never;
@@ -3243,6 +3349,74 @@ export interface operations {
                 "application/json": components["schemas"]["AssignReport"];
                 "application/x-www-form-urlencoded": components["schemas"]["AssignReport"];
                 "multipart/form-data": components["schemas"]["AssignReport"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportConflict"];
+                };
+            };
+        };
+    };
+    workspaces_reports_confirm_fix_applies_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Versioned"];
+                "application/x-www-form-urlencoded": components["schemas"]["Versioned"];
+                "multipart/form-data": components["schemas"]["Versioned"];
             };
         };
         responses: {

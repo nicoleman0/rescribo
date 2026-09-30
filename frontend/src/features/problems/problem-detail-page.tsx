@@ -8,12 +8,14 @@ import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import {
   assignProblemOwner,
+  confirmProblemFix,
   editProblem,
   getProblem,
   listProblemReports,
   problemKeys,
   type ProblemDetail,
 } from '@/api/problems'
+import { confirmFixApplies, type ReportDetail } from '@/api/reports'
 import type { ApiError } from '@/api/request'
 import { useWorkspace } from '@/components/auth/use-workspace'
 import { fieldError } from '@/components/forms/field-error'
@@ -105,6 +107,99 @@ export function ProblemDetailPage() {
   )
 }
 
+function ConfirmFixForm({
+  workspaceId,
+  problem,
+}: {
+  workspaceId: string
+  problem: ProblemDetail
+}) {
+  const id = useId()
+  const [draft, setDraft] = useState({
+    fix_note: '',
+    fix_version: '',
+    evidence_url: '',
+  })
+  const mutation = useProblemMutation(workspaceId, (input: typeof draft) =>
+    confirmProblemFix(workspaceId, problem.id, {
+      expected_version: problem.version,
+      ...input,
+    }),
+  )
+  function submit(event: FormEvent) {
+    event.preventDefault()
+    mutation.mutate(draft)
+  }
+  return (
+    <form
+      aria-label="Confirm fix"
+      className="grid max-w-lg gap-3 rounded-card border border-border p-4"
+      onSubmit={submit}
+      noValidate
+    >
+      <h2 className="font-semibold">Review and confirm fix</h2>
+      <p className="text-sm text-muted-foreground">
+        Confirm only after verifying that this fix is available to affected
+        customers. This does not contact customers.
+      </p>
+      <fieldset disabled={mutation.isPending} className="grid gap-3">
+        <TextareaField
+          id={`${id}-note`}
+          label="Fix details"
+          required
+          maxLength={10000}
+          rows={3}
+          value={draft.fix_note}
+          error={fieldError(mutation.error, 'fix_note')}
+          onChange={(event) =>
+            setDraft({ ...draft, fix_note: event.target.value })
+          }
+        />
+        <Field
+          id={`${id}-version`}
+          label="Available in version"
+          required
+          maxLength={100}
+          value={draft.fix_version}
+          error={fieldError(mutation.error, 'fix_version')}
+          onChange={(event) =>
+            setDraft({ ...draft, fix_version: event.target.value })
+          }
+        />
+        <Field
+          id={`${id}-evidence`}
+          label="Evidence URL"
+          type="url"
+          maxLength={500}
+          value={draft.evidence_url}
+          error={fieldError(mutation.error, 'evidence_url')}
+          onChange={(event) =>
+            setDraft({ ...draft, evidence_url: event.target.value })
+          }
+        />
+      </fieldset>
+      {mutation.isError ? (
+        <ActionError
+          error={mutation.error}
+          title="The fix was not confirmed"
+          record="problem"
+        />
+      ) : null}
+      <Button
+        type="submit"
+        className={cn('w-fit', touchTarget)}
+        disabled={
+          mutation.isPending ||
+          !draft.fix_note.trim() ||
+          !draft.fix_version.trim()
+        }
+      >
+        {mutation.isPending ? 'Confirming…' : 'Confirm fix'}
+      </Button>
+    </form>
+  )
+}
+
 function ProblemBody({
   workspaceId,
   problem,
@@ -115,6 +210,30 @@ function ProblemBody({
   return (
     <article className="grid gap-6">
       <ProblemHeader workspaceId={workspaceId} problem={problem} />
+      {problem.state === 'open' || problem.state === 'in_progress' ? (
+        <ConfirmFixForm workspaceId={workspaceId} problem={problem} />
+      ) : problem.state === 'fix_available' ? (
+        <section
+          aria-label="Confirmed fix"
+          className="grid gap-2 rounded-card border border-border p-4"
+        >
+          <h2 className="font-semibold">Confirmed fix</h2>
+          <p className="text-sm">{problem.fix_note}</p>
+          <p className="text-sm text-muted-foreground">
+            Available in {problem.fix_version}
+          </p>
+          {problem.fix_evidence_url ? (
+            <a
+              className="text-sm underline"
+              href={problem.fix_evidence_url}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Fix evidence
+            </a>
+          ) : null}
+        </section>
+      ) : null}
       <OwnerForm workspaceId={workspaceId} problem={problem} />
       <Separator />
       <GitHubIssueSection workspaceId={workspaceId} problem={problem} />
@@ -418,6 +537,14 @@ function LinkedReports({
                   submittedBy={report.submitted_by}
                 />
                 <AssignReportForm workspaceId={workspaceId} report={report} />
+                {problem.state === 'fix_available' &&
+                report.follow_up_revision !== problem.resolution_revision ? (
+                  <ConfirmFixAppliesButton
+                    workspaceId={workspaceId}
+                    report={report}
+                    onConfirmed={() => reports.refetch()}
+                  />
+                ) : null}
               </li>
             ))}
           </ul>
@@ -431,5 +558,55 @@ function LinkedReports({
         </div>
       ) : null}
     </section>
+  )
+}
+
+function ConfirmFixAppliesButton({
+  workspaceId,
+  report,
+  onConfirmed,
+}: {
+  workspaceId: string
+  report: ReportDetail
+  onConfirmed: () => void
+}) {
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState<ApiError | null>(null)
+  async function confirm() {
+    setPending(true)
+    setError(null)
+    try {
+      await confirmFixApplies(workspaceId, report.id, {
+        expected_version: report.version,
+      })
+      onConfirmed()
+    } catch (caught) {
+      setError(caught as ApiError)
+    } finally {
+      setPending(false)
+    }
+  }
+  return (
+    <div className="grid justify-items-start gap-2">
+      <p className="text-sm">
+        Verify this existing fix applies to this report.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        className={touchTarget}
+        disabled={pending}
+        onClick={() => void confirm()}
+      >
+        {pending ? 'Recording…' : 'Confirm fix applies'}
+      </Button>
+      {error ? (
+        <ActionError
+          error={error}
+          title="The follow-up was not created"
+          record="report"
+        />
+      ) : null}
+    </div>
   )
 }

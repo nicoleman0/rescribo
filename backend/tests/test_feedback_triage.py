@@ -318,7 +318,13 @@ def test_assignment_does_not_need_a_slack_identity_and_null_clears() -> None:
 def test_linking_to_a_fixed_problem_does_not_touch_its_resolution() -> None:
     actor = make_membership()
     problem = make_problem(actor=actor)
-    problem = confirm_fix(actor=actor, problem_id=problem.pk, expected_version=1, fix_note="Done")
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        fix_note="Done",
+        fix_version="1.0.0",
+    )
     report = make_report(actor=actor)
     link_report(actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk)
     fixed = Problem.objects.get(pk=problem.pk)

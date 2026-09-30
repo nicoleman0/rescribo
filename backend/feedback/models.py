@@ -29,6 +29,8 @@ class Problem(models.Model):
     not_planned_reason = models.TextField(blank=True, default="")
     resolution_revision = models.PositiveIntegerField(default=0)
     fix_note = models.TextField(blank=True, default="")
+    fix_version = models.CharField(max_length=100, blank=True, default="")
+    fix_evidence_url = models.URLField(max_length=500, blank=True, default="")
     fix_confirmed_at = models.DateTimeField(null=True, blank=True)
     fix_confirmed_by = models.ForeignKey(
         Membership, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
@@ -286,6 +288,86 @@ class ReportNotificationOperation(models.Model):
         indexes = [
             models.Index(fields=["workspace", "report", "state"], name="notification_ws_report_idx")
         ]
+
+
+class FollowUp(models.Model):
+    """Customer follow-up for one linked report and confirmed fix revision.
+
+    Employee notification delivery is tracked separately by
+    ``ReportNotificationOperation``; this row tracks customer-contact outcomes.
+    """
+
+    class ContactState(models.TextChoices):
+        PENDING = "pending", "Pending"
+        CONTACTED = "contacted", "Contacted"
+        CONFIRMED = "confirmed", "Confirmed"
+        STILL_AFFECTED = "still_affected", "Still affected"
+        NO_RESPONSE = "no_response", "No response"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="follow_ups")
+    report = models.ForeignKey(Report, on_delete=models.PROTECT, related_name="follow_ups")
+    problem = models.ForeignKey(Problem, on_delete=models.PROTECT, related_name="follow_ups")
+    recipient = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="follow_ups")
+    resolution_revision = models.PositiveIntegerField()
+    report_version = models.PositiveIntegerField()
+    contact_state = models.CharField(
+        max_length=16, choices=ContactState.choices, default=ContactState.PENDING
+    )
+    outcome_note = models.TextField(blank=True, default="")
+    outcome_at = models.DateTimeField(null=True, blank=True)
+    outcome_by = models.ForeignKey(
+        Membership,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="recorded_follow_ups",
+    )
+    created_by = models.ForeignKey(
+        Membership, on_delete=models.PROTECT, related_name="created_follow_ups"
+    )
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["report", "resolution_revision"],
+                name="one_follow_up_per_report_revision",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    Q(contact_state="pending", outcome_at__isnull=True, outcome_by__isnull=True)
+                    | ~Q(contact_state="pending")
+                    & Q(outcome_at__isnull=False, outcome_by__isnull=False)
+                ),
+                name="follow_up_outcome_has_actor_and_time",
+            ),
+            models.CheckConstraint(
+                condition=~Q(contact_state="no_response") | ~Q(outcome_note=""),
+                name="follow_up_no_response_requires_note",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["workspace", "contact_state"], name="followup_ws_state_idx")
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if (
+            self.workspace_id != self.report.workspace_id
+            or self.workspace_id != self.problem.workspace_id
+            or self.workspace_id != self.recipient.workspace_id
+            or self.workspace_id != self.created_by.workspace_id
+            or (
+                self.outcome_by_id is not None
+                and self.outcome_by is not None
+                and self.workspace_id != self.outcome_by.workspace_id
+            )
+        ):
+            raise ValueError("A follow-up and its members must share its workspace.")
+        if self.report.problem_id != self.problem_id:
+            raise ValueError("A follow-up must refer to the report's current problem.")
+        super().save(*args, **kwargs)
 
 
 class EngineeringIssue(models.Model):

@@ -19,12 +19,19 @@ from feedback.errors import (
     TitleRequired,
     VersionConflict,
 )
-from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.models import (
+    Activity,
+    FollowUp,
+    Problem,
+    Report,
+    ReportSource,
+)
 from feedback.problems import (
     ProblemChanges,
     assign_problem_owner,
     change_problem_state,
     confirm_fix,
+    confirm_linked_report_fix,
     create_problem,
     update_problem,
 )
@@ -173,6 +180,11 @@ def test_problem_updates_state_and_fix_revision() -> None:
         expected_version=1,
         changes=ProblemChanges(summary="Summary"),
     )
+    first_report = make_report(actor=actor)
+    second_report = make_report(actor=actor)
+    unlinked_report = make_report(actor=actor)
+    link_report(actor=actor, report_id=first_report.pk, expected_version=1, problem_id=problem.pk)
+    link_report(actor=actor, report_id=second_report.pk, expected_version=1, problem_id=problem.pk)
     with pytest.raises(ReasonRequired) as error:
         change_problem_state(
             actor=actor, problem_id=problem.pk, expected_version=2, action="decline"
@@ -184,11 +196,54 @@ def test_problem_updates_state_and_fix_revision() -> None:
     problem = change_problem_state(
         actor=actor, problem_id=problem.pk, expected_version=3, action="reopen"
     )
-    problem = confirm_fix(actor=actor, problem_id=problem.pk, expected_version=4, fix_note="First")
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=4,
+        fix_note="First",
+        fix_version="3.5.0",
+    )
     assert problem.resolution_revision == 1 and problem.fix_confirmed_by_id == actor.pk
-    Problem.objects.filter(pk=problem.pk).update(state="in_progress")
-    problem = confirm_fix(actor=actor, problem_id=problem.pk, expected_version=5, fix_note="Second")
+    created = list(FollowUp.objects.filter(problem=problem).order_by("report_id"))
+    assert {follow_up.report_id for follow_up in created} == {first_report.pk, second_report.pk}
+    assert all(follow_up.resolution_revision == 1 for follow_up in created)
+    assert all(follow_up.report_version == 2 for follow_up in created)
+    assert all(follow_up.recipient_id == actor.pk for follow_up in created)
+    assert not FollowUp.objects.filter(report=unlinked_report).exists()
+    Problem.objects.filter(pk=problem.pk).update(state="in_progress", version=problem.version + 1)
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version + 1,
+        fix_note="Second",
+        fix_version="3.6.0",
+    )
     assert problem.resolution_revision == 2
+    assert FollowUp.objects.filter(problem=problem).count() == 4
+
+
+def test_linking_fixed_problem_requires_explicit_applicability_confirmation() -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        fix_note="Fixed",
+        fix_version="1.0.0",
+    )
+    report = make_report(actor=actor)
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk
+    )
+    assert not FollowUp.objects.filter(report=report).exists()
+    follow_up = confirm_linked_report_fix(
+        actor=actor, report_id=report.pk, expected_version=report.version
+    )
+    assert follow_up.report_id == report.pk
+    assert follow_up.problem_id == problem.pk
+    assert follow_up.resolution_revision == problem.resolution_revision
+    assert FollowUp.objects.filter(report=report).count() == 1
 
 
 @pytest.mark.parametrize("initial_state", ["open", "in_progress"])

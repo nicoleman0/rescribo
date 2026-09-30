@@ -34,6 +34,11 @@ const detail: ProblemDetail = {
   report_count: 1,
   needs_review: false,
   resolution_revision: 0,
+  fix_note: '',
+  fix_version: '',
+  fix_evidence_url: '',
+  fix_confirmed_at: null,
+  fix_confirmed_by: null,
   version: 2,
   created_at: '2026-09-20T10:00:00Z',
   updated_at: '2026-09-20T10:00:00Z',
@@ -49,6 +54,7 @@ const linkedReport: ReportDetail = {
   customer_contact_reference: '',
   affected_version: '',
   triage_state: 'linked',
+  follow_up_revision: null,
   provenance: {
     kind: 'slack',
     permalink: 'javascript:alert(1)',
@@ -257,6 +263,91 @@ test('keeps an edit draft on conflict and retries against the current version', 
     expect(
       screen.getByRole('button', { name: 'Edit title and summary' }),
     ).toHaveFocus(),
+  )
+})
+
+test('submits required fix details and optional evidence, then shows confirmed fix', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  const server: { problem: ProblemDetail } = {
+    problem: { ...detail, state: 'in_progress' },
+  }
+  const sent: Record<string, unknown>[] = []
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json(server.problem),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+    [`POST ${base}/problems/prob-1/confirm-fix/`]: (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+      sent.push(body)
+      server.problem = {
+        ...server.problem,
+        state: 'fix_available',
+        fix_note: body.fix_note as string,
+        fix_version: body.fix_version as string,
+        fix_evidence_url: (body.evidence_url as string) ?? '',
+        version: server.problem.version + 1,
+      }
+      return json(server.problem)
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  await screen.findByRole('heading', { name: 'Exports fail' })
+  expect(screen.getByLabelText('Fix details')).toBeRequired()
+  expect(screen.getByLabelText('Available in version')).toBeRequired()
+  fireEvent.change(screen.getByLabelText('Fix details'), {
+    target: { value: 'CSV export now completes' },
+  })
+  fireEvent.change(screen.getByLabelText('Available in version'), {
+    target: { value: '2.4.0' },
+  })
+  fireEvent.change(screen.getByLabelText('Evidence URL'), {
+    target: { value: 'https://example.com/release' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Confirm fix' }))
+  expect(await screen.findByText('Fix available')).toBeInTheDocument()
+  expect(sent).toEqual([
+    {
+      expected_version: 2,
+      fix_note: 'CSV export now completes',
+      fix_version: '2.4.0',
+      evidence_url: 'https://example.com/release',
+    },
+  ])
+})
+
+test('confirms applicability for a report linked after fix availability', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  let followUpRevision: number | null = null
+  const fixedProblem: ProblemDetail = {
+    ...detail,
+    state: 'fix_available',
+    resolution_revision: 1,
+    fix_note: 'Export corrected',
+    fix_version: '2.4.0',
+  }
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json(fixedProblem),
+    [`GET ${base}/problems/prob-1/reports/`]: () =>
+      page([{ ...linkedReport, follow_up_revision: followUpRevision }]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+    [`POST ${base}/reports/rep-1/confirm-fix-applies/`]: () => {
+      followUpRevision = 1
+      return json({ ...linkedReport, follow_up_revision: followUpRevision })
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Confirm fix applies' }),
+  )
+  await waitFor(() => expect(followUpRevision).toBe(1))
+  await waitFor(() =>
+    expect(
+      screen.queryByRole('button', { name: 'Confirm fix applies' }),
+    ).not.toBeInTheDocument(),
   )
 })
 

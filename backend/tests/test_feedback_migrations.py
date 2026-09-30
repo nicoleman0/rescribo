@@ -32,4 +32,5 @@ def test_manual_submission_migration_preserves_legacy_rows() -> None:
             apps.get_model("feedback", "Report").objects.get(pk=report.pk).title == "Legacy report"
         )
     finally:
-        MigrationExecutor(connection).migrate(current)
+        latest = MigrationExecutor(connection).loader.graph.leaf_nodes()
+        MigrationExecutor(connection).migrate(latest)

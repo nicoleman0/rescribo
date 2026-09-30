@@ -9,6 +9,7 @@ from django.test import Client
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
 from feedback.models import Activity, Report, ReportSource
+from feedback.problems import confirm_fix
 from feedback.reports import (
     ReportChanges,
     assign_report,
@@ -283,6 +284,39 @@ def test_manual_key_validation(client: Client, key: dict[str, Any]) -> None:
     assert response.json()["reason"] == "invalid_request"
     assert set(response.json()["field_errors"]) == {"submission_key"}
     assert Report.objects.count() == ReportSource.objects.count() == Activity.objects.count() == 0
+
+
+def test_fix_confirmation_api_requires_explicit_versioned_confirmation(client: Client) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    problem = make_problem(actor=actor)
+    response = client.post(
+        f"/api/workspaces/{actor.workspace_id}/problems/{problem.pk}/confirm-fix/",
+        data={"expected_version": 1, "fix_note": "Fixed", "fix_version": "1.2.0"},
+        content_type="application/json",
+    )
+    assert response.status_code == 200
+    assert response.json()["state"] == "fix_available"
+    assert response.json()["fix_version"] == "1.2.0"
+
+
+def test_late_linked_report_requires_confirmation_before_followup(client: Client) -> None:
+    actor = make_membership()
+    sign_in(client, actor)
+    problem = make_problem(actor=actor)
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        fix_note="Fixed",
+        fix_version="1.0.0",
+    )
+    report = make_report(actor=actor)
+    link_report(actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk)
+    url = f"/api/workspaces/{actor.workspace_id}/reports/{report.pk}/confirm-fix-applies/"
+    response = client.post(url, data={"expected_version": 2}, content_type="application/json")
+    assert response.status_code == 200
+    assert response.json()["follow_up_revision"] == problem.resolution_revision
 
 
 def test_manual_api_keys_are_workspace_scoped(client: Client) -> None:

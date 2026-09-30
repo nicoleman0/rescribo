@@ -184,6 +184,7 @@ const detail: ReportDetail = {
   submitted_by: { id: 'mem-1', display_name: 'Unnamed member' },
   problem: { id: 'prob-1', title: 'Exports time out', state: 'open' },
   triage_state: 'linked',
+  follow_up_revision: null,
   version: 3,
   updated_at: '2026-09-20T10:00:00Z',
 }

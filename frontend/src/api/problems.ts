@@ -79,6 +79,17 @@ export async function editProblem(
   )
 }
 
+export async function confirmProblemFix(
+  workspaceId: string,
+  problemId: string,
+  input: Schemas['FixConfirmation'],
+) {
+  await csrf()
+  return apiRequest<ProblemDetail>(
+    `${problemPath(workspaceId, problemId)}confirm-fix/`,
+    input,
+  )
+}
 export async function assignProblemOwner(
   workspaceId: string,
   problemId: string,

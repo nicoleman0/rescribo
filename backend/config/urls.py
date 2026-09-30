@@ -35,6 +35,7 @@ from feedback.views import (
     ProblemDetailView,
     ProblemEditView,
     ProblemExternalOperationView,
+    ProblemFixConfirmationView,
     ProblemIssueAbandonView,
     ProblemIssueApproveView,
     ProblemIssueLinkView,
@@ -45,6 +46,7 @@ from feedback.views import (
     ProblemOwnerView,
     ProblemReportListView,
     ReportAssignView,
+    ReportConfirmFixAppliesView,
     ReportCreateProblemView,
     ReportDetailView,
     ReportDismissView,
@@ -74,6 +76,11 @@ urlpatterns = [
     ),
     path("api/workspaces/<uuid:workspace_id>/channels/", ChannelView.as_view()),
     path("api/workspaces/<uuid:workspace_id>/delete/", WorkspaceDeleteView.as_view()),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/confirm-fix-applies/",
+        ReportConfirmFixAppliesView.as_view(),
+        name="report-confirm-fix-applies",
+    ),
     path(
         "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/delete/",
         ReportDeleteView.as_view(),
@@ -171,6 +178,11 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/",
         ProblemDetailView.as_view(),
         name="problem-detail",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/confirm-fix/",
+        ProblemFixConfirmationView.as_view(),
+        name="problem-confirm-fix",
     ),
     path(
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/reports/",

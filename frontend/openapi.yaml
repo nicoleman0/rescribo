@@ -1215,6 +1215,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/confirm-fix/:
+    post:
+      operationId: workspaces_problems_confirm_fix_create
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FixConfirmation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FixConfirmation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FixConfirmation'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemConflict'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/edit/:
     post:
       operationId: workspaces_problems_edit_create
@@ -2058,6 +2121,76 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/confirm-fix-applies/:
+    post:
+      operationId: workspaces_reports_confirm_fix_applies_create
+      description: Run one report triage use case and return the updated report.
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Versioned'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportConflict'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/reports/{report_id}/create-problem/:
     post:
       operationId: workspaces_reports_create_problem_create
@@ -2825,6 +2958,29 @@ components:
         * `failed` - Failed
         * `uncertain` - Uncertain
         * `cancelled` - Cancelled
+    FixConfirmation:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        fix_note:
+          type: string
+          maxLength: 10000
+        fix_version:
+          type: string
+          maxLength: 100
+        evidence_url:
+          oneOf:
+          - type: string
+            format: uri
+            maxLength: 500
+          - type: string
+            maxLength: 0
+      required:
+      - expected_version
+      - fix_note
+      - fix_version
     Health:
       type: object
       properties:
@@ -3390,6 +3546,24 @@ components:
           type: boolean
         resolution_revision:
           type: integer
+        fix_note:
+          type: string
+        fix_version:
+          type: string
+        fix_evidence_url:
+          oneOf:
+          - type: string
+            format: uri
+          - type: string
+            maxLength: 0
+        fix_confirmed_at:
+          type: string
+          format: date-time
+          nullable: true
+        fix_confirmed_by:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
         version:
           type: integer
         created_at:
@@ -3407,6 +3581,11 @@ components:
       - created_at
       - current_create_operation
       - engineering_issue
+      - fix_confirmed_at
+      - fix_confirmed_by
+      - fix_evidence_url
+      - fix_note
+      - fix_version
       - id
       - needs_review
       - owner
@@ -3547,6 +3726,10 @@ components:
     ReportDetail:
       type: object
       properties:
+        follow_up_revision:
+          type: integer
+          nullable: true
+          readOnly: true
         id:
           type: string
           format: uuid
@@ -3589,6 +3772,7 @@ components:
       - customer_contact_reference
       - customer_label
       - description
+      - follow_up_revision
       - id
       - problem
       - provenance

@@ -10,7 +10,7 @@ from django.db.models import Count, Prefetch, Q, QuerySet
 from accounts.models import Membership
 from feedback.errors import NotFound
 from feedback.inbox import workspace_reports
-from feedback.models import Activity, EngineeringIssue, Problem, Report
+from feedback.models import Activity, EngineeringIssue, FollowUp, Problem, Report
 
 
 def _workspace_problems(*, actor: Membership) -> QuerySet[Problem]:
@@ -46,7 +46,18 @@ def get_problem(*, actor: Membership, problem_id: UUID) -> Problem:
 
 def problem_reports(*, actor: Membership, problem_id: UUID) -> QuerySet[Report]:
     problem = get_problem(actor=actor, problem_id=problem_id)
-    return workspace_reports(actor=actor).filter(problem=problem).order_by("created_at", "id")
+    return (
+        workspace_reports(actor=actor)
+        .filter(problem=problem)
+        .order_by("created_at", "id")
+        .prefetch_related(
+            Prefetch(
+                "follow_ups",
+                queryset=FollowUp.objects.order_by("-resolution_revision"),
+                to_attr="active_follow_ups",
+            )
+        )
+    )
 
 
 def problem_activity(*, actor: Membership, problem_id: UUID) -> QuerySet[Activity]:
