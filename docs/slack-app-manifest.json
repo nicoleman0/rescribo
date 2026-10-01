@@ -1,0 +1,45 @@
+{
+  "display_information": {
+    "name": "Rescribo",
+    "description": "Capture customer feedback from Slack and follow up when it is fixed.",
+    "background_color": "#2b2d31"
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": false,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Rescribo",
+      "always_online": false
+    },
+    "shortcuts": [
+      {
+        "name": "Submit customer feedback",
+        "type": "message",
+        "callback_id": "submit_customer_feedback",
+        "description": "Capture this message as a customer feedback report"
+      }
+    ]
+  },
+  "oauth_config": {
+    "redirect_urls": ["https://rescribo.example/api/workspaces/"],
+    "scopes": {
+      "bot": ["commands", "channels:read", "groups:read", "chat:write", "im:write"]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://rescribo.example/api/integrations/slack/events/",
+      "bot_events": ["app_uninstalled", "tokens_revoked"]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://rescribo.example/api/integrations/slack/interactions/"
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

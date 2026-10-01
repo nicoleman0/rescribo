@@ -177,6 +177,7 @@ const detail: ReportDetail = {
   provenance: {
     kind: 'slack',
     permalink: 'https://example.slack.com/archives/C1/p1',
+    permalink_error: '',
     author_display_name: 'Grace',
     snapshot_text: 'Customer says export is broken',
     captured_at: '2026-09-20T10:00:00Z',
@@ -219,6 +220,37 @@ test('shows report detail with provenance, people, and problem', async () => {
   expect(
     screen.getByRole('link', { name: /CSV export fails/ }),
   ).toHaveAttribute('aria-current', 'page')
+})
+
+test('a failed Slack permalink can be retried', async () => {
+  let permalink = ''
+  stubApi({
+    [reportsPath]: () => page([listItem]),
+    [membersPath]: () => json([]),
+    'GET /api/workspaces/ws-1/reports/rep-1/': () =>
+      json({
+        ...detail,
+        provenance: {
+          ...detail.provenance,
+          permalink,
+          permalink_error: permalink ? '' : 'message_not_found',
+        },
+      }),
+    'POST /api/workspaces/ws-1/reports/rep-1/permalink/retry/': () => {
+      permalink = detail.provenance.permalink
+      return json({ permalink, permalink_error: '' })
+    },
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  const panel = await screen.findByRole('region', { name: 'Report detail' })
+  const source = await within(panel).findByRole('region', {
+    name: 'Provenance',
+  })
+  expect(source).toHaveTextContent('Slack did not return a link')
+  fireEvent.click(within(source).getByRole('button', { name: 'Try again' }))
+  expect(
+    await within(source).findByRole('link', { name: /Open original message/ }),
+  ).toHaveAttribute('href', detail.provenance.permalink)
 })
 
 test('shows manual provenance and a missing report', async () => {

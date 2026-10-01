@@ -59,7 +59,7 @@ def delete_workspace(actor: Membership, confirmation: str) -> None:
             raise ValidationError(
                 {"confirmation": ["Type the workspace slug to confirm permanent deletion."]}
             )
-        cancel_notifications(actor)
+        cancel_notifications(actor.workspace_id)
         Connection.objects.filter(workspace=workspace).update(
             credential="", external_id="", status="disconnected"
         )

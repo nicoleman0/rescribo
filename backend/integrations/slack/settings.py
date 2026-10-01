@@ -5,8 +5,9 @@ from typing import Any
 from django.conf import settings
 from slack_sdk import WebClient
 
-from connections.credentials import cipher, decrypt
+from connections.credentials import cipher
 from connections.errors import SetupError
+from integrations.slack.client import bot_client
 from integrations.slack.policy import REQUIRED_BOT_SCOPES, validate_channel
 
 
@@ -40,9 +41,7 @@ def slack_setup(code: str, redirect_uri: str) -> dict[str, Any]:
 
 
 def channel_details(credential: str, channel_id: str) -> dict[str, Any]:
-    response = WebClient(token=decrypt(credential), timeout=10).conversations_info(
-        channel=channel_id
-    )
+    response = bot_client(credential).conversations_info(channel=channel_id)
     data = response["channel"]
     validated = validate_channel(data)
     return dict(
@@ -53,7 +52,7 @@ def channel_details(credential: str, channel_id: str) -> dict[str, Any]:
 
 
 def check_slack(credential: str, external_id: str) -> None:
-    response = WebClient(token=decrypt(credential), timeout=10).auth_test()
+    response = bot_client(credential).auth_test()
     if response.get("team_id") != external_id:
         raise SetupError("identity_mismatch", "Reconnect Slack to verify the workspace identity.")
     granted = set(response.headers.get("x-oauth-scopes", "").split(","))

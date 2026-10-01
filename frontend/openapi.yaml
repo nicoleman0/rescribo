@@ -2448,6 +2448,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/permalink/retry/:
+    post:
+      operationId: workspaces_reports_permalink_retry_create
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Permalink'
+          description: ''
   /api/workspaces/{workspace_id}/reports/{report_id}/restore/:
     post:
       operationId: workspaces_reports_restore_create
@@ -2587,6 +2614,67 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/slack/identity/:
+    get:
+      operationId: workspaces_slack_identity_retrieve
+      description: The current member's own Slack link; nobody links or unlinks another
+        member.
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlackIdentity'
+          description: ''
+  /api/workspaces/{workspace_id}/slack/identity/unlink/:
+    post:
+      operationId: workspaces_slack_identity_unlink_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+  /api/workspaces/{workspace_id}/slack/link-code/:
+    post:
+      operationId: workspaces_slack_link_code_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SlackLinkCode'
           description: ''
 components:
   schemas:
@@ -3447,6 +3535,16 @@ components:
       required:
       - password
       - token
+    Permalink:
+      type: object
+      properties:
+        permalink:
+          type: string
+        permalink_error:
+          type: string
+      required:
+      - permalink
+      - permalink_error
     ProblemActivity:
       type: object
       description: Activity with its ID references resolved to names the member may
@@ -3834,6 +3932,8 @@ components:
           $ref: '#/components/schemas/ReportSourceKindEnum'
         permalink:
           type: string
+        permalink_error:
+          type: string
         author_display_name:
           type: string
         snapshot_text:
@@ -3846,6 +3946,7 @@ components:
       - captured_at
       - kind
       - permalink
+      - permalink_error
       - snapshot_text
     ReportSourceKindEnum:
       enum:
@@ -3895,6 +3996,35 @@ components:
           type: boolean
       required:
       - consent
+    SlackIdentity:
+      type: object
+      properties:
+        linked:
+          type: boolean
+        team_id:
+          type: string
+        user_id:
+          type: string
+        linked_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - linked
+      - linked_at
+      - team_id
+      - user_id
+    SlackLinkCode:
+      type: object
+      properties:
+        code:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - code
+      - expires_at
     Token:
       type: object
       properties:

@@ -107,3 +107,9 @@ export const transitionReport = (
 /** The current report sent with a 409, or undefined for other errors. */
 export const conflictingReport = (error: ApiError) =>
   error.status === 409 ? (error.current as ReportDetail | undefined) : undefined
+
+export const retryPermalink = (workspaceId: string, reportId: string) =>
+  apiRequest<Schemas['Permalink']>(
+    `workspaces/${workspaceId}/reports/${reportId}/permalink/retry/`,
+    {},
+  )

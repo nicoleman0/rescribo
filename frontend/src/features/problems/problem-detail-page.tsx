@@ -534,6 +534,8 @@ function LinkedReports({
                   <span>Submitted by {memberName(report.submitted_by)}</span>
                 </p>
                 <Provenance
+                  workspaceId={workspaceId}
+                  reportId={report.id}
                   provenance={report.provenance}
                   submittedBy={report.submitted_by}
                 />

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Opens a cloudflared quick tunnel to a local feasibility receiver and prints
-# the public URL to paste into the Slack app configuration.
+# Opens a cloudflared quick tunnel to the local app and prints the public URL
+# to paste into the Slack app configuration.
 set -euo pipefail
 
-port="${1:-8767}"
-path="${2:-/slack/interactions}"
+port="${1:-5173}"
+path="${2:-/api/integrations/slack/interactions/}"
 log="$(mktemp -t slack-tunnel.XXXXXX)"
 
 # api.trycloudflare.com is cloudflared's own control endpoint, not the tunnel.

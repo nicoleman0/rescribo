@@ -204,6 +204,7 @@ def test_report_detail_includes_provenance_people_and_problem(client: Client) ->
     assert body["provenance"] == {
         "kind": "slack",
         "permalink": "https://example.test/msg",
+        "permalink_error": "",
         "author_display_name": "Slack Author",
         "snapshot_text": "snapshot",
         "captured_at": body["provenance"]["captured_at"],

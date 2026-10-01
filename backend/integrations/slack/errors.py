@@ -14,6 +14,9 @@ class ChannelRejected(ValueError):
         self.channel_id = channel_id
 
 
+REVOCATION_ERRORS = frozenset({"account_inactive", "invalid_auth", "not_authed", "token_revoked"})
+
+
 def slack_error_code(error: Exception) -> str | None:
     """Pull Slack's `error` code out of a failed call, whose body may be bytes."""
     response = getattr(error, "response", None)

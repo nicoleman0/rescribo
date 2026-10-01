@@ -22,3 +22,4 @@ backend/staticfiles/
 .codex/
 .claude/
 .worktrees/
+.plans/

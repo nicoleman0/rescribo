@@ -14,6 +14,9 @@ Set these outside the repository:
   Keep it separate from the database and preserve it for restore.
 - `RESCRIBO_SLACK_APP_ID`, `RESCRIBO_SLACK_CLIENT_ID`,
   `RESCRIBO_SLACK_CLIENT_SECRET`.
+- `RESCRIBO_SLACK_SIGNING_SECRET`: the Slack App's signing secret. Verifies
+  every request to `/api/integrations/slack/interactions/` and
+  `/api/integrations/slack/events/`.
 - `RESCRIBO_GITHUB_APP_ID`, `RESCRIBO_GITHUB_CLIENT_ID`,
   `RESCRIBO_GITHUB_CLIENT_SECRET`, `RESCRIBO_GITHUB_PRIVATE_KEY` (PEM text).
 - `RESCRIBO_GITHUB_WEBHOOK_SECRET`: the secret configured on the GitHub App's
@@ -28,6 +31,11 @@ Register each workspace's callback URL with the relevant application:
 Register `{origin}/api/integrations/github/webhook/` as the GitHub App's webhook
 URL; it is shared by every workspace and resolves the connection from the
 delivery's installation ID.
+Create the Slack App from [`slack-app-manifest.json`](slack-app-manifest.json)
+and replace `https://rescribo.example` with the origin. Slack accepts any
+callback under the registered `{origin}/api/workspaces/` redirect URL, which
+must use HTTPS. Both Slack request URLs
+are shared by every workspace and resolve the connection from the team ID.
 Use HTTPS outside local development. Exclude callback query strings and request
 bodies from proxy/application access logs. Never enable provider debug logging.
 

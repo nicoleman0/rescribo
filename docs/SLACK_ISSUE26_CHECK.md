@@ -1,5 +1,7 @@
 # Slack issue #26 feasibility check
 
+> Retired by #12. The product endpoints in `connections/slack_inbound.py` replaced this check's scripts and in-memory stores. This page is kept as the feasibility record; its commands no longer exist.
+
 This check covers the Slack provider boundaries needed for account linking,
 channel policy, permalink retry, delayed follow-up delivery, and connection
 lifecycle handling. The Python tests use fake provider responses. They are not

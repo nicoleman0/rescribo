@@ -754,6 +754,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/permalink/retry/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_reports_permalink_retry_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/reports/{report_id}/restore/": {
         parameters: {
             query?: never;
@@ -782,6 +798,55 @@ export interface paths {
         put?: never;
         /** @description Run one report triage use case and return the updated report. */
         post: operations["workspaces_reports_unlink_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/slack/identity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The current member's own Slack link; nobody links or unlinks another member. */
+        get: operations["workspaces_slack_identity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/slack/identity/unlink/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_slack_identity_unlink_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/slack/link-code/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_slack_link_code_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1189,6 +1254,10 @@ export interface components {
             token: string;
             password: string;
         };
+        Permalink: {
+            permalink: string;
+            permalink_error: string;
+        };
         /** @description Activity with its ID references resolved to names the member may already read. */
         ProblemActivity: {
             /** Format: uuid */
@@ -1329,6 +1398,7 @@ export interface components {
         ReportProvenance: {
             kind: components["schemas"]["ReportSourceKindEnum"];
             permalink: string;
+            permalink_error: string;
             author_display_name: string;
             snapshot_text: string;
             /** Format: date-time */
@@ -1361,6 +1431,18 @@ export interface components {
             /** @default  */
             repository: string;
             consent: boolean;
+        };
+        SlackIdentity: {
+            linked: boolean;
+            team_id: string;
+            user_id: string;
+            /** Format: date-time */
+            linked_at: string | null;
+        };
+        SlackLinkCode: {
+            code: string;
+            /** Format: date-time */
+            expires_at: string;
         };
         Token: {
             token: string;
@@ -3721,6 +3803,28 @@ export interface operations {
             };
         };
     };
+    workspaces_reports_permalink_retry_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Permalink"];
+                };
+            };
+        };
+    };
     workspaces_reports_restore_create: {
         parameters: {
             query?: never;
@@ -3853,6 +3957,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportConflict"];
+                };
+            };
+        };
+    };
+    workspaces_slack_identity_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlackIdentity"];
+                };
+            };
+        };
+    };
+    workspaces_slack_identity_unlink_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    workspaces_slack_link_code_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlackLinkCode"];
                 };
             };
         };

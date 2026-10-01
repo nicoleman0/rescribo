@@ -135,6 +135,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "operations.tasks.dispatch_due_operations",
         "schedule": 60.0,
     },
+    "sweep-slack-capture": {
+        "task": "connections.tasks.sweep_slack_capture",
+        "schedule": 300.0,
+    },
     "reconcile-github-issues": {
         "task": "feedback.tasks.reconcile_github_issues",
         "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
@@ -145,6 +149,7 @@ RESCRIBO_CREDENTIAL_KEY = env("RESCRIBO_CREDENTIAL_KEY", default="")
 RESCRIBO_SLACK_CLIENT_ID = env("RESCRIBO_SLACK_CLIENT_ID", default="")
 RESCRIBO_SLACK_CLIENT_SECRET = env("RESCRIBO_SLACK_CLIENT_SECRET", default="")
 RESCRIBO_SLACK_APP_ID = env("RESCRIBO_SLACK_APP_ID", default="")
+RESCRIBO_SLACK_SIGNING_SECRET = env("RESCRIBO_SLACK_SIGNING_SECRET", default="")
 RESCRIBO_GITHUB_CLIENT_ID = env("RESCRIBO_GITHUB_CLIENT_ID", default="")
 RESCRIBO_GITHUB_CLIENT_SECRET = env("RESCRIBO_GITHUB_CLIENT_SECRET", default="")
 RESCRIBO_GITHUB_APP_ID = env("RESCRIBO_GITHUB_APP_ID", default="")

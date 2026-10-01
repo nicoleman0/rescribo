@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
-from integrations.slack.errors import slack_error_code
+from integrations.slack.errors import REVOCATION_ERRORS, slack_error_code
 
 
 class SlackDeliveryClient(Protocol):
@@ -39,16 +39,6 @@ class SlackConnectionGuard:
         self.active = False
         self.disabled_reason = reason
         self.pending_send_ids.clear()
-
-    def disable_for_uninstall(self, team_id: str) -> bool:
-        """Disable only when the verified event belongs to this connection."""
-        if team_id != self.team_id:
-            return False
-        self.disable("app_uninstalled")
-        return True
-
-
-REVOCATION_ERRORS = frozenset({"account_inactive", "invalid_auth", "not_authed", "token_revoked"})
 
 
 def handle_provider_error(guard: SlackConnectionGuard, error: Exception) -> None:

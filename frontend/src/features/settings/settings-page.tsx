@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '@/components/states/async-states'
 import { Separator } from '@/components/ui/separator'
 import { ConnectionSettings } from './connection-settings'
 import { MembersSettings } from './members-settings'
+import { SlackAccount } from './slack-account'
 import { ConfirmAction } from './confirm-action'
 
 export function SettingsPage() {
@@ -62,6 +63,13 @@ function WorkspaceSettings() {
               <Separator />
             </div>
           ))}
+          <SlackAccount
+            workspaceId={workspace.id}
+            connected={connections.data.some(
+              (item) => item.provider === 'slack' && item.status === 'active',
+            )}
+          />
+          <Separator />
         </>
       ) : null}
       {role === 'owner' ? (

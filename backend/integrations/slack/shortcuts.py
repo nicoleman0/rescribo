@@ -1,10 +1,8 @@
-"""Message shortcut payload parsing and source eligibility rules."""
+"""Message shortcut payload parsing."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
-
-from integrations.slack.errors import ChannelRejected
 
 
 class ShortcutPayloadError(ValueError):
@@ -18,6 +16,7 @@ class MessageShortcut:
     channel_id: str
     channel_name: str | None
     actor_id: str
+    author_id: str | None
     message_ts: str
     thread_ts: str | None
     text: str
@@ -60,6 +59,7 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
     text = message.get("text")
     if not isinstance(text, str):
         raise ShortcutPayloadError("Unexpected type at message.text")
+    author_id = message.get("user")
     channel_name = payload.get("channel")
     if isinstance(channel_name, Mapping) and isinstance(channel_name.get("name"), str):
         channel_name = channel_name["name"]
@@ -71,18 +71,10 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
         channel_id=_require_string(payload, "channel", "id"),
         channel_name=channel_name,
         actor_id=_require_string(payload, "user", "id"),
+        # Bot and integration messages carry `bot_id` instead of a user.
+        author_id=author_id if isinstance(author_id, str) and author_id else None,
         message_ts=_require_string(message, "ts"),
         thread_ts=thread_ts if isinstance(thread_ts, str) and thread_ts else None,
         text=text,
         trigger_id=_require_string(payload, "trigger_id"),
     )
-
-
-def check_source_allowed(
-    shortcut: MessageShortcut, *, approved_channel_ids: frozenset[str]
-) -> None:
-    """Reject DMs and unapproved channels, raising `ChannelRejected`."""
-    if shortcut.channel_id.startswith("D") or shortcut.channel_name == "directmessage":
-        raise ChannelRejected("direct_message", shortcut.channel_id)
-    if shortcut.channel_id not in approved_channel_ids:
-        raise ChannelRejected("unapproved_channel", shortcut.channel_id)

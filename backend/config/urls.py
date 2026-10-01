@@ -26,7 +26,13 @@ from connections.views import (
     GitHubWebhookView,
     RefreshView,
     ReportDeleteView,
+    ReportPermalinkRetryView,
     SetupView,
+    SlackEventsView,
+    SlackIdentityView,
+    SlackInteractionsView,
+    SlackLinkCodeView,
+    SlackUnlinkView,
     WorkspaceDeleteView,
 )
 from feedback.views import (
@@ -77,6 +83,21 @@ urlpatterns = [
     path("api/workspaces/<uuid:workspace_id>/channels/", ChannelView.as_view()),
     path("api/workspaces/<uuid:workspace_id>/delete/", WorkspaceDeleteView.as_view()),
     path(
+        "api/workspaces/<uuid:workspace_id>/slack/identity/",
+        SlackIdentityView.as_view(),
+        name="slack-identity",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/slack/identity/unlink/",
+        SlackUnlinkView.as_view(),
+        name="slack-unlink",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/slack/link-code/",
+        SlackLinkCodeView.as_view(),
+        name="slack-link-code",
+    ),
+    path(
         "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/confirm-fix-applies/",
         ReportConfirmFixAppliesView.as_view(),
         name="report-confirm-fix-applies",
@@ -85,6 +106,17 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/delete/",
         ReportDeleteView.as_view(),
     ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/permalink/retry/",
+        ReportPermalinkRetryView.as_view(),
+        name="report-permalink-retry",
+    ),
+    path(
+        "api/integrations/slack/interactions/",
+        SlackInteractionsView.as_view(),
+        name="slack-interactions",
+    ),
+    path("api/integrations/slack/events/", SlackEventsView.as_view(), name="slack-events"),
     path(
         "api/integrations/github/webhook/",
         GitHubWebhookView.as_view(),
