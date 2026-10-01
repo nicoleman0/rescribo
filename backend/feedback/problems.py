@@ -12,8 +12,10 @@ from feedback.errors import (
     FixDetailsRequired,
     InvalidTransition,
     NoChanges,
+    NotFound,
     ReasonRequired,
     TitleRequired,
+    VersionConflict,
 )
 from feedback.models import Activity, FollowUp, Problem, Report, ReportSource
 from feedback.services import (
@@ -223,35 +225,53 @@ def confirm_fix(
 
 
 def confirm_linked_report_fix(
-    *, actor: Membership, report_id: UUID, expected_version: int, now: datetime | None = None
+    *,
+    actor: Membership,
+    report_id: UUID,
+    expected_version: int,
+    expected_resolution_revision: int,
+    now: datetime | None = None,
 ) -> FollowUp:
-    """Record a member's explicit verification that an existing fix applies to a new report."""
+    """Record verification of the fix revision the member actually reviewed."""
     current = now or timezone.now()
     with transaction.atomic():
+        snapshot = Report.objects.filter(pk=report_id, workspace_id=actor.workspace_id).first()
+        if snapshot is None:
+            raise NotFound(record="report")
+        require_version(row=snapshot, expected_version=expected_version)
+        if snapshot.triage_state != Report.TriageState.LINKED or snapshot.problem_id is None:
+            raise InvalidTransition(action="confirm_fix_applies", from_state=snapshot.triage_state)
+        # Fix confirmation locks the problem before its reports as well.
+        problem = locked_problem(actor=actor, problem_id=snapshot.problem_id)
         report = locked_report(actor=actor, report_id=report_id)
         require_version(row=report, expected_version=expected_version)
-        if report.triage_state != Report.TriageState.LINKED or report.problem_id is None:
-            raise InvalidTransition(action="confirm_fix_applies", from_state=report.triage_state)
-        problem = Problem.objects.select_for_update().get(
-            pk=report.problem_id, workspace_id=actor.workspace_id
-        )
         if problem.state != Problem.State.FIX_AVAILABLE or problem.resolution_revision < 1:
             raise InvalidTransition(action="confirm_fix_applies", from_state=problem.state)
-        recipient = report.assignee or report.submitted_by
-        follow_up, _ = FollowUp.objects.get_or_create(
-            report=report,
-            resolution_revision=problem.resolution_revision,
-            defaults={
-                "workspace_id": actor.workspace_id,
-                "problem": problem,
-                "recipient": recipient,
-                "report_version": report.version,
-                "created_by": actor,
-                "created_at": current,
-                "updated_at": current,
-            },
-        )
+        if problem.resolution_revision != expected_resolution_revision:
+            raise VersionConflict(current=report)
+        follow_up, _ = _create_follow_up(actor=actor, problem=problem, report=report, now=current)
         return follow_up
+
+
+def _create_follow_up(
+    *, actor: Membership, problem: Problem, report: Report, now: datetime
+) -> tuple[FollowUp, bool]:
+    recipient = report.submitted_by
+    if report.source.kind == ReportSource.Kind.MANUAL and report.assignee is not None:
+        recipient = report.assignee
+    return FollowUp.objects.get_or_create(
+        report=report,
+        problem=problem,
+        resolution_revision=problem.resolution_revision,
+        defaults={
+            "workspace_id": actor.workspace_id,
+            "recipient": recipient,
+            "report_version": report.version,
+            "created_by": actor,
+            "created_at": now,
+            "updated_at": now,
+        },
+    )
 
 
 def _create_follow_ups(*, actor: Membership, problem: Problem, now: datetime) -> list[FollowUp]:
@@ -267,23 +287,8 @@ def _create_follow_ups(*, actor: Membership, problem: Problem, now: datetime) ->
     )
     created: list[FollowUp] = []
     for report in reports:
-        recipient = (
-            report.assignee or report.submitted_by
-            if report.source.kind == ReportSource.Kind.MANUAL
-            else report.submitted_by
-        )
-        follow_up, was_created = FollowUp.objects.get_or_create(
-            report=report,
-            resolution_revision=problem.resolution_revision,
-            defaults={
-                "workspace_id": actor.workspace_id,
-                "problem": problem,
-                "recipient": recipient,
-                "report_version": report.version,
-                "created_by": actor,
-                "created_at": now,
-                "updated_at": now,
-            },
+        follow_up, was_created = _create_follow_up(
+            actor=actor, problem=problem, report=report, now=now
         )
         if was_created:
             created.append(follow_up)

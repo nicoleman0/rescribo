@@ -334,7 +334,11 @@ test('confirms applicability for a report linked after fix availability', async 
     [`GET ${base}/problems/prob-1/reports/`]: () =>
       page([{ ...linkedReport, follow_up_revision: followUpRevision }]),
     [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
-    [`POST ${base}/reports/rep-1/confirm-fix-applies/`]: () => {
+    [`POST ${base}/reports/rep-1/confirm-fix-applies/`]: (_url, init) => {
+      expect(JSON.parse(String(init?.body))).toEqual({
+        expected_version: linkedReport.version,
+        expected_resolution_revision: 1,
+      })
       followUpRevision = 1
       return json({ ...linkedReport, follow_up_revision: followUpRevision })
     },

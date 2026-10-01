@@ -332,7 +332,7 @@ class FollowUp(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=["report", "resolution_revision"],
+                fields=["report", "problem", "resolution_revision"],
                 name="one_follow_up_per_report_revision",
             ),
             models.CheckConstraint(

@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from accounts.models import Invitation, Membership, PasswordReset, Workspace
 from accounts.tokens import issue_token
-from feedback.models import Activity, Problem, Report, ReportNotificationOperation
+from feedback.models import Activity, FollowUp, Problem, Report, ReportNotificationOperation
 from feedback.reports import submit_report
 from feedback.submissions import ReportSubmission, SourceSnapshot
 
@@ -30,6 +30,7 @@ class Command(BaseCommand):
         workspace, _ = Workspace.objects.get_or_create(slug=slug, defaults={"name": "E2E Test"})
         Activity.objects.filter(workspace=workspace).delete()
         ReportNotificationOperation.objects.filter(workspace=workspace).delete()
+        FollowUp.objects.filter(workspace=workspace).delete()
         Report.objects.filter(workspace=workspace).delete()
         Problem.objects.filter(workspace=workspace).delete()
         Invitation.objects.filter(workspace=workspace).delete()

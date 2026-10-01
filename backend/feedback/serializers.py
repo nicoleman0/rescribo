@@ -58,11 +58,19 @@ class ReportListItemSerializer(serializers.Serializer):
 class ReportDetailSerializer(serializers.Serializer):
     @extend_schema_field(serializers.IntegerField(allow_null=True))
     def get_follow_up_revision(self, report: Report) -> int | None:
+        if report.problem_id is None:
+            return None
         follow_ups = getattr(report, "active_follow_ups", None)
         if follow_ups is not None:
-            follow_up = follow_ups[0] if follow_ups else None
+            follow_up = next(
+                (item for item in follow_ups if item.problem_id == report.problem_id), None
+            )
         else:
-            follow_up = report.follow_ups.order_by("-resolution_revision").first()
+            follow_up = (
+                report.follow_ups.filter(problem_id=report.problem_id)
+                .order_by("-resolution_revision")
+                .first()
+            )
         return follow_up.resolution_revision if follow_up is not None else None
 
     follow_up_revision = serializers.SerializerMethodField()
@@ -374,6 +382,10 @@ class ProblemEditSerializer(VersionedSerializer):
 
 class ProblemOwnerSerializer(VersionedSerializer):
     owner_id = serializers.UUIDField(allow_null=True)
+
+
+class FixApplicabilitySerializer(VersionedSerializer):
+    expected_resolution_revision = serializers.IntegerField(min_value=1)
 
 
 class FixConfirmationSerializer(VersionedSerializer):

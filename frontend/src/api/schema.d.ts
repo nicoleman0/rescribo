@@ -954,6 +954,10 @@ export interface components {
          * @enum {string}
          */
         ExternalOperationStateEnum: "draft" | "queued" | "running" | "succeeded" | "failed" | "uncertain" | "cancelled";
+        FixApplicability: {
+            expected_version: number;
+            expected_resolution_revision: number;
+        };
         FixConfirmation: {
             expected_version: number;
             fix_note: string;
@@ -3414,9 +3418,9 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["Versioned"];
-                "application/x-www-form-urlencoded": components["schemas"]["Versioned"];
-                "multipart/form-data": components["schemas"]["Versioned"];
+                "application/json": components["schemas"]["FixApplicability"];
+                "application/x-www-form-urlencoded": components["schemas"]["FixApplicability"];
+                "multipart/form-data": components["schemas"]["FixApplicability"];
             };
         };
         responses: {

@@ -47,6 +47,7 @@ from feedback.serializers import (
     AssignReportSerializer,
     CreateProblemForReportSerializer,
     ExternalOperationSerializer,
+    FixApplicabilitySerializer,
     FixConfirmationSerializer,
     InboxFilterSerializer,
     IssueAbandonSerializer,
@@ -329,13 +330,16 @@ class ReportAssignView(ReportActionView):
         )
 
 
-@extend_schema_view(post=report_action_schema(VersionedSerializer))
+@extend_schema_view(post=report_action_schema(FixApplicabilitySerializer))
 class ReportConfirmFixAppliesView(ReportActionView):
+    input_serializer = FixApplicabilitySerializer
+
     def perform(self, report_id: UUID, data: dict[str, Any]) -> Report:
         follow_up = confirm_linked_report_fix(
             actor=self.membership,
             report_id=report_id,
             expected_version=data["expected_version"],
+            expected_resolution_revision=data["expected_resolution_revision"],
         )
         return follow_up.report
 

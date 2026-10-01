@@ -22,7 +22,8 @@ from accounts.session import SESSION_GENERATION_KEY
 from connections.credentials import cipher, decrypt
 from connections.models import AllowedChannel, Connection
 from connections.providers import SetupError
-from feedback.models import Activity, Report, ReportNotificationOperation, ReportSource
+from feedback.models import Activity, FollowUp, Report, ReportNotificationOperation, ReportSource
+from feedback.problems import confirm_fix
 from feedback.reports import link_report
 
 pytestmark = pytest.mark.django_db
@@ -189,6 +190,14 @@ def test_report_deletion_confirmation_version_and_scope(client: Client, actor: M
     report = link_report(
         actor=actor, report_id=report.pk, problem_id=problem.pk, expected_version=1
     )
+    confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        fix_note="Fixed",
+        fix_version="1",
+    )
+    assert FollowUp.objects.filter(report=report).exists()
     make_notification(report=report)
     path = f"reports/{report.pk}/delete/"
     assert (
@@ -203,6 +212,7 @@ def test_report_deletion_confirmation_version_and_scope(client: Client, actor: M
     assert not Report.objects.filter(pk=report.pk).exists()
     assert not ReportSource.objects.filter(report_id=report.pk).exists()
     assert not ReportNotificationOperation.objects.exists()
+    assert not FollowUp.objects.exists()
     deletion = Activity.objects.get(record_id=report.pk)
     assert deletion.action == "report.deleted" and deletion.metadata == {}
     assert problem.reports.count() == 0
@@ -219,6 +229,14 @@ def test_workspace_delete_removes_tenant_and_preserves_other_membership(
     report = link_report(
         actor=actor, report_id=report.pk, problem_id=problem.pk, expected_version=1
     )
+    confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        fix_note="Fixed",
+        fix_version="1",
+    )
+    assert FollowUp.objects.filter(report=report).exists()
     make_notification(report=report)
     create_invitation(actor=actor, email="invite@test.dev", role="member")
     assert post(client, actor, "delete/", {"confirmation": "wrong"}).status_code == 400
@@ -227,6 +245,7 @@ def test_workspace_delete_removes_tenant_and_preserves_other_membership(
     assert Workspace.objects.filter(pk=other.pk).exists()
     assert actor.user.memberships.count() == 1
     assert not Connection.objects.exists()
+    assert not FollowUp.objects.exists()
     assert not Activity.objects.exists()
     assert client.get(url(actor, "connections/")).status_code == 404
 

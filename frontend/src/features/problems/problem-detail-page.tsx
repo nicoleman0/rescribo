@@ -17,6 +17,7 @@ import {
 } from '@/api/problems'
 import { confirmFixApplies, type ReportDetail } from '@/api/reports'
 import type { ApiError } from '@/api/request'
+import { useReportMutation } from '@/features/inbox/use-report-mutation'
 import { useWorkspace } from '@/components/auth/use-workspace'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
@@ -542,7 +543,7 @@ function LinkedReports({
                   <ConfirmFixAppliesButton
                     workspaceId={workspaceId}
                     report={report}
-                    onConfirmed={() => reports.refetch()}
+                    resolutionRevision={problem.resolution_revision}
                   />
                 ) : null}
               </li>
@@ -564,28 +565,18 @@ function LinkedReports({
 function ConfirmFixAppliesButton({
   workspaceId,
   report,
-  onConfirmed,
+  resolutionRevision,
 }: {
   workspaceId: string
   report: ReportDetail
-  onConfirmed: () => void
+  resolutionRevision: number
 }) {
-  const [pending, setPending] = useState(false)
-  const [error, setError] = useState<ApiError | null>(null)
-  async function confirm() {
-    setPending(true)
-    setError(null)
-    try {
-      await confirmFixApplies(workspaceId, report.id, {
-        expected_version: report.version,
-      })
-      onConfirmed()
-    } catch (caught) {
-      setError(caught as ApiError)
-    } finally {
-      setPending(false)
-    }
-  }
+  const mutation = useReportMutation(workspaceId, () =>
+    confirmFixApplies(workspaceId, report.id, {
+      expected_version: report.version,
+      expected_resolution_revision: resolutionRevision,
+    }),
+  )
   return (
     <div className="grid justify-items-start gap-2">
       <p className="text-sm">
@@ -595,14 +586,14 @@ function ConfirmFixAppliesButton({
         type="button"
         variant="outline"
         className={touchTarget}
-        disabled={pending}
-        onClick={() => void confirm()}
+        disabled={mutation.isPending}
+        onClick={() => mutation.mutate(undefined)}
       >
-        {pending ? 'Recording…' : 'Confirm fix applies'}
+        {mutation.isPending ? 'Recording…' : 'Confirm fix applies'}
       </Button>
-      {error ? (
+      {mutation.error ? (
         <ActionError
-          error={error}
+          error={mutation.error}
           title="The follow-up was not created"
           record="report"
         />

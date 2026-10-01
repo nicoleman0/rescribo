@@ -2144,13 +2144,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/FixApplicability'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/FixApplicability'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Versioned'
+              $ref: '#/components/schemas/FixApplicability'
         required: true
       security:
       - sessionCookie: []
@@ -2958,6 +2958,18 @@ components:
         * `failed` - Failed
         * `uncertain` - Uncertain
         * `cancelled` - Cancelled
+    FixApplicability:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        expected_resolution_revision:
+          type: integer
+          minimum: 1
+      required:
+      - expected_resolution_revision
+      - expected_version
     FixConfirmation:
       type: object
       properties:

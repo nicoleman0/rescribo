@@ -95,7 +95,7 @@ export const assignReport = (
 export const confirmFixApplies = (
   workspaceId: string,
   reportId: string,
-  input: Schemas['Versioned'],
+  input: Schemas['FixApplicability'],
 ) => reportAction(workspaceId, reportId, 'confirm-fix-applies', input)
 export const transitionReport = (
   workspaceId: string,

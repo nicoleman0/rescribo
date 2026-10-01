@@ -53,7 +53,7 @@ def problem_reports(*, actor: Membership, problem_id: UUID) -> QuerySet[Report]:
         .prefetch_related(
             Prefetch(
                 "follow_ups",
-                queryset=FollowUp.objects.order_by("-resolution_revision"),
+                queryset=FollowUp.objects.filter(problem=problem).order_by("-resolution_revision"),
                 to_attr="active_follow_ups",
             )
         )

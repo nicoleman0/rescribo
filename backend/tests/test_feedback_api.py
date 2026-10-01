@@ -314,7 +314,20 @@ def test_late_linked_report_requires_confirmation_before_followup(client: Client
     report = make_report(actor=actor)
     link_report(actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk)
     url = f"/api/workspaces/{actor.workspace_id}/reports/{report.pk}/confirm-fix-applies/"
-    response = client.post(url, data={"expected_version": 2}, content_type="application/json")
+    missing = client.post(url, data={"expected_version": 2}, content_type="application/json")
+    assert missing.status_code == 400
+    stale = client.post(
+        url,
+        data={"expected_version": 2, "expected_resolution_revision": 2},
+        content_type="application/json",
+    )
+    assert stale.status_code == 409
+    assert stale.json()["current"]["follow_up_revision"] is None
+    response = client.post(
+        url,
+        data={"expected_version": 2, "expected_resolution_revision": 1},
+        content_type="application/json",
+    )
     assert response.status_code == 200
     assert response.json()["follow_up_revision"] == problem.resolution_revision
 
@@ -386,3 +399,27 @@ def test_manual_api_replay_returns_current_persisted_state(client: Client) -> No
     assert Report.objects.values().get(pk=report.pk) == before
     assert Activity.objects.count() == count
     assert Report.objects.count() == ReportSource.objects.count() == 1
+
+
+@pytest.mark.parametrize("action", ["confirm-fix", "confirm-fix-applies"])
+def test_fix_actions_hide_records_from_other_workspaces(client: Client, action: str) -> None:
+    actor = make_membership()
+    foreign = make_membership(user=actor.user, workspace=make_workspace(slug="foreign"))
+    problem = make_problem(actor=foreign)
+    report = make_report(actor=foreign)
+    sign_in(client, actor)
+    if action == "confirm-fix":
+        path = f"problems/{problem.pk}/{action}/"
+        payload = {"expected_version": 1, "fix_note": "Fixed", "fix_version": "1"}
+    else:
+        path = f"reports/{report.pk}/{action}/"
+        payload = {"expected_version": 1, "expected_resolution_revision": 1}
+    response = client.post(
+        f"/api/workspaces/{actor.workspace_id}/{path}",
+        data=payload,
+        content_type="application/json",
+    )
+    assert response.status_code == 404
+    problem.refresh_from_db()
+    assert problem.resolution_revision == 0
+    assert not report.follow_ups.exists()

@@ -93,6 +93,53 @@ test.describe('Report triage', () => {
   )
   test.use({ storageState: sessionPath })
 
+  test('confirms fixes after moving a report and verifies applicability for a late report', async ({
+    page,
+  }) => {
+    const marker = `Fix ${Date.now()}`
+    const reportTitle = `Report ${marker}`
+    const firstProblem = `First ${marker}`
+    const secondProblem = `Second ${marker}`
+    await createManualReport(page, reportTitle)
+    await createProblem(page, firstProblem)
+    await openProblem(page, firstProblem)
+    await page.getByLabel('Fix details').fill('First fix is available')
+    await page.getByLabel('Available in version').fill('1.0')
+    await page.getByRole('button', { name: 'Confirm fix', exact: true }).click()
+    await expect(
+      page.getByRole('region', { name: 'Confirmed fix' }),
+    ).toContainText('First fix is available')
+
+    await openReport(page, reportTitle)
+    await createProblem(page, secondProblem, true)
+    await openProblem(page, secondProblem)
+    await page.getByLabel('Fix details').fill('Second fix is available')
+    await page.getByLabel('Available in version').fill('2.0')
+    await page.getByRole('button', { name: 'Confirm fix', exact: true }).click()
+    await expect(
+      page.getByRole('region', { name: 'Confirmed fix' }),
+    ).toContainText('Second fix is available')
+    await expect(
+      page.getByRole('button', { name: 'Confirm fix applies' }),
+    ).toHaveCount(0)
+
+    await createManualReport(page, `Late ${marker}`)
+    await triage(page).getByRole('button', { name: 'Link to problem' }).click()
+    await pickProblem(page, secondProblem)
+    await page.getByRole('button', { name: 'Link report' }).click()
+    await expect(
+      triage(page).getByRole('button', { name: 'Ungroup' }),
+    ).toBeVisible()
+    await openProblem(page, secondProblem)
+    const confirm = page.getByRole('button', { name: 'Confirm fix applies' })
+    await expect(confirm).toHaveCount(1)
+    await confirm.click()
+    await expect(confirm).toHaveCount(0)
+    await page.reload()
+    await expect(linkedReports(page).getByRole('listitem')).toHaveCount(2)
+    await expect(confirm).toHaveCount(0)
+  })
+
   test('groups two reports into one problem, then moves, reassigns, ungroups, dismisses, and restores', async ({
     page,
   }) => {

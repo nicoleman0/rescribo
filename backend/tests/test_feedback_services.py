@@ -238,7 +238,10 @@ def test_linking_fixed_problem_requires_explicit_applicability_confirmation() ->
     )
     assert not FollowUp.objects.filter(report=report).exists()
     follow_up = confirm_linked_report_fix(
-        actor=actor, report_id=report.pk, expected_version=report.version
+        actor=actor,
+        report_id=report.pk,
+        expected_version=report.version,
+        expected_resolution_revision=1,
     )
     assert follow_up.report_id == report.pk
     assert follow_up.problem_id == problem.pk
@@ -543,3 +546,181 @@ def test_unrelated_submission_integrity_failure_is_not_hidden() -> None:
             submit_report(actor=actor, submission=submission())
     assert not Report.objects.exists()
     assert not Activity.objects.exists()
+
+
+@pytest.mark.parametrize("confirm_before_move", [True, False])
+def test_follow_up_revisions_are_scoped_to_the_problem(confirm_before_move: bool) -> None:
+    from feedback.problem_reads import problem_reports
+    from feedback.serializers import ReportDetailSerializer
+
+    actor = make_membership()
+    report = make_report(actor=actor)
+    first = create_problem(actor=actor, title="First")
+    second = create_problem(actor=actor, title="Second")
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=report.version, problem_id=first.pk
+    )
+    confirm_fix(
+        actor=actor, problem_id=first.pk, expected_version=1, fix_note="First fix", fix_version="1"
+    )
+    if confirm_before_move:
+        second = confirm_fix(
+            actor=actor,
+            problem_id=second.pk,
+            expected_version=1,
+            fix_note="Second fix",
+            fix_version="1",
+        )
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=report.version, problem_id=second.pk
+    )
+    assert ReportDetailSerializer(report).data["follow_up_revision"] is None
+    listed = problem_reports(actor=actor, problem_id=second.pk).get(pk=report.pk)
+    assert ReportDetailSerializer(listed).data["follow_up_revision"] is None
+    if confirm_before_move:
+        confirm_linked_report_fix(
+            actor=actor,
+            report_id=report.pk,
+            expected_version=report.version,
+            expected_resolution_revision=1,
+        )
+    else:
+        confirm_fix(
+            actor=actor,
+            problem_id=second.pk,
+            expected_version=1,
+            fix_note="Second fix",
+            fix_version="1",
+        )
+    assert set(FollowUp.objects.filter(report=report).values_list("problem_id", flat=True)) == {
+        first.pk,
+        second.pk,
+    }
+
+
+@pytest.mark.parametrize("late", [True, False])
+@pytest.mark.parametrize("slack", [True, False])
+def test_follow_up_recipient_respects_report_source(late: bool, slack: bool) -> None:
+    actor = make_membership()
+    assignee = make_membership(
+        workspace=actor.workspace, user=make_user(email="assignee@example.test")
+    )
+    problem = create_problem(actor=actor, title="Problem")
+    report = make_report(actor=actor, source=slack_source() if slack else None)
+    report = assign_report(
+        actor=actor, report_id=report.pk, expected_version=report.version, assignee_id=assignee.pk
+    )
+    if late:
+        problem = confirm_fix(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=1,
+            fix_note="Fixed",
+            fix_version="1",
+        )
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=report.version, problem_id=problem.pk
+    )
+    if late:
+        confirm_linked_report_fix(
+            actor=actor,
+            report_id=report.pk,
+            expected_version=report.version,
+            expected_resolution_revision=1,
+        )
+    else:
+        confirm_fix(
+            actor=actor,
+            problem_id=problem.pk,
+            expected_version=1,
+            fix_note="Fixed",
+            fix_version="1",
+        )
+    assert FollowUp.objects.get(report=report).recipient_id == (actor.pk if slack else assignee.pk)
+
+
+def test_late_confirmation_rejects_a_revision_the_member_did_not_review() -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    problem = confirm_fix(
+        actor=actor, problem_id=problem.pk, expected_version=1, fix_note="First", fix_version="1"
+    )
+    Problem.objects.filter(pk=problem.pk).update(state="in_progress")
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        fix_note="Second",
+        fix_version="2",
+    )
+    report = make_report(actor=actor)
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk
+    )
+    with pytest.raises(VersionConflict):
+        confirm_linked_report_fix(
+            actor=actor,
+            report_id=report.pk,
+            expected_version=report.version,
+            expected_resolution_revision=1,
+        )
+    assert not FollowUp.objects.filter(report=report).exists()
+    first = confirm_linked_report_fix(
+        actor=actor,
+        report_id=report.pk,
+        expected_version=report.version,
+        expected_resolution_revision=2,
+    )
+    retry = confirm_linked_report_fix(
+        actor=actor,
+        report_id=report.pk,
+        expected_version=report.version,
+        expected_resolution_revision=2,
+    )
+    assert first.pk == retry.pk
+
+
+@pytest.mark.django_db(transaction=True)
+def test_late_confirmation_does_not_lock_report_while_waiting_for_problem() -> None:
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Event
+
+    from django.db import close_old_connections, transaction
+
+    from feedback.services import locked_problem
+
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    problem = confirm_fix(
+        actor=actor, problem_id=problem.pk, expected_version=1, fix_note="Fixed", fix_version="1"
+    )
+    report = make_report(actor=actor)
+    report = link_report(
+        actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk
+    )
+    waiting = Event()
+
+    def signal_problem_lock(**kwargs: Any) -> Problem:
+        waiting.set()
+        return locked_problem(**kwargs)
+
+    def confirm() -> FollowUp:
+        close_old_connections()
+        try:
+            return confirm_linked_report_fix(
+                actor=actor,
+                report_id=report.pk,
+                expected_version=report.version,
+                expected_resolution_revision=1,
+            )
+        finally:
+            close_old_connections()
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        with patch("feedback.problems.locked_problem", side_effect=signal_problem_lock):
+            with transaction.atomic():
+                Problem.objects.select_for_update().get(pk=problem.pk)
+                future = executor.submit(confirm)
+                assert waiting.wait(timeout=5)
+                Report.objects.select_for_update(nowait=True).get(pk=report.pk)
+            assert future.result(timeout=5).problem_id == problem.pk
