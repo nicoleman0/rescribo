@@ -143,7 +143,7 @@ These are ownership boundaries and required records, not a requirement for one D
 | Report | Workspace, title, description, source snapshot/reference, author, submitter, optional customer label/contact reference/version, assignee, nullable problem, triage state. |
 | Problem | Workspace, title/summary, owner, state, resolution revision, fix note and availability evidence. |
 | Engineering issue | Problem, connection, stable repository/issue IDs, number/URL, title, state/reason, external update and sync timestamps. |
-| Follow-up | Report, resolution revision, intended employee, draft/version, employee-delivery state, customer-contact state, outcome and timestamps. Unique report + resolution revision. |
+| Follow-up | Report, resolution revision, intended employee, draft/version, employee-delivery state, customer-contact state, outcome and timestamps. Unique report + problem + resolution revision. |
 | Activity | Workspace, actor/system identity, action, record reference, time, minimal change metadata. |
 | Inbound receipt / External operation | Provider delivery or action key, workspace/connection, processing state, attempts, next attempt, remote result IDs, safe error. |
 | Match suggestion/run | Workspace, input record versions, retrieved candidate IDs, evidence references, algorithm/configuration version, outcome, timing, safe error, user decision. |

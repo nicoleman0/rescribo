@@ -39,6 +39,10 @@ class ReasonRequired(FeedbackError, ValueError):
     reason = "reason_required"
 
 
+class FixDetailsRequired(FeedbackError, ValueError):
+    reason = "fix_details_required"
+
+
 class InvalidReference(FeedbackError, ValueError):
     reason = "invalid_reference"
 

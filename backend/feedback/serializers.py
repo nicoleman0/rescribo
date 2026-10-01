@@ -56,6 +56,24 @@ class ReportListItemSerializer(serializers.Serializer):
 
 
 class ReportDetailSerializer(serializers.Serializer):
+    @extend_schema_field(serializers.IntegerField(allow_null=True))
+    def get_follow_up_revision(self, report: Report) -> int | None:
+        if report.problem_id is None:
+            return None
+        follow_ups = getattr(report, "active_follow_ups", None)
+        if follow_ups is not None:
+            follow_up = next(
+                (item for item in follow_ups if item.problem_id == report.problem_id), None
+            )
+        else:
+            follow_up = (
+                report.follow_ups.filter(problem_id=report.problem_id)
+                .order_by("-resolution_revision")
+                .first()
+            )
+        return follow_up.resolution_revision if follow_up is not None else None
+
+    follow_up_revision = serializers.SerializerMethodField()
     id = serializers.UUIDField()
     title = serializers.CharField()
     description = serializers.CharField()
@@ -244,6 +262,11 @@ class ProblemDetailSerializer(ProblemIssueSerializer):
     report_count = serializers.IntegerField()
     needs_review = serializers.BooleanField()
     resolution_revision = serializers.IntegerField()
+    fix_note = serializers.CharField()
+    fix_version = serializers.CharField()
+    fix_evidence_url = serializers.URLField(allow_blank=True)
+    fix_confirmed_at = serializers.DateTimeField(allow_null=True)
+    fix_confirmed_by = MemberSummarySerializer(allow_null=True)
     version = serializers.IntegerField()
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
@@ -359,6 +382,16 @@ class ProblemEditSerializer(VersionedSerializer):
 
 class ProblemOwnerSerializer(VersionedSerializer):
     owner_id = serializers.UUIDField(allow_null=True)
+
+
+class FixApplicabilitySerializer(VersionedSerializer):
+    expected_resolution_revision = serializers.IntegerField(min_value=1)
+
+
+class FixConfirmationSerializer(VersionedSerializer):
+    fix_note = serializers.CharField(max_length=10000, allow_blank=False)
+    fix_version = serializers.CharField(max_length=100, allow_blank=False)
+    evidence_url = serializers.URLField(max_length=500, required=False, allow_blank=True)
 
 
 class LinkIssueSerializer(VersionedSerializer):

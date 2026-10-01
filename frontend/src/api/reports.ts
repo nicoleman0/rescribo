@@ -53,7 +53,13 @@ export async function createManualReport(
 }
 
 type ReportAction =
-  'link' | 'create-problem' | 'unlink' | 'dismiss' | 'restore' | 'assign'
+  | 'link'
+  | 'create-problem'
+  | 'unlink'
+  | 'dismiss'
+  | 'restore'
+  | 'assign'
+  | 'confirm-fix-applies'
 
 async function reportAction(
   workspaceId: string,
@@ -86,6 +92,11 @@ export const assignReport = (
   input: Schemas['AssignReport'],
 ) => reportAction(workspaceId, reportId, 'assign', input)
 
+export const confirmFixApplies = (
+  workspaceId: string,
+  reportId: string,
+  input: Schemas['FixApplicability'],
+) => reportAction(workspaceId, reportId, 'confirm-fix-applies', input)
 export const transitionReport = (
   workspaceId: string,
   reportId: string,

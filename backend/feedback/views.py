@@ -27,7 +27,13 @@ from feedback.problem_reads import (
     problem_reports,
     search_problems,
 )
-from feedback.problems import ProblemChanges, assign_problem_owner, update_problem
+from feedback.problems import (
+    ProblemChanges,
+    assign_problem_owner,
+    confirm_fix,
+    confirm_linked_report_fix,
+    update_problem,
+)
 from feedback.reports import (
     assign_report,
     create_problem_and_link_report,
@@ -41,6 +47,8 @@ from feedback.serializers import (
     AssignReportSerializer,
     CreateProblemForReportSerializer,
     ExternalOperationSerializer,
+    FixApplicabilitySerializer,
+    FixConfirmationSerializer,
     InboxFilterSerializer,
     IssueAbandonSerializer,
     IssueApproveSerializer,
@@ -164,6 +172,35 @@ class ProblemListView(ListModelMixin, WorkspaceView, GenericAPIView):
     )
     def get(self, request: Request, workspace_id: UUID) -> Response:
         return self.list(request)
+
+
+class ProblemFixConfirmationView(WorkspaceView):
+    @extend_schema(
+        request=FixConfirmationSerializer,
+        responses={
+            200: ProblemDetailSerializer,
+            400: ErrorSerializer,
+            409: ProblemConflictSerializer,
+            **READ_ERRORS,
+        },
+    )
+    def post(self, request: Request, workspace_id: UUID, problem_id: UUID) -> Response:
+        data = FixConfirmationSerializer(data=request.data)
+        if not data.is_valid():
+            return invalid_request(data.errors)
+        try:
+            confirm_fix(actor=self.membership, problem_id=problem_id, **data.validated_data)
+            problem = get_problem(actor=self.membership, problem_id=problem_id)
+        except FeedbackError as error:
+            return feedback_error_response(
+                error,
+                current=lambda: (
+                    ProblemDetailSerializer(
+                        get_problem(actor=self.membership, problem_id=problem_id)
+                    ).data
+                ),
+            )
+        return Response(ProblemDetailSerializer(problem).data)
 
 
 class ProblemDetailView(WorkspaceView):
@@ -291,6 +328,20 @@ class ReportAssignView(ReportActionView):
             expected_version=data["expected_version"],
             assignee_id=data["assignee_id"],
         )
+
+
+@extend_schema_view(post=report_action_schema(FixApplicabilitySerializer))
+class ReportConfirmFixAppliesView(ReportActionView):
+    input_serializer = FixApplicabilitySerializer
+
+    def perform(self, report_id: UUID, data: dict[str, Any]) -> Report:
+        follow_up = confirm_linked_report_fix(
+            actor=self.membership,
+            report_id=report_id,
+            expected_version=data["expected_version"],
+            expected_resolution_revision=data["expected_resolution_revision"],
+        )
+        return follow_up.report
 
 
 @extend_schema_view(post=report_action_schema(VersionedSerializer))

@@ -145,7 +145,11 @@ def test_reopened_event_returns_fix_available_problem_to_in_progress() -> None:
     )
     report.refresh_from_db()
     confirmed = confirm_fix(
-        actor=actor, problem_id=problem.pk, expected_version=problem.version, fix_note="Shipped"
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        fix_note="Shipped",
+        fix_version="1.0.0",
     )
     assert confirmed.state == Problem.State.FIX_AVAILABLE
     pending = make_notification(report=report, state="queued")

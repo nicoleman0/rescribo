@@ -16,6 +16,7 @@ const report: ReportDetail = {
   customer_contact_reference: 'CRM-1',
   affected_version: '2.3',
   triage_state: 'new',
+  follow_up_revision: null,
   provenance: {
     kind: 'manual',
     permalink: '',
