@@ -3,6 +3,7 @@
 from datetime import timedelta
 from typing import Any
 from urllib.parse import urlencode
+from uuid import UUID
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -129,7 +130,7 @@ def bind_connection(actor: Membership, provider: str, code: str, repository: str
         workspace_id=actor.workspace_id, provider=provider
     )
     old_binding = (row.external_id, row.repository_id, row.repository)
-    cancel_notifications(actor)
+    cancel_notifications(actor.workspace_id)
     if row.external_id != values["external_id"]:
         row.channels.all().delete()
     for key, value in values.items():
@@ -150,17 +151,18 @@ def bind_connection(actor: Membership, provider: str, code: str, repository: str
         ) from error
 
 
-def cancel_notifications(actor: Membership) -> None:
+def cancel_notifications(workspace_id: UUID) -> None:
     for report in (
-        Report.objects.select_for_update().filter(workspace_id=actor.workspace_id).order_by("id")
+        Report.objects.select_for_update().filter(workspace_id=workspace_id).order_by("id")
     ):
         invalidate_pending_notifications(report=report, reason="disconnected", now=timezone.now())
+
 
 
 def disconnect(actor: Membership, provider: str, version: int) -> None:
     with transaction.atomic():
         row = lock_connection(actor, provider, version)
-        cancel_notifications(actor)
+        cancel_notifications(actor.workspace_id)
         row.credential = ""
         # Removing the installation binding prevents future installation-token minting.
         row.external_id = ""
@@ -211,7 +213,7 @@ def refresh_connection(actor: Membership, provider: str, version: int) -> None:
             failure = providers.safe_provider_error(error)
             row.status = Connection.Status.ERROR
             row.error_code = failure.code
-            cancel_notifications(actor)
+            cancel_notifications(actor.workspace_id)
         else:
             row.status = Connection.Status.ACTIVE
             row.error_code = ""

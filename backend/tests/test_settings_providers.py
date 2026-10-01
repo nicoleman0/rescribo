@@ -94,8 +94,8 @@ def test_github_access_check_paginates_and_detects_replaced_repository() -> None
 @pytest.mark.parametrize("flag", ["is_im", "is_mpim", "is_archived", "is_ext_shared"])
 def test_channel_policy_rejects_ineligible_sources(flag: str) -> None:
     with (
-        patch("integrations.slack.settings.decrypt", return_value="secret"),
-        patch("integrations.slack.settings.WebClient") as sdk,
+        patch("integrations.slack.client.decrypt", return_value="secret"),
+        patch("integrations.slack.client.WebClient") as sdk,
     ):
         sdk.return_value.conversations_info.return_value = {
             "channel": {"id": "C1", "is_member": True, flag: True}
