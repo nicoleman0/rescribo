@@ -10,6 +10,10 @@ import {
 import { SettingsPage } from './settings-page'
 
 const base = '/api/workspaces/ws-1/'
+const unlinked = {
+  [`GET ${base}slack/identity/`]: () =>
+    json({ linked: false, team_id: '', user_id: '', linked_at: null }),
+}
 function render() {
   return renderWorkspaceRoutes(
     [{ path: '/settings', element: <SettingsPage /> }],
@@ -19,6 +23,7 @@ function render() {
 function owner() {
   testMembership.role = 'owner'
   return stubApi({
+    ...unlinked,
     [`GET ${base}connections/`]: () => json([]),
     [`GET ${base}memberships/`]: () => json([]),
     [`GET ${base}invitations/`]: () => json([]),
@@ -30,7 +35,10 @@ afterEach(() => {
 })
 
 test('members see connections but no owner controls', async () => {
-  stubApi({ [`GET ${base}connections/`]: () => json([]) })
+  stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json([]),
+  })
   render()
   expect(await screen.findByRole('heading', { name: 'GitHub' })).toBeVisible()
   expect(
@@ -76,6 +84,7 @@ test('workspace deletion requires the exact slug and cancellation makes no reque
 test('invitation failure preserves the entered email', async () => {
   testMembership.role = 'owner'
   stubApi({
+    ...unlinked,
     [`GET ${base}connections/`]: () => json([]),
     [`GET ${base}memberships/`]: () => json([]),
     [`GET ${base}invitations/`]: () => json([]),
@@ -96,6 +105,7 @@ test('invitation failure preserves the entered email', async () => {
 test('connection query can recover after retry', async () => {
   let failed = true
   stubApi({
+    ...unlinked,
     [`GET ${base}connections/`]: () => (failed ? json({}, 503) : json([])),
   })
   render()
@@ -103,4 +113,60 @@ test('connection query can recover after retry', async () => {
   failed = false
   await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
   expect(await screen.findByRole('heading', { name: 'Slack' })).toBeVisible()
+})
+
+const slackConnection = {
+  provider: 'slack',
+  identity: 'Acme',
+  external_id: 'T1',
+  status: 'active',
+  scopes: [],
+  error_code: '',
+  error_detail: '',
+  last_success_at: null,
+  last_reconciled_at: null,
+  repository: '',
+  visibility: '',
+  version: 1,
+  channels: [],
+  operations: { queued: 0, running: 0, failed: 0, uncertain: 0 },
+}
+
+test('a member generates a Slack linking code and sees the link once made', async () => {
+  let linked = false
+  const fetch = stubApi({
+    [`GET ${base}connections/`]: () => json([slackConnection]),
+    [`GET ${base}slack/identity/`]: () =>
+      json({
+        linked,
+        team_id: linked ? 'T1' : '',
+        user_id: linked ? 'U1' : '',
+        linked_at: linked ? '2026-10-01T10:00:00Z' : null,
+      }),
+    [`POST ${base}slack/link-code/`]: () =>
+      json({ code: 'code-123', expires_at: '2026-10-01T10:05:00Z' }),
+  })
+  render()
+  const user = userEvent.setup()
+  await user.click(
+    await screen.findByRole('button', { name: 'Generate linking code' }),
+  )
+  expect(await screen.findByLabelText('Linking code')).toHaveValue('code-123')
+  linked = true
+  await user.click(screen.getByRole('button', { name: 'Generate a new code' }))
+  expect(await screen.findByText(/Linked to Slack user/)).toBeVisible()
+  expect(
+    fetch.mock.calls.filter(([, init]) => init?.method === 'POST'),
+  ).toHaveLength(2)
+})
+
+test('linking is unavailable until Slack is connected', async () => {
+  stubApi({ ...unlinked, [`GET ${base}connections/`]: () => json([]) })
+  render()
+  expect(
+    await screen.findByText(/Slack is not connected to this workspace/),
+  ).toBeVisible()
+  expect(
+    screen.queryByRole('button', { name: 'Generate linking code' }),
+  ).not.toBeInTheDocument()
 })

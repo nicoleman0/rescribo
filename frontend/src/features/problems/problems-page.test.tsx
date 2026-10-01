@@ -58,6 +58,7 @@ const linkedReport: ReportDetail = {
   provenance: {
     kind: 'slack',
     permalink: 'javascript:alert(1)',
+    permalink_error: '',
     author_display_name: 'Sam',
     snapshot_text: '<b>Export is broken</b>',
     captured_at: '2026-09-20T10:00:00Z',

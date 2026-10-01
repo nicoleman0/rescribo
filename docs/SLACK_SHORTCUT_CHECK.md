@@ -1,5 +1,7 @@
 # Slack message shortcut capture feasibility check
 
+> Retired by #12. The product endpoints in `connections/slack_inbound.py` replaced this check's scripts and in-memory stores. This page is kept as the feasibility record; its commands no longer exist.
+
 This opt-in check covers GitHub issue #3. It verifies that a Slack message shortcut opens a capture modal inside Slack's acknowledgement deadline, that submissions arrive firmly bound to the shortcut context, and that rejected source text is never retained. It does not create a production connection, persist credentials, or write raw interaction payloads to disk.
 
 ## Test app settings

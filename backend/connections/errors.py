@@ -62,6 +62,8 @@ ERROR_DETAILS = {
         "GitHub access was lost: the installation or selected repository was removed. "
         "Reinstall the App on this repository, then reconnect."
     ),
+    "app_uninstalled": "The Slack App was removed from this workspace. Reconnect Slack.",
+    "credentials_revoked": "Slack revoked the app's access. Reconnect Slack.",
     "installation_suspended": (
         "The GitHub App installation is suspended. Unsuspend it in GitHub, then refresh."
     ),

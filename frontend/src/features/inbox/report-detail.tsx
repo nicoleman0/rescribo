@@ -123,6 +123,8 @@ function ReportDetailBody({
       <Separator />
       <DeleteReport report={report} />
       <Provenance
+        workspaceId={workspaceId}
+        reportId={report.id}
         provenance={report.provenance}
         submittedBy={report.submitted_by}
       />

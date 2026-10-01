@@ -39,6 +39,7 @@ class ProblemSummarySerializer(serializers.Serializer):
 class ReportProvenanceSerializer(serializers.Serializer):
     kind = serializers.ChoiceField(choices=ReportSource.Kind.choices)
     permalink = serializers.CharField()
+    permalink_error = serializers.CharField()
     author_display_name = serializers.CharField()
     snapshot_text = serializers.CharField()
     captured_at = serializers.DateTimeField()

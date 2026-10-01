@@ -20,6 +20,7 @@ const report: ReportDetail = {
   provenance: {
     kind: 'manual',
     permalink: '',
+    permalink_error: '',
     author_display_name: '',
     snapshot_text: '',
     captured_at: '2026-09-20T10:00:00Z',

@@ -152,23 +152,13 @@ tasks:
     cmds:
       - uv run python scripts/check_github_issue_lifecycle.py {{.CLI_ARGS}}
 
-  slack-shortcut-check:
-    desc: Run the opt-in live Slack shortcut capture feasibility check
-    cmds:
-      - uv run python scripts/check_slack_shortcut.py {{.CLI_ARGS}}
-
-  slack-issue26-check:
-    desc: Run the opt-in live Slack identity and delivery feasibility check
-    cmds:
-      - uv run python scripts/check_slack_issue26.py {{.CLI_ARGS}}
-
   slack-tunnel:
-    desc: Open a cloudflared quick tunnel to a feasibility receiver (port, path)
+    desc: Open a cloudflared quick tunnel to a local port (port, path)
     cmds:
       - bash scripts/slack_tunnel.sh {{.CLI_ARGS}}
 
   slack-channels:
-    desc: List feasibility workspace channel ids for the Slack checks
+    desc: List Slack workspace channel ids and bot membership
     cmds:
       - uv run python scripts/list_slack_channels.py
 

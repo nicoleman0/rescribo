@@ -158,6 +158,22 @@ def cancel_notifications(workspace_id: UUID) -> None:
         invalidate_pending_notifications(report=report, reason="disconnected", now=timezone.now())
 
 
+def disable_slack_team(team_id: str, code: str) -> bool:
+    """Fail closed after verified removal or revoked credentials; the owner must reconnect."""
+    with transaction.atomic():
+        rows = list(
+            Connection.objects.select_for_update()
+            .filter(provider=Connection.Provider.SLACK, external_id=team_id)
+            .exclude(status=Connection.Status.DISCONNECTED)
+        )
+        for row in rows:
+            cancel_notifications(row.workspace_id)
+            row.status = Connection.Status.ERROR
+            row.error_code = code
+            row.version += 1
+            row.save(update_fields=["status", "error_code", "version"])
+    return bool(rows)
+
 
 def disconnect(actor: Membership, provider: str, version: int) -> None:
     with transaction.atomic():

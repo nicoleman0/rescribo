@@ -1,9 +1,11 @@
 """Owner settings endpoints and session-bound OAuth callbacks."""
 
+import json
 import logging
 from collections.abc import Callable
 from dataclasses import asdict
 from typing import Any
+from urllib.parse import parse_qs
 from uuid import UUID
 
 from django.conf import settings
@@ -18,10 +20,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
-from connections import providers, services
+from connections import providers, services, slack_identity, slack_inbound
 from connections.models import Connection
 from feedback.deletion import delete_report, delete_workspace
 from feedback.errors import VersionConflict
+from feedback.models import ReportSource
 from integrations.github_app.webhooks import (
     InvalidWebhookPayload,
     InvalidWebhookSignature,
@@ -29,6 +32,8 @@ from integrations.github_app.webhooks import (
     verify_webhook_signature,
 )
 from integrations.slack.errors import ChannelRejected
+from integrations.slack.shortcuts import ShortcutPayloadError
+from integrations.slack.signing import InvalidSlackSignature, verify_slack_signature
 from operations.models import InboundReceipt
 from operations.tasks import process_inbound_receipt
 
@@ -270,6 +275,48 @@ class WorkspaceDeleteView(OwnerWorkspaceView):
         return translated(lambda: delete_workspace(self.membership, **data.validated_data))
 
 
+class SlackIdentitySerializer(serializers.Serializer):
+    linked = serializers.BooleanField()
+    team_id = serializers.CharField()
+    user_id = serializers.CharField()
+    linked_at = serializers.DateTimeField(allow_null=True)
+
+
+class SlackLinkCodeSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    expires_at = serializers.DateTimeField()
+
+
+class SlackIdentityView(WorkspaceView):
+    """The current member's own Slack link; nobody links or unlinks another member."""
+
+    @extend_schema(responses={200: SlackIdentitySerializer})
+    def get(self, request: Request, workspace_id: UUID) -> Response:
+        identity = slack_identity.linked_identity(self.membership)
+        return Response(
+            {
+                "linked": identity is not None,
+                "team_id": identity.provider_team_id if identity else "",
+                "user_id": identity.provider_user_id if identity else "",
+                "linked_at": identity.linked_at if identity else None,
+            }
+        )
+
+
+class SlackUnlinkView(WorkspaceView):
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request: Request, workspace_id: UUID) -> Response:
+        slack_identity.unlink(self.membership)
+        return Response(status=204)
+
+
+class SlackLinkCodeView(WorkspaceView):
+    @extend_schema(request=None, responses={200: SlackLinkCodeSerializer})
+    def post(self, request: Request, workspace_id: UUID) -> Response:
+        issued = slack_identity.issue_link_code(self.membership)
+        return Response({"code": issued.secret, "expires_at": issued.expires_at})
+
+
 class GitHubWebhookView(APIView):
     """Shared across every workspace; the payload's installation ID resolves the connection.
 
@@ -328,3 +375,92 @@ class GitHubWebhookView(APIView):
         if created:
             transaction.on_commit(lambda: self._dispatch(str(receipt.pk)))
         return Response(status=202)
+
+
+class SlackRequestView(APIView):
+    """Shared across every workspace; the signed team ID resolves the connection.
+
+    The signature is verified against the raw body before any parsing. As with the
+    GitHub webhook, DRF skips CSRF for these unauthenticated views.
+    """
+
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    body_limit = 1_000_000
+
+    def verified_body(self, request: Request) -> bytes | Response:
+        secret = settings.RESCRIBO_SLACK_SIGNING_SECRET
+        if not secret:
+            return Response(status=500)
+        if len(request.body) > self.body_limit:
+            return Response(status=413)
+        try:
+            verify_slack_signature(
+                signing_secret=secret,
+                body=request.body,
+                timestamp=request.headers.get("X-Slack-Request-Timestamp"),
+                signature=request.headers.get("X-Slack-Signature"),
+            )
+        except InvalidSlackSignature:
+            return Response(status=401)
+        return request.body
+
+
+class SlackInteractionsView(SlackRequestView):
+    @extend_schema(exclude=True)
+    def post(self, request: Request) -> Response:
+        body = self.verified_body(request)
+        if isinstance(body, Response):
+            return body
+        try:
+            payload = json.loads(parse_qs(body.decode())["payload"][0])
+        except KeyError, IndexError, UnicodeDecodeError, json.JSONDecodeError:
+            return Response(status=400)
+        if not isinstance(payload, dict):
+            return Response(status=400)
+        try:
+            if payload.get("type") == "message_action":
+                slack_inbound.start_capture(payload)
+            elif payload.get("type") == "view_submission":
+                return Response(slack_inbound.submit_capture(payload))
+        except ShortcutPayloadError, ValueError:
+            return Response(status=400)
+        return Response(status=200)
+
+
+class SlackEventsView(SlackRequestView):
+    @extend_schema(exclude=True)
+    def post(self, request: Request) -> Response:
+        body = self.verified_body(request)
+        if isinstance(body, Response):
+            return body
+        try:
+            payload = json.loads(body)
+        except UnicodeDecodeError, json.JSONDecodeError:
+            return Response(status=400)
+        if not isinstance(payload, dict):
+            return Response(status=400)
+        try:
+            result = slack_inbound.handle_event(payload)
+        except DatabaseError:
+            logger.warning("Slack event could not be persisted")
+            return Response(status=500)
+        return Response(result) if result is not None else Response(status=200)
+
+
+class PermalinkSerializer(serializers.Serializer):
+    permalink = serializers.CharField()
+    permalink_error = serializers.CharField()
+
+
+class ReportPermalinkRetryView(WorkspaceView):
+    @extend_schema(request=None, responses={200: PermalinkSerializer})
+    def post(self, request: Request, workspace_id: UUID, report_id: UUID) -> Response:
+        source = ReportSource.objects.filter(
+            workspace_id=workspace_id, report_id=report_id, kind=ReportSource.Kind.SLACK
+        ).first()
+        if source is None:
+            raise NotFound()
+        slack_inbound.resolve_permalink(source.pk)
+        source.refresh_from_db(fields=["permalink", "permalink_error"])
+        return Response({"permalink": source.permalink, "permalink_error": source.permalink_error})

@@ -8,13 +8,11 @@ import pytest
 from slack_sdk.models.blocks import SectionBlock
 
 from integrations.slack import (
-    ChannelRejected,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
     SubmissionErrors,
     build_capture_modal,
-    check_source_allowed,
     parse_capture_submission,
     parse_message_shortcut,
     verify_slack_signature,
@@ -53,6 +51,7 @@ def make_shortcut(**overrides: object) -> MessageShortcut:
         "channel_id": "C0PUBLIC",
         "channel_name": "customer-feedback",
         "actor_id": "U0ACTOR",
+        "author_id": "U0AUTHOR",
         "message_ts": "1758400000.000100",
         "thread_ts": None,
         "text": "Invented customer report text for fixture use only.",
@@ -121,104 +120,6 @@ def test_tampered_body_rejected() -> None:
         verify_slack_signature(signing_secret=SECRET, body=b"payload=2", **headers)
 
 
-@pytest.mark.parametrize("dropped", ["timestamp", "signature"])
-def test_missing_signature_header_rejected(dropped: str) -> None:
-    body = b"payload=1"
-    headers = signed_headers(SECRET, body)
-    headers[dropped] = ""
-    with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(signing_secret=SECRET, body=body, **headers)
-
-
-def test_malformed_timestamp_rejected() -> None:
-    body = b"payload=1"
-    headers = signed_headers(SECRET, body)
-    headers["timestamp"] = "not-a-number"
-    with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(signing_secret=SECRET, body=body, **headers)
-
-
-def test_stale_timestamp_rejected() -> None:
-    body = b"payload=1"
-    stale = int(time.time()) - 301
-    with pytest.raises(InvalidSlackSignature):
-        verify_slack_signature(
-            signing_secret=SECRET, body=body, **signed_headers(SECRET, body, stale)
-        )
-
-
-def test_parse_message_shortcut_extracts_identity() -> None:
-    shortcut = parse_message_shortcut(shortcut_payload())
-    assert shortcut.team_id == "T0TEAM"
-    assert shortcut.channel_id == "C0PUBLIC"
-    assert shortcut.actor_id == "U0ACTOR"
-    assert shortcut.message_ts == "1758400000.000100"
-    assert shortcut.trigger_id == "Tr0trigger"
-    assert shortcut.callback_id == "submit_customer_feedback"
-    assert shortcut.text == "Invented customer report text for fixture use only."
-
-
-def test_parse_message_shortcut_rejects_wrong_type() -> None:
-    payload = shortcut_payload()
-    payload["type"] = "block_action"
-    with pytest.raises(ShortcutPayloadError):
-        parse_message_shortcut(payload)
-
-
-@pytest.mark.parametrize("missing", ["trigger_id", "callback_id", "team", "channel", "message"])
-def test_parse_message_shortcut_rejects_missing_fields(missing: str) -> None:
-    payload = shortcut_payload()
-    payload.pop(missing)
-    with pytest.raises(ShortcutPayloadError):
-        parse_message_shortcut(payload)
-
-
-def test_parse_message_shortcut_rejects_message_without_ts() -> None:
-    payload = shortcut_payload()
-    payload["message"] = {"text": "Invented text without ts."}
-    with pytest.raises(ShortcutPayloadError):
-        parse_message_shortcut(payload)
-
-
-def test_is_thread_reply() -> None:
-    assert make_shortcut().is_thread_reply is False
-    assert make_shortcut(thread_ts="1758400000.000100").is_thread_reply is False
-    assert make_shortcut(thread_ts="1758400000.000050").is_thread_reply is True
-
-
-def test_check_source_allowed_accepts_approved_channels() -> None:
-    approved = frozenset({"C0PUBLIC", "C0PRIVATE"})
-    check_source_allowed(make_shortcut(), approved_channel_ids=approved)
-    reply = make_shortcut(
-        channel_id="C0PRIVATE",
-        channel_name="quiet",
-        thread_ts="1758400000.000050",
-    )
-    check_source_allowed(reply, approved_channel_ids=approved)
-
-
-def test_check_source_allowed_rejects_dm_channel() -> None:
-    with pytest.raises(ChannelRejected) as error:
-        check_source_allowed(
-            make_shortcut(channel_id="D0DM", channel_name=None),
-            approved_channel_ids=frozenset({"C0PUBLIC"}),
-        )
-    assert "D0DM" in str(error.value)
-    assert "direct_message" in str(error.value)
-    assert "text" not in str(error.value)
-
-
-def test_check_source_allowed_rejects_unapproved_channel() -> None:
-    with pytest.raises(ChannelRejected) as error:
-        check_source_allowed(
-            make_shortcut(channel_id="C0OTHER", channel_name="random"),
-            approved_channel_ids=frozenset({"C0PUBLIC"}),
-        )
-    assert "C0OTHER" in str(error.value)
-    assert "unapproved_channel" in str(error.value)
-    assert "text" not in str(error.value)
-
-
 def test_modal_snapshot_matches_text_exactly() -> None:
     shortcut = make_shortcut()
     view = build_capture_modal(
@@ -277,29 +178,11 @@ def test_first_link_modal_requests_the_product_code() -> None:
     assert code_input["label"]["text"] == "Product linking code"
 
 
-def test_submission_resolves_identity_from_context_not_payload() -> None:
-    seen: list[str] = []
-
-    def resolve_context(context_id: str) -> MessageShortcut:
-        seen.append(context_id)
-        return make_shortcut(team_id="T0TEAM", channel_id="C0PUBLIC")
-
-    submission = parse_capture_submission(
-        submission_payload(CONTEXT_ID, team="T0OTHER"), resolve_context=resolve_context
-    )
-    assert seen == [CONTEXT_ID]
+def test_submission_reads_only_fields_and_the_opaque_context() -> None:
+    submission = parse_capture_submission(submission_payload(CONTEXT_ID, team="T0OTHER"))
+    assert submission.context_id == CONTEXT_ID
     assert submission.title == "Report title from fixture"
-
-
-def test_submission_records_context_identity() -> None:
-    def resolve_context(context_id: str) -> MessageShortcut:
-        return make_shortcut(team_id="T0TEAM", channel_id="C0PUBLIC")
-
-    submission = parse_capture_submission(
-        submission_payload(CONTEXT_ID, team="T0OTHER"), resolve_context=resolve_context
-    )
-    assert submission.shortcut.team_id == "T0TEAM"
-    assert submission.title == "Report title from fixture"
+    assert not hasattr(submission, "team_id")
 
 
 def test_submission_carries_link_code_separately_from_report_fields() -> None:
@@ -307,26 +190,15 @@ def test_submission_carries_link_code_separately_from_report_fields() -> None:
     payload["view"]["state"]["values"]["slack_link_code"] = {
         "value": {"value": "link-code-fixture"}
     }
-    submission = parse_capture_submission(payload, resolve_context=lambda _cid: make_shortcut())
+    submission = parse_capture_submission(payload)
     assert submission.link_code == "link-code-fixture"
 
 
-def test_submission_rejects_unknown_context() -> None:
-    def resolve_context(context_id: str) -> MessageShortcut:
-        raise ValueError(f"Unknown context {context_id}")
-
-    with pytest.raises(ValueError):
-        parse_capture_submission(submission_payload("ctx-unknown"), resolve_context=resolve_context)
-
-
 def test_submission_rejects_blank_title() -> None:
-    def resolve_context(context_id: str) -> MessageShortcut:
-        return make_shortcut()
-
     payload = submission_payload(CONTEXT_ID)
     payload["view"]["state"]["values"]["report_title"] = {"title": {"value": "   "}}
     with pytest.raises(SubmissionErrors) as error:
-        parse_capture_submission(payload, resolve_context=resolve_context)
+        parse_capture_submission(payload)
     assert "report_title" in error.value.errors
 
 

@@ -8,6 +8,7 @@ from django.utils import timezone
 class InboundReceipt(models.Model):
     class Provider(models.TextChoices):
         GITHUB = "github", "GitHub"
+        SLACK = "slack", "Slack"
 
     class Status(models.TextChoices):
         PENDING = "pending", "Pending"

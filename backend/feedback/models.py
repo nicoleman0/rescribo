@@ -120,6 +120,8 @@ class ReportSource(models.Model):
     author_external_id = models.CharField(max_length=64, blank=True, default="")
     author_display_name = models.CharField(max_length=200, blank=True, default="")
     snapshot_text = models.TextField(blank=True, default="")
+    permalink_error = models.CharField(max_length=64, blank=True, default="")
+    permalink_attempted_at = models.DateTimeField(null=True, blank=True)
     captured_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
