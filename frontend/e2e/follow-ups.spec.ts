@@ -223,10 +223,20 @@ test.describe('Follow-ups', () => {
     await page.getByRole('button', { name: /All/ }).focus()
     await page.keyboard.press('Enter')
 
-    await list(page)
-      .getByRole('link', { name: new RegExp(title) })
-      .focus()
+    const allTab = page.getByRole('button', { name: /All/ })
+    await expect(allTab).toHaveAttribute('aria-pressed', 'true')
+    await expect(list(page)).toBeVisible()
+    await expect(list(page).locator('xpath=..')).not.toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+    const followUpLink = list(page).getByRole('link', {
+      name: new RegExp(title),
+    })
+    await expect(followUpLink).toBeVisible()
+    await followUpLink.focus()
     await page.keyboard.press('Enter')
+    await expect(page).toHaveURL(/\/follow-ups\/[^/?]+(?:\?.*)?$/)
     await expect(
       detail(page).getByRole('heading', { name: title }),
     ).toBeVisible()
