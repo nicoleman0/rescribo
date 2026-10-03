@@ -210,7 +210,13 @@ test('replaces the list with an error state that supports retry', async () => {
   expect(
     await screen.findByText('Could not load follow-ups'),
   ).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  const listError = screen
+    .getByText('Could not load follow-ups')
+    .closest('[role="alert"]')
+  expect(listError).not.toBeNull()
+  fireEvent.click(
+    within(listError as HTMLElement).getByRole('button', { name: 'Try again' }),
+  )
   await screen.findByText('CSV export fails')
 })
 

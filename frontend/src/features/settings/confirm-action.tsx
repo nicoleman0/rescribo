@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useId, useRef, useState } from 'react'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/states/async-states'
@@ -24,10 +24,12 @@ export function ConfirmAction({
   const id = useId()
   const [open, setOpen] = useState(false)
   const [confirmation, setConfirmation] = useState('')
+  const triggerRef = useRef<HTMLButtonElement>(null)
   const action = useSettingsAction(workspaceId)
   if (!open)
     return (
       <Button
+        ref={triggerRef}
         variant="outline"
         className="min-h-11 w-fit text-destructive"
         onClick={() => setOpen(true)}
@@ -84,6 +86,7 @@ export function ConfirmAction({
             setOpen(false)
             setConfirmation('')
             action.reset()
+            requestAnimationFrame(() => triggerRef.current?.focus())
           }}
         >
           Cancel

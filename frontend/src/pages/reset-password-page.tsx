@@ -1,29 +1,31 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useState, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiRequest } from '@/api/request'
 import { csrf, sessionQueryKey, type Session } from '@/api/auth'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
+import { ErrorState, LoadingState } from '@/components/states/async-states'
 
 export function ResetPasswordPage() {
   const { token = '' } = useParams()
-  const [valid, setValid] = useState<boolean | null>(null)
+  const preview = useQuery({
+    queryKey: ['password-reset-preview', token],
+    queryFn: async () => {
+      await csrf()
+      return apiRequest<{ status: string }>('password-resets/preview/', {
+        token,
+      })
+    },
+    retry: false,
+    enabled: Boolean(token),
+  })
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
-  const [previewError, setPreviewError] = useState('')
   const navigate = useNavigate()
   const cache = useQueryClient()
-  useEffect(() => {
-    void csrf()
-      .then(() =>
-        apiRequest<{ status: string }>('password-resets/preview/', { token }),
-      )
-      .then((value) => setValid(value.status === 'valid'))
-      .catch((reason: Error) => setPreviewError(reason.message))
-  }, [token])
   const redeem = useMutation({
     mutationFn: async () => {
       await csrf()
@@ -46,16 +48,27 @@ export function ResetPasswordPage() {
   return (
     <AuthLayout>
       <h1 className="mb-5 text-xl font-semibold">Reset password</h1>
-      {valid === null ? (
-        previewError ? (
-          <p role="alert">{previewError}</p>
-        ) : (
-          <p role="status">Checking reset link…</p>
-        )
-      ) : !valid ? (
-        <p role="status">
-          This reset link has expired or is no longer available.
-        </p>
+      {preview.isPending ? (
+        <LoadingState label="Checking reset link" />
+      ) : preview.isError ? (
+        <ErrorState
+          title="Could not check this reset link"
+          description="Retry the check. If the link has expired, ask an owner for a new one."
+          onRetry={() => void preview.refetch()}
+          isRetrying={preview.isFetching}
+        />
+      ) : preview.data.status !== 'valid' ? (
+        <div className="grid gap-2">
+          <p role="status">
+            This reset link has expired or is no longer available.
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Ask a workspace owner for a new reset link.
+          </p>
+          <Link className="w-fit underline" to="/sign-in">
+            Sign in
+          </Link>
+        </div>
       ) : (
         <form className="grid gap-4" onSubmit={submit}>
           <Field

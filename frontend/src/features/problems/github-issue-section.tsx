@@ -5,6 +5,7 @@ import { applyProblem } from '@/api/cache'
 import { problemKeys, type ProblemDetail } from '@/api/problems'
 import type { ApiError } from '@/api/request'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
 import { touchTarget } from '@/components/layout/touch-target'
 import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
@@ -166,6 +167,7 @@ function LinkIssueForm({
         autoComplete="url"
         value={reference}
         disabled={busy}
+        error={fieldError(error, 'reference')}
         onChange={(event) => setReference(event.target.value)}
       />
       <p className="text-xs text-muted-foreground">

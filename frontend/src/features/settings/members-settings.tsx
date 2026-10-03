@@ -35,6 +35,7 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
         <ErrorState
           title="Could not load members"
           onRetry={() => void members.refetch()}
+          isRetrying={members.isFetching}
         />
       ) : null}
       <ul className="divide-y divide-border">
@@ -91,6 +92,7 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
         <ErrorState
           title="Could not load invitations"
           onRetry={() => void invites.refetch()}
+          isRetrying={invites.isFetching}
         />
       ) : null}
       {invites.data?.length === 0 ? (

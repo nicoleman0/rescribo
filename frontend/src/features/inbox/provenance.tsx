@@ -44,7 +44,7 @@ export function Provenance({
             . Captured on {captured}; this is not a live copy.
           </p>
           {source.snapshot_text ? (
-            <blockquote className="rounded-control border-l-2 border-border bg-muted px-3 py-2 whitespace-pre-wrap">
+            <blockquote className="min-w-0 break-words [overflow-wrap:anywhere] rounded-control border-l-2 border-border bg-muted px-3 py-2 whitespace-pre-wrap">
               {source.snapshot_text}
             </blockquote>
           ) : null}

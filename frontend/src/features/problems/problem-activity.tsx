@@ -31,14 +31,22 @@ export function ProblemActivityList({
         Activity
       </h2>
       {activity.isPending ? <LoadingState label="Loading activity" /> : null}
-      {activity.isError ? (
+      {activity.isError && !activity.data ? (
         <ErrorState
           title="Could not load activity"
           onRetry={() => (page > 1 ? setPage(1) : void activity.refetch())}
           isRetrying={activity.isFetching}
         />
       ) : null}
-      {activity.isSuccess ? (
+      {activity.isError && activity.data ? (
+        <ErrorState
+          title="Could not refresh activity"
+          description="The last loaded activity remains visible. Retry to check for newer events."
+          onRetry={() => void activity.refetch()}
+          isRetrying={activity.isFetching}
+        />
+      ) : null}
+      {activity.data ? (
         <div
           aria-busy={activity.isPlaceholderData}
           className={cn(

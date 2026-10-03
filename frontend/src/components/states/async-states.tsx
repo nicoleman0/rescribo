@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { cn } from '@/lib/utils'
 
 export type QueryStateStatus = 'loading' | 'empty' | 'error' | 'ready'
 
@@ -25,12 +26,19 @@ export function LoadingState({ label = 'Loading' }: { label?: string }) {
 export function RetryButton({
   onRetry,
   isRetrying = false,
+  className,
 }: {
   onRetry: () => void
   isRetrying?: boolean
+  className?: string
 }) {
   return (
-    <Button variant="outline" onClick={onRetry} disabled={isRetrying}>
+    <Button
+      variant="outline"
+      className={cn('max-md:min-h-[44px]', className)}
+      onClick={onRetry}
+      disabled={isRetrying}
+    >
       <RefreshCw
         aria-hidden="true"
         className={isRetrying ? 'animate-spin' : undefined}

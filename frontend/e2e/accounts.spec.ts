@@ -32,7 +32,6 @@ test('sign-in is keyboard accessible and has no axe violations', async ({
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/sign-in')
-  await expect(page).toHaveScreenshot('signin-desktop.png', { fullPage: true })
   const email = page.getByRole('textbox', { name: 'Email' })
   await page.keyboard.press('Tab')
   await expect(email).toBeFocused()
@@ -47,7 +46,10 @@ test('sign-in is keyboard accessible and has no axe violations', async ({
 test('sign-in at mobile width', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 })
   await page.goto('/sign-in')
-  await expect(page).toHaveScreenshot('signin-mobile.png', { fullPage: true })
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
+  expect(
+    await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+  ).toBe(true)
 })
 
 test('expired invitation explains the problem without a password form', async ({

@@ -61,7 +61,7 @@ export function FollowUpDetailPanel({
     queryKey: followUpKeys.detail(workspaceId, followUpId),
     queryFn: () => getFollowUp(workspaceId, followUpId),
     retry: (failures, error) =>
-      (error as ApiError).status !== 404 && failures < 2,
+      ![403, 404].includes((error as ApiError).status ?? 0) && failures < 2,
     refetchInterval: (query) =>
       (
         query.state.data?.notification as
@@ -80,7 +80,12 @@ export function FollowUpDetailPanel({
       aria-label="Follow-up detail"
       className="grid content-start gap-4 rounded-card border border-border bg-card p-4"
     >
-      <Button asChild variant="ghost" size="sm" className="w-fit">
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className={cn('w-fit', touchTarget)}
+      >
         <Link to={backTo}>
           <ArrowLeft aria-hidden="true" />
           Back to follow-ups
@@ -93,14 +98,36 @@ export function FollowUpDetailPanel({
           description="It may belong to another workspace, or the link is wrong."
         />
       ) : null}
-      {detail.isError && (detail.error as ApiError).status !== 404 ? (
+      {detail.isError && (detail.error as ApiError).status === 403 ? (
+        <EmptyState
+          title="Follow-up access removed"
+          description="You no longer have access to this follow-up."
+        />
+      ) : null}
+      {detail.isError &&
+      ![403, 404].includes((detail.error as ApiError).status ?? 0) &&
+      !detail.data ? (
         <ErrorState
           title="Could not load this follow-up"
           onRetry={() => void detail.refetch()}
           isRetrying={detail.isFetching}
         />
       ) : null}
-      {detail.isSuccess ? (
+      {detail.isError &&
+      detail.data &&
+      ![403, 404].includes((detail.error as ApiError).status ?? 0) ? (
+        <ErrorState
+          title="Could not refresh this follow-up"
+          description="Your open changes are still here. Retry to check for updates."
+          onRetry={() => void detail.refetch()}
+          isRetrying={detail.isFetching}
+        />
+      ) : null}
+      {detail.data &&
+      !(
+        detail.isError &&
+        [403, 404].includes((detail.error as ApiError).status ?? 0)
+      ) ? (
         <FollowUpBody
           workspaceId={workspaceId}
           followUp={detail.data}

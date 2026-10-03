@@ -48,7 +48,8 @@ export function FollowUpsPage() {
         <div>
           <h1 className="text-xl font-semibold">Follow-ups</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Approved fixes are sent to the customer, then tracked here.
+            Approved employee messages are delivered separately from customer
+            contact. Track customer outcomes here.
           </p>
         </div>
       </header>
@@ -118,6 +119,8 @@ function BucketTabs({
         <TabButton
           label="All"
           count={all.data?.count}
+          unavailable={all.isError}
+          loading={all.isPending}
           active={active === null}
           onClick={() => onChange(null)}
         />
@@ -126,11 +129,26 @@ function BucketTabs({
             key={bucket}
             label={bucketLabels[bucket]}
             count={counts[index]?.data?.count}
+            unavailable={counts[index]?.isError}
+            loading={counts[index]?.isPending}
             active={active === bucket}
             onClick={() => onChange(bucket)}
           />
         ))}
       </ul>
+      {all.isError || counts.some((query) => query.isError) ? (
+        <ErrorState
+          title="Some bucket counts could not be loaded"
+          description="The bucket lists remain available. Retry to refresh the counts."
+          onRetry={() => {
+            void all.refetch()
+            for (const query of counts) if (query.isError) void query.refetch()
+          }}
+          isRetrying={
+            all.isFetching || counts.some((query) => query.isFetching)
+          }
+        />
+      ) : null}
     </nav>
   )
 }
@@ -138,11 +156,15 @@ function BucketTabs({
 function TabButton({
   label,
   count,
+  unavailable = false,
+  loading = false,
   active,
   onClick,
 }: {
   label: string
   count: number | undefined
+  unavailable?: boolean
+  loading?: boolean
   active: boolean
   onClick: () => void
 }) {
@@ -158,8 +180,17 @@ function TabButton({
         )}
       >
         <span>{label}</span>
-        <span className="font-mono text-xs text-muted-foreground">
-          {count ?? '·'}
+        <span
+          className="font-mono text-xs text-muted-foreground"
+          aria-label={
+            unavailable
+              ? 'count unavailable'
+              : loading
+                ? 'count loading'
+                : `${count ?? 0} items`
+          }
+        >
+          {unavailable ? '!' : loading ? '…' : (count ?? 0)}
         </span>
       </button>
     </li>

@@ -19,12 +19,12 @@ export type TestRoute = { path: string; element: ReactElement }
 export function renderWorkspaceRoutes(
   routes: TestRoute[],
   initialPath: string,
-) {
-  const client = new QueryClient({
+  queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  })
-  return render(
-    <QueryClientProvider client={client}>
+  }),
+) {
+  const view = render(
+    <QueryClientProvider client={queryClient}>
       <WorkspaceProvider membership={testMembership}>
         <MemoryRouter initialEntries={[initialPath]}>
           <Routes>
@@ -41,6 +41,7 @@ export function renderWorkspaceRoutes(
       </WorkspaceProvider>
     </QueryClientProvider>,
   )
+  return { ...view, queryClient }
 }
 
 type Handler = (url: URL, init?: RequestInit) => Response | Promise<Response>
