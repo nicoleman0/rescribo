@@ -5,27 +5,37 @@ env:
   npm_config_cache: '{{.ROOT_DIR}}/.cache/npm'
 
 tasks:
+  default:
+    desc: Show all available project commands
+    cmds:
+      - task --list-all
+
   bootstrap:
+    desc: Prepare local development configuration
     run: once
     cmds:
       - python3 scripts/bootstrap.py
 
   install:
+    desc: Install locked Python and frontend dependencies
     deps: [bootstrap]
     cmds:
       - uv sync --locked
       - cd frontend && npm ci
 
   services:
+    desc: Start PostgreSQL and Redis containers
     deps: [bootstrap]
     cmds:
       - docker compose up -d --wait postgres redis
 
   stop:
+    desc: Stop PostgreSQL and Redis containers
     cmds:
       - docker compose down
 
   migrate:
+    desc: Apply database migrations
     cmds:
       - uv run python backend/manage.py migrate
 
@@ -40,28 +50,34 @@ tasks:
       - uv run python backend/manage.py issue_owner_recovery {{.CLI_ARGS}}
 
   api:
+    desc: Start the Django development server
     cmds:
       - uv run python backend/manage.py runserver 127.0.0.1:8000
 
   web:
+    desc: Start the Vite development server
     dir: frontend
     cmds:
       - npm run dev -- --host 127.0.0.1
 
   worker:
+    desc: Start the Celery worker
     cmds:
       - uv run celery --workdir=backend -A config worker --loglevel=INFO --pool=solo
 
   scheduler:
+    desc: Start the Celery scheduler
     cmds:
       - uv run celery --workdir=backend -A config beat --loglevel=INFO --schedule=../.cache/celerybeat-schedule
 
   check:
+    desc: Run backend and frontend quality checks
     cmds:
       - task check-backend
       - task check-frontend
 
   check-backend:
+    desc: Run Python, Django, and shell checks
     cmds:
       - python3 scripts/check_raw_colours.py
       - uv run ruff check .
@@ -72,68 +88,81 @@ tasks:
       - uv run python backend/manage.py makemigrations --check --dry-run
 
   check-frontend:
+    desc: Run frontend lint, type, and format checks
     cmds:
       - cd frontend && npm run lint
       - cd frontend && npm run typecheck
       - cd frontend && npm run format:check
 
   test:
+    desc: Run backend and frontend tests
     cmds:
       - task test-backend
       - task test-frontend
 
   test-backend:
+    desc: Run backend tests
     cmds:
       - uv run pytest
 
   test-frontend:
+    desc: Run frontend tests
     cmds:
       - cd frontend && npm test
 
   build:
+    desc: Build the frontend for production
     dir: frontend
     cmds:
       - npm run build
 
   format:
+    desc: Format Python and frontend files
     cmds:
       - uv run ruff check --fix .
       - uv run ruff format .
       - cd frontend && npm run format
 
   schema:
+    desc: Regenerate the OpenAPI and TypeScript contracts
     cmds:
       - uv run python backend/manage.py spectacular --file frontend/openapi.yaml --validate --fail-on-warn
       - cd frontend && npm run api:types
 
   schema-check:
+    desc: Check generated API contracts
     cmds:
       - task schema-check-backend
       - task schema-check-frontend
 
   schema-check-backend:
+    desc: Check the generated OpenAPI document
     cmds:
       - mkdir -p .cache
       - uv run python backend/manage.py spectacular --file .cache/openapi.yaml --validate --fail-on-warn
       - diff -u frontend/openapi.yaml .cache/openapi.yaml
 
   schema-check-frontend:
+    desc: Check the generated TypeScript API types
     cmds:
       - mkdir -p .cache
       - cd frontend && npm exec openapi-typescript -- openapi.yaml -o ../.cache/schema.d.ts
       - diff -u frontend/src/api/schema.d.ts .cache/schema.d.ts
 
   browsers:
+    desc: Install Chromium for browser tests
     dir: frontend
     cmds:
       - npx playwright install chromium
 
   e2e:
+    desc: Run Playwright browser tests
     dir: frontend
     cmds:
       - npm run test:e2e
 
   worker-check:
+    desc: Verify a running Celery worker
     cmds:
       - uv run python scripts/check_worker.py
 
@@ -163,6 +192,7 @@ tasks:
       - uv run python scripts/list_slack_channels.py
 
   app:
+    desc: Build and start the full containerized app stack
     deps: [services]
     cmds:
       - docker compose --profile app build
@@ -170,5 +200,6 @@ tasks:
       - docker compose --profile app up -d --wait
 
   app-stop:
+    desc: Stop the containerized app stack
     cmds:
       - docker compose --profile app down
