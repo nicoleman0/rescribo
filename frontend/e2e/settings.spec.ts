@@ -16,8 +16,8 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
     settings_workspace_id: string
   }
   await page.goto('/sign-in')
-  await page.getByLabel('Email').fill(seed.users[6].email)
-  await page.getByLabel('Password').fill(seed.users[6].password)
+  await page.getByLabel('Email').fill(seed.users[9].email)
+  await page.getByLabel('Password').fill(seed.users[9].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
   await page.goto('/settings')

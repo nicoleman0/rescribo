@@ -183,10 +183,18 @@ class Activity(models.Model):
         ENGINEERING_ISSUE_LINKED = "engineering_issue.linked", "Engineering issue linked"
         ENGINEERING_ISSUE_CREATED = "engineering_issue.created", "Engineering issue created"
         ENGINEERING_ISSUE_UNLINKED = "engineering_issue.unlinked", "Engineering issue unlinked"
+        NOTIFICATION_APPROVED = "follow_up.notification_approved", "Notification approved"
+        NOTIFICATION_SENT = "follow_up.notification_sent", "Notification sent"
+        NOTIFICATION_FAILED = "follow_up.notification_failed", "Notification failed"
+        NOTIFICATION_CANCELLED = "follow_up.notification_cancelled", "Notification cancelled"
+        OUTCOME_RECORDED = "follow_up.outcome_recorded", "Outcome recorded"
+        OUTCOME_CORRECTED = "follow_up.outcome_corrected", "Outcome corrected"
+        RECIPIENT_CHANGED = "follow_up.recipient_changed", "Recipient changed"
 
     class RecordType(models.TextChoices):
         REPORT = "report", "Report"
         PROBLEM = "problem", "Problem"
+        FOLLOW_UP = "follow_up", "Follow up"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE, related_name="activities")
@@ -240,6 +248,8 @@ class ReportNotificationOperation(models.Model):
         UNLINKED = "unlinked", "Report ungrouped"
         ISSUE_REOPENED = "issue_reopened", "Linked GitHub issue reopened"
         ISSUE_RELINKED = "issue_relinked", "GitHub issue link replaced"
+        STALE = "stale", "Approval no longer matched the report"
+        MEMBER_CANCELLED = "member_cancelled", "Cancelled by a member"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     workspace = models.ForeignKey(
@@ -250,9 +260,28 @@ class ReportNotificationOperation(models.Model):
         Report, on_delete=models.PROTECT, related_name="notification_operations"
     )
     problem = models.ForeignKey(Problem, on_delete=models.PROTECT, related_name="+")
+    follow_up = models.ForeignKey(
+        "feedback.FollowUp", on_delete=models.PROTECT, related_name="notifications"
+    )
     recipient = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="+")
     resolution_revision = models.PositiveIntegerField()
     report_version = models.PositiveIntegerField()
+    message = models.TextField(blank=True, default="")
+    draft_version = models.PositiveIntegerField(default=1)
+    approved_by = models.ForeignKey(
+        Membership, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    approved_at = models.DateTimeField(null=True, blank=True)
+    # A manually confirmed uncertain send has a member's word instead of a remote ID.
+    delivery_confirmed_by = models.ForeignKey(
+        Membership, null=True, blank=True, on_delete=models.PROTECT, related_name="+"
+    )
+    delivery_confirmed_at = models.DateTimeField(null=True, blank=True)
+    attempts = models.PositiveIntegerField(default=0)
+    due_at = models.DateTimeField(null=True, blank=True)
+    lease_token = models.UUIDField(null=True, blank=True)
+    lease_expires_at = models.DateTimeField(null=True, blank=True)
+    safe_error = models.CharField(max_length=200, blank=True, default="")
     state = models.CharField(max_length=12, choices=State.choices, default=State.DRAFT)
     remote_conversation_id = models.CharField(max_length=64, blank=True, default="")
     remote_message_id = models.CharField(max_length=64, blank=True, default="")
@@ -267,9 +296,9 @@ class ReportNotificationOperation(models.Model):
     class Meta:
         constraints = [
             models.CheckConstraint(
+                # A manual delivery confirmation substitutes for a missing remote message ID.
                 condition=Q(state="sent", sent_at__isnull=False)
-                & ~Q(remote_conversation_id="")
-                & ~Q(remote_message_id="")
+                & (~Q(remote_message_id="") | Q(delivery_confirmed_at__isnull=False))
                 | ~Q(state="sent") & Q(sent_at__isnull=True),
                 name="notification_sent_has_remote_result",
             ),
@@ -278,18 +307,32 @@ class ReportNotificationOperation(models.Model):
                 | Q(invalidated_at__isnull=False) & ~Q(invalidation_reason=""),
                 name="notification_invalidation_complete",
             ),
-            # Only cancelled or uncertain rows carry an invalidation. An uncertain send keeps
-            # its state because the remote write may have happened.
+            # Unsent rows never carry an invalidation; cancelled rows always do. An uncertain
+            # send keeps its state because the remote write may have happened, and a member may
+            # later confirm it was sent: "delivered, then the report changed" is true history.
             models.CheckConstraint(
                 condition=Q(state="cancelled", invalidated_at__isnull=False)
-                | Q(state="uncertain")
-                | ~Q(state__in=["cancelled", "uncertain"]) & Q(invalidated_at__isnull=True),
+                | Q(state__in=["uncertain", "sent"])
+                | ~Q(state__in=["cancelled", "uncertain", "sent"]) & Q(invalidated_at__isnull=True),
                 name="notification_invalidation_matches_state",
+            ),
+            models.UniqueConstraint(
+                fields=["follow_up"],
+                condition=~Q(state="cancelled"),
+                name="one_active_notification_per_follow_up",
             ),
         ]
         indexes = [
             models.Index(fields=["workspace", "report", "state"], name="notification_ws_report_idx")
         ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if (
+            self.workspace_id != self.follow_up.workspace_id
+            or self.workspace_id != self.recipient.workspace_id
+        ):
+            raise ValueError("A notification must share its follow-up's workspace.")
+        super().save(*args, **kwargs)
 
 
 class FollowUp(models.Model):
@@ -325,6 +368,7 @@ class FollowUp(models.Model):
         on_delete=models.PROTECT,
         related_name="recorded_follow_ups",
     )
+    version = models.PositiveIntegerField(default=1)
     created_by = models.ForeignKey(
         Membership, on_delete=models.PROTECT, related_name="created_follow_ups"
     )

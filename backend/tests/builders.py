@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from accounts.models import Membership, User, Workspace
 from connections.models import Connection
-from feedback.models import EngineeringIssue, Problem, Report, ReportNotificationOperation
+from feedback.models import EngineeringIssue, FollowUp, Problem, Report, ReportNotificationOperation
 
 
 def make_user(**overrides: Any) -> User:
@@ -64,13 +64,17 @@ def make_report(*, actor: Membership | None = None, source: Any = None, **overri
 def make_notification(
     *, report: Report, state: str = "draft", **overrides: Any
 ) -> ReportNotificationOperation:
-    """Persist a prepared notification directly; no production path creates one yet."""
+    """Persist a prepared notification directly; production drafts come from follow_ups.py."""
     if report.problem is None:
         raise ValueError("A notification needs a linked report.")
+    follow_up = make_follow_up(
+        report=report, resolution_revision=overrides.get("resolution_revision")
+    )
     values: dict[str, Any] = {
         "workspace_id": report.workspace_id,
         "report": report,
         "problem": report.problem,
+        "follow_up": follow_up,
         "recipient": report.assignee or report.submitted_by,
         "resolution_revision": report.problem.resolution_revision,
         "report_version": report.version,
@@ -82,6 +86,26 @@ def make_notification(
         )
     values.update(overrides)
     return ReportNotificationOperation.objects.create(**values)
+
+
+def make_follow_up(
+    *, report: Report, resolution_revision: int | None = None, **overrides: Any
+) -> FollowUp:
+    """Persist a follow-up directly, mirroring the recipient rule from `_create_follow_up`."""
+    if report.problem is None:
+        raise ValueError("A follow-up needs a linked report.")
+    follow_up, _ = FollowUp.objects.get_or_create(
+        report=report,
+        problem=report.problem,
+        resolution_revision=resolution_revision or report.problem.resolution_revision,
+        defaults={
+            "workspace_id": report.workspace_id,
+            "recipient": overrides.pop("recipient", report.assignee or report.submitted_by),
+            "report_version": report.version,
+            "created_by": report.submitted_by,
+        },
+    )
+    return follow_up
 
 
 def make_connection(*, workspace: Workspace | None = None, **overrides: Any) -> Connection:

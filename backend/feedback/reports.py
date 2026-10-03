@@ -9,7 +9,8 @@ from django.utils import timezone
 
 from accounts.models import Membership
 from feedback.errors import AlreadyLinked, InvalidSourceKind, NoChanges, TitleRequired
-from feedback.models import Activity, Problem, Report, ReportSource
+from feedback.follow_ups import recipient_for_report
+from feedback.models import Activity, FollowUp, Problem, Report, ReportSource
 from feedback.models import ReportNotificationOperation as Operation
 from feedback.notifications import invalidate_pending_notifications
 from feedback.problems import create_problem
@@ -201,7 +202,53 @@ def assign_report(
                 metadata=change,
                 now=current,
             )
+        source_kind = (
+            ReportSource.objects.filter(report=report).values_list("kind", flat=True).first()
+        )
+        if source_kind == ReportSource.Kind.MANUAL:
+            _retarget_pending_follow_ups(actor=actor, report=report, now=current)
         return report
+
+
+def _retarget_pending_follow_ups(*, actor: Membership, report: Report, now: datetime) -> None:
+    """Move a manual report's pending follow-ups to the new assignee.
+
+    The notification cancel above already retargets the unsent send. Once an
+    outcome is recorded the recipient is historical, so we only touch the
+    rows that are still waiting on contact.
+    """
+    new_recipient = recipient_for_report(report)
+    pending = list(
+        FollowUp.objects.select_for_update()
+        .filter(
+            workspace_id=report.workspace_id,
+            report_id=report.pk,
+            contact_state=FollowUp.ContactState.PENDING,
+        )
+        .exclude(recipient_id=new_recipient.pk)
+        .order_by("created_at", "id")
+    )
+    for follow_up in pending:
+        previous = follow_up.recipient_id
+        follow_up.recipient = new_recipient
+        follow_up.report_version = report.version
+        finish_mutation(
+            row=follow_up,
+            now=now,
+            update_fields=["recipient", "report_version"],
+        )
+        write_activity(
+            actor=actor,
+            action=Activity.Action.RECIPIENT_CHANGED,
+            record_type=Activity.RecordType.FOLLOW_UP,
+            record_id=follow_up.pk,
+            metadata={
+                "from_recipient_id": str(previous),
+                "to_recipient_id": str(new_recipient.pk),
+                "report_reassigned": True,
+            },
+            now=now,
+        )
 
 
 def link_report(

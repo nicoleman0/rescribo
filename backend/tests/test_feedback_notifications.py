@@ -28,6 +28,7 @@ from feedback.errors import (
 )
 from feedback.models import Problem, Report, ReportNotificationOperation
 from feedback.notifications import invalidate_pending_notifications, stale_reason
+from feedback.problems import confirm_fix
 from feedback.reports import (
     assign_report,
     create_problem_and_link_report,
@@ -42,7 +43,11 @@ FIELDS = [f.attname for f in Operation._meta.concrete_fields]
 
 
 def snapshot(*rows: ReportNotificationOperation) -> list[dict[str, Any]]:
-    fresh = Operation.objects.filter(pk__in=[row.pk for row in rows]).order_by("created_at")
+    fresh = (
+        Operation.objects.filter(pk__in=[row.pk for row in rows])
+        .order_by("resolution_revision", "created_at")
+        .all()
+    )
     return [{name: getattr(row, name) for name in FIELDS} for row in fresh]
 
 
@@ -52,14 +57,14 @@ def linked_report(actor: Membership, problem: Problem, title: str = "Report") ->
 
 
 def one_of_each(report: Report) -> dict[str, ReportNotificationOperation]:
+    """One row per state, each on its own follow-up revision: one active row per follow-up."""
     earlier = timezone.now() - timedelta(days=1)
-    rows = {
-        state: make_notification(report=report, state=state)
-        for state in ("draft", "queued", "failed", "uncertain", "sent")
-    }
-    rows["cancelled"] = make_notification(
-        report=report, state="cancelled", invalidated_at=earlier, invalidation_reason="moved"
-    )
+    rows = {}
+    for offset, state in enumerate(("draft", "queued", "failed", "uncertain", "sent", "cancelled")):
+        kwargs: dict[str, Any] = {"resolution_revision": 10 + offset}
+        if state == "cancelled":
+            kwargs.update(invalidated_at=earlier, invalidation_reason="moved")
+        rows[state] = make_notification(report=report, state=state, **kwargs)
     return rows
 
 
@@ -70,6 +75,14 @@ def world() -> dict[str, Any]:
     first = make_problem(actor=actor, title="First")
     second = make_problem(actor=actor, title="Second")
     report = linked_report(actor, first)
+    confirm_fix(
+        actor=actor,
+        problem_id=first.pk,
+        expected_version=first.version,
+        fix_note="Confirmed for delivery tests.",
+        fix_version="1.0",
+    )
+    report = Report.objects.get(pk=report.pk)
     return {"actor": actor, "other": other, "first": first, "second": second, "report": report}
 
 
@@ -242,17 +255,23 @@ def test_invalidation_rejects_unknown_reasons(world: dict[str, Any]) -> None:
         )
 
 
-def test_stale_preparation_needs_a_fresh_row(world: dict[str, Any]) -> None:
+def test_stale_preparation_needs_current_data(world: dict[str, Any]) -> None:
     prepared = make_notification(report=world["report"])
     report = Report.objects.select_related("problem").get(pk=world["report"].pk)
     assert stale_reason(operation=prepared, report=report) is None
     reassign(world)
     report = Report.objects.select_related("problem").get(pk=world["report"].pk)
     prepared.refresh_from_db()
-    assert stale_reason(operation=prepared, report=report) == "not_sendable"
+    assert stale_reason(operation=prepared, report=report) == "invalidated"
     # Even a row that escaped cancellation is stale once the report version moves on.
     escaped = make_notification(report=report, report_version=2)
     assert stale_reason(operation=escaped, report=report) == "report_changed"
+    # A stale draft is cancelled, and the follow-up is drafted again against current data.
+    Operation.objects.filter(pk=escaped.pk).update(
+        state=Operation.State.CANCELLED,
+        invalidated_at=timezone.now(),
+        invalidation_reason=Operation.InvalidationReason.MEMBER_CANCELLED,
+    )
     fresh = make_notification(report=report)
     assert fresh.recipient_id == world["other"].pk
     assert stale_reason(operation=fresh, report=report) is None
@@ -262,17 +281,23 @@ def test_stale_preparation_needs_a_fresh_row(world: dict[str, Any]) -> None:
 
 def test_stale_reason_checks_problem_revision_and_recipient(world: dict[str, Any]) -> None:
     report = Report.objects.select_related("problem").get(pk=world["report"].pk)
-    other_problem = make_notification(report=report, problem=world["second"])
+    other_problem = make_notification(report=report, problem=world["second"], resolution_revision=5)
     assert stale_reason(operation=other_problem, report=report) == "problem_changed"
-    old_revision = make_notification(report=report, resolution_revision=5)
+    old_revision = make_notification(report=report, resolution_revision=4)
     assert stale_reason(operation=old_revision, report=report) == "resolution_changed"
-    inactive = make_notification(report=report, recipient=world["other"])
+    assert report.problem is not None
+    current_revision = report.problem.resolution_revision
+    inactive = make_notification(
+        report=report,
+        resolution_revision=current_revision,
+        recipient=world["other"],
+    )
     Membership.objects.filter(pk=world["other"].pk).update(
         is_active=False, revoked_at=timezone.now()
     )
     inactive = Operation.objects.select_related("recipient").get(pk=inactive.pk)
     assert stale_reason(operation=inactive, report=report) == "recipient_inactive"
-    uncertain = make_notification(report=report, state="uncertain")
+    uncertain = make_notification(report=report, state="uncertain", resolution_revision=3)
     assert stale_reason(operation=uncertain, report=report) == "not_sendable"
 
 
@@ -280,19 +305,31 @@ def test_stale_reason_checks_problem_revision_and_recipient(world: dict[str, Any
     "values",
     [
         {"state": "sent", "sent_at": None},
-        {"state": "sent", "remote_conversation_id": ""},
         {"state": "sent", "remote_message_id": ""},
         {"state": "draft", "sent_at": timezone.now()},
         {"state": "cancelled"},
         {"state": "cancelled", "invalidated_at": timezone.now()},
         {"state": "draft", "invalidated_at": timezone.now(), "invalidation_reason": "moved"},
         {"state": "failed", "invalidated_at": timezone.now(), "invalidation_reason": "moved"},
-        {"state": "sent", "invalidated_at": timezone.now(), "invalidation_reason": "moved"},
+        {"state": "queued", "invalidated_at": timezone.now(), "invalidation_reason": "moved"},
     ],
 )
 def test_database_rejects_inconsistent_rows(world: dict[str, Any], values: dict[str, Any]) -> None:
     with pytest.raises(IntegrityError), transaction.atomic():
         make_notification(report=world["report"], **values)
+
+
+def test_a_manual_delivery_confirmation_satisfies_the_sent_constraint(
+    world: dict[str, Any],
+) -> None:
+    row = make_notification(
+        report=world["report"],
+        state="sent",
+        remote_message_id="",
+        delivery_confirmed_by=world["other"],
+        delivery_confirmed_at=timezone.now(),
+    )
+    assert row.state == "sent"
 
 
 def test_reports_with_notification_history_cannot_be_deleted(world: dict[str, Any]) -> None:

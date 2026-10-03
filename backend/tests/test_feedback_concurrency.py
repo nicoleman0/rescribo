@@ -3,13 +3,17 @@
 import threading
 from collections.abc import Callable
 from typing import Any
+from unittest.mock import patch
 
 import pytest
 from builders import make_membership, make_notification, make_problem, make_report, make_user
 from django.db import connection, connections, transaction
+from django.utils import timezone
 
 from feedback.errors import VersionConflict
-from feedback.models import Activity, Report, ReportNotificationOperation
+from feedback.follow_ups import correct_outcome, record_outcome
+from feedback.models import Activity, FollowUp, Problem, Report, ReportNotificationOperation
+from feedback.problems import confirm_fix
 from feedback.reports import assign_report, link_report
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -27,6 +31,115 @@ def waiting_on_lock(pid: int) -> bool:
         cursor.execute("SELECT wait_event_type FROM pg_stat_activity WHERE pid = %s", [pid])
         row = cursor.fetchone()
     return row is not None and row[0] == "Lock"
+
+
+@pytest.mark.parametrize("correct", [False, True])
+def test_still_affected_and_fix_confirmation_share_lock_order(correct: bool) -> None:
+    from feedback import problems
+
+    actor = make_membership(role="owner")
+    problem = make_problem(actor=actor)
+    report = make_report(actor=actor)
+    link_report(actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk)
+    confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=1,
+        fix_note="Fixed",
+        fix_version="1.0",
+    )
+    follow_up = FollowUp.objects.get(report=report)
+    if correct:
+        FollowUp.objects.filter(pk=follow_up.pk).update(
+            contact_state=FollowUp.ContactState.CONTACTED,
+            outcome_at=timezone.now(),
+            outcome_by=actor,
+        )
+    problem.refresh_from_db()
+    Problem.objects.filter(pk=problem.pk).update(state=Problem.State.IN_PROGRESS)
+    holder_locked = threading.Event()
+    release_holder = threading.Event()
+    challenger_pid: list[int] = []
+    outcomes: dict[str, Any] = {}
+    original_lock = problems.locked_problem
+
+    def hold_problem(**kwargs: Any) -> Problem:
+        row = original_lock(**kwargs)
+        holder_locked.set()
+        if not release_holder.wait(WAIT_SECONDS):
+            raise TimeoutError("The outcome never queued behind the problem lock.")
+        return row
+
+    def run(name: str, work: Callable[[], Any]) -> None:
+        try:
+            outcomes[name] = work()
+        except Exception as error:
+            outcomes[name] = error
+        finally:
+            connection.close()
+
+    def challenger() -> FollowUp:
+        challenger_pid.append(backend_pid())
+        if not holder_locked.wait(WAIT_SECONDS):
+            raise TimeoutError("Fix confirmation never locked the problem.")
+        if correct:
+            return correct_outcome(
+                actor=actor,
+                follow_up_id=follow_up.pk,
+                state="still_affected",
+                note="The customer still sees the failure.",
+                expected_version=follow_up.version,
+                reason="Customer reported the failure again.",
+            )
+        return record_outcome(
+            actor=actor,
+            follow_up_id=follow_up.pk,
+            state="still_affected",
+            note="The customer still sees the failure.",
+            expected_version=follow_up.version,
+        )
+
+    with patch.object(problems, "locked_problem", side_effect=hold_problem):
+        threads = [
+            threading.Thread(
+                target=run,
+                args=(
+                    "confirmation",
+                    lambda: confirm_fix(
+                        actor=actor,
+                        problem_id=problem.pk,
+                        expected_version=problem.version,
+                        fix_note="Fixed again",
+                        fix_version="2.0",
+                    ),
+                ),
+            ),
+            threading.Thread(target=run, args=("outcome", challenger)),
+        ]
+        for thread in threads:
+            thread.start()
+        holder_locked.wait(WAIT_SECONDS)
+        queued = threading.Event()
+        try:
+            for _ in range(WAIT_SECONDS * 100):
+                if challenger_pid and waiting_on_lock(challenger_pid[0]):
+                    queued.set()
+                    break
+                queued.wait(0.01)
+        finally:
+            release_holder.set()
+            for thread in threads:
+                thread.join(WAIT_SECONDS)
+
+    assert all(not thread.is_alive() for thread in threads)
+    assert queued.is_set(), "The outcome did not wait for fix confirmation."
+    assert isinstance(outcomes["confirmation"], Problem), outcomes
+    assert isinstance(outcomes["outcome"], FollowUp), outcomes
+    follow_up.refresh_from_db()
+    problem.refresh_from_db()
+    assert follow_up.contact_state == FollowUp.ContactState.STILL_AFFECTED
+    assert problem.resolution_revision == 2
+    assert problem.needs_review is True
 
 
 def test_one_expected_version_admits_one_decision() -> None:
@@ -96,9 +209,11 @@ def test_one_expected_version_admits_one_decision() -> None:
     assert (row.version, row.problem_id, row.assignee_id) == (3, first.pk, other.pk)
     pending = ReportNotificationOperation.objects.get(pk=pending.pk)
     assert (pending.state, pending.invalidation_reason) == ("cancelled", "reassigned")
-    # Report and problem timelines each gain one reassignment entry; the move wrote nothing.
+    # Report and problem timelines each gain one reassignment entry, plus the
+    # follow-up recipient change for the manual report's pending follow-up.
+    # The move wrote nothing.
     new_activity = Activity.objects.count() - activity_before
-    assert new_activity == 2
+    assert new_activity == 3
     assert not Activity.objects.filter(record_id=second.pk, action="report.linked").exists()
 
 

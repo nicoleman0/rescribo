@@ -35,6 +35,7 @@ afterEach(() => {
 })
 
 test('members see connections but no owner controls', async () => {
+  testMembership.role = 'member'
   stubApi({
     ...unlinked,
     [`GET ${base}connections/`]: () => json([]),

@@ -12,30 +12,11 @@ import { InboxPage } from '@/features/inbox/inbox-page'
 import { ManualReportPage } from '@/features/inbox/manual-report-page'
 import { ProblemDetailPage } from '@/features/problems/problem-detail-page'
 import { ProblemsPage } from '@/features/problems/problems-page'
+import { FollowUpsPage } from '@/features/follow-ups/follow-ups-page'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
   : undefined
-
-const productRoutes = [
-  {
-    path: 'follow-ups',
-    title: 'Follow-ups',
-    description: 'Approved customer follow-ups will be managed here.',
-  },
-] as const
-
-function PlaceholderPage({
-  title,
-  description,
-}: (typeof productRoutes)[number]) {
-  return (
-    <EmptyState
-      title={`${title} is ready for its feature issue`}
-      description={description}
-    />
-  )
-}
 
 export default function App() {
   return (
@@ -65,13 +46,8 @@ export default function App() {
           <Route path="settings" element={<SettingsPage />} />
           <Route path="problems" element={<ProblemsPage />} />
           <Route path="problems/:problemId" element={<ProblemDetailPage />} />
-          {productRoutes.map((route) => (
-            <Route
-              key={route.path}
-              path={route.path}
-              element={<PlaceholderPage {...route} />}
-            />
-          ))}
+          <Route path="follow-ups" element={<FollowUpsPage />} />
+          <Route path="follow-ups/:followUpId" element={<FollowUpsPage />} />
         </Route>
       </Route>
       <Route

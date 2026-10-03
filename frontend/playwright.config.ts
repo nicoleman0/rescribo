@@ -7,6 +7,7 @@ const frontendUrl = `http://127.0.0.1:${frontendPort}`
 
 export default defineConfig({
   testDir: './e2e',
+  workers: 1,
   use: {
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? frontendUrl,
     trace: 'retain-on-failure',
@@ -27,7 +28,18 @@ export default defineConfig({
         {
           command: `uv run python backend/manage.py migrate && uv run python backend/manage.py runserver 127.0.0.1:${apiPort} --noreload`,
           cwd: '..',
+          env: {
+            RESCRIBO_SLACK_FAKE_DELIVERY: 'true',
+          },
           url: `http://127.0.0.1:${apiPort}/api/health/ready/`,
+          reuseExistingServer: !process.env.CI,
+        },
+        {
+          command: `uv run celery --workdir=backend -A config worker --loglevel=WARNING --pool=solo -Q celery`,
+          cwd: '..',
+          env: {
+            RESCRIBO_SLACK_FAKE_DELIVERY: 'true',
+          },
           reuseExistingServer: !process.env.CI,
         },
         {

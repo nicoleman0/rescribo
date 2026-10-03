@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from django.conf import settings
 from slack_sdk import WebClient
 
 from connections.credentials import decrypt
@@ -31,3 +32,46 @@ def message_permalink(credential: str, *, channel_id: str, message_ts: str) -> s
     if not isinstance(permalink, str) or not permalink:
         raise ValueError("Slack returned no permalink")
     return permalink
+
+
+def _delivery_client(credential: str) -> Any:
+    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+        from integrations.slack.fake_delivery import fake_delivery_client
+
+        return fake_delivery_client()
+    return bot_client(credential)
+
+
+def _message_creation_client(credential: str) -> Any:
+    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+        from integrations.slack.fake_delivery import fake_delivery_client
+
+        return fake_delivery_client()
+    # A lost response after chat.postMessage can mean Slack accepted the message.
+    # Retrying here could create a duplicate customer notification.
+    return WebClient(token=decrypt(credential), timeout=10, retry_handlers=[])
+
+
+def conversations_open(credential: str, *, users: str) -> Any:
+    return _delivery_client(credential).conversations_open(users=users)
+
+
+def chat_post_message(
+    credential: str, *, channel: str, text: str, blocks: list[dict[str, Any]]
+) -> Any:
+    return _message_creation_client(credential).chat_postMessage(
+        channel=channel, text=text, blocks=blocks
+    )
+
+
+def chat_update(
+    credential: str,
+    *,
+    channel: str,
+    ts: str,
+    text: str,
+    blocks: list[dict[str, Any]],
+) -> Any:
+    return _delivery_client(credential).chat_update(
+        channel=channel, ts=ts, text=text, blocks=blocks
+    )

@@ -11,13 +11,9 @@ const seedPath = path.join(
 type Seed = { users: { email: string; password: string }[] }
 
 test.describe('UI foundation', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
+  test.beforeEach(async ({ page }) => {
     const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-    const ownerIndex =
-      Array.from(testInfo.title).reduce(
-        (sum, character) => sum + character.charCodeAt(0),
-        0,
-      ) % 5
+    const ownerIndex = 8
     await page.goto('/sign-in')
     await page
       .getByRole('textbox', { name: 'Email' })
@@ -27,13 +23,11 @@ test.describe('UI foundation', () => {
     await expect(page).toHaveURL(/\/inbox$/)
   })
 
-  // The shell screenshots use a placeholder screen so live inbox data
-  // cannot change the baseline.
   test('shell at desktop width', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/follow-ups')
     await expect(
-      page.getByRole('heading', { name: /Follow-ups is ready/ }),
+      page.getByRole('heading', { name: 'Follow-ups' }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
     await expect(page).toHaveScreenshot('shell-desktop.png', { fullPage: true })
@@ -84,6 +78,7 @@ test.describe('UI foundation', () => {
 
   test('shell has no axe violations', async ({ page }) => {
     await page.goto('/inbox')
+    await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
     const results = await new AxeBuilder({ page }).analyze()
     expect(results.violations).toEqual([])
   })

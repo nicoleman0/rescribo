@@ -13,6 +13,7 @@ from django.utils import timezone
 
 from accounts.models import Invitation, Membership, PasswordReset, Workspace
 from accounts.tokens import issue_token
+from connections.models import Connection, ExternalIdentity
 from feedback.models import Activity, FollowUp, Problem, Report, ReportNotificationOperation
 from feedback.reports import submit_report
 from feedback.submissions import ReportSubmission, SourceSnapshot
@@ -42,11 +43,13 @@ class Command(BaseCommand):
             "owner-3@example.test",
             "owner-4@example.test",
             "owner-5@example.test",
+            "follow-up-owner@example.test",
             "member@example.test",
+            "unlinked@example.test",
         ]
         password = os.environ.get("RESCRIBO_E2E_PASSWORD", "Rescribo-e2e-test-2026!")
         users = []
-        roles = [Membership.Role.OWNER] * 5 + [Membership.Role.MEMBER]
+        roles = [Membership.Role.OWNER] * 6 + [Membership.Role.MEMBER] * 2
         for email, role in zip(emails, roles, strict=True):
             user, _ = get_user_model().objects.get_or_create(
                 email=email, defaults={"full_name": role.title()}
@@ -56,6 +59,30 @@ class Command(BaseCommand):
             user.save(update_fields=["password", "is_active"])
             Membership.objects.create(workspace=workspace, user=user, role=role)
             users.append({"email": email, "password": password})
+        # Fake Slack delivery (RESCRIBO_SLACK_FAKE_DELIVERY) still requires an
+        # active connection and a linked identity before a send is approved.
+        Connection.objects.update_or_create(
+            workspace=workspace,
+            provider=Connection.Provider.SLACK,
+            defaults={
+                "external_id": "T0E2E",
+                "identity": "Rescribo E2E",
+                "credential": "fake",
+                "status": Connection.Status.ACTIVE,
+            },
+        )
+        for membership in Membership.objects.filter(
+            workspace=workspace, role=Membership.Role.OWNER
+        ):
+            ExternalIdentity.objects.update_or_create(
+                membership=membership,
+                provider=Connection.Provider.SLACK,
+                defaults={
+                    "workspace_id": workspace.pk,
+                    "provider_team_id": "T0E2E",
+                    "provider_user_id": f"U{membership.user.email.split('@')[0]}",
+                },
+            )
         owner = Membership.objects.filter(
             workspace=workspace, role=Membership.Role.OWNER, is_active=True
         ).first()
@@ -96,6 +123,18 @@ class Command(BaseCommand):
                 ),
             )
         from feedback.deletion import delete_workspace
+
+        shell_workspace, _ = Workspace.objects.get_or_create(name="UI shell test", slug="e2e-shell")
+        shell_user, _ = get_user_model().objects.get_or_create(email="shell-owner@example.test")
+        shell_user.set_password(password)
+        shell_user.is_active = True
+        shell_user.save(update_fields=["password", "is_active"])
+        Membership.objects.update_or_create(
+            workspace=shell_workspace,
+            user=shell_user,
+            defaults={"role": Membership.Role.OWNER, "is_active": True},
+        )
+        users.append({"email": shell_user.email, "password": password})
 
         existing = Membership.objects.filter(
             workspace__slug="e2e-settings", role="owner", is_active=True

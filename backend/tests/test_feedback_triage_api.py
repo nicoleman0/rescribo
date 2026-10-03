@@ -127,7 +127,8 @@ def test_reassignment_over_http_cancels_pending_and_keeps_sent(
         actor=actor, report_id=report.pk, expected_version=1, problem_id=problem.pk
     )
     pending = make_notification(report=report)
-    sent = make_notification(report=report, state="sent")
+    # History rows live on earlier revisions; one active row per follow-up.
+    sent = make_notification(report=report, state="sent", resolution_revision=9)
     response = post(
         client,
         api(actor, f"reports/{report.pk}/assign/"),

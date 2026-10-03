@@ -636,6 +636,706 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/follow-ups/:
+    get:
+      operationId: workspaces_follow_ups_list
+      parameters:
+      - in: query
+        name: bucket
+        schema:
+          enum:
+          - needs_approval
+          - delivery_problem
+          - awaiting_contact
+          - awaiting_confirmation
+          - completed
+          type: string
+          minLength: 1
+        description: |-
+          * `needs_approval` - needs_approval
+          * `delivery_problem` - delivery_problem
+          * `awaiting_contact` - awaiting_contact
+          * `awaiting_confirmation` - awaiting_confirmation
+          * `completed` - completed
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFollowUpListItemList'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/:
+    get:
+      operationId: workspaces_follow_ups_retrieve
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/:
+    post:
+      operationId: workspaces_follow_ups_notification_create
+      description: Return the follow-up with its draft, creating the default draft
+        when missing.
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/approve/:
+    post:
+      operationId: workspaces_follow_ups_notification_approve_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationApprove'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationApprove'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationApprove'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/cancel/:
+    post:
+      operationId: workspaces_follow_ups_notification_cancel_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/edit/:
+    post:
+      operationId: workspaces_follow_ups_notification_edit_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationEdit'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationEdit'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationEdit'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/mark-delivered/:
+    post:
+      operationId: workspaces_follow_ups_notification_mark_delivered_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationAction'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/send-again/:
+    post:
+      operationId: workspaces_follow_ups_notification_send_again_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationSendAgain'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationSendAgain'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpNotificationSendAgain'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/outcome/:
+    post:
+      operationId: workspaces_follow_ups_outcome_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeRecord'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeRecord'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeRecord'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/outcome/correct/:
+    post:
+      operationId: workspaces_follow_ups_outcome_correct_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeCorrect'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeCorrect'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpOutcomeCorrect'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/recipient/:
+    post:
+      operationId: workspaces_follow_ups_recipient_create
+      parameters:
+      - in: path
+        name: follow_up_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FollowUpRecipientChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FollowUpRecipientChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FollowUpRecipientChange'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FollowUpDetail'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/invitations/:
     get:
       operationId: workspaces_invitations_list
@@ -2711,6 +3411,13 @@ components:
       - engineering_issue.linked
       - engineering_issue.created
       - engineering_issue.unlinked
+      - follow_up.notification_approved
+      - follow_up.notification_sent
+      - follow_up.notification_failed
+      - follow_up.notification_cancelled
+      - follow_up.outcome_recorded
+      - follow_up.outcome_corrected
+      - follow_up.recipient_changed
       type: string
       description: |-
         * `report.deleted` - Report deleted
@@ -2728,6 +3435,13 @@ components:
         * `engineering_issue.linked` - Engineering issue linked
         * `engineering_issue.created` - Engineering issue created
         * `engineering_issue.unlinked` - Engineering issue unlinked
+        * `follow_up.notification_approved` - Notification approved
+        * `follow_up.notification_sent` - Notification sent
+        * `follow_up.notification_failed` - Notification failed
+        * `follow_up.notification_cancelled` - Notification cancelled
+        * `follow_up.outcome_recorded` - Outcome recorded
+        * `follow_up.outcome_corrected` - Outcome corrected
+        * `follow_up.recipient_changed` - Recipient changed
     AssignReport:
       type: object
       properties:
@@ -3081,6 +3795,266 @@ components:
       - expected_version
       - fix_note
       - fix_version
+    FollowUpContactStateEnum:
+      enum:
+      - pending
+      - contacted
+      - confirmed
+      - still_affected
+      - no_response
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `contacted` - Contacted
+        * `confirmed` - Confirmed
+        * `still_affected` - Still affected
+        * `no_response` - No response
+    FollowUpDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        report:
+          $ref: '#/components/schemas/FollowUpReportSummary'
+        problem:
+          $ref: '#/components/schemas/FollowUpProblemSummary'
+        recipient:
+          $ref: '#/components/schemas/FollowUpRecipient'
+        notification:
+          readOnly: true
+        outcome:
+          $ref: '#/components/schemas/FollowUpOutcome'
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        history:
+          readOnly: true
+      required:
+      - created_at
+      - history
+      - id
+      - notification
+      - outcome
+      - problem
+      - recipient
+      - report
+      - updated_at
+      - version
+    FollowUpListItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        report_title:
+          type: string
+        customer_label:
+          type: string
+        recipient:
+          $ref: '#/components/schemas/MemberSummary'
+        contact_state:
+          $ref: '#/components/schemas/FollowUpContactStateEnum'
+        delivery_state:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ReportNotificationOperationStateEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        resolution_revision:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - contact_state
+      - created_at
+      - customer_label
+      - delivery_state
+      - id
+      - recipient
+      - report_title
+      - resolution_revision
+      - updated_at
+    FollowUpNotificationAction:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+      required:
+      - draft_version
+      - notification_id
+    FollowUpNotificationApprove:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+      required:
+      - draft_version
+      - notification_id
+    FollowUpNotificationEdit:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 10000
+        notification_id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+      required:
+      - draft_version
+      - message
+      - notification_id
+    FollowUpNotificationSendAgain:
+      type: object
+      properties:
+        notification_id:
+          type: string
+          format: uuid
+        draft_version:
+          type: integer
+          minimum: 1
+        checked_slack:
+          type: boolean
+      required:
+      - checked_slack
+      - draft_version
+      - notification_id
+    FollowUpOutcome:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/FollowUpContactStateEnum'
+        note:
+          type: string
+        at:
+          type: string
+          format: date-time
+          nullable: true
+        by:
+          allOf:
+          - $ref: '#/components/schemas/MemberSummary'
+          nullable: true
+      required:
+      - at
+      - by
+      - note
+      - state
+    FollowUpOutcomeCorrect:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/FollowUpContactStateEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+        expected_version:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          maxLength: 2000
+      required:
+      - expected_version
+      - reason
+      - state
+    FollowUpOutcomeRecord:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/FollowUpContactStateEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 2000
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
+      - state
+    FollowUpProblemSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        fix_note:
+          type: string
+        fix_version:
+          type: string
+        resolution_revision:
+          type: integer
+      required:
+      - fix_note
+      - fix_version
+      - id
+      - resolution_revision
+      - title
+    FollowUpRecipient:
+      type: object
+      properties:
+        member:
+          $ref: '#/components/schemas/MemberSummary'
+        has_slack_link:
+          type: boolean
+          readOnly: true
+      required:
+      - has_slack_link
+      - member
+    FollowUpRecipientChange:
+      type: object
+      properties:
+        new_recipient_id:
+          type: string
+          format: uuid
+      required:
+      - new_recipient_id
+    FollowUpReportSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        customer_label:
+          type: string
+        triage_state:
+          $ref: '#/components/schemas/TriageStateEnum'
+        version:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - created_at
+      - customer_label
+      - id
+      - title
+      - triage_state
+      - version
     Health:
       type: object
       properties:
@@ -3420,6 +4394,29 @@ components:
       - queued
       - running
       - uncertain
+    PaginatedFollowUpListItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FollowUpListItem'
     PaginatedProblemActivityList:
       type: object
       required:
@@ -3925,6 +4922,22 @@ components:
       - source_kind
       - title
       - triage_state
+    ReportNotificationOperationStateEnum:
+      enum:
+      - draft
+      - queued
+      - failed
+      - uncertain
+      - sent
+      - cancelled
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `queued` - Queued
+        * `failed` - Failed
+        * `uncertain` - Uncertain
+        * `sent` - Sent
+        * `cancelled` - Cancelled
     ReportProvenance:
       type: object
       properties:

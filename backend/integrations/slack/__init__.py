@@ -1,12 +1,7 @@
 """Slack integration boundary for capture, identity, and follow-up delivery."""
 
-from integrations.slack.delivery import (
-    DeliveredMessage,
-    DeliveryRejected,
-    SlackConnectionGuard,
-    send_delayed_dm,
-)
 from integrations.slack.errors import ChannelRejected, slack_error_code
+from integrations.slack.messages import follow_up_message_blocks, outcome_message_blocks
 from integrations.slack.modals import (
     CaptureSubmission,
     SubmissionErrors,
@@ -26,19 +21,17 @@ __all__ = [
     "REQUIRED_BOT_SCOPES",
     "CaptureSubmission",
     "ChannelRejected",
-    "DeliveredMessage",
-    "DeliveryRejected",
     "InvalidSlackSignature",
     "MessageShortcut",
     "ShortcutPayloadError",
     "SlackChannel",
-    "SlackConnectionGuard",
     "SubmissionErrors",
     "build_capture_modal",
     "build_notice_modal",
+    "follow_up_message_blocks",
+    "outcome_message_blocks",
     "parse_capture_submission",
     "parse_message_shortcut",
-    "send_delayed_dm",
     "slack_error_code",
     "validate_channel",
     "verify_slack_signature",

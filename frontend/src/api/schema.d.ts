@@ -282,6 +282,183 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/follow-ups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_follow_ups_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_follow_ups_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Return the follow-up with its draft, creating the default draft when missing. */
+        post: operations["workspaces_follow_ups_notification_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_notification_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_notification_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/edit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_notification_edit_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/mark-delivered/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_notification_mark_delivered_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/notification/send-again/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_notification_send_again_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/outcome/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_outcome_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/outcome/correct/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_outcome_correct_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/follow-ups/{follow_up_id}/recipient/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_follow_ups_recipient_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/invitations/": {
         parameters: {
             query?: never;
@@ -883,9 +1060,16 @@ export interface components {
          *     * `engineering_issue.linked` - Engineering issue linked
          *     * `engineering_issue.created` - Engineering issue created
          *     * `engineering_issue.unlinked` - Engineering issue unlinked
+         *     * `follow_up.notification_approved` - Notification approved
+         *     * `follow_up.notification_sent` - Notification sent
+         *     * `follow_up.notification_failed` - Notification failed
+         *     * `follow_up.notification_cancelled` - Notification cancelled
+         *     * `follow_up.outcome_recorded` - Outcome recorded
+         *     * `follow_up.outcome_corrected` - Outcome corrected
+         *     * `follow_up.recipient_changed` - Recipient changed
          * @enum {string}
          */
-        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked";
+        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked" | "follow_up.notification_approved" | "follow_up.notification_sent" | "follow_up.notification_failed" | "follow_up.notification_cancelled" | "follow_up.outcome_recorded" | "follow_up.outcome_corrected" | "follow_up.recipient_changed";
         AssignReport: {
             expected_version: number;
             /** Format: uuid */
@@ -1028,6 +1212,112 @@ export interface components {
             fix_note: string;
             fix_version: string;
             evidence_url?: string;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `contacted` - Contacted
+         *     * `confirmed` - Confirmed
+         *     * `still_affected` - Still affected
+         *     * `no_response` - No response
+         * @enum {string}
+         */
+        FollowUpContactStateEnum: "pending" | "contacted" | "confirmed" | "still_affected" | "no_response";
+        FollowUpDetail: {
+            /** Format: uuid */
+            id: string;
+            report: components["schemas"]["FollowUpReportSummary"];
+            problem: components["schemas"]["FollowUpProblemSummary"];
+            recipient: components["schemas"]["FollowUpRecipient"];
+            readonly notification: unknown;
+            outcome: components["schemas"]["FollowUpOutcome"];
+            version: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+            readonly history: unknown;
+        };
+        FollowUpListItem: {
+            /** Format: uuid */
+            id: string;
+            report_title: string;
+            customer_label: string;
+            recipient: components["schemas"]["MemberSummary"];
+            contact_state: components["schemas"]["FollowUpContactStateEnum"];
+            delivery_state: (components["schemas"]["ReportNotificationOperationStateEnum"] | components["schemas"]["NullEnum"]) | null;
+            resolution_revision: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            updated_at: string;
+        };
+        FollowUpNotificationAction: {
+            /** Format: uuid */
+            notification_id: string;
+            draft_version: number;
+        };
+        FollowUpNotificationApprove: {
+            /** Format: uuid */
+            notification_id: string;
+            draft_version: number;
+        };
+        FollowUpNotificationEdit: {
+            message: string;
+            /** Format: uuid */
+            notification_id: string;
+            draft_version: number;
+        };
+        FollowUpNotificationSendAgain: {
+            /** Format: uuid */
+            notification_id: string;
+            draft_version: number;
+            checked_slack: boolean;
+        };
+        FollowUpOutcome: {
+            state: components["schemas"]["FollowUpContactStateEnum"];
+            note: string;
+            /** Format: date-time */
+            at: string | null;
+            by: components["schemas"]["MemberSummary"] | null;
+        };
+        FollowUpOutcomeCorrect: {
+            state: components["schemas"]["FollowUpContactStateEnum"];
+            /** @default  */
+            note: string;
+            expected_version: number;
+            reason: string;
+        };
+        FollowUpOutcomeRecord: {
+            state: components["schemas"]["FollowUpContactStateEnum"];
+            /** @default  */
+            note: string;
+            expected_version: number;
+        };
+        FollowUpProblemSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            fix_note: string;
+            fix_version: string;
+            resolution_revision: number;
+        };
+        FollowUpRecipient: {
+            member: components["schemas"]["MemberSummary"];
+            readonly has_slack_link: boolean;
+        };
+        FollowUpRecipientChange: {
+            /** Format: uuid */
+            new_recipient_id: string;
+        };
+        FollowUpReportSummary: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            customer_label: string;
+            triage_state: components["schemas"]["TriageStateEnum"];
+            version: number;
+            /** Format: date-time */
+            created_at: string;
         };
         Health: {
             status: components["schemas"]["HealthStatusEnum"];
@@ -1183,6 +1473,21 @@ export interface components {
             running: number;
             failed: number;
             uncertain: number;
+        };
+        PaginatedFollowUpListItemList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["FollowUpListItem"][];
         };
         PaginatedProblemActivityList: {
             /** @example 123 */
@@ -1395,6 +1700,16 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        /**
+         * @description * `draft` - Draft
+         *     * `queued` - Queued
+         *     * `failed` - Failed
+         *     * `uncertain` - Uncertain
+         *     * `sent` - Sent
+         *     * `cancelled` - Cancelled
+         * @enum {string}
+         */
+        ReportNotificationOperationStateEnum: "draft" | "queued" | "failed" | "uncertain" | "sent" | "cancelled";
         ReportProvenance: {
             kind: components["schemas"]["ReportSourceKindEnum"];
             permalink: string;
@@ -2042,6 +2357,690 @@ export interface operations {
                 content?: never;
             };
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `needs_approval` - needs_approval
+                 *     * `delivery_problem` - delivery_problem
+                 *     * `awaiting_contact` - awaiting_contact
+                 *     * `awaiting_confirmation` - awaiting_confirmation
+                 *     * `completed` - completed
+                 */
+                bucket?: "needs_approval" | "delivery_problem" | "awaiting_contact" | "awaiting_confirmation" | "completed";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFollowUpListItemList"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_approve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpNotificationApprove"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpNotificationApprove"];
+                "multipart/form-data": components["schemas"]["FollowUpNotificationApprove"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpNotificationAction"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpNotificationAction"];
+                "multipart/form-data": components["schemas"]["FollowUpNotificationAction"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_edit_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpNotificationEdit"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpNotificationEdit"];
+                "multipart/form-data": components["schemas"]["FollowUpNotificationEdit"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_mark_delivered_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpNotificationAction"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpNotificationAction"];
+                "multipart/form-data": components["schemas"]["FollowUpNotificationAction"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_notification_send_again_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpNotificationSendAgain"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpNotificationSendAgain"];
+                "multipart/form-data": components["schemas"]["FollowUpNotificationSendAgain"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_outcome_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpOutcomeRecord"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpOutcomeRecord"];
+                "multipart/form-data": components["schemas"]["FollowUpOutcomeRecord"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_outcome_correct_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpOutcomeCorrect"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpOutcomeCorrect"];
+                "multipart/form-data": components["schemas"]["FollowUpOutcomeCorrect"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_follow_ups_recipient_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                follow_up_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FollowUpRecipientChange"];
+                "application/x-www-form-urlencoded": components["schemas"]["FollowUpRecipientChange"];
+                "multipart/form-data": components["schemas"]["FollowUpRecipientChange"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowUpDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

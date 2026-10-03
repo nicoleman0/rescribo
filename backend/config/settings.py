@@ -116,6 +116,8 @@ SPECTACULAR_SETTINGS = {
         "ProblemStateEnum": "feedback.models.Problem.State",
         "ActivityActionEnum": "feedback.models.Activity.Action",
         "ExternalOperationStateEnum": "operations.models.ExternalOperation.State",
+        "ReportNotificationOperationStateEnum": "feedback.models.ReportNotificationOperation.State",
+        "FollowUpContactStateEnum": "feedback.models.FollowUp.ContactState",
     },
 }
 CELERY_BROKER_URL = REDIS_URL
@@ -139,6 +141,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "connections.tasks.sweep_slack_capture",
         "schedule": 300.0,
     },
+    "sweep-slack-delivery": {
+        "task": "connections.tasks.sweep_slack_delivery",
+        "schedule": 60.0,
+    },
     "reconcile-github-issues": {
         "task": "feedback.tasks.reconcile_github_issues",
         "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
@@ -150,6 +156,7 @@ RESCRIBO_SLACK_CLIENT_ID = env("RESCRIBO_SLACK_CLIENT_ID", default="")
 RESCRIBO_SLACK_CLIENT_SECRET = env("RESCRIBO_SLACK_CLIENT_SECRET", default="")
 RESCRIBO_SLACK_APP_ID = env("RESCRIBO_SLACK_APP_ID", default="")
 RESCRIBO_SLACK_SIGNING_SECRET = env("RESCRIBO_SLACK_SIGNING_SECRET", default="")
+RESCRIBO_SLACK_FAKE_DELIVERY = env.bool("RESCRIBO_SLACK_FAKE_DELIVERY", default=False)
 RESCRIBO_GITHUB_CLIENT_ID = env("RESCRIBO_GITHUB_CLIENT_ID", default="")
 RESCRIBO_GITHUB_CLIENT_SECRET = env("RESCRIBO_GITHUB_CLIENT_SECRET", default="")
 RESCRIBO_GITHUB_APP_ID = env("RESCRIBO_GITHUB_APP_ID", default="")
