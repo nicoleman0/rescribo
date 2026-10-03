@@ -15,3 +15,17 @@ Results SHALL state sample sizes, test conditions, and limitations. The project 
 #### Scenario: Gates missed
 - **WHEN** the held-out result misses a gate
 - **THEN** the report says so and suggestions stay disabled
+
+### Requirement: Automatic failure triage
+Each failed exam case SHALL be classified automatically as a retrieval miss, ranking miss, false suggestion, or wrong abstention. A suggested pattern tag, such as paraphrase or negation, SHALL be proposed by a model and confirmed or corrected by a person.
+
+#### Scenario: Right problem never retrieved
+- **WHEN** the expected problem is absent from the candidate pool
+- **THEN** the case is tagged as a retrieval miss before any human review
+
+### Requirement: Spent exams rotate
+Once exam results are used to decide what to fix, those cases SHALL move to the practice set. A fresh exam batch MUST be generated and spot-checked before the next exam result counts.
+
+#### Scenario: Retest after a fix
+- **WHEN** the matcher is changed after reviewing exam failures
+- **THEN** the next score comes from a new exam batch, not the reviewed one
