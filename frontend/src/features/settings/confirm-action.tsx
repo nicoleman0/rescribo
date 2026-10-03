@@ -31,7 +31,7 @@ export function ConfirmAction({
       <Button
         ref={triggerRef}
         variant="outline"
-        className="h-auto min-h-11 w-fit max-w-full py-2 text-left break-all whitespace-normal text-destructive"
+        className="h-auto min-h-11 w-fit max-w-full py-2 text-left break-words whitespace-normal text-destructive"
         onClick={() => setOpen(true)}
       >
         {label}
@@ -72,7 +72,7 @@ export function ConfirmAction({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="destructive"
-          className="h-auto min-h-11 max-w-full py-2 text-left break-all whitespace-normal"
+          className="h-auto min-h-11 max-w-full py-2 text-left break-words whitespace-normal"
           disabled={confirmation !== phrase || action.isPending}
         >
           {action.isPending ? 'Working…' : label}
