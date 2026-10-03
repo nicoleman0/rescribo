@@ -105,8 +105,8 @@ def test_disconnect_cancels_only_unsent_and_keeps_reports(
         actor=actor, report_id=report.pk, problem_id=problem.pk, expected_version=1
     )
     operations = [
-        make_notification(report=report, state=state)
-        for state in ["draft", "queued", "failed", "uncertain", "sent"]
+        make_notification(report=report, state=state, resolution_revision=10 + offset)
+        for offset, state in enumerate(["draft", "queued", "failed", "uncertain", "sent"])
     ]
     assert (
         post(

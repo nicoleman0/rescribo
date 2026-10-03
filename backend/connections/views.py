@@ -20,7 +20,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
-from connections import providers, services, slack_identity, slack_inbound
+from connections import providers, services, slack_identity, slack_inbound, slack_outcomes
 from connections.models import Connection
 from feedback.deletion import delete_report, delete_workspace
 from feedback.errors import VersionConflict
@@ -32,6 +32,7 @@ from integrations.github_app.webhooks import (
     verify_webhook_signature,
 )
 from integrations.slack.errors import ChannelRejected
+from integrations.slack.messages import outcome_action_pairs
 from integrations.slack.shortcuts import ShortcutPayloadError
 from integrations.slack.signing import InvalidSlackSignature, verify_slack_signature
 from operations.models import InboundReceipt
@@ -423,8 +424,25 @@ class SlackInteractionsView(SlackRequestView):
                 slack_inbound.start_capture(payload)
             elif payload.get("type") == "view_submission":
                 return Response(slack_inbound.submit_capture(payload))
+            elif payload.get("type") == "block_actions":
+                return self._handle_block_actions(payload)
         except ShortcutPayloadError, ValueError:
             return Response(status=400)
+        return Response(status=200)
+
+    def _handle_block_actions(self, payload: dict[str, Any]) -> Response:
+        for action_id, value in outcome_action_pairs(payload):
+            try:
+                body = slack_outcomes.handle_outcome_action(
+                    payload=payload, action_id=action_id, value=value
+                )
+            except slack_outcomes.OutcomeRejected as rejected:
+                body = {
+                    "response_type": "ephemeral",
+                    "replace_original": False,
+                    "text": rejected.message,
+                }
+            return Response(body)
         return Response(status=200)
 
 

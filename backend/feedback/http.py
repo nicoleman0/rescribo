@@ -9,7 +9,9 @@ from rest_framework.response import Response
 
 from feedback.errors import (
     AlreadyLinked,
+    ConfirmationRequired,
     ConnectionNotReady,
+    DeliveryNotReady,
     FeedbackError,
     InvalidReference,
     InvalidTransition,
@@ -19,8 +21,10 @@ from feedback.errors import (
     IssueOperationError,
     IssueProviderUnavailable,
     IssueReferenceRejected,
+    MessageRequired,
     NoChanges,
     NotFound,
+    ReasonRequired,
     TitleRequired,
     VersionConflict,
 )
@@ -72,12 +76,43 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
             },
             status=400,
         )
+    if isinstance(error, ReasonRequired):
+        return Response(
+            {
+                "detail": "Provide a reason before continuing.",
+                "reason": error.reason,
+                "field_errors": {"reason": [error.reason]},
+            },
+            status=400,
+        )
     if isinstance(error, ConnectionNotReady):
         return Response(
             {
                 "detail": "Connect an active GitHub repository before working with issues.",
                 "reason": error.reason,
                 "field_errors": {},
+            },
+            status=400,
+        )
+    if isinstance(error, DeliveryNotReady):
+        return Response(
+            {"detail": error.detail, "reason": error.reason, "field_errors": {}}, status=400
+        )
+    if isinstance(error, MessageRequired):
+        return Response(
+            {
+                "detail": "Check the submitted fields.",
+                "reason": error.reason,
+                "field_errors": {"message": [error.reason]},
+            },
+            status=400,
+        )
+    if isinstance(error, ConfirmationRequired):
+        return Response(
+            {
+                "detail": "Confirm that you checked Slack before sending again.",
+                "reason": error.reason,
+                "field_errors": {"checked_slack": [error.reason]},
             },
             status=400,
         )

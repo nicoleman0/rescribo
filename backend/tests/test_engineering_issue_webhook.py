@@ -17,6 +17,8 @@ from django.utils import timezone
 
 from connections.models import Connection
 from feedback.engineering_issues import apply_installation_webhook, apply_issue_webhook
+from feedback.errors import DeliveryNotReady
+from feedback.follow_ups import draft_notification
 from feedback.models import Activity, EngineeringIssue, Problem
 from feedback.problems import confirm_fix
 from feedback.reports import link_report
@@ -153,7 +155,7 @@ def test_reopened_event_returns_fix_available_problem_to_in_progress() -> None:
     )
     assert confirmed.state == Problem.State.FIX_AVAILABLE
     pending = make_notification(report=report, state="queued")
-    sent = make_notification(report=report, state="sent")
+    sent = make_notification(report=report, state="sent", resolution_revision=9)
     reopen_time = timezone.now() + timedelta(seconds=5)
     reopened = {
         **ISSUE_PAYLOAD,
@@ -180,6 +182,8 @@ def test_reopened_event_returns_fix_available_problem_to_in_progress() -> None:
     assert problem.needs_review is True
     assert pending.state == "cancelled" and pending.invalidation_reason == "issue_reopened"
     assert sent.state == "sent" and sent.invalidated_at is None
+    with pytest.raises(DeliveryNotReady, match="fix_not_confirmed"):
+        draft_notification(actor=actor, follow_up_id=pending.follow_up_id)
     activity = Activity.objects.get(
         record_id=problem.pk, action=Activity.Action.PROBLEM_STATE_CHANGED
     )

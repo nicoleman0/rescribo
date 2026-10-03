@@ -14,12 +14,27 @@ from rest_framework.mixins import ListModelMixin
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from accounts.views import ErrorSerializer, WorkspaceView
+from accounts.models import Membership
+from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
 from feedback.engineering_issues import link_issue, preview_issue, refresh_issue
 from feedback.errors import FeedbackError, NotFound, TitleRequired
+from feedback.follow_ups import (
+    approve_notification,
+    cancel_notification,
+    change_recipient,
+    correct_outcome,
+    draft_notification,
+    edit_notification,
+    get_follow_up,
+    mark_notification_delivered,
+    record_outcome,
+    search_follow_ups,
+    send_notification_again,
+    workspace_follow_ups,
+)
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
 from feedback.inbox import get_report, search_reports, workspace_directory
-from feedback.models import Activity, Problem, Report
+from feedback.models import Activity, FollowUp, Problem, Report
 from feedback.problem_reads import (
     activity_references,
     get_problem,
@@ -49,6 +64,16 @@ from feedback.serializers import (
     ExternalOperationSerializer,
     FixApplicabilitySerializer,
     FixConfirmationSerializer,
+    FollowUpDetailSerializer,
+    FollowUpFilterSerializer,
+    FollowUpListItemSerializer,
+    FollowUpNotificationActionSerializer,
+    FollowUpNotificationApproveSerializer,
+    FollowUpNotificationEditSerializer,
+    FollowUpNotificationSendAgainSerializer,
+    FollowUpOutcomeCorrectSerializer,
+    FollowUpOutcomeRecordSerializer,
+    FollowUpRecipientChangeSerializer,
     InboxFilterSerializer,
     IssueAbandonSerializer,
     IssueApproveSerializer,
@@ -606,3 +631,277 @@ class ProblemIssueRefreshView(WorkspaceView):
             )
         status = "running" if issue.sync_lease_token else "pending"
         return Response({"issue_id": issue.pk, "status": status}, status=202)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpListView(ListModelMixin, WorkspaceView, GenericAPIView):
+    serializer_class = FollowUpListItemSerializer
+    pagination_class = FeedbackPagination
+
+    def get_queryset(self) -> QuerySet[FollowUp]:
+        filters = FollowUpFilterSerializer(data=self.request.query_params)
+        filters.is_valid(raise_exception=True)
+        bucket = filters.validated_data.get("bucket")
+        if bucket:
+            return search_follow_ups(actor=self.membership, bucket=bucket).order_by(
+                "-updated_at", "-id"
+            )
+        return workspace_follow_ups(actor=self.membership).order_by("-updated_at", "-id")
+
+    @extend_schema(
+        parameters=[FollowUpFilterSerializer],
+        responses={200: FollowUpListItemSerializer(many=True), 400: ErrorSerializer, **READ_ERRORS},
+    )
+    def get(self, request: Request, workspace_id: UUID) -> Response:
+        return self.list(request)
+
+
+class FollowUpDetailView(WorkspaceView):
+    @extend_schema(responses={200: FollowUpDetailSerializer, **READ_ERRORS})
+    def get(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        try:
+            follow_up = get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+        except NotFound:
+            raise exceptions.NotFound() from None
+        return Response(FollowUpDetailSerializer(follow_up).data)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationDraftView(WorkspaceView):
+    """Return the follow-up with its draft, creating the default draft when missing."""
+
+    @extend_schema(request=None, responses={200: FollowUpDetailSerializer, **WRITE_ERRORS})
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        try:
+            draft_notification(actor=self.membership, follow_up_id=follow_up_id)
+        except FeedbackError as error:
+            return feedback_error_response(error, current=self._current(follow_up_id))
+        return Response(FollowUpDetailSerializer(self._current_row(follow_up_id)).data)
+
+    def _current_row(self, follow_up_id: UUID) -> FollowUp:
+        return get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+
+    def _current(self, follow_up_id: UUID) -> Callable[[], Any]:
+        return lambda: FollowUpDetailSerializer(self._current_row(follow_up_id)).data
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationEditView(WorkspaceView):
+    @extend_schema(
+        request=FollowUpNotificationEditSerializer,
+        responses={200: FollowUpDetailSerializer, 409: ErrorSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpNotificationEditSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            edit_notification(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                message=data.validated_data["message"],
+                notification_id=data.validated_data["notification_id"],
+                draft_version=data.validated_data["draft_version"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(error, current=self._current(follow_up_id))
+        return Response(FollowUpDetailSerializer(self._current_row(follow_up_id)).data)
+
+    def _current_row(self, follow_up_id: UUID) -> FollowUp:
+        return get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+
+    def _current(self, follow_up_id: UUID) -> Callable[[], Any]:
+        return lambda: FollowUpDetailSerializer(self._current_row(follow_up_id)).data
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationApproveView(WorkspaceView):
+    @extend_schema(
+        request=FollowUpNotificationApproveSerializer,
+        responses={202: FollowUpDetailSerializer, 409: ErrorSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpNotificationApproveSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            approve_notification(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                notification_id=data.validated_data["notification_id"],
+                draft_version=data.validated_data["draft_version"],
+            )
+        except FeedbackError as error:
+
+            def current() -> Any:
+                return FollowUpDetailSerializer(
+                    get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+                ).data
+
+            return feedback_error_response(error, current=current)
+        follow_up = get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+        return Response(FollowUpDetailSerializer(follow_up).data, status=202)
+
+
+class FollowUpNotificationActionView(WorkspaceView):
+    def current(self, follow_up_id: UUID) -> Any:
+        return FollowUpDetailSerializer(
+            get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+        ).data
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationMarkDeliveredView(FollowUpNotificationActionView):
+    @extend_schema(
+        request=FollowUpNotificationActionSerializer,
+        responses={200: FollowUpDetailSerializer, 409: ErrorSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpNotificationActionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            mark_notification_delivered(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                notification_id=data.validated_data["notification_id"],
+                draft_version=data.validated_data["draft_version"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(error, current=lambda: self.current(follow_up_id))
+        return Response(self.current(follow_up_id))
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationSendAgainView(FollowUpNotificationActionView):
+    @extend_schema(
+        request=FollowUpNotificationSendAgainSerializer,
+        responses={202: FollowUpDetailSerializer, 409: ErrorSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpNotificationSendAgainSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            send_notification_again(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                notification_id=data.validated_data["notification_id"],
+                draft_version=data.validated_data["draft_version"],
+                checked_slack=data.validated_data["checked_slack"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(error, current=lambda: self.current(follow_up_id))
+        return Response(self.current(follow_up_id), status=202)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpNotificationCancelView(FollowUpNotificationActionView):
+    @extend_schema(
+        request=FollowUpNotificationActionSerializer,
+        responses={200: FollowUpDetailSerializer, 409: ErrorSerializer, **WRITE_ERRORS},
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpNotificationActionSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            cancel_notification(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                notification_id=data.validated_data["notification_id"],
+                draft_version=data.validated_data["draft_version"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(error, current=lambda: self.current(follow_up_id))
+        return Response(self.current(follow_up_id))
+
+
+def _follow_up_current(actor: Membership, follow_up_id: UUID) -> Any:
+    return FollowUpDetailSerializer(get_follow_up(actor=actor, follow_up_id=follow_up_id)).data
+
+
+def _follow_up_current_callable(actor: Membership, follow_up_id: UUID) -> Callable[[], Any]:
+    return lambda: _follow_up_current(actor, follow_up_id)
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpOutcomeView(WorkspaceView):
+    @extend_schema(
+        request=FollowUpOutcomeRecordSerializer,
+        responses={
+            200: FollowUpDetailSerializer,
+            400: ErrorSerializer,
+            409: ErrorSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpOutcomeRecordSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            record_outcome(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                state=data.validated_data["state"],
+                note=data.validated_data.get("note", ""),
+                expected_version=data.validated_data["expected_version"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(
+                error, current=_follow_up_current_callable(self.membership, follow_up_id)
+            )
+        return Response(_follow_up_current(self.membership, follow_up_id))
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpOutcomeCorrectView(WorkspaceView):
+    @extend_schema(
+        request=FollowUpOutcomeCorrectSerializer,
+        responses={
+            200: FollowUpDetailSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            409: ErrorSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpOutcomeCorrectSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            correct_outcome(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                state=data.validated_data["state"],
+                note=data.validated_data.get("note", ""),
+                reason=data.validated_data["reason"],
+                expected_version=data.validated_data["expected_version"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(
+                error, current=_follow_up_current_callable(self.membership, follow_up_id)
+            )
+        return Response(_follow_up_current(self.membership, follow_up_id))
+
+
+@method_decorator(csrf_protect, name="dispatch")
+class FollowUpRecipientView(OwnerWorkspaceView):
+    @extend_schema(
+        request=FollowUpRecipientChangeSerializer,
+        responses={
+            200: FollowUpDetailSerializer,
+            400: ErrorSerializer,
+            403: ErrorSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+    def post(self, request: Request, workspace_id: UUID, follow_up_id: UUID) -> Response:
+        data = FollowUpRecipientChangeSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        try:
+            change_recipient(
+                actor=self.membership,
+                follow_up_id=follow_up_id,
+                new_recipient_id=data.validated_data["new_recipient_id"],
+            )
+        except FeedbackError as error:
+            return feedback_error_response(
+                error, current=_follow_up_current_callable(self.membership, follow_up_id)
+            )
+        return Response(_follow_up_current(self.membership, follow_up_id))

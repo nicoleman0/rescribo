@@ -9,7 +9,7 @@ import { LocationProbe } from './location-probe'
 
 export const testMembership: Session['memberships'][number] = {
   membership_id: 'm-1',
-  role: 'member',
+  role: 'owner',
   workspace: { id: 'ws-1', name: 'Example', slug: 'example' },
 }
 

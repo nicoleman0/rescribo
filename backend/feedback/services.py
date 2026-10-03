@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from accounts.models import Membership
 from feedback.errors import InvalidReference, NotFound, VersionConflict
-from feedback.models import Activity, Problem, Report
+from feedback.models import Activity, FollowUp, Problem, Report
 
 
 def validate_reference(
@@ -85,12 +85,14 @@ def locked_problem(*, actor: Membership, problem_id: UUID) -> Problem:
         raise NotFound(record="problem") from error
 
 
-def require_version(*, row: Report | Problem, expected_version: int) -> None:
+def require_version(*, row: Report | Problem | FollowUp, expected_version: int) -> None:
     if row.version != expected_version:
         raise VersionConflict(current=row)
 
 
-def finish_mutation(*, row: Report | Problem, now: datetime, update_fields: list[str]) -> None:
+def finish_mutation(
+    *, row: Report | Problem | FollowUp, now: datetime, update_fields: list[str]
+) -> None:
     row.version += 1
     row.updated_at = now
     row.save(update_fields=[*update_fields, "version", "updated_at"])

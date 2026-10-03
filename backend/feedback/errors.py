@@ -51,6 +51,24 @@ class InvalidReference(FeedbackError, ValueError):
         super().__init__()
 
 
+class MessageRequired(FeedbackError, ValueError):
+    reason = "message_required"
+
+
+class DeliveryNotReady(FeedbackError):
+    """A Slack delivery cannot start: no active connection or linked recipient."""
+
+    reason = "delivery_not_ready"
+
+    def __init__(self, *, reason: str, detail: str) -> None:
+        self.detail = detail
+        super().__init__(reason)
+
+
+class ConfirmationRequired(FeedbackError, ValueError):
+    reason = "confirmation_required"
+
+
 class VersionConflict(FeedbackError):
     reason = "version_conflict"
 

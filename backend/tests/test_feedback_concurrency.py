@@ -96,9 +96,11 @@ def test_one_expected_version_admits_one_decision() -> None:
     assert (row.version, row.problem_id, row.assignee_id) == (3, first.pk, other.pk)
     pending = ReportNotificationOperation.objects.get(pk=pending.pk)
     assert (pending.state, pending.invalidation_reason) == ("cancelled", "reassigned")
-    # Report and problem timelines each gain one reassignment entry; the move wrote nothing.
+    # Report and problem timelines each gain one reassignment entry, plus the
+    # follow-up recipient change for the manual report's pending follow-up.
+    # The move wrote nothing.
     new_activity = Activity.objects.count() - activity_before
-    assert new_activity == 2
+    assert new_activity == 3
     assert not Activity.objects.filter(record_id=second.pk, action="report.linked").exists()
 
 

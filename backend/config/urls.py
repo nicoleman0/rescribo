@@ -36,6 +36,17 @@ from connections.views import (
     WorkspaceDeleteView,
 )
 from feedback.views import (
+    FollowUpDetailView,
+    FollowUpListView,
+    FollowUpNotificationApproveView,
+    FollowUpNotificationCancelView,
+    FollowUpNotificationDraftView,
+    FollowUpNotificationEditView,
+    FollowUpNotificationMarkDeliveredView,
+    FollowUpNotificationSendAgainView,
+    FollowUpOutcomeCorrectView,
+    FollowUpOutcomeView,
+    FollowUpRecipientView,
     MemberDirectoryView,
     ProblemActivityListView,
     ProblemDetailView,
@@ -201,6 +212,61 @@ urlpatterns = [
             ("assign", ReportAssignView.as_view(), "report-assign"),
         )
     ],
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/",
+        FollowUpListView.as_view(),
+        name="follow-up-list",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/",
+        FollowUpDetailView.as_view(),
+        name="follow-up-detail",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/",
+        FollowUpNotificationDraftView.as_view(),
+        name="follow-up-notification-draft",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/edit/",
+        FollowUpNotificationEditView.as_view(),
+        name="follow-up-notification-edit",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/approve/",
+        FollowUpNotificationApproveView.as_view(),
+        name="follow-up-notification-approve",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/mark-delivered/",
+        FollowUpNotificationMarkDeliveredView.as_view(),
+        name="follow-up-notification-mark-delivered",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/send-again/",
+        FollowUpNotificationSendAgainView.as_view(),
+        name="follow-up-notification-send-again",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/notification/cancel/",
+        FollowUpNotificationCancelView.as_view(),
+        name="follow-up-notification-cancel",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/outcome/",
+        FollowUpOutcomeView.as_view(),
+        name="follow-up-outcome",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/outcome/correct/",
+        FollowUpOutcomeCorrectView.as_view(),
+        name="follow-up-outcome-correct",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/follow-ups/<uuid:follow_up_id>/recipient/",
+        FollowUpRecipientView.as_view(),
+        name="follow-up-recipient",
+    ),
     path(
         "api/workspaces/<uuid:workspace_id>/problems/",
         ProblemListView.as_view(),

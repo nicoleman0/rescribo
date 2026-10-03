@@ -17,7 +17,8 @@ from feedback.errors import (
     TitleRequired,
     VersionConflict,
 )
-from feedback.models import Activity, FollowUp, Problem, Report, ReportSource
+from feedback.follow_ups import recipient_for_report
+from feedback.models import Activity, FollowUp, Problem, Report
 from feedback.services import (
     finish_mutation,
     locked_problem,
@@ -256,16 +257,13 @@ def confirm_linked_report_fix(
 def _create_follow_up(
     *, actor: Membership, problem: Problem, report: Report, now: datetime
 ) -> tuple[FollowUp, bool]:
-    recipient = report.submitted_by
-    if report.source.kind == ReportSource.Kind.MANUAL and report.assignee is not None:
-        recipient = report.assignee
     return FollowUp.objects.get_or_create(
         report=report,
         problem=problem,
         resolution_revision=problem.resolution_revision,
         defaults={
             "workspace_id": actor.workspace_id,
-            "recipient": recipient,
+            "recipient": recipient_for_report(report),
             "report_version": report.version,
             "created_by": actor,
             "created_at": now,

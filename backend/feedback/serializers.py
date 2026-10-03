@@ -12,8 +12,17 @@ from rest_framework import serializers
 from accounts.models import Membership
 from accounts.views import ErrorSerializer
 from connections.errors import ERROR_DETAILS
+from feedback.follow_ups import BUCKETS
 from feedback.inbox import InboxFilters
-from feedback.models import Activity, EngineeringIssue, Problem, Report, ReportSource
+from feedback.models import (
+    Activity,
+    EngineeringIssue,
+    FollowUp,
+    Problem,
+    Report,
+    ReportNotificationOperation,
+    ReportSource,
+)
 from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
 from operations.models import ExternalOperation
@@ -485,3 +494,155 @@ OPERATION_ERROR_DETAILS = {
     "write_outcome_unknown": "GitHub did not confirm the result. Check whether the issue exists.",
     "manually_resolved": "Recovery was stopped after a member reviewed the result.",
 }
+
+
+class FollowUpNotificationSerializer(serializers.Serializer):
+    """The one non-cancelled notification row, or null when not yet prepared."""
+
+    id = serializers.UUIDField()
+    send_in_progress = serializers.SerializerMethodField()
+    state = serializers.ChoiceField(choices=ReportNotificationOperation.State.choices)
+    message = serializers.CharField()
+    draft_version = serializers.IntegerField()
+    safe_error = serializers.CharField()
+    attempts = serializers.IntegerField()
+    approved_by = MemberSummarySerializer(allow_null=True)
+    approved_at = serializers.DateTimeField(allow_null=True)
+    sent_at = serializers.DateTimeField(allow_null=True)
+    delivery_confirmed_by = MemberSummarySerializer(allow_null=True)
+    delivery_confirmed_at = serializers.DateTimeField(allow_null=True)
+    invalidated_at = serializers.DateTimeField(allow_null=True)
+    invalidation_reason = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_send_in_progress(self, operation: ReportNotificationOperation) -> bool:
+        return operation.lease_token is not None
+
+
+class FollowUpListItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    report_title = serializers.CharField(source="report.title")
+    customer_label = serializers.CharField(source="report.customer_label")
+    recipient = MemberSummarySerializer()
+    contact_state = serializers.ChoiceField(choices=FollowUp.ContactState.choices)
+    delivery_state = serializers.ChoiceField(
+        source="active_notification_state",
+        choices=ReportNotificationOperation.State.choices,
+        allow_null=True,
+    )
+    resolution_revision = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+
+
+class FollowUpFilterSerializer(serializers.Serializer):
+    bucket = serializers.ChoiceField(choices=BUCKETS, required=False)
+
+    def to_filters(self) -> Any:
+        bucket: str | None = self.validated_data.get("bucket")
+        return {"bucket": bucket} if bucket is not None else {"bucket": None}
+
+
+class FollowUpReportSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    customer_label = serializers.CharField()
+    triage_state = serializers.ChoiceField(choices=Report.TriageState.choices)
+    version = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+
+
+class FollowUpProblemSummarySerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    title = serializers.CharField()
+    fix_note = serializers.CharField()
+    fix_version = serializers.CharField()
+    resolution_revision = serializers.IntegerField()
+
+
+class FollowUpRecipientSerializer(serializers.Serializer):
+    member = MemberSummarySerializer(source="recipient")
+    has_slack_link = serializers.SerializerMethodField()
+
+    def get_has_slack_link(self, follow_up: FollowUp) -> bool:
+        from feedback.follow_ups import has_slack_identity
+
+        return has_slack_identity(follow_up)
+
+
+class FollowUpOutcomeSerializer(serializers.Serializer):
+    state = serializers.ChoiceField(source="contact_state", choices=FollowUp.ContactState.choices)
+    note = serializers.CharField(source="outcome_note")
+    at = serializers.DateTimeField(source="outcome_at", allow_null=True)
+    by = MemberSummarySerializer(source="outcome_by", allow_null=True)
+
+
+class FollowUpHistoryItemSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    action = serializers.ChoiceField(choices=Activity.Action.choices)
+    actor = MemberSummarySerializer(source="actor_membership", allow_null=True)
+    actor_system = serializers.CharField()
+    created_at = serializers.DateTimeField()
+
+
+class FollowUpDetailSerializer(serializers.Serializer):
+    id = serializers.UUIDField()
+    report = FollowUpReportSummarySerializer()
+    problem = FollowUpProblemSummarySerializer()
+    recipient = FollowUpRecipientSerializer(source="*")
+    notification = serializers.SerializerMethodField()
+    outcome = FollowUpOutcomeSerializer(source="*")
+    version = serializers.IntegerField()
+    created_at = serializers.DateTimeField()
+    updated_at = serializers.DateTimeField()
+    history = serializers.SerializerMethodField()
+
+    def get_notification(self, follow_up: FollowUp) -> Any:
+        from feedback.follow_ups import current_notification
+
+        operation = current_notification(follow_up)
+        return FollowUpNotificationSerializer(operation).data if operation else None
+
+    def get_history(self, follow_up: FollowUp) -> Any:
+        from feedback.follow_ups import follow_up_history
+
+        return FollowUpHistoryItemSerializer(
+            follow_up_history(workspace_id=follow_up.workspace_id, follow_up=follow_up)[:50],
+            many=True,
+        ).data
+
+
+class FollowUpNotificationEditSerializer(serializers.Serializer):
+    message = serializers.CharField(max_length=10000, allow_blank=False)
+    notification_id = serializers.UUIDField()
+    draft_version = serializers.IntegerField(min_value=1)
+
+
+class FollowUpNotificationApproveSerializer(serializers.Serializer):
+    notification_id = serializers.UUIDField()
+    draft_version = serializers.IntegerField(min_value=1)
+
+
+class FollowUpNotificationActionSerializer(serializers.Serializer):
+    notification_id = serializers.UUIDField()
+    draft_version = serializers.IntegerField(min_value=1)
+
+
+class FollowUpNotificationSendAgainSerializer(FollowUpNotificationActionSerializer):
+    checked_slack = serializers.BooleanField()
+
+
+class FollowUpOutcomeRecordSerializer(serializers.Serializer):
+    state = serializers.ChoiceField(choices=FollowUp.ContactState.choices)
+    note = serializers.CharField(max_length=2000, required=False, allow_blank=True, default="")
+    expected_version = serializers.IntegerField(min_value=1)
+
+
+class FollowUpOutcomeCorrectSerializer(FollowUpOutcomeRecordSerializer):
+    reason = serializers.CharField(max_length=2000, allow_blank=True)
+
+
+class FollowUpRecipientChangeSerializer(serializers.Serializer):
+    new_recipient_id = serializers.UUIDField()
