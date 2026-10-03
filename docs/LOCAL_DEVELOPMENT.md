@@ -1,6 +1,6 @@
 # Local development
 
-This guide covers the local development stack. For product scope, see the [MVP specification](MVP_SPEC.md).
+This guide covers the local development stack. For product behaviour, see [`openspec/specs/`](../openspec/specs/).
 
 ## Database reset for the accounts schema
 
@@ -17,8 +17,7 @@ docker compose exec postgres createdb -U rescribo rescribo
 This removes PostgreSQL data. It preserves the Redis volume and other Docker
 volumes. Do not use `docker compose down --volumes` for this reset.
 
-- [MVP specification](MVP_SPEC.md)
-- [Development setup plan](DEV_SETUP_PLAN.md)
+- [Product specs](../openspec/specs/)
 - [Architecture and conventions](DEVELOPMENT.md)
 
 ## Requirements

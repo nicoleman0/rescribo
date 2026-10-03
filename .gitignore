@@ -20,6 +20,8 @@ celerybeat-schedule*
 backend/staticfiles/
 .ua/
 .codex/
-.claude/
+.claude/*
+!.claude/skills/
+!.claude/commands/
 .worktrees/
 .plans/

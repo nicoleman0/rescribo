@@ -1,7 +1,8 @@
 # Working in this repository
 
 - Use the GitHub milestones and issues as the source of truth for implementation breakdown and delivery order.
-- Read `docs/MVP_SPEC.md` before changing product behaviour.
+- Product behaviour lives in `openspec/specs/`. Change it through an OpenSpec change in `openspec/changes/` (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`), one per GitHub issue or tightly linked group. Archive the change in the PR that completes it.
+- Run `npx @fission-ai/openspec validate --all --strict` when specs or changes are edited.
 - Prioritise reusability, modularity, DRY, and maintainability. Use clear ownership boundaries, shared workflow rules, and typed contracts.
 - Keep provider-specific behaviour in integration modules. Keep HTTP handlers and background tasks thin.
 - Do not add business logic to environment health checks or the development status page.
