@@ -12,7 +12,6 @@
 - [ ] 2.1 Define the case format: expected answer, batch, generator model, practice or exam
 - [ ] 2.2 Write the generator prompts for matches, no-match, paraphrase, negation, confusable causes, missing context, and misleading versions
 - [ ] 2.3 Generate the first practice and exam batches with a model other than the tuning agent's
-- [ ] 2.4 Reject batches whose generator model matches the tuning model
 
 ## 3. Labelling tool
 

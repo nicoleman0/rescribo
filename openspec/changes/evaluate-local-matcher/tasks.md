@@ -10,9 +10,7 @@
 ## 2. Review and rotation
 
 - [ ] 2.1 Classify each failed exam case automatically by failure kind
-- [ ] 2.2 Propose a pattern tag per failure with a model; store the maintainer's confirmation or correction
-- [ ] 2.3 Add `task eval:review` to step through failures and a sample of passes
-- [ ] 2.4 Add a script that moves a reviewed exam batch to practice and requests a fresh exam batch
+- [ ] 2.2 Add `task eval:review` to step through failures and a sample of passes
 
 ## 3. Checks
 
