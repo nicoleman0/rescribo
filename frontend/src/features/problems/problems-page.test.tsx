@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { QueryClient } from '@tanstack/react-query'
 import { expect, test } from 'vitest'
 import type {
   ProblemActivity,
@@ -6,6 +7,7 @@ import type {
   ProblemListItem,
 } from '@/api/problems'
 import type { ReportDetail } from '@/api/reports'
+import { problemKeys } from '@/api/problems'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import { ProblemDetailPage } from './problem-detail-page'
 import { ProblemsPage } from './problems-page'
@@ -265,6 +267,50 @@ test('keeps an edit draft on conflict and retries against the current version', 
       screen.getByRole('button', { name: 'Edit title and summary' }),
     ).toHaveFocus(),
   )
+})
+
+test('keeps the edit draft mounted across a failed background refresh and retry', async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  let reads = 0
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/problems/prob-1/`]: () => {
+      reads += 1
+      return reads >= 2 && reads <= 4
+        ? json({ detail: 'Unavailable' }, 503)
+        : json(detail)
+    },
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1', client)
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Edit title and summary' }),
+  )
+  fireEvent.change(screen.getByLabelText('Title'), {
+    target: { value: 'My unsaved title' },
+  })
+
+  await client.refetchQueries({
+    queryKey: problemKeys.detail('ws-1', 'prob-1'),
+  })
+  expect(
+    await screen.findByText('Could not refresh this problem'),
+  ).toBeVisible()
+  expect(screen.getByLabelText('Title')).toHaveValue('My unsaved title')
+
+  fireEvent.click(
+    within(
+      screen
+        .getByText('Could not refresh this problem')
+        .closest('[role="alert"]') as HTMLElement,
+    ).getByRole('button', { name: 'Try again' }),
+  )
+  await waitFor(() => expect(reads).toBe(5))
+  expect(screen.getByLabelText('Title')).toHaveValue('My unsaved title')
 })
 
 test('submits required fix details and optional evidence, then shows confirmed fix', async () => {

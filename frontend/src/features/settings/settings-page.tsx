@@ -41,13 +41,21 @@ function WorkspaceSettings() {
       {connections.isPending ? (
         <LoadingState label="Loading connections" />
       ) : null}
-      {connections.isError ? (
+      {connections.isError && !connections.data ? (
         <ErrorState
           title="Could not load connections"
           onRetry={() => void connections.refetch()}
         />
       ) : null}
-      {connections.isSuccess ? (
+      {connections.isError && connections.data ? (
+        <ErrorState
+          title="Could not refresh connections"
+          description="Settings remain available with the last loaded values. Retry to check for updates."
+          onRetry={() => void connections.refetch()}
+          isRetrying={connections.isFetching}
+        />
+      ) : null}
+      {connections.data ? (
         <>
           {(['slack', 'github'] as const).map((provider) => (
             <div className="grid gap-6" key={provider}>

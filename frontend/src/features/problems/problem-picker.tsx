@@ -82,7 +82,7 @@ export function ProblemPicker({
         </Button>
       </div>
       {problems.isPending ? <LoadingState label="Loading problems" /> : null}
-      {problems.isError ? (
+      {problems.isError && !problems.data ? (
         <ErrorState
           title="Could not load problems"
           description={
@@ -100,14 +100,22 @@ export function ProblemPicker({
           isRetrying={problems.isFetching}
         />
       ) : null}
-      {problems.isSuccess && choices.length === 0 ? (
+      {problems.isError && problems.data ? (
+        <ErrorState
+          title="Could not refresh problems"
+          description="The previous results remain available. Retry to check for updates."
+          onRetry={() => void problems.refetch()}
+          isRetrying={problems.isFetching}
+        />
+      ) : null}
+      {problems.data && choices.length === 0 ? (
         <p role="status" className="text-sm text-muted-foreground">
           {query.q
             ? 'No problems match this search. Try other words, or create a new problem.'
             : 'There are no other problems yet. Create a new problem instead.'}
         </p>
       ) : null}
-      {problems.isSuccess && choices.length > 0 ? (
+      {problems.data && choices.length > 0 ? (
         <fieldset
           disabled={disabled}
           aria-busy={problems.isPlaceholderData}

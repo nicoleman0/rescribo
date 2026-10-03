@@ -11,6 +11,7 @@ import { touchTarget } from '@/components/layout/touch-target'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
 import { ActionError } from '@/components/states/action-error'
+import { ErrorState } from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ProblemPicker } from '@/features/problems/problem-picker'
@@ -45,8 +46,20 @@ export function ReportTriage({
           <AlertTitle>Check that the fix applies</AlertTitle>
           <AlertDescription>
             This problem already has a confirmed fix. Linking the report did not
-            confirm the fix for this customer or send anything. Fix review for
-            late reports is not available yet.
+            confirm that the fix applies or send a message. Review applicability
+            on the linked problem.
+            {report.problem ? (
+              <>
+                {' '}
+                <a
+                  className="underline"
+                  href={`/problems/${report.problem.id}`}
+                >
+                  Review fix applicability
+                </a>
+                .
+              </>
+            ) : null}
           </AlertDescription>
         </Alert>
       ) : null}
@@ -130,9 +143,12 @@ export function AssignReportForm({
         this report. It does not notify anyone or record customer contact.
       </p>
       {members.isError ? (
-        <p className="text-xs text-muted-foreground">
-          The member list could not be loaded.
-        </p>
+        <ErrorState
+          title="Could not load members"
+          description="Retry to update the assignee choices."
+          onRetry={() => void members.refetch()}
+          isRetrying={members.isFetching}
+        />
       ) : null}
       {mutation.isError ? (
         <ActionError

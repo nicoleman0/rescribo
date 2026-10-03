@@ -53,7 +53,7 @@ export function ProblemDetailPage() {
     queryKey: problemKeys.detail(workspace.id, problemId),
     queryFn: () => getProblem(workspace.id, problemId),
     retry: (failures, error) =>
-      (error as ApiError).status !== 404 && failures < 2,
+      ![403, 404].includes((error as ApiError).status ?? 0) && failures < 2,
     refetchInterval: (query) => {
       const issueStatus = query.state.data?.engineering_issue?.refresh_status
       const createStatus = query.state.data?.current_create_operation?.state
@@ -94,14 +94,36 @@ export function ProblemDetailPage() {
           description="It may belong to another workspace, or the link is wrong."
         />
       ) : null}
-      {problem.isError && (problem.error as ApiError).status !== 404 ? (
+      {problem.isError && (problem.error as ApiError).status === 403 ? (
+        <EmptyState
+          title="Problem access removed"
+          description="You no longer have access to this problem."
+        />
+      ) : null}
+      {problem.isError &&
+      ![403, 404].includes((problem.error as ApiError).status ?? 0) &&
+      !problem.data ? (
         <ErrorState
           title="Could not load this problem"
           onRetry={() => void problem.refetch()}
           isRetrying={problem.isFetching}
         />
       ) : null}
-      {problem.isSuccess ? (
+      {problem.isError &&
+      problem.data &&
+      ![403, 404].includes((problem.error as ApiError).status ?? 0) ? (
+        <ErrorState
+          title="Could not refresh this problem"
+          description="Your open changes are still here. Retry to check for updates."
+          onRetry={() => void problem.refetch()}
+          isRetrying={problem.isFetching}
+        />
+      ) : null}
+      {problem.data &&
+      !(
+        problem.isError &&
+        [403, 404].includes((problem.error as ApiError).status ?? 0)
+      ) ? (
         <ProblemBody workspaceId={workspace.id} problem={problem.data} />
       ) : null}
     </div>
@@ -280,7 +302,9 @@ function ProblemHeader({
         <>
           <h1 className="text-xl font-semibold break-words">{problem.title}</h1>
           {problem.summary ? (
-            <p className="text-sm whitespace-pre-wrap">{problem.summary}</p>
+            <p className="min-w-0 break-words text-sm whitespace-pre-wrap">
+              {problem.summary}
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">No summary yet.</p>
           )}

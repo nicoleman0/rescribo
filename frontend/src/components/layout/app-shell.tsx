@@ -78,7 +78,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           <Navigation />
           <div className="mt-auto border-t border-border pt-3">
             <Button
-              className="w-full"
+              className="min-h-11 w-full"
               variant="outline"
               size="sm"
               onClick={() => signOut.mutate()}
@@ -92,6 +92,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
       <div className="flex min-h-svh min-w-0 flex-col pb-16 md:pb-0">
         <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-8">
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-background focus:px-4 focus:py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            Skip to main content
+          </a>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">
               {isGallery
@@ -103,12 +109,14 @@ export function AppShell({ children }: { children?: ReactNode }) {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden font-mono text-[11px] text-muted-foreground sm:inline">
-              Updated just now
-            </span>
+            {signOut.isError ? (
+              <p role="alert" className="max-w-48 text-xs text-destructive">
+                {signOut.error.message}
+              </p>
+            ) : null}
             {!isGallery ? (
               <Button
-                className="md:hidden"
+                className="max-md:min-h-[44px] md:hidden"
                 size="sm"
                 variant="outline"
                 onClick={() => signOut.mutate()}
@@ -120,7 +128,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className="min-w-0 flex-1 px-4 py-6 outline-none focus-visible:ring-2 focus-visible:ring-ring md:px-8 md:py-8"
+        >
           <div className="mx-auto w-full max-w-5xl">
             {children ?? <Outlet />}
           </div>

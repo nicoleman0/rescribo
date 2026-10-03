@@ -16,6 +16,7 @@ import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { applyProblem } from '@/api/cache'
 import { Link } from 'react-router-dom'
+import { fieldError } from '@/components/forms/field-error'
 
 export function GitHubIssueCreate({
   workspaceId,
@@ -343,6 +344,7 @@ export function GitHubIssueCreate({
         maxLength={256}
         value={title}
         disabled={busy}
+        error={fieldError(error, 'title')}
         onChange={(event) => {
           setTitle(event.target.value)
           setPreviewed(false)
@@ -355,6 +357,7 @@ export function GitHubIssueCreate({
         rows={8}
         value={body}
         disabled={busy}
+        error={fieldError(error, 'body')}
         onChange={(event) => {
           setBody(event.target.value)
           setPreviewed(false)

@@ -11,6 +11,7 @@ import {
   LoadingState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
+import { touchTarget } from '@/components/layout/touch-target'
 import { Separator } from '@/components/ui/separator'
 import { Provenance } from './provenance'
 import { ReportTriage } from './report-actions'
@@ -30,14 +31,19 @@ export function ReportDetailPanel({
     queryKey: reportKeys.detail(workspaceId, reportId),
     queryFn: () => getReport(workspaceId, reportId),
     retry: (failures, error) =>
-      (error as ApiError).status !== 404 && failures < 2,
+      ![403, 404].includes((error as ApiError).status ?? 0) && failures < 2,
   })
   return (
     <section
       aria-label="Report detail"
       className="grid content-start gap-4 rounded-card border border-border bg-card p-4"
     >
-      <Button asChild variant="ghost" size="sm" className="w-fit">
+      <Button
+        asChild
+        variant="ghost"
+        size="sm"
+        className={`w-fit ${touchTarget}`}
+      >
         <Link to={backTo}>
           <ArrowLeft aria-hidden="true" />
           Back to reports
@@ -50,14 +56,36 @@ export function ReportDetailPanel({
           description="It may have been deleted, or it belongs to another workspace."
         />
       ) : null}
-      {report.isError && (report.error as ApiError).status !== 404 ? (
+      {report.isError && (report.error as ApiError).status === 403 ? (
+        <EmptyState
+          title="Report access removed"
+          description="You no longer have access to this report."
+        />
+      ) : null}
+      {report.isError &&
+      ![403, 404].includes((report.error as ApiError).status ?? 0) &&
+      !report.data ? (
         <ErrorState
           title="Could not load this report"
           onRetry={() => void report.refetch()}
           isRetrying={report.isFetching}
         />
       ) : null}
-      {report.isSuccess ? (
+      {report.isError &&
+      report.data &&
+      ![403, 404].includes((report.error as ApiError).status ?? 0) ? (
+        <ErrorState
+          title="Could not refresh this report"
+          description="Your open changes are still here. Retry to check for updates."
+          onRetry={() => void report.refetch()}
+          isRetrying={report.isFetching}
+        />
+      ) : null}
+      {report.data &&
+      !(
+        report.isError &&
+        [403, 404].includes((report.error as ApiError).status ?? 0)
+      ) ? (
         <ReportDetailBody workspaceId={workspaceId} report={report.data} />
       ) : null}
     </section>
@@ -82,7 +110,9 @@ function ReportDetailBody({
         </div>
         <h2 className="text-base font-semibold break-words">{report.title}</h2>
         {report.description ? (
-          <p className="text-sm whitespace-pre-wrap">{report.description}</p>
+          <p className="min-w-0 break-words text-sm whitespace-pre-wrap">
+            {report.description}
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">No description.</p>
         )}

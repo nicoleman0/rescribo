@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import type { InboxQuery } from '@/api/reports'
 import { Field, SelectField } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
+import { RetryButton } from '@/components/states/async-states'
 import {
   hasActiveFilters,
   sourceKinds,
@@ -119,6 +120,17 @@ export function ReportFilterBar({
           ))}
         </SelectField>
       </div>
+      {members.isError ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <p role="status" className="text-sm text-muted-foreground">
+            Member names could not be refreshed.
+          </p>
+          <RetryButton
+            onRetry={() => void members.refetch()}
+            isRetrying={members.isFetching}
+          />
+        </div>
+      ) : null}
       {hasActiveFilters(query) ? (
         <div>
           <Button

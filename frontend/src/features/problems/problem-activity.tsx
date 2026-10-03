@@ -38,7 +38,15 @@ export function ProblemActivityList({
           isRetrying={activity.isFetching}
         />
       ) : null}
-      {activity.isSuccess ? (
+      {activity.isError && activity.data ? (
+        <ErrorState
+          title="Could not refresh activity"
+          description="The last loaded activity remains visible. Retry to check for newer events."
+          onRetry={() => void activity.refetch()}
+          isRetrying={activity.isFetching}
+        />
+      ) : null}
+      {activity.data ? (
         <div
           aria-busy={activity.isPlaceholderData}
           className={cn(
