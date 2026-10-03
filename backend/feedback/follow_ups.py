@@ -194,6 +194,28 @@ def report_link(report_id: UUID) -> str:
     return f"{settings.RESCRIBO_PUBLIC_BASE_URL}/inbox/{report_id}"
 
 
+def _locked_outcome_rows(*, actor: Membership, follow_up_id: UUID) -> tuple[FollowUp, Report]:
+    snapshot = (
+        FollowUp.objects.filter(workspace_id=actor.workspace_id, pk=follow_up_id)
+        .values("report__problem_id", "report__version")
+        .first()
+    )
+    if snapshot is None:
+        raise NotFound(record="follow_up")
+    # Fix confirmation and issue reopening also lock the problem before its reports.
+    if snapshot["report__problem_id"] is not None:
+        problem = (
+            Problem.objects.select_for_update()
+            .filter(workspace_id=actor.workspace_id, pk=snapshot["report__problem_id"])
+            .first()
+        )
+        if problem is None:
+            raise VersionConflict(current=get_follow_up(actor=actor, follow_up_id=follow_up_id))
+    follow_up, report = locked_follow_up_and_report(actor=actor, follow_up_id=follow_up_id)
+    require_version(row=report, expected_version=snapshot["report__version"])
+    return follow_up, report
+
+
 def default_message(*, report: Report) -> str:
     """Report title, the approved fix note, the fix version, and a link to the report.
 
@@ -634,7 +656,7 @@ def record_outcome(
     if state == FollowUp.ContactState.NO_RESPONSE and not clean_note:
         raise MessageRequired()
     with transaction.atomic():
-        follow_up, report = locked_follow_up_and_report(actor=actor, follow_up_id=follow_up_id)
+        follow_up, report = _locked_outcome_rows(actor=actor, follow_up_id=follow_up_id)
         require_version(row=follow_up, expected_version=expected_version)
         next_state = FollowUp.ContactState(state)
         allowed = _allowed_outcome_states(from_state=follow_up.contact_state)
@@ -720,7 +742,7 @@ def correct_outcome(
     if state == FollowUp.ContactState.NO_RESPONSE and not clean_note:
         raise MessageRequired()
     with transaction.atomic():
-        follow_up, report = locked_follow_up_and_report(actor=actor, follow_up_id=follow_up_id)
+        follow_up, report = _locked_outcome_rows(actor=actor, follow_up_id=follow_up_id)
         require_version(row=follow_up, expected_version=expected_version)
         if follow_up.contact_state == FollowUp.ContactState.PENDING:
             raise InvalidTransition(action="correct_outcome", from_state=follow_up.contact_state)
