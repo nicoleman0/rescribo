@@ -115,3 +115,45 @@ test('keeps a late preview result scoped to its invitation token', async () => {
   expect(screen.queryByText('Join Old workspace.')).not.toBeInTheDocument()
   vi.unstubAllGlobals()
 })
+
+test.each([
+  [401, 'This email already has an account', 'Sign in'],
+  [500, 'Could not check your session', 'Try again'],
+])(
+  'handles a %s session check on a requires_sign_in invitation',
+  async (status, text, actionName) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.includes('/auth/csrf/'))
+          return Promise.resolve(new Response(null, { status: 204 }))
+        if (url.includes('/invitations/preview/'))
+          return Promise.resolve(response({ status: 'requires_sign_in' }))
+        if (url.includes('/auth/session/'))
+          return Promise.resolve(response({ detail: 'Nope' }, status))
+        throw new Error(`Unexpected request: ${url}`)
+      }),
+    )
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={['/invite/example']}>
+          <Routes>
+            <Route path="/invite/:token" element={<AcceptInvitePage />} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+    expect(await screen.findByText(new RegExp(text))).toBeVisible()
+    expect(
+      screen.getByRole(status === 401 ? 'link' : 'button', {
+        name: actionName,
+      }),
+    ).toBeVisible()
+    if (status === 401)
+      expect(
+        screen.queryByText('Could not check your session'),
+      ).not.toBeInTheDocument()
+    vi.unstubAllGlobals()
+  },
+)

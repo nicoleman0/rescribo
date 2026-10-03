@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { apiRequest } from '@/api/request'
+import { apiRequest, type ApiError } from '@/api/request'
 import { csrf, getSession, sessionQueryKey, type Session } from '@/api/auth'
 import { useQueryClient } from '@tanstack/react-query'
 import { AuthLayout } from '@/components/auth/auth-layout'
@@ -87,7 +87,8 @@ export function AcceptInvitePage() {
         currentSession.isPending ? (
         <LoadingState label="Checking your session" />
       ) : preview.data?.status === 'requires_sign_in' &&
-        currentSession.isError ? (
+        currentSession.isError &&
+        (currentSession.error as ApiError).status !== 401 ? (
         <ErrorState
           title="Could not check your session"
           description="Retry the session check, or sign in and open this invitation again."
