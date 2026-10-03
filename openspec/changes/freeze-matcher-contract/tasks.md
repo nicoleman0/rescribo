@@ -2,7 +2,7 @@
 
 ## 1. Contract and fixtures
 
-- [ ] 1.1 Define the versioned JSON request/response schema with typed evidence references and errors
+- [ ] 1.1 Define the versioned JSON request/response schema with typed evidence references and errors; validation rejects malformed input and unknown contract, algorithm, or config versions
 - [ ] 1.2 Specify normalization and tokenization rules with fixtures
 - [ ] 1.3 Confirm the ten-candidate and 64 KiB limits against realistic fixtures
 - [ ] 1.4 Record the PostgreSQL retrieval and text-search ordering baselines

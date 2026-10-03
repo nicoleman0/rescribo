@@ -4,7 +4,8 @@
 
 - [ ] 1.1 Tune weights and thresholds on development data, then freeze the configuration
 - [ ] 1.2 Run the held-out evaluation and publish the report with sample sizes and limitations
-- [ ] 1.3 Record whether the gates pass and set the suggestions flag accordingly
+- [ ] 1.3 Check deterministic replay and zero invalid or cross-workspace references
+- [ ] 1.4 Record whether the gates pass and set the suggestions flag accordingly
 
 ## 2. Review and rotation
 
