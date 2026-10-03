@@ -31,7 +31,7 @@ export function ProblemActivityList({
         Activity
       </h2>
       {activity.isPending ? <LoadingState label="Loading activity" /> : null}
-      {activity.isError ? (
+      {activity.isError && !activity.data ? (
         <ErrorState
           title="Could not load activity"
           onRetry={() => (page > 1 ? setPage(1) : void activity.refetch())}

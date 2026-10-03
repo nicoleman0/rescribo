@@ -410,3 +410,29 @@ test('reports a missing problem', async () => {
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
   expect(await screen.findByText('Problem not found')).toBeInTheDocument()
 })
+
+test('shows only the refresh alert when an activity refetch fails with data', async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  let reads = 0
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/problems/prob-1/`]: () => json(detail),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => {
+      reads += 1
+      return reads === 1
+        ? page([activity({ action: 'problem.updated' })])
+        : json({ detail: 'Unavailable' }, 503)
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1', client)
+  await screen.findByRole('list', { name: 'Problem activity' })
+  await client.refetchQueries({
+    queryKey: problemKeys.activity('ws-1', 'prob-1', 1),
+  })
+  expect(await screen.findByText('Could not refresh activity')).toBeVisible()
+  expect(screen.queryByText('Could not load activity')).not.toBeInTheDocument()
+})
