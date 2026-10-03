@@ -1,8 +1,8 @@
 # Working in this repository
 
 - Use the GitHub milestones and issues as the source of truth for implementation breakdown and delivery order.
-- Product behaviour lives in `openspec/specs/`. Change it through an OpenSpec change in `openspec/changes/` (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`), one per GitHub issue or tightly linked group. Archive the change in the PR that completes it.
-- New work: open a short GitHub issue (problem and milestone) first, then propose a change that names it. Use `/opsx:explore` while an idea is still vague. Acceptance criteria live in the change's scenarios and tasks; the issue links to the change instead of repeating them.
+- Product behaviour lives in `openspec/specs/`. Change it through an OpenSpec change in `openspec/changes/` (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`), exactly one change per GitHub issue. If work is too big for one PR, split the issue, not the change. Archive the change in the PR that completes it.
+- New work: open a short GitHub issue (problem and milestone) first, then propose a change that names it. After proposing, add `Change: openspec/changes/<name>` as the first line of the issue body with `gh issue edit`. Use `/opsx:explore` while an idea is still vague. Acceptance criteria live in the change's scenarios and tasks; the issue links to the change instead of repeating them.
 - Skip OpenSpec when no observable behaviour changes: bugs where code diverges from the spec, tooling, infrastructure, refactors. Use an issue and PR, or a change with `skip_specs: true`.
 - Run `npx @fission-ai/openspec validate --all --strict` when specs or changes are edited.
 - Prioritise reusability, modularity, DRY, and maintainability. Use clear ownership boundaries, shared workflow rules, and typed contracts.
