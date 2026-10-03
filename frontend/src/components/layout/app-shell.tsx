@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, sessionQueryKey } from '@/api/auth'
 import { useOptionalWorkspace } from '@/components/auth/use-workspace'
+import { Wordmark } from '@/components/brand/wordmark'
 import { Button } from '@/components/ui/button'
 
 type NavigationItem = {
@@ -71,9 +72,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
     <div className="min-h-svh bg-background md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
       <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
         <div className="flex h-16 items-center border-b border-border px-5">
-          <span className="text-base font-semibold tracking-[-0.02em]">
-            Rescribo
-          </span>
+          <Wordmark />
         </div>
         <div className="flex flex-1 flex-col p-3">
           <Navigation />
