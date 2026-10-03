@@ -24,4 +24,3 @@ backend/staticfiles/
 !.claude/skills/
 !.claude/commands/
 .worktrees/
-.plans/
