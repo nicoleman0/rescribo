@@ -107,3 +107,34 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
     }),
   ).toBeVisible()
 })
+
+test('a long member email does not overflow settings at 320px', async ({
+  page,
+}) => {
+  const seed = JSON.parse(
+    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
+  ) as { users: { email: string; password: string }[] }
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(seed.users[1].email)
+  await page.getByLabel('Password').fill(seed.users[0].password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await page.route('**/api/workspaces/*/memberships/', async (route) => {
+    const response = await route.fetch()
+    const members = (await response.json()) as { id: string; email: string }[]
+    members.push({
+      ...members[0],
+      id: 'long-email-member',
+      email: 'invite-0000000000000-with-a-long-name@example.test',
+    })
+    await route.fulfill({ response, json: members })
+  })
+  await page.setViewportSize({ width: 320, height: 740 })
+  await page.goto('/settings')
+  await expect(
+    page.getByRole('button', { name: /^Remove invite-0000000000000/ }),
+  ).toBeVisible()
+  expect(
+    await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+  ).toBe(true)
+})
