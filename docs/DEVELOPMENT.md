@@ -3,19 +3,78 @@
 ## Repository layout
 
 ```text
+backend/accounts/     Workspaces, memberships, invitations, sessions
+backend/feedback/     Reports, problems, issues, follow-ups, and activity
+backend/connections/  Slack and GitHub connections, capture, and delivery
+backend/integrations/ Provider clients, signing, and payload handling
+backend/operations/   Inbound receipts, durable operations, dispatch
 backend/config/       Django settings, routes, ASGI/WSGI, Celery bootstrap
-backend/feedback/     Workspace-scoped reports, problems, and activity
 backend/health/       Dependency checks and worker smoke task
 backend/tests/        Backend tests
 frontend/src/api/     API calls and generated TypeScript contract
-frontend/src/features/ Product screens grouped by feature (inbox first)
-frontend/src/test/    Component test setup
+frontend/src/features/ Product screens grouped by feature
 frontend/e2e/         Browser tests against the real local API
 scripts/              Local bootstrap and service verification
-docs/MVP_SPEC.md      Product scope, architecture, and acceptance criteria
+openspec/specs/       Product behaviour: the current requirements
+openspec/changes/     Proposed and in-progress behaviour changes
+docs/adr/             Architecture decisions
 ```
 
-Other business modules will be added as their workflows are implemented. The spec defines their responsibilities; empty placeholder applications are not needed to establish the boundaries.
+Add a module when its workflow is implemented, not as a placeholder.
+
+## Module responsibilities
+
+| Module | Owns |
+| --- | --- |
+| Accounts | Membership, invitation, session, workspace access, and verified external identity. |
+| Feedback | Reports, problems, state transitions, grouping, resolution, follow-up, and business activity. |
+| Integrations/Slack | OAuth, source validation, shortcuts/modals, Slack payloads, and bot delivery. |
+| Integrations/GitHub | Installation verification, credentials, issue operations, webhooks, and reconciliation. |
+| Operations | Receipt deduplication, durable operation records, dispatch, recovery, and connection health. |
+| Matching (planned) | Rust ranking contract and evaluation; Django retrieval, persistence, and decisions. See [ADR 0003](adr/0003-local-rust-matcher.md). |
+
+- HTTP handlers and Celery tasks stay thin and call the same use cases, so permissions and state rules live in one place.
+- Typed inputs and results cross module boundaries: capture produces a provider-neutral `ReportSubmission`, issue reads produce `EngineeringIssueSnapshot`, and sending takes an explicit approved notification.
+- Intake, engineering, and notification are separate capabilities. Slack and GitHub do not share one connector interface.
+- Shared transport, redaction, and retry classification go in small helpers. Provider business rules stay with the provider. No catch-all `utils` module.
+- Use the Django ORM directly behind use cases; no generic repository layer.
+- A second intake connector must feed the same report workflow without changing its rules.
+
+## Runtime flow
+
+```mermaid
+flowchart LR
+    Browser[React app] --> API[Django API]
+    Slack[Slack shortcuts and lifecycle events] --> API
+    GitHub[GitHub webhooks] --> API
+    API --> DB[(PostgreSQL)]
+    Beat[Scheduler] --> Broker[(Redis)]
+    API --> Broker
+    Broker --> Worker[Celery worker]
+    Worker --> DB
+    Worker --> SlackAPI[Slack API]
+    Worker --> GitHubAPI[GitHub API]
+```
+
+Browser and API share one origin. Signed webhook routes verify their own signatures instead of a blanket CSRF exemption.
+
+## Domain records
+
+Ownership boundaries and required records, not one Django app per table.
+
+| Record | Core data and constraints |
+| --- | --- |
+| Workspace / Membership / Invitation | Role owner/member; active membership; hashed one-use invite with expiry. |
+| External identity | Workspace, provider, provider workspace and user IDs, linked membership. Unique verified mapping. |
+| Connection | Workspace, provider, installation/team identity, encrypted credentials, granted scopes, status, last success/error. |
+| Allowed source | Connection, Slack channel ID, validated channel type, last verification. |
+| Report | Workspace, title, description, source snapshot, author, submitter, optional customer/version fields, assignee, nullable problem, triage state. |
+| Problem | Workspace, summary, owner, state, resolution revision, fix note and availability evidence. |
+| Engineering issue | Problem, connection, stable repository/issue IDs, number/URL, title, state/reason, update and sync times. |
+| Follow-up | Report, resolution revision, recipient, contact state, outcome. Unique per report, problem, and revision. |
+| Report notification operation | One prepared employee message and its delivery state. See [ADR 0004](adr/0004-report-notification-cancellation.md). |
+| Activity | Workspace, actor, action, record reference, time, content-free metadata. |
+| Inbound receipt / External operation | Delivery or action key, processing state, attempts, lease, remote result IDs, safe error. |
 
 ## Accounts boundary
 
@@ -35,18 +94,16 @@ Use management commands for reading or writing product rows. Use `scripts/` CLIs
 
 DRF serializers and drf-spectacular define the API contract. `task schema` generates `frontend/openapi.yaml` and `frontend/src/api/schema.d.ts`. Frontend callers import those types and validate untrusted response values where needed. The browser uses relative `/api/` URLs; Vite proxies to Django without requiring permissive CORS settings.
 
-Future mutating browser calls must send the CSRF token with session cookies. The current readiness request is read-only and does not establish a product login flow.
+Mutating browser calls send the CSRF token with session cookies.
 
 ## Runtime boundaries
 
 - Django owns permissions, validation, transactions, and domain state.
 - React owns presentation and interaction. TanStack Query owns server-state caching; React Router owns navigation.
-- Celery executes background work; Redis is its broker/result backend. PostgreSQL remains the future business-operation source of truth.
+- Celery executes background work; Redis is its broker/result backend. PostgreSQL is the source of truth for business operations.
 - Provider SDKs and HTTP clients live behind integration modules. Do not put provider payloads into the core workflow API.
 - Use shared application functions for operations invoked by both web requests and workers.
-- Planned matching keeps PostgreSQL retrieval and business workflow in Django; a local Rust executable ranks only supplied candidates. See [ADR 0003](adr/0003-local-rust-matcher.md). This boundary is design only and is not implemented.
-
-The environment includes Slack SDK, HTTPX, and cryptography dependencies for the next milestone. No provider app is registered and no live outbound business action exists yet.
+- Planned matching keeps PostgreSQL retrieval and business workflow in Django; a local Rust executable ranks only supplied candidates. See [ADR 0003](adr/0003-local-rust-matcher.md). Not implemented yet.
 
 ## Version choices
 
@@ -61,4 +118,8 @@ The environment includes Slack SDK, HTTPX, and cryptography dependencies for the
 
 The readiness test uses real PostgreSQL and Redis. Failure tests inject dependency errors and assert that responses do not expose internals. Component tests isolate browser presentation. Playwright checks the real browser -> Vite proxy -> Django -> PostgreSQL/Redis path. The worker smoke script exercises Redis and an actual worker separately.
 
-This environment does not implement the full MVP's tenant isolation, durable operations, provider authentication, local Rust matching, matching evaluation, or production hardening. Those requirements remain in the spec and must be tested with their corresponding features.
+Provider tests use recorded, sanitised fixtures. Live provider runs are recorded separately in [LIVE_INTEGRATION_EVIDENCE.md](LIVE_INTEGRATION_EVIDENCE.md).
+
+## Deployment
+
+Local development infrastructure only; there is no production deployment yet. The target is web, worker, scheduler, PostgreSQL, and Redis in Docker Compose behind an HTTPS proxy. External callbacks need a stable HTTPS URL; document any development tunnel and how it handles secrets. Health/readiness checks, structured logs, and trace correlation from request to outbound call are expected; report text and secrets stay out of telemetry.

@@ -1,0 +1,34 @@
+schema: spec-driven
+
+context: |
+  Rescribo helps sales, support, and account managers turn customer feedback
+  in Slack into GitHub issues, then track who still needs an answer.
+  Rescribo owns reports, problems, and follow-up. GitHub owns engineering
+  issues. Customers have no accounts in Slack or Rescribo.
+
+  Out of scope until a change says otherwise: channel scraping, thread import,
+  attachments, Slack edit/delete sync, Slack Connect, DM capture; connectors
+  other than Slack and GitHub; customer portal, outbound customer email,
+  billing, CRM identity resolution, release detection, code/PR analysis;
+  several GitHub issues per problem, cross-workspace sharing, channel ACL
+  mirroring, SSO, Enterprise Grid, public signup; any autonomous issue
+  creation, grouping, messaging, or fix confirmation.
+
+  Evidence rules: keep live provider evidence separate from mocked tests and
+  synthetic evaluation. Never claim customer adoption, production scale, or
+  broad integration support.
+
+  The MVP is complete when milestone B works live, milestone C passes,
+  matching meets its gates or stays disabled, and the demo and setup are
+  reproducible.
+
+  Delivery order and issue breakdown live in GitHub milestones and issues.
+  Architecture and module ownership: docs/DEVELOPMENT.md. Decisions: docs/adr/.
+
+rules:
+  proposal:
+    - Name the GitHub issue the change delivers.
+  design:
+    - Link an existing ADR instead of restating it. Add a new ADR for a decision that outlives the change.
+  tasks:
+    - Include the repository checks from AGENTS.md as the final task group.
