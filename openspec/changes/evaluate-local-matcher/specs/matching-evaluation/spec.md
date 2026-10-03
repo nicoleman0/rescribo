@@ -29,3 +29,14 @@ Once exam results are used to decide what to fix, those cases SHALL be moved to 
 #### Scenario: Retest after a fix
 - **WHEN** the matcher is changed after reviewing exam failures
 - **THEN** the next score comes from a new exam batch, not the reviewed one
+
+### Requirement: Hosted model baseline
+The evaluation SHALL also rank each exam case's candidate pool with a pinned hosted decision model and report the same metrics beside Rust and PostgreSQL ordering. The baseline MUST run only in evaluation tooling on synthetic cases, never in the product. Model version, repeat-run agreement, and cost SHALL be recorded.
+
+#### Scenario: Three-way comparison
+- **WHEN** the exam runs
+- **THEN** the report shows Rust, PostgreSQL ordering, and the hosted baseline on the same candidate pools with the same metrics
+
+#### Scenario: Product matching
+- **WHEN** the application runs matching for a report
+- **THEN** no hosted model is called
