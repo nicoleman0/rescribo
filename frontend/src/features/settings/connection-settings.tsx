@@ -190,7 +190,7 @@ export function ConnectionSettings({
                     </span>
                     <Button
                       variant="outline"
-                      className="min-h-11"
+                      className="h-auto min-h-11 max-w-full py-2 text-left break-all whitespace-normal"
                       disabled={action.isPending}
                       onClick={() =>
                         action.mutate({
