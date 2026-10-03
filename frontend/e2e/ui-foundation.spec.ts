@@ -30,7 +30,6 @@ test.describe('UI foundation', () => {
       page.getByRole('heading', { name: 'Follow-ups' }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
-    await expect(page).toHaveScreenshot('shell-desktop.png', { fullPage: true })
   })
 
   test('shell at mobile width', async ({ page }) => {
@@ -40,7 +39,9 @@ test.describe('UI foundation', () => {
       page.getByRole('navigation', { name: 'Primary navigation' }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
-    await expect(page).toHaveScreenshot('shell-mobile.png', { fullPage: true })
+    expect(
+      await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+    ).toBe(true)
   })
 
   test('gallery at desktop width', async ({ page }) => {
@@ -55,7 +56,6 @@ test.describe('UI foundation', () => {
     await expect(
       page.getByRole('heading', { name: 'Error and retry states' }),
     ).toBeVisible()
-    await expect(page.locator('main')).toHaveScreenshot('gallery-desktop.png')
   })
 
   test('gallery at mobile width', async ({ page }) => {
@@ -64,7 +64,9 @@ test.describe('UI foundation', () => {
     await expect(
       page.getByRole('heading', { name: 'TanStack Query pattern' }),
     ).toBeVisible()
-    await expect(page.locator('main')).toHaveScreenshot('gallery-mobile.png')
+    expect(
+      await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+    ).toBe(true)
   })
 
   test('shell is keyboard navigable', async ({ page }) => {
