@@ -18,6 +18,7 @@ const listItem: ReportListItem = {
   assignee: member,
   problem: null,
   created_at: '2026-09-20T10:00:00Z',
+  match_state: null,
 }
 
 const page = (results: ReportListItem[], extra: Partial<ReportPage> = {}) =>

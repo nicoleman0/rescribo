@@ -24,3 +24,5 @@ backend/staticfiles/
 !.claude/skills/
 !.claude/commands/
 .worktrees/
+rust/matcher/target/
+.task/

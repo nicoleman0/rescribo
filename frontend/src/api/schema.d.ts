@@ -491,6 +491,39 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/match-suggestions/{suggestion_id}/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Links the report through the normal version-checked linking use case. */
+        post: operations["workspaces_match_suggestions_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/match-suggestions/{suggestion_id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_match_suggestions_reject_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/members/": {
         parameters: {
             query?: never;
@@ -931,6 +964,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/match/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_reports_match_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/reports/{report_id}/match/retry/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_reports_match_retry_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/reports/{report_id}/permalink/retry/": {
         parameters: {
             query?: never;
@@ -1035,6 +1100,17 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description * `no_candidates` - no_candidates
+         *     * `below_threshold` - below_threshold
+         *     * `insufficient_margin` - insufficient_margin
+         * @enum {string}
+         */
+        AbstainReasonEnum: "no_candidates" | "below_threshold" | "insufficient_margin";
+        /** @description `expected_version` is the report version the member saw. */
+        AcceptSuggestion: {
+            expected_version: number;
+        };
+        /**
          * @description * `ok` - OK
          *     * `inaccessible` - Inaccessible
          *     * `disconnected` - Disconnected
@@ -1075,6 +1151,8 @@ export interface components {
             /** Format: uuid */
             assignee_id: string | null;
         };
+        /** @enum {unknown} */
+        BlankEnum: "";
         Channel: {
             channel_id: string;
             name: string;
@@ -1174,6 +1252,13 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        Evidence: {
+            record: components["schemas"]["RecordEnum"];
+            /** Format: uuid */
+            id: string;
+            field: components["schemas"]["FieldEnum"];
+            readonly explanation: string;
+        };
         ExternalOperation: {
             /** Format: uuid */
             id: string;
@@ -1203,6 +1288,25 @@ export interface components {
          * @enum {string}
          */
         ExternalOperationStateEnum: "draft" | "queued" | "running" | "succeeded" | "failed" | "uncertain" | "cancelled";
+        /**
+         * @description * `retrieval_failed` - retrieval_failed
+         *     * `invalid_request` - invalid_request
+         *     * `unsupported_version` - unsupported_version
+         *     * `executable_missing` - executable_missing
+         *     * `process_failed` - process_failed
+         *     * `timeout` - timeout
+         *     * `invalid_response` - invalid_response
+         *     * `stale_snapshot` - stale_snapshot
+         * @enum {string}
+         */
+        FailureEnum: "retrieval_failed" | "invalid_request" | "unsupported_version" | "executable_missing" | "process_failed" | "timeout" | "invalid_response" | "stale_snapshot";
+        /**
+         * @description * `title` - title
+         *     * `summary` - summary
+         *     * `description` - description
+         * @enum {string}
+         */
+        FieldEnum: "title" | "summary" | "description";
         FixApplicability: {
             expected_version: number;
             expected_resolution_revision: number;
@@ -1453,6 +1557,56 @@ export interface components {
             customer_contact_reference?: string;
             affected_version?: string;
         };
+        MatchRun: {
+            /** Format: uuid */
+            id: string;
+            state: components["schemas"]["MatchRunStateEnum"];
+            failure: components["schemas"]["FailureEnum"] | components["schemas"]["BlankEnum"];
+            abstain_reason: components["schemas"]["AbstainReasonEnum"] | components["schemas"]["BlankEnum"];
+            report_version: number;
+            algorithm_version: string;
+            config_version: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            readonly suggestions: components["schemas"]["MatchSuggestion"][];
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `running` - Running
+         *     * `ranked` - Ranked
+         *     * `abstained` - Abstained
+         *     * `failed` - Failed
+         *     * `stale` - Stale
+         * @enum {string}
+         */
+        MatchRunStateEnum: "pending" | "running" | "ranked" | "abstained" | "failed" | "stale";
+        MatchSuggestion: {
+            /** Format: uuid */
+            id: string;
+            rank: number;
+            /**
+             * Format: double
+             * @description Relative ranking signal, not a probability.
+             */
+            score: number;
+            features: {
+                [key: string]: number;
+            };
+            evidence: components["schemas"]["Evidence"][];
+            problem: components["schemas"]["ProblemSummary"];
+            decision: components["schemas"]["MatchSuggestionDecisionEnum"];
+            /** Format: date-time */
+            decided_at: string | null;
+        };
+        /**
+         * @description * `pending` - Pending
+         *     * `accepted` - Accepted
+         *     * `rejected` - Rejected
+         * @enum {string}
+         */
+        MatchSuggestionDecisionEnum: "pending" | "accepted" | "rejected";
         MemberSummary: {
             /** Format: uuid */
             id: string;
@@ -1655,6 +1809,12 @@ export interface components {
          * @enum {string}
          */
         ProviderEnum: "slack" | "github";
+        /**
+         * @description * `problem` - problem
+         *     * `linked_report` - linked_report
+         * @enum {string}
+         */
+        RecordEnum: "problem" | "linked_report";
         RecordReference: {
             /** Format: uuid */
             id: string;
@@ -1699,6 +1859,19 @@ export interface components {
             problem: components["schemas"]["ProblemSummary"] | null;
             /** Format: date-time */
             created_at: string;
+            match_state: (components["schemas"]["MatchRunStateEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
+        /** @description The report's latest run, or null before the first one. */
+        ReportMatch: {
+            run: components["schemas"]["MatchRun"] | null;
+        };
+        ReportMatchConflict: {
+            detail: string;
+            reason: string;
+            field_errors: {
+                [key: string]: unknown;
+            };
+            current: components["schemas"]["ReportMatch"];
         };
         /**
          * @description * `draft` - Draft
@@ -3203,6 +3376,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_match_suggestions_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suggestion_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptSuggestion"];
+                "application/x-www-form-urlencoded": components["schemas"]["AcceptSuggestion"];
+                "multipart/form-data": components["schemas"]["AcceptSuggestion"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatch"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatchConflict"];
+                };
+            };
+        };
+    };
+    workspaces_match_suggestions_reject_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                suggestion_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatch"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatchConflict"];
                 };
             };
         };
@@ -4798,6 +5101,106 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportConflict"];
+                };
+            };
+        };
+    };
+    workspaces_reports_match_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatch"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_reports_match_retry_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatch"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportMatchConflict"];
                 };
             };
         };

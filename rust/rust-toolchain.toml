@@ -1,0 +1,5 @@
+# Provisional until a deployment image is chosen; keep in step with rust-version and the Docker stage.
+[toolchain]
+channel = "1.92.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

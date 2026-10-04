@@ -7,7 +7,7 @@ Suggests existing problems that a new or edited report may belong to, with evide
 ## ADDED Requirements
 
 ### Requirement: Same-workspace retrieval
-The system SHALL retrieve at most ten open problems from the report's workspace using PostgreSQL text search over problem titles, summaries, and linked report descriptions.
+The system SHALL retrieve at most ten open or in-progress problems from the report's workspace using PostgreSQL text search over problem titles, summaries, and linked report text.
 
 #### Scenario: Similar problem in another workspace
 - **WHEN** only another workspace has a problem matching the report

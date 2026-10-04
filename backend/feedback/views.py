@@ -101,6 +101,7 @@ from feedback.serializers import (
     ReportListItemSerializer,
     VersionedSerializer,
 )
+from matching.decisions import with_match_state
 from operations.github_issue_create import (
     abandon_creation,
     approve_draft,
@@ -128,7 +129,7 @@ class ReportListView(ListModelMixin, WorkspaceView, GenericAPIView):
         filters = InboxFilterSerializer(data=self.request.query_params)
         if not filters.is_valid():
             raise exceptions.ValidationError(filters.errors)
-        return search_reports(actor=self.membership, filters=filters.to_filters())
+        return with_match_state(search_reports(actor=self.membership, filters=filters.to_filters()))
 
     @extend_schema(
         parameters=[InboxFilterSerializer],

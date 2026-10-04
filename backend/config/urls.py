@@ -73,6 +73,12 @@ from feedback.views import (
     ReportUnlinkView,
 )
 from health.views import LiveView, ReadyView
+from matching.views import (
+    ReportMatchRetryView,
+    ReportMatchView,
+    SuggestionAcceptView,
+    SuggestionRejectView,
+)
 
 urlpatterns = [
     path("api/workspaces/<uuid:workspace_id>/connections/", ConnectionListView.as_view()),
@@ -336,6 +342,26 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/refresh/",
         ProblemIssueRefreshView.as_view(),
         name="problem-issue-refresh",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/match/",
+        ReportMatchView.as_view(),
+        name="report-match",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/reports/<uuid:report_id>/match/retry/",
+        ReportMatchRetryView.as_view(),
+        name="report-match-retry",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/match-suggestions/<uuid:suggestion_id>/accept/",
+        SuggestionAcceptView.as_view(),
+        name="match-suggestion-accept",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/match-suggestions/<uuid:suggestion_id>/reject/",
+        SuggestionRejectView.as_view(),
+        name="match-suggestion-reject",
     ),
     path("api/schema/", SpectacularAPIView.as_view(authentication_classes=[]), name="schema"),
 ]
