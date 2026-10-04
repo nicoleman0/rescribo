@@ -357,6 +357,34 @@ def test_approval_queues_one_send(owner: Membership, connection: Connection) -> 
     assert approval.action == "follow_up.notification_approved"
 
 
+def test_failed_approval_rolls_back_the_queued_send(
+    owner: Membership, connection: Connection
+) -> None:
+    link_slack(owner)
+    report = fixed_report(owner, source=slack_source())
+    follow_up = report.follow_ups.get()
+    draft_notification(actor=owner, follow_up_id=follow_up.pk)
+    notification_id = _notification_id(follow_up)
+
+    with (
+        patch("feedback.follow_ups.write_activity", side_effect=RuntimeError("activity write")),
+        patch("feedback.follow_ups.dispatch_task") as wakeup,
+        TestCase.captureOnCommitCallbacks(execute=True),
+        pytest.raises(RuntimeError),
+    ):
+        approve_notification(
+            actor=owner,
+            follow_up_id=follow_up.pk,
+            notification_id=notification_id,
+            draft_version=1,
+        )
+
+    operation = current_notification(follow_up)
+    assert operation is not None
+    assert (operation.state, operation.approved_by_id, operation.due_at) == ("draft", None, None)
+    wakeup.assert_not_called()
+
+
 def test_approval_without_an_identity_never_queues(owner: Membership) -> None:
     report = fixed_report(owner, source=slack_source())
     follow_up = report.follow_ups.get()
