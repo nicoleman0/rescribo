@@ -304,6 +304,7 @@ def dispatch_due_operations() -> None:
         EngineeringIssue.objects.filter(
             active=True,
             connection__status=Connection.Status.ACTIVE,
+            connection__workspace_id=models.F("workspace_id"),
             sync_requested_generation__gt=models.F("sync_completed_generation"),
         )
         .filter(

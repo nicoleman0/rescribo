@@ -6,9 +6,14 @@ from uuid import uuid4
 
 import pytest
 from builders import make_connection, make_membership, make_problem, make_user, make_workspace
+from django.db.models import F
 
 from operations.models import ExternalOperation
-from operations.tasks import process_github_issue_create, reconcile_github_issue_create
+from operations.tasks import (
+    dispatch_due_operations,
+    process_github_issue_create,
+    reconcile_github_issue_create,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -89,9 +94,17 @@ def test_issue_naming_another_workspaces_connection_is_not_synced() -> None:
         created_by=owner,
     )
     EngineeringIssue.objects.filter(pk=issue.pk).update(
-        connection=foreign, connection_installation_id=foreign.external_id
+        connection=foreign,
+        connection_installation_id=foreign.external_id,
+        sync_requested_generation=F("sync_completed_generation") + 1,
     )
     with patch("feedback.engineering_issues.github_client") as factory:
         sync_issue(issue_id=issue.pk)
         sync_github_issue(str(issue.pk))
     factory.assert_not_called()
+    # Skipped rows never advance their sync time, so the dispatcher must not keep picking them.
+    with patch("operations.tasks.dispatch_task") as wakeup:
+        dispatch_due_operations()
+    assert ("feedback.tasks.sync_github_issue", str(issue.pk)) not in [
+        call.args for call in wakeup.call_args_list
+    ]
