@@ -475,6 +475,32 @@ def test_revoked_membership_cannot_capture(
     assert not Report.objects.exists()
 
 
+def test_member_revoked_after_the_modal_opened_cannot_submit(
+    client: Client, api: MagicMock, member: Membership, connection: Connection
+) -> None:
+    link(member)
+    context_id = open_and_validate(client, api)
+    assert not any(b.get("block_id") == "slack_link_code" for b in opened_view(api)["blocks"])
+    Membership.objects.filter(pk=member.pk).update(is_active=False, revoked_at=timezone.now())
+    response = interact(client, submission(context_id)).json()
+    assert response["view"]["title"]["text"] == "Account not linked"
+    assert not Report.objects.exists()
+    context = SlackCaptureContext.objects.get(pk=context_id)
+    assert (context.rejected_reason, context.text) == ("unlinked", "")
+
+
+def test_link_code_of_a_revoked_member_is_rejected(
+    client: Client, api: MagicMock, member: Membership, connection: Connection
+) -> None:
+    code = slack_identity.issue_link_code(member).secret
+    context_id = open_and_validate(client, api)
+    Membership.objects.filter(pk=member.pk).update(is_active=False, revoked_at=timezone.now())
+    response = interact(client, submission(context_id, link_code=code)).json()
+    assert response["errors"]["slack_link_code"] == "This linking code is invalid or expired."
+    assert not ExternalIdentity.objects.exists()
+    assert not Report.objects.exists()
+
+
 def test_unlinked_actor_on_captured_message_sees_only_the_link_modal(
     client: Client, api: MagicMock, member: Membership, connection: Connection
 ) -> None:
