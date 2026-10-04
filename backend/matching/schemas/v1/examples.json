@@ -1,0 +1,1100 @@
+{
+  "description": "Contract v1 examples shared by the Python adapter and the Rust matcher tests. `expect` is `ok` or an error category.",
+  "supported": [
+    {
+      "algorithm_version": "lexical-1",
+      "config_versions": [
+        "lexical-1.0"
+      ],
+      "feature_names": [
+        "summary_overlap",
+        "title_overlap"
+      ]
+    }
+  ],
+  "requests": [
+    {
+      "name": "valid",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "valid_empty_pool",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": []
+      }
+    },
+    {
+      "name": "unknown_contract_version",
+      "expect": "unsupported_version",
+      "document": {
+        "contract_version": "2",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_algorithm_version",
+      "expect": "unsupported_version",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-9",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_config_version",
+      "expect": "unsupported_version",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.9",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_contract_version",
+      "expect": "invalid_request",
+      "document": {
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "missing_report",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_field",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ],
+        "probability_hint": 0.5
+      }
+    },
+    {
+      "name": "eleven_candidates",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-000000000100",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000101",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000102",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000103",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000104",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000105",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000106",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000107",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000108",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000109",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-000000000110",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_candidate",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "uppercase_uuid",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-00000000000A",
+          "version": 3,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero_row_version",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 0,
+          "title": "CSV export times out",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "empty_title",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "report": {
+          "id": "00000000-0000-4000-8000-000000000001",
+          "version": 3,
+          "title": "",
+          "description": "Exporting more than 10k rows fails after 30 seconds."
+        },
+        "candidates": [
+          {
+            "id": "00000000-0000-4000-8000-0000000000a1",
+            "version": 2,
+            "title": "Large CSV exports time out",
+            "summary": "Exports over 10,000 rows hit the 30 s gateway timeout.",
+            "linked_reports": [
+              {
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "title": "Export never finishes",
+                "description": "The download spinner runs forever for the Q3 report."
+              }
+            ]
+          },
+          {
+            "id": "00000000-0000-4000-8000-0000000000a2",
+            "version": 1,
+            "title": "PDF export loses fonts",
+            "summary": "",
+            "linked_reports": []
+          }
+        ]
+      }
+    }
+  ],
+  "responses": [
+    {
+      "name": "ranked",
+      "request": "valid",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 2.5,
+            "features": {
+              "title_overlap": 1.5,
+              "summary_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              },
+              {
+                "record": "linked_report",
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "field": "description"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a2",
+            "score": 0.25,
+            "features": {
+              "title_overlap": 0.25
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a2",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "ranked_tie_breaks_by_id",
+      "request": "valid",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a2",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a2",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "abstain_below_threshold",
+      "request": "valid",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "abstain",
+        "abstain_reason": "below_threshold"
+      }
+    },
+    {
+      "name": "abstain_empty_pool",
+      "request": "valid_empty_pool",
+      "expect": "ok",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "abstain",
+        "abstain_reason": "no_candidates"
+      }
+    },
+    {
+      "name": "matcher_rejected_request",
+      "request": "valid",
+      "expect": "invalid_request",
+      "document": {
+        "contract_version": "1",
+        "status": "error",
+        "error": "invalid_request"
+      }
+    },
+    {
+      "name": "matcher_rejected_version",
+      "request": "valid",
+      "expect": "unsupported_version",
+      "document": {
+        "contract_version": "1",
+        "status": "error",
+        "error": "unsupported_version"
+      }
+    },
+    {
+      "name": "unknown_contract_version",
+      "request": "valid",
+      "expect": "unsupported_version",
+      "document": {
+        "contract_version": "2",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "config_differs_from_request",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.1",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "abstain_without_reason",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "abstain"
+      }
+    },
+    {
+      "name": "ranked_without_suggestions",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": []
+      }
+    },
+    {
+      "name": "four_suggestions",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 4,
+            "features": {
+              "title_overlap": 4
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 3,
+            "features": {
+              "title_overlap": 3
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 2,
+            "features": {
+              "title_overlap": 2
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1,
+            "features": {
+              "title_overlap": 1
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "probability_field",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ],
+        "probability": 0.9
+      }
+    },
+    {
+      "name": "negative_score",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": -1.0,
+            "features": {
+              "title_overlap": -1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "not_a_candidate",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000ff",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000ff",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "duplicate_suggestion",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 2.0,
+            "features": {
+              "title_overlap": 2.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "out_of_rank_order",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a2",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a2",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 2.0,
+            "features": {
+              "title_overlap": 2.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "tie_out_of_id_order",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a2",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a2",
+                "field": "title"
+              }
+            ]
+          },
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "unknown_feature",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "embedding_cosine": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "title"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "evidence_from_other_candidate",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a2",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "linked_report",
+                "id": "00000000-0000-4000-8000-0000000000b1",
+                "field": "description"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "evidence_wrong_field",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "ranked",
+        "suggestions": [
+          {
+            "problem_id": "00000000-0000-4000-8000-0000000000a1",
+            "score": 1.0,
+            "features": {
+              "title_overlap": 1.0
+            },
+            "evidence": [
+              {
+                "record": "problem",
+                "id": "00000000-0000-4000-8000-0000000000a1",
+                "field": "description"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "no_candidates_with_a_pool",
+      "request": "valid",
+      "expect": "invalid_response",
+      "document": {
+        "contract_version": "1",
+        "algorithm_version": "lexical-1",
+        "config_version": "lexical-1.0",
+        "status": "abstain",
+        "abstain_reason": "no_candidates"
+      }
+    }
+  ]
+}

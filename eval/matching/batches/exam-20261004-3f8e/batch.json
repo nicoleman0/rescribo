@@ -1,0 +1,1568 @@
+{
+  "batch_id": "exam-20261004-3f8e",
+  "split": "exam",
+  "data_source": "synthetic",
+  "generator": {
+    "provider": "openrouter",
+    "model": "openai/gpt-6.1-sol",
+    "prompt_version": "5e5590423407",
+    "created_at": "2026-10-04T13:19:35+00:00"
+  },
+  "problems": [
+    {
+      "id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "title": "Online slots disappear after daylight-saving changes",
+      "summary": "Online booking omits otherwise available appointments during the week after a daylight-saving transition. Since release 4.6, availability calculations apply the clinic's previous UTC offset to recurring working hours; the staff calendar still shows the slots correctly.",
+      "confusable_with": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "linked_reports": [
+        {
+          "id": "dd8a1481-43a1-491c-b619-863b61e67321",
+          "title": "Morning availability missing after clocks changed",
+          "description": "Support paste — Brindlefern Physio: Patients see no morning appointments online this week, but reception can book those same times from the staff calendar. Started on the Monday after the clock change. Nobody edited the working hours."
+        },
+        {
+          "id": "330e4c45-81d8-451f-b3ca-f33179d8acbe",
+          "title": "Booking page loses the first hour",
+          "description": "AM note: At Mosswhorl Clinic, the first hour of each therapist's day disappears from public booking after the seasonal time change. Refreshing availability does not help. The missing slots return the following week."
+        }
+      ]
+    },
+    {
+      "id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "title": "Online slots remain hidden after leave is removed",
+      "summary": "Online booking continues to hide available appointments after staff cancel a therapist's leave. The public availability cache is not invalidated when a leave block is deleted, although the staff calendar updates immediately; rebuilding availability clears the problem.",
+      "confusable_with": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "linked_reports": [
+        {
+          "id": "2302d75c-7129-4a8c-98d1-1a1b4d3ea91a",
+          "title": "Cancelled leave still blocking online appointments",
+          "description": "#support handoff — Thistlequay Rehab removed tomorrow's leave block, and reception now sees open slots. Patients still get 'No appointments available' online. We rebuilt availability and the appointments appeared immediately."
+        }
+      ]
+    },
+    {
+      "id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "title": "Migrated patients incorrectly excluded from SMS reminders",
+      "summary": "Some migrated patients receive no SMS reminders even though their patient record displays reminder consent as enabled. The migration stores consent in the visible preference field but leaves the separate messaging eligibility flag unset; new patients are unaffected.",
+      "confusable_with": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "linked_reports": [
+        {
+          "id": "92c41d27-e145-4834-be5a-caf86080a59b",
+          "title": "Reminder consent on, but nothing sent",
+          "description": "Ticket from Pebblewick Therapy: Three patients brought across during onboarding missed their reminders. Their profiles say SMS reminders are enabled. No reminder attempt appears in the appointment history."
+        },
+        {
+          "id": "fac81759-35d2-4899-9c82-9c899df2bbf4",
+          "title": "Only imported patients missing texts",
+          "description": "Sales follow-up: New test patient got the reminder; an imported patient with the same appointment type did not. Clinic is Wispfen Movement. Reception checked consent twice. There is no queued, failed, or delivered entry for the imported record."
+        },
+        {
+          "id": "545af712-13dd-480e-9db4-1a50447df0ac",
+          "title": "Migration reminder investigation",
+          "description": "Support investigation for Fernspindle Physio: Reception initially reported that reminders were randomly not arriving. We compared twelve appointments scheduled for the same afternoon. Every patient created directly in TendrelStep had a reminder event, while the affected patients had all been imported during onboarding. The affected records show the reminder switch as enabled, and the clinic says those patients agreed to receive texts before the migration. There are no send attempts in their appointment histories, so this does not look like a carrier delivery delay. We created a fresh fictional test patient and used the same appointment type, therapist, and reminder timing; that reminder was queued normally. Changing the reminder wording did not make an imported record send. Reception has been checking the next day's appointments manually because they cannot tell from the visible consent switch which patients are actually eligible for reminders. They are asking for a way to repair the imported records in bulk rather than opening each profile individually. Attached internally: migration batch identifier and comparison of visible consent against messaging eligibility."
+        }
+      ]
+    },
+    {
+      "id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "title": "Unicode reminder templates fail before SMS dispatch",
+      "summary": "SMS reminders are marked failed when the template contains certain non-BMP characters, including some emoji. A character-counting change in version 4.8 causes the dispatch worker to reject these messages before submission; reminders using plain text continue to send.",
+      "confusable_with": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "linked_reports": [
+        {
+          "id": "403ef3ea-9f7b-4229-a962-fa66acc9da4f",
+          "title": "Reminders stopped after template edit",
+          "description": "Slack paste — Reedwhorl Clinic added a stretching emoji to the SMS template yesterday. Since then every reminder using that template says failed. Removing the emoji made the next batch send."
+        },
+        {
+          "id": "d96e9dad-c1ef-4374-bc7c-10c5cec0e64e",
+          "title": "Texts missing despite valid consent",
+          "description": "Ticket: Consent is on and these are not imported patients. The appointment timeline has a failed SMS event with 'message encoding validation'. It began after the 4.8 update, using the clinic's existing emoji-heavy template."
+        }
+      ]
+    },
+    {
+      "id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "title": "Insurer claims reject provider IDs with leading zeros",
+      "summary": "Insurer claims are rejected with a generic invalid-provider message when the provider identifier begins with zero. The claims serializer converts the identifier to a number and removes leading zeros, even though the correct value remains visible in clinic settings.",
+      "confusable_with": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "linked_reports": [
+        {
+          "id": "a7c58447-1bce-4e8a-8ba2-b4d1a2ee8935",
+          "title": "Provider number looks right but claim rejected",
+          "description": "Support — Alderplume Physiotherapy: Claims for one therapist always come back 'Invalid provider details'. Her configured identifier begins with two zeros. The outbound payload drops both zeros; another therapist's claims go through."
+        }
+      ]
+    },
+    {
+      "id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "title": "Insurer claims reject locale-formatted service dates",
+      "summary": "Insurer claims can receive the same generic invalid-provider response when their service dates are serialized in day/month/year format rather than the required ISO format. This began in release 4.7 for clinics using day-first date settings and was partly fixed in 4.7.2 for single claims, but batch submissions remain affected.",
+      "confusable_with": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "linked_reports": [
+        {
+          "id": "0af87287-9a51-4047-a4ab-17b94ab7908f",
+          "title": "Batch says invalid provider, individual claim succeeds",
+          "description": "AM escalation from Sedgeglint Rehab: Since 4.7.2, submitting a claim individually works, but the same claim in a batch gets 'Invalid provider details'. Identifiers have no leading zeros. Clinic uses day-first dates; batch payload shows a slash-separated service date."
+        },
+        {
+          "id": "dacfbeaa-387f-4c6a-ba35-76f5043f2b6d",
+          "title": "Provider settings changes made no difference",
+          "description": "Support thread: We re-entered the provider identifier and retried, with the same rejection. A test using ISO service dates was accepted. This is the batch route, not the individual Submit button."
+        }
+      ]
+    },
+    {
+      "id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "title": "Clinical notes appear unsaved after session expiry",
+      "summary": "Saving a clinical note after the user's session expires leaves the editor showing 'Saving…' without preserving the new text. The editor fails to handle the authentication response and does not prompt the clinician to sign in again; this started with the editor refresh in 4.5.",
+      "confusable_with": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "linked_reports": [
+        {
+          "id": "12687bfe-f6f5-47bd-b2af-79a69084034b",
+          "title": "Notes stuck saving after lunch",
+          "description": "Ticket from Hollowfrond Physio: Left the note editor open over lunch, came back and typed the assessment. It stayed on 'Saving…'. After signing in again the new paragraphs were gone. Short notes written immediately after login save normally."
+        },
+        {
+          "id": "22199548-1b56-4fef-a0e6-abec122278de",
+          "title": "Idle editor silently loses changes",
+          "description": "Support reproduction: Open a note, wait for the session to expire, then edit and save. No sign-in prompt, spinner stays forever. Network response is authentication failure rather than content validation."
+        }
+      ]
+    },
+    {
+      "id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "title": "Pasted rich text prevents clinical notes from saving",
+      "summary": "Clinical notes remain on 'Saving…' when pasted rich text contains embedded inline image nodes. The note serializer sends those unsupported nodes to the API and suppresses the validation error; typing the same text manually or pasting without formatting succeeds.",
+      "confusable_with": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "linked_reports": [
+        {
+          "id": "3579bf9f-7737-4df6-bb23-b92a1d1c3021",
+          "title": "Only copied assessment fails to save",
+          "description": "Slack handoff — Lichenbrook Clinic: A copied assessment from their old document template will not save. It sits on 'Saving…' even just after login. Paste as plain text works. The source has a tiny inline badge image between headings."
+        }
+      ]
+    },
+    {
+      "id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "title": "Downloaded exercise videos use expired playback tokens",
+      "summary": "The home-exercise app shows a black player and a retry message for downloaded videos after their playback tokens expire. The app incorrectly checks the expired streaming token before opening the local file; reconnecting and refreshing the exercise plan temporarily restores playback.",
+      "confusable_with": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "linked_reports": [
+        {
+          "id": "63771390-6597-45a2-b62c-297aca24b65e",
+          "title": "Offline exercises turn black the next day",
+          "description": "Patient report relayed by Brackenlilt Therapy: Downloaded the exercises at the clinic and played them there. The next evening, offline, each video opened to a black screen with Retry. Connecting and refreshing the plan fixed them."
+        },
+        {
+          "id": "9a4ab984-7302-418a-bc67-5fb219acc199",
+          "title": "Local files present, playback blocked",
+          "description": "Support test on home app 2.9: Downloaded file still exists and has the expected size. Playback fails only after the signed token expires. A freshly downloaded plan plays in airplane mode."
+        }
+      ]
+    },
+    {
+      "id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "title": "Exercise videos render black on legacy mobile decoders",
+      "summary": "Some older mobile devices play exercise-video audio but display a black picture, both online and offline. Videos encoded with the high-efficiency profile introduced in home-app release 2.9 are incompatible with those devices' hardware decoders; refreshing tokens or downloading again does not help.",
+      "confusable_with": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "linked_reports": [
+        {
+          "id": "f7f08d4a-ac14-45d2-b814-e86af917c127",
+          "title": "Exercise audio works but screen stays black",
+          "description": "Ticket via Willowmote Physio: Patient hears every instruction but sees a black player. Happens with newly assigned videos while connected as well as downloaded ones. An older exercise clip plays correctly on the same handset."
+        }
+      ]
+    },
+    {
+      "id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "title": "Large patient-record exports exceed worker memory",
+      "summary": "Patient-record ZIP exports fail with 'Could not prepare download' when selected records contain more than roughly 2 GB of attachments. The export worker buffers all attachments in memory rather than streaming them; splitting the export into smaller selections succeeds.",
+      "confusable_with": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "linked_reports": [
+        {
+          "id": "44f67f9f-6b86-4db1-b04e-085e0b06288d",
+          "title": "Full archive export fails, smaller batches work",
+          "description": "Support — Fennelquill Rehab: Exporting the entire archive fails at the preparing-download stage. Exporting ten patients at a time works. The full selection has years of scanned attachments and is well over 2 GB."
+        },
+        {
+          "id": "280a0cc1-9d4b-4ffa-9482-564067df7b4b",
+          "title": "Attachment-heavy record cannot export",
+          "description": "AM note: One unusually large record alone triggers 'Could not prepare download'. No unusual characters in attachment names. Engineering saw the worker restart while assembling the ZIP."
+        }
+      ]
+    },
+    {
+      "id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "title": "Patient-record exports fail on reserved attachment names",
+      "summary": "Patient-record ZIP exports fail with 'Could not prepare download' if an attachment has a filename reserved by the export worker's filesystem. The temporary-file staging step uses the original filename without sanitizing it; even a small export can fail, and renaming the attachment avoids the error.",
+      "confusable_with": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "linked_reports": [
+        {
+          "id": "82c75679-c25c-4198-a154-a3f13e327428",
+          "title": "Tiny export fails until attachment renamed",
+          "description": "Ticket from Cloverdrift Clinic: One patient, two small files, export fails immediately. One imported attachment is named CON.pdf. Renaming it to intake-scan.pdf makes the export work."
+        }
+      ]
+    },
+    {
+      "id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "title": "Concurrent bookings can reserve the same appointment",
+      "summary": "Two patients can successfully book the same therapist and start time when they confirm within the same second. The final booking transaction checks availability before acquiring a lock, allowing both reservations to pass; reception sees two confirmed appointments rather than one rejection.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "da674fd1-de73-4677-a1e8-9c4a2817c243",
+          "title": "Two confirmation messages for one slot",
+          "description": "#support — Briarskein Physio had two different patients receive confirmations for the same 10:30 slot. Both booked online, with confirmation timestamps less than a second apart. Neither appointment was entered by reception."
+        },
+        {
+          "id": "42764da7-fee6-41fa-a2f0-66c42f66bdc9",
+          "title": "Race reproduced with two booking sessions",
+          "description": "QA handoff pasted into ticket: Opened the same available appointment in two separate sessions and confirmed simultaneously. Both returned success and both remain confirmed in the diary."
+        }
+      ]
+    },
+    {
+      "id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "title": "Recurring appointments stop at the calendar-year boundary",
+      "summary": "Creating a weekly appointment series that crosses into a new calendar year silently drops occurrences after December 31. The recurrence generator uses the start year's upper boundary instead of the requested end date; no warning indicates that the series is incomplete.",
+      "confusable_with": null,
+      "linked_reports": []
+    },
+    {
+      "id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "title": "Reception role can read restricted clinical-note previews",
+      "summary": "Users with the reception role cannot open restricted clinical notes but can read their first lines in patient-search previews. Search indexing does not apply the note-level permission filter introduced in release 4.8.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "59926e97-0f81-4f98-ae3f-b9f433db609a",
+          "title": "Restricted assessment visible in search snippet",
+          "description": "Private support escalation — Hazelspoke Therapy: Reception searched a patient's surname and saw the first sentence of a restricted assessment under the result. Opening the note correctly shows access denied. Please avoid reproducing with actual clinical text."
+        }
+      ]
+    },
+    {
+      "id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "title": "Exercise adherence history resets when a plan is edited",
+      "summary": "Editing an existing home-exercise plan resets previously recorded completion ticks for exercises that remain in the plan. The plan editor replaces exercise-assignment identifiers instead of retaining them, leaving earlier adherence events detached from the current view.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "a07b0504-297a-449b-8145-c48cb5d51d5d",
+          "title": "Completed exercises look undone after dosage change",
+          "description": "AM note — Mallowtwine Rehab changed repetitions from eight to ten. The patient then saw all earlier days as incomplete, including days the therapist had already reviewed. No exercises were removed."
+        },
+        {
+          "id": "0a574c27-2fd2-4ec1-973a-0bd8ffcf80a7",
+          "title": "Plan edit wipes visible progress",
+          "description": "Support: We can still find the completion events in storage, but they reference the old assignment IDs. Reopening the plan does not restore the ticks. Patient thinks their work has been deleted."
+        }
+      ]
+    },
+    {
+      "id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "title": "Waitlist offers ignore requested appointment type",
+      "summary": "Automated waitlist offers match therapist and availability but do not filter by the patient's requested appointment type. Patients waiting for a long initial assessment can therefore receive offers for short follow-up slots that cannot accommodate the assessment.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "8b8b0236-4e33-42e0-92ef-4d00f4d35474",
+          "title": "Initial-assessment patient offered short follow-up",
+          "description": "Ticket — Sorrelwake Clinic: A patient waiting for a 60-minute initial assessment received an offer for a 20-minute cancellation. Therapist and day were suitable, but the appointment type was wrong."
+        }
+      ]
+    },
+    {
+      "id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "title": "Discharged patients remain in active caseload counts",
+      "summary": "The caseload dashboard includes discharged patients until they are manually archived. Its active-patient query checks only the archive flag and ignores discharge status, causing inflated clinician caseload totals despite correctly labeled patient records.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "579f6a89-23c3-43d8-9c20-74e5a13e93f6",
+          "title": "Dashboard total does not drop after discharge",
+          "description": "Slack paste: Duskleaf Physio discharged seven patients this week, but the active caseload stayed at 42. Their records show Discharged. Archiving one of them reduced the count by one."
+        }
+      ]
+    },
+    {
+      "id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "title": "Signed treatment-plan PDFs omit patient signatures",
+      "summary": "Treatment-plan PDFs generated from the patient record omit the patient's signature image even though the signed status and signature timestamp appear. The PDF renderer reads an obsolete signature field; clinician signatures are unaffected.",
+      "confusable_with": null,
+      "linked_reports": []
+    },
+    {
+      "id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "title": "Clinic logo settings cannot be configured per location",
+      "summary": "Multi-location clinics cannot assign a different logo to each location's booking page and reminder header. Branding is stored only at the clinic-account level, so changing one location's logo changes it everywhere; location-specific branding controls are not available.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "1313b835-2093-4865-8032-7eb927772e2b",
+          "title": "Second location needs separate branding",
+          "description": "Sales discovery — Nettleskein Therapy runs two locations with different fictional trading names. They can set separate addresses but only one logo. They need each booking page to show its own location's branding."
+        },
+        {
+          "id": "cdaea289-2dd7-441a-858a-067f92729a9b",
+          "title": "Logo change affects all branches",
+          "description": "Support reply context: This is not a delayed image refresh. Updating the logo while viewing the east location also changes the west location because both use the same account-level branding setting."
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "aeb7283b-60b9-4d3d-8233-fb3135a610b9",
+      "kind": "match",
+      "report": {
+        "title": "Online booking loses available slots after the clocks change",
+        "description": "Pasting this over from reception because we're having to book people by phone again.\n\nSince the clocks went forward on Sunday, TendrelStep's online booking page has stopped offering some of our normal morning appointments for the following week. The staff calendar still shows those times as free, and I can put a patient into them manually without any warning or conflict. On the public page, the same clinician and appointment type start an hour later than they should.\n\nFor example, our usual Monday hours are 08:00–16:00. Reception can see and book 08:00 and 08:30, but neither time is offered to patients. I checked the rest of that week and found the same sort of gap on several days. Looking at the week after that, the choices look normal again.\n\nThese are regular weekly working hours, not extra sessions we've added. Nobody has edited the rota, and there hasn't been any leave entered or removed for the affected clinicians. We also checked that the appointment types are enabled for online booking. They are.\n\nWe first noticed this after moving to 4.6, although I can't say whether we would have spotted it before the clock change. It almost looks as though the public page is treating our opening time as if the clocks hadn't moved, while the reception view has moved with them.\n\nCould someone check this before we tell more patients we're fully booked? We're not fully booked. We have real gaps that patients simply can't choose, and the desk team is now comparing the public page against every morning in the calendar."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84"
+    },
+    {
+      "id": "bbb41b99-fb03-4ec5-a6f9-82c64f144407",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Patients can't pick the early visits",
+        "description": "Our self-service page seems to be living on last Saturday's time. Since everyone put their clocks forward on Sunday, the first two half-hour visits of each morning aren't offered to patients for the next seven days. Reception can still put people into those exact times from the internal diary. Our repeating rota hasn't been edited. Dates further ahead look normal; it's just the stretch immediately after the clock adjustment."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84"
+    },
+    {
+      "id": "75ddb9a0-7cd7-4fdb-9790-068a4686d282",
+      "kind": "missing_context",
+      "report": {
+        "title": "Gaps after the clock change",
+        "description": "The first week after the clocks changed has fewer times on the patient booking page than in our staff calendar."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84"
+    },
+    {
+      "id": "99149559-2d39-4824-8056-f9bb810720db",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Think 4.8.2 broke the public appointment picker",
+        "description": "Can we roll back 4.8.2? Since installing it, the public booking page has been missing free appointments during the week after the autumn clock change. Our regular working hours are unchanged, and reception can still book all those times in the staff calendar.\n\nI initially blamed the new build because that's when I checked it. However, another receptionist has a screenshot from before we installed 4.8.2 showing the same missing times for that same week. We're still suspicious of the update, but that probably matters. The affected dates are immediately after the clocks went back; the following week's online choices match the desk calendar."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84"
+    },
+    {
+      "id": "6392c791-5edb-457e-be1a-2d2636505fda",
+      "kind": "negation",
+      "report": {
+        "title": "Booking works after daylight-saving change, but confirmation text is tiny",
+        "description": "Online slots aren't disappearing after the daylight-saving change here. Available appointments show up correctly, including the week after the transition, and they match the staff calendar. My complaint is the confirmation screen: the booking reference is displayed in such tiny, pale text that patients keep asking reception to read it out. Please make that reference larger and give it more contrast."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c4073f45-fe72-4b54-a85e-126bd4f47459",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like slots are still hidden after leave is removed",
+        "description": "This looked like the old 'leave removed but online slots remain hidden' situation, so we went looking for leftover leave blocks. There aren't any. Neither affected therapist had leave entered, cancelled, or removed, and their repeating hours have been untouched for months.\n\nThe missing appointments are all in the seven days after the clocks went forward. Reception sees the usual 08:00 start, but online booking doesn't offer anything until 09:00. We can manually book those hidden slots, and the next week's public availability is back to normal without us changing anything.\n\nSo the symptom is hidden slots, but there's no removed leave to blame. It seems tied to the clock change and how the regular hours reach the patient-facing page."
+      },
+      "source_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84",
+      "expected_problem_id": "cedee7de-b7ee-470e-9ea2-b2754fa3ec84"
+    },
+    {
+      "id": "19f4e506-d54e-4b34-a008-2cbb29bc27b2",
+      "kind": "match",
+      "report": {
+        "title": "Online slots still hidden after cancelling leave",
+        "description": "We deleted therapist Veyra's leave for Thursday because she is working after all. Her staff calendar immediately showed the appointments as available, and reception can book them, but online booking still says there are no times that day. We checked in a private browser too. Running Rebuild Availability made the same appointments appear to patients without us changing anything else."
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246"
+    },
+    {
+      "id": "b1181d41-d437-4ceb-9f8b-d1bb94d1a458",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Back at work, still shown as away",
+        "description": "Neral's trip fell through, so we erased his time-off entry. Reception's diary now has a whole afternoon free, but the patient-facing page acts like he isn't working. Picking another practitioner works normally. We eventually used the option to regenerate the schedule, and his afternoon became selectable straight away. Can that happen automatically when we undo an absence?"
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246"
+    },
+    {
+      "id": "4617f168-7c82-49ea-9e0d-87c15583e57c",
+      "kind": "missing_context",
+      "report": {
+        "title": "Cancelled absence still affecting patient view",
+        "description": "The time off is gone from our diary, but patients still can't see the hours it used to cover."
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246"
+    },
+    {
+      "id": "a396a667-ed75-4ca8-a5dc-d7f84c4e4ce2",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.3 seems to have broken returning a clinician to online booking",
+        "description": "Posting this here because I think the 6.8.3 release has changed how TendrelStep handles cancelled leave. We noticed it this morning at Brindlefern Physio, shortly after the update banner appeared.\n\nOur clinician, Solven, had next Wednesday marked as leave for a course. The course was postponed, so I opened the leave entry and deleted it. The shaded section vanished from the reception calendar immediately. His normal working hours were still there, and I could create a test appointment in the middle of the morning from reception. I cancelled that test afterwards.\n\nHowever, the patient booking screen continued to show Wednesday as having no appointments for him. Tuesday and Thursday looked normal. This wasn't just the browser I had already open: my colleague checked from a phone that hadn't visited our booking page before and got the same result. We also tried different appointment types, including the standard follow-up that Solven normally offers throughout that morning.\n\nI haven't changed his rota, treatment types, room allocation, or booking notice period. The only scheduling change was taking away that leave entry. There was no clock change that week either.\n\nSomeone suggested the Rebuild Availability action in settings. As soon as I ran it, Wednesday's times appeared on both devices. We didn't need to add any working hours or touch the clinician profile.\n\nCould you check whether 6.8.3 introduced this? I don't want reception having to remember an extra maintenance step every time somebody's holiday plans change. For now we've added a note to our desk checklist, but that's easy to miss on a busy morning."
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246"
+    },
+    {
+      "id": "4d0b29c1-12e2-49e1-b848-4d7c1d0dd7cd",
+      "kind": "negation",
+      "report": {
+        "title": "Leave cancellation works; printed invoice text is too small",
+        "description": "Online booking is fine now: when we remove a therapist's leave, the available slots appear for patients immediately. No hidden appointments or stale availability on our side. My actual issue is the printed invoice layout. The payment instructions are tiny, and there doesn't seem to be a font-size setting. Can we enlarge that section without enlarging the entire page?"
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": null
+    },
+    {
+      "id": "1d6ca86f-e489-4bf7-9e0f-5f86eb4c9e9d",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like the daylight-saving missing-slots issue, but follows undoing time off",
+        "description": "Our receptionist called this the daylight-saving bug because online slots disappear while the internal calendar still looks right. We've checked the time zone and the clock-change dates, though: this is happening in a week with no daylight-saving transition, and the displayed appointment times aren't shifted by an hour.\n\nThe affected hours exactly match a leave block we deleted for Yevren. His other working days remain bookable. Another clinician with the same hours and time-zone settings is also fine. Deleting the leave freed up Yevren's staff calendar straight away, but patients still saw no times in that stretch. Rebuilding availability brought those exact slots back. It seems tied to undoing his time off rather than the clocks moving."
+      },
+      "source_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246",
+      "expected_problem_id": "29e80bea-4f39-449e-99aa-dfe2bf53a246"
+    },
+    {
+      "id": "54c3a6b0-f519-48e8-a803-460b9fe3e47d",
+      "kind": "match",
+      "report": {
+        "title": "Imported patients are missing SMS reminders despite consent being on",
+        "description": "Reception at Fernhollow Physio has been chasing missed appointments this week. The patients who aren't receiving SMS reminders all came across when we moved our old patient list into TendrelStep. Their patient records show reminder consent enabled, and their mobile numbers look correct.\n\nI checked eight affected people against four patients we created manually after the move. Everyone had an appointment far enough ahead to get the usual reminder. The manually created patients received theirs; none of the eight imported patients did. For the imported group, I can't find an outgoing reminder in the message history at all—not even a failed delivery entry.\n\nWe initially thought people had changed numbers or blocked the sender. One person received a manually sent text from us on the same number, though, so that doesn't explain it. We also checked that the appointments weren't cancelled and that the reminder schedule was still switched on.\n\nThe really confusing part is that opening an affected patient's communication settings makes everything look ready to go. There's no warning or obvious missing permission. Staff are understandably trusting that screen and telling people they'll get a text.\n\nCould support check whether the imported consent values actually make these patients eligible for automatic messaging? It feels like the checkbox came over but whatever puts someone into the reminder queue didn't. We need a way to identify everyone affected, rather than waiting for another no-show. Please don't just ask us to verify consent again—we've already done that against the old system and the current records."
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5"
+    },
+    {
+      "id": "62068364-b824-4b0a-8d56-745bbd02bea6",
+      "kind": "paraphrase",
+      "report": {
+        "title": "People brought over from our old system never get the appointment nudge",
+        "description": "The carried-over client list seems to be missing something behind the scenes. On each person's contact card, the little switch allowing appointment texts is ticked, but their phones stay quiet. People we add directly in TendrelStep get the usual heads-up without any trouble. Same wording, same appointment timing. It's as though the old-list group looks opted in on screen but never gets admitted to the automatic send queue."
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5"
+    },
+    {
+      "id": "1586770f-912d-4592-bffe-c6b567f01b43",
+      "kind": "missing_context",
+      "report": {
+        "title": "Old-list contacts skipped",
+        "description": "Patients brought over from our previous system aren't getting reminder texts, even though the permission switch is on; newly added patients get them."
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5"
+    },
+    {
+      "id": "29b1ce11-9dc3-4fdd-9af1-88962d72a0d6",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.8.2 broke texts for our transferred patients",
+        "description": "Pretty sure TendrelStep 4.8.2 caused this. We noticed it after that release went live: patients transferred from our previous system get no appointment SMS, although reminder consent is enabled in their profiles. Patients added since the transfer are still getting texts from the exact same template.\n\nUpdate from reception: we found an affected appointment from before 4.8.2 as well, but I'm leaving the release number here because that's when we first spotted the issue. There isn't a failed message to retry for these people. They just seem to be left out of the send list."
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5"
+    },
+    {
+      "id": "5392fed1-2f02-4110-84e6-a257755100c7",
+      "kind": "negation",
+      "report": {
+        "title": "SMS reminders are fine now; invoice footer is the issue",
+        "description": "To be clear, we're NOT reporting missing SMS reminders for migrated patients. Their consent shows enabled and they're receiving their texts normally. Our complaint is that invoice footers can't hold our full payment instructions—the field cuts us off halfway through the second sentence. Could that character limit be increased?"
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": null
+    },
+    {
+      "id": "8eabad7d-c4e9-4d9b-a111-7220705eb85d",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought Unicode reminder templates were failing before SMS dispatch",
+        "description": "We suspected the accented characters in our reminder template were causing a failure before SMS dispatch. We replaced the entire template with plain ASCII: 'Your appointment is tomorrow. Please call if you cannot attend.' No change for the affected group.\n\nHere's the important distinction: a newly created patient receives either template, including the original Unicode wording. A patient imported from our old software receives neither, despite showing SMS consent switched on. Their history has no dispatch attempt or template error.\n\nSupport asked us to compare the diagnostic details for one of each. The imported person's visible permission is true, but the separate 'allowed for automated texts' value is blank. The newly created person's value is true. So this looks less like a template-rendering failure and more like the transfer didn't populate the other setting that lets the sender include them."
+      },
+      "source_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5",
+      "expected_problem_id": "1fc3a2ea-62cb-4783-bddd-6dd6f87108c5"
+    },
+    {
+      "id": "76823be3-8774-499b-9a3c-9720d9eba0f0",
+      "kind": "match",
+      "report": {
+        "title": "SMS reminders fail when we put certain emoji in the template",
+        "description": "Pasting the details from our reception thread at Fernquill Physio because we finally found a pattern.\n\nSince moving to TendrelStep 4.8, our usual appointment reminder template has been producing failed SMS reminders. The wording is short: patient first name, appointment time, and a request to call if they need to cancel. We recently added a waving hand at the beginning and a runner at the end. Those reminders fail, but removing those symbols makes them send again.\n\nAt first we thought this was about particular patients. It isn't. I booked two test appointments against the same staff test record, using the same mobile number and appointment details. The template with 👋 failed; the otherwise identical template without it sent. I repeated that with 🏃 and got the same result. An ordinary exclamation mark was fine. We also tried a very short reminder with just the appointment time and the waving hand, so this doesn't seem to be us exceeding the SMS length limit.\n\nThe failed entries don't have a provider reference, and our sending account shows no corresponding attempt. The activity detail says the reminder failed during a length check, before it was passed to the SMS service. There is no delivery receipt because apparently nothing went out.\n\nWe have temporarily stripped the emoji out of all our reminder templates. That gets the reminders moving again, but we'd like to restore the friendlier wording rather than ask reception to keep checking every template. Can you investigate why those characters stop the reminder before it reaches the sending service?"
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1"
+    },
+    {
+      "id": "0a1bfd59-ee85-4698-850d-6d8fa2aeceb4",
+      "kind": "paraphrase",
+      "report": {
+        "title": "A little rocket breaks our appointment nudges",
+        "description": "Our automatic phone alerts won't go out if the saved wording includes 🚀. Reception sees a red status almost immediately, and nothing appears in the gateway history. Take that one symbol out, leave everything else alone, and the next test arrives. A short sentence with the rocket has the same trouble, while a longer sentence made up of ordinary letters goes through. Could someone look at how TendrelStep measures the wording? It seems to get stuck on the picture rather than on the recipient or appointment."
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1"
+    },
+    {
+      "id": "d8f76fd3-7c45-4918-b846-a7647e551b2b",
+      "kind": "missing_context",
+      "report": {
+        "title": "Little pictures stop the texts",
+        "description": "Appointment texts fail with certain little pictures in the wording; removing those pictures makes them go through."
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1"
+    },
+    {
+      "id": "1ebd3145-133f-40e8-84c4-9314b21d6237",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.9.2 seems to have broken our friendly reminder wording",
+        "description": "We noticed this after installing 4.9.2 yesterday, so I'm assuming that release is responsible. Our SMS reminder with 🦋 now goes straight to Failed, with no outgoing item in the provider dashboard. Replacing the butterfly with the word 'hello' sends successfully to the same number.\n\nOne wrinkle: when I checked older appointment activity, I found identical failures dated back to our 4.8 upgrade. Nobody had raised those at the time. Still, 4.9.2 is when reception started complaining, and we'd like it checked before we put the butterfly back."
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1"
+    },
+    {
+      "id": "997f1aa0-87e8-4c62-a1b5-da810b9bdc84",
+      "kind": "negation",
+      "report": {
+        "title": "Reminder editor loses my place",
+        "description": "SMS reminders aren't failing here: our Unicode template, including emoji, sends successfully and patients receive it. This ticket is about the editor itself. Whenever I save a wording change, the page jumps back to the top and collapses the section I was editing. I have to scroll down and reopen it for every tiny correction. Please keep the section open and preserve the scroll position after saving."
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "0aed1c9a-63c0-4c29-99d2-f03745d3ef7c",
+      "kind": "confusable",
+      "report": {
+        "title": "Migrated patients looked excluded from SMS reminders, but it's the wording",
+        "description": "We initially reported that migrated patients were being excluded from SMS reminders after our records import. Most of the failures were in that group, so reception assumed their reminder eligibility hadn't carried over.\n\nI've now checked their SMS consent and mobile fields, and those look correct. More importantly, they do have reminder entries: the entries are created and then marked Failed, rather than being skipped.\n\nThe migrated patients were assigned our welcome-back wording, which includes 🌱. Patients added manually mostly use the standard wording without it. Switching a migrated test patient to the standard wording sends successfully. Putting the welcome-back wording on a newly created test patient makes that one fail too. Removing only the seedling also fixes it, without changing any patient settings.\n\nNeither failed test appears in the SMS provider's outgoing history. This started around the 4.8 update. Could you check the handling of that symbol before treating this as another migration eligibility issue?"
+      },
+      "source_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1",
+      "expected_problem_id": "012bc217-ee20-4cb2-8510-8061859305f1"
+    },
+    {
+      "id": "f3b43e1f-f5ed-4587-9b58-3ae4dbe6e0c3",
+      "kind": "match",
+      "report": {
+        "title": "Claims sent without the leading zeros in our provider ID",
+        "description": "Could someone check why TendrelStep is changing our provider ID when we submit insurer claims? Our clinic's identifier is 00471826. That exact value is still visible in clinic settings, including both zeros, but every submission comes back with the same generic invalid-provider message.\n\nI initially thought the insurer had not activated our account. Their support team checked it and said the registered value is correct. They then read back what they received from our latest claim: 471826, not 00471826. That would explain why they cannot find us.\n\nI saved the settings again, logged out, and created a fresh claim rather than resending an old one. Same result. The settings page still shows the full identifier afterward, so this is not just someone accidentally editing the clinic record.\n\nWe also tried a claim for our other practitioner, whose provider ID does not start with a zero, and that went through. Both claims had the same service date and treatment code. There doesn't seem to be anything different about the patient information either.\n\nOur receptionist can get the affected claims accepted by entering the full provider ID directly in the insurer's portal, but that means copying everything across manually. We now have eleven appointments waiting for reimbursement and don't want to keep submitting duplicates while testing this.\n\nIt looks like the outgoing claim treats the ID as a number instead of keeping all its characters. Can you preserve the zeros when sending it? Please don't just update the settings display; that part already looks right."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d"
+    },
+    {
+      "id": "22e44598-1dc8-4b51-9aae-4a550a388cc5",
+      "kind": "paraphrase",
+      "report": {
+        "title": "First two characters of our registration code vanish on the way out",
+        "description": "The fund won't pay our reimbursement requests because it can't locate the practitioner. Her registration code is 00639214 on the practice profile, but the transmission preview has 639214. Typing it into the fund's own website with all eight characters works. Can TendrelStep send the code exactly as entered instead of shortening it? Our other therapist's code starts with 7 and hers goes through."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d"
+    },
+    {
+      "id": "0e59a3e0-8545-4684-925d-2083cb7517cf",
+      "kind": "missing_context",
+      "report": {
+        "title": "Padded practitioner code getting shortened",
+        "description": "Our reimbursement submissions aren't going through when the practitioner's code starts with 00; those characters keep disappearing."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d"
+    },
+    {
+      "id": "20f16dac-e3bb-4573-9f55-55248afc7ace",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 4.8.3 seems to have broken our insurer submissions",
+        "description": "Pretty sure this is from the 4.8.3 release—we only noticed it after the update yesterday. Claims for provider 00318572 now get an invalid-provider response, although the clinic settings still show 00318572. The sent data has 318572. Providers without a zero at the front are unaffected.\n\nI asked reception to dig out an older failed submission to compare. That one was sent on 4.8.1 and also has 318572 in it, but I'm still suspicious of the new release because that's when the queue became obvious. We've been retyping these in the fund portal with the full code and they accept them there."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d"
+    },
+    {
+      "id": "f2d54e71-5d3b-4ce0-b1b6-c29b1d2b8b62",
+      "kind": "negation",
+      "report": {
+        "title": "Claims are fine; invoice footer is almost unreadable",
+        "description": "Our insurer claims no longer reject the provider ID with leading zeros. Settings and submitted claims both retain 00528419, and we're not seeing the invalid-provider message. What I'm actually chasing is the tiny text on patient invoice PDFs: the payment instructions in the footer are much smaller than the rest of the document. Please give us a font-size control for that footer. Patients keep asking reception to read it out."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "612d1a95-d6b9-4cd9-a8f0-eb9d6fbad159",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought this was locale-formatted service dates, but the provider value changes",
+        "description": "We've been investigating the rejected insurer claims as a service-date formatting issue because our reception computers use day/month/year. We tried the locale-formatted service date 16/08/2026 and then an ISO-style 2026-08-16 submission. Neither was accepted for practitioner 00742618.\n\nThe response is invalid provider, not a date validation error. More importantly, the outgoing record has 742618 even though clinic settings show 00742618. Another practitioner's claim with the identical service date and locale formatting was accepted; that practitioner's ID starts with 6.\n\nSo changing the date format isn't helping. It seems to be the missing initial zeros in the practitioner value that matters."
+      },
+      "source_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d",
+      "expected_problem_id": "e6f35143-e88e-49c9-b9bc-3fdf4e5bea8d"
+    },
+    {
+      "id": "ec43f710-7e49-4a06-8140-a3bda4763b31",
+      "kind": "match",
+      "report": {
+        "title": "Batch insurer claims fail when service dates are written day-first",
+        "description": "Pasting this from our billing channel because we are still having to send everything individually.\n\nWe use day/month/year dates in TendrelStep. Since 4.7, insurer claims have sometimes come back with the same generic invalid-provider message, even though the practitioner details have not changed. We initially thought somebody had edited the registration numbers, but we checked those against previously accepted submissions and they are identical.\n\nAfter installing 4.7.2, sending a single claim started working again. The batch option still fails. This morning I selected twelve treatments, all for the same practitioner, and every item came back with the provider error. Opening those exact items and sending them separately got them accepted. Nothing about the patient, practitioner, treatment code, or amount was changed between attempts.\n\nOur support export shows a service date of 23/09/2026 in the failed batch. The successful individual submission shows 2026-09-23. That seems like a much better explanation than the provider message. We also tried a treatment from the seventh of the month to check whether this was only happening when the first number was greater than twelve, but that failed in the batch too.\n\nFor another check, we temporarily changed our date preference to year-first and generated a fresh batch. That one went through. We restored our normal preference afterward because reception needs day-first dates throughout the app.\n\nCould someone check whether the single-claim correction missed the batch submission path? We have a growing queue of reimbursements, and submitting them one by one is taking most of the afternoon. Please also make the rejection message useful if the actual issue is the service date rather than the practitioner."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5"
+    },
+    {
+      "id": "bc0739b9-a4d1-4519-bed3-48c8306b65a7",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Group send trips over the way treatment days are written",
+        "description": "Our reimbursement packets bounce with 'practitioner not recognised' when we send several together. The practitioner is definitely recognised: send the same entries one at a time and they go through. In the outgoing data, the unsuccessful group has 18/09/2026, while the accepted standalone entry has 2026-09-18. Switching our regional preference to put the year first also lets the group through. We haven't touched anyone's registration number. Looks like the group route is copying what reception sees on screen instead of using the arrangement the payer expects."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5"
+    },
+    {
+      "id": "6f716ff0-4292-4324-85c3-a117bebb7e54",
+      "kind": "missing_context",
+      "report": {
+        "title": "Day-first treatment dates still block bulk reimbursements",
+        "description": "Bulk reimbursements fail with our usual day-first treatment dates, but the same entries are fine individually."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5"
+    },
+    {
+      "id": "f8d34496-e2bb-4d83-a823-70d89ac4ec0d",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.8.1 seems to have broken our weekly insurer upload",
+        "description": "We noticed this after moving to TendrelStep 4.8.1, so that update is my first suspect. Our weekly batch now returns invalid-provider errors, but sending each claim on its own works. We use day-first date preferences. The failed payload has service dates like 24/09/2026; a successful individual claim has 2026-09-24. Provider IDs are identical in both.\n\nOne awkward detail: our billing assistant found an archived failed batch from 4.7 with the same date layout and error, so perhaps the latest update just made us notice an older issue. We didn't use batch sending much between then and now. Either way, 4.8.1 hasn't solved it, and temporarily using year-first dates gets the batch accepted."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5"
+    },
+    {
+      "id": "fcee3b52-9833-4c75-a4f2-f3c87bc55fa1",
+      "kind": "negation",
+      "report": {
+        "title": "Claims work now, but the billing screen needs a default sort",
+        "description": "Our insurer claims are not being rejected with invalid-provider errors anymore. Service dates look correct, including with our day-first preference, and both individual and batch submissions are going through. This ticket is about the billing table: every time I reopen it, it forgets my oldest-first sort and puts the newest items at the top. Please let me save a default sort order so I don't have to reset it throughout the day."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": null
+    },
+    {
+      "id": "abc1b432-7977-460e-add8-10eaf08f763f",
+      "kind": "confusable",
+      "report": {
+        "title": "Invalid provider ID message, but leading zeros aren't the difference",
+        "description": "We thought this was the provider IDs with leading zeros issue because the insurer keeps saying invalid provider. Our practitioner ID is 004731, and both zeros are still present in the accepted and rejected outgoing records. We also reproduced it with a second practitioner's ID, 631842, which has no leading zeros at all.\n\nThe difference is the service date. A batch sends 19/09/2026 and fails; sending that same claim individually sends 2026-09-19 and succeeds. On 4.7.2 the individual route is fine, but our day-first clinic preference still seems to leak into the batch data. Please don't remove or rewrite the provider IDs as a workaround—the same IDs already work when the date goes out year-first."
+      },
+      "source_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5",
+      "expected_problem_id": "96bfc588-3ee2-49eb-9720-2e2ae5ae47d5"
+    },
+    {
+      "id": "3a6048b9-5447-4f6c-b00b-839cf4275966",
+      "kind": "match",
+      "report": {
+        "title": "Clinical note stuck on Saving… after my session times out",
+        "description": "Since the TendrelStep 4.5 editor refresh, I've lost the end of two clinical notes when my login expired while the record was still open.\n\nThis morning at Bramblefen Physio, I opened a patient's note, entered the assessment, then left the laptop while I treated the next patient. When I came back, the editor was still there and let me add the treatment response and home instructions. I clicked Save and it just sat on 'Saving…'. There was no message saying my session had expired and nothing asking me to sign in again, so I assumed it was taking a while.\n\nI waited several minutes. Opening the appointment calendar in another tab sent me to the login screen. After signing in there, I returned to the note tab, which was still showing 'Saving…'. I copied what I could before reloading. When I reopened the patient record, only the earlier assessment was there. None of the additions from after the break had been preserved.\n\nThese were ordinary sentences typed directly into the note, not anything pasted from a document. If I sign in freshly and enter the same wording, it saves immediately. The failure seems tied to leaving the page open long enough for the session to expire, rather than to a particular patient's record.\n\nCould we at least get a clear sign-in warning without losing the draft? The current screen looks like a save is underway, which is a pretty dangerous reassurance when we're moving between patients."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa"
+    },
+    {
+      "id": "eb4c9d9f-ab95-48b2-b51d-8d936809659b",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Visit write-up disappears after a long break",
+        "description": "I left a treatment write-up open over lunch. Back at my desk, I added the last paragraph and pressed the tick button. The little wheel beside it kept turning forever. Elsewhere in TendrelStep, I was asked for my credentials again, but this pane never gave me that option. Once I got back into the account and reopened the visit, the last paragraph was gone. Doing it straight after entering my credentials works normally."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa"
+    },
+    {
+      "id": "9fe976b0-6684-4725-a096-f71cd41de612",
+      "kind": "missing_context",
+      "report": {
+        "title": "Changes lost after login runs out",
+        "description": "My note additions disappear when my login runs out, with no warning that I need to log back in."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa"
+    },
+    {
+      "id": "bc963a81-84eb-4fc4-b260-f78b0ea74292",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.7.2 seems to have broken saving after lunch",
+        "description": "Putting this down to the 4.7.2 desktop rollout we got yesterday. I leave a patient note open, come back after a long gap, type the rest and hit Save. It stays on 'Saving…' indefinitely. Another TendrelStep tab asks me to log in again, but the note itself never does. After logging in and reopening it, the new section is missing. Saving right after login is fine. We didn't notice it until this rollout, so please check 4.7.2 first."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa"
+    },
+    {
+      "id": "e259a65b-7f5f-47b9-b0ee-2efcdcac6f5f",
+      "kind": "negation",
+      "report": {
+        "title": "Note saving is fine; the new toolbar is hard to read",
+        "description": "For clarity, our clinical notes do NOT get stuck on 'Saving…' after session expiry. We get the sign-in prompt and can save our work afterward. My complaint is the pale grey toolbar labels in the note editor: they're almost invisible against the white background on our treatment-room screens. Please give us a higher-contrast option."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": null
+    },
+    {
+      "id": "2d069bcc-ff0c-4eff-a2df-6129b005f9fe",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought pasted rich text was stopping the clinical note from saving",
+        "description": "We initially suspected pasted rich text because the first failed note included a formatted referral extract. Removed all of that and tried a completely blank note with one sentence typed by hand: same endless 'Saving…', but only after leaving the tab idle for a long time.\n\nOur reception lead checked the browser request while I reproduced it. The save came back with a 401 response. The editor kept spinning and didn't ask me to log in. A fresh tab took me straight to the login screen.\n\nAfter logging back in, I pasted the original formatted extract into a new note and it saved normally. So the pasted content looks like a red herring. The missing changes happen when the login has timed out, including with plain typed text. We first noticed this after the 4.5 editor change."
+      },
+      "source_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa",
+      "expected_problem_id": "b84b5bac-c257-4256-8095-22b904cca6aa"
+    },
+    {
+      "id": "0e593419-492d-4bd7-9701-69d05de2b390",
+      "kind": "match",
+      "report": {
+        "title": "Clinical note stuck saving after copying from a referral",
+        "description": "A therapist at our clinic pasted part of a referral into a TendrelStep clinical note, and it stayed on 'Saving…' indefinitely. The copied section had bold headings and a tiny image sitting in the middle of a sentence. Other notes saved normally. We tried the same wording with paste-without-formatting and it saved straight away; entering it by hand also worked. There was no visible error explaining why the original wouldn't save."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf"
+    },
+    {
+      "id": "196ff0c3-8dbb-4d05-9e1e-6f1e7ab28f4e",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Visit write-up won't finish with material from a referral document",
+        "description": "Moving a section from our referral document into the visit write-up leaves the completion wheel turning forever. That section includes a little graphical badge between two words, although it barely shows up in the editor. Bringing across just the characters works, as does entering the wording ourselves. It's the decorated version from the document that gets stuck, not the wording itself."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf"
+    },
+    {
+      "id": "3c3aa50d-46e1-4121-bef2-b69e57489805",
+      "kind": "missing_context",
+      "report": {
+        "title": "Copied content leaves entries unfinished",
+        "description": "Visit entries with copied styling and little pictures in the text never finish storing; plain-text ones are fine."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf"
+    },
+    {
+      "id": "097f7b35-a41f-4bc0-bc68-511d9e1aa30a",
+      "kind": "misleading_version",
+      "report": {
+        "title": "6.4.2 seems to have broken saving notes from referral letters",
+        "description": "Could someone check the TendrelStep 6.4.2 release? We noticed this after the update yesterday, so the team is calling it a regression. Our afternoon clinician couldn't finish three treatment notes, and reception ended up keeping the wording in a separate document rather than risk losing it.\n\nThe affected notes all contained sections copied from referral letters. They weren't huge: a heading, a few paragraphs, and some bold text. After pasting, the editor looked normal, but the status sat on 'Saving…' for several minutes. Navigating away and returning showed only what had been there before the copied section. There wasn't a warning, a red field, or anything useful for the clinician to report.\n\nWe initially thought the update had made longer notes unreliable. That doesn't seem to hold up, though. A much longer note written directly in the editor saved immediately. We also took one of the troublesome referral sections and used the paste-without-formatting option. Same words, same patient record, immediate save.\n\nOne detail that might matter: our referral template has a tiny picture beside the assessment heading. It travels with the text when copied, even when nobody deliberately selects the picture. Removing the visible picture wasn't always enough, but stripping all the styling was reliable. A referral paragraph without that little graphic also worked when copied normally.\n\nPlease don't ask everyone to rewrite their notes as the permanent workaround. The plain-text route gets us through today, but it removes headings the clinicians use to scan longer histories. We can provide a made-up referral using the same template if that helps reproduce it. I still suspect 6.4.2 because of the timing, but the failure definitely depends on what comes across from the source document."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf"
+    },
+    {
+      "id": "354c9b91-45a4-46c7-be37-ac0086b51a81",
+      "kind": "negation",
+      "report": {
+        "title": "Notes save fine now, but spelling suggestions use the wrong language",
+        "description": "Pasted rich text in clinical notes, including little inline images, no longer leaves us stuck on 'Saving…'. Saving is working fine in our tests. My actual complaint is the editor's spelling suggestions: it keeps offering US spellings when our clinic preference is UK English. We can dismiss each suggestion, but the same words get flagged again in the next note. Please make the spelling checker respect the language preference."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": null
+    },
+    {
+      "id": "e52b7b18-1305-4cba-b88f-f2975a5175c0",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like session expiry, but only copied notes appear unsaved",
+        "description": "We thought this was another session-expiry issue because the clinical note appeared unsaved and the status never moved past 'Saving…'. However, I signed out, signed back in, and reproduced it within a minute. I could save a short typed note on the same record immediately afterward, so the session was clearly still usable.\n\nThe failing content comes from a referral document with a small image embedded beside the text. Copying that section with its styling gets stuck every time. Pasting it as plain text saves immediately, even without signing in again. There is no expired-session message or login redirect. It looks like an unsaved-session problem to the therapist, but it follows that particular copied content."
+      },
+      "source_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf",
+      "expected_problem_id": "1f4b8626-5af0-4008-9fcc-1cebfc0be7cf"
+    },
+    {
+      "id": "fa9ee600-009a-4e80-8f90-339080040c7e",
+      "kind": "match",
+      "report": {
+        "title": "Downloaded exercise videos stop playing after a few days offline",
+        "description": "Support ticket from Fernhollow Physio: A patient saved all six exercise videos to their phone before going away. We checked them together in the clinic with the phone offline, and every video played. Three days later, the same downloaded videos showed a black player with a retry message. The app still marked each one as downloaded.\n\nThe patient thought the downloads had disappeared, but the phone's storage usage hadn't changed. They also hadn't edited their programme, signed out, or installed an update. Restarting the app and the phone didn't help. They couldn't do their prescribed session because the written instructions refer to movements demonstrated in the clips.\n\nWhen they returned, we tried it at reception. Still black with the phone disconnected. Once we connected it and refreshed the exercise plan, all six videos worked again. We then disconnected the phone immediately and they continued playing. There was no visible download progress, and this was much quicker than the original download, so it didn't look like the clips were being fetched again.\n\nWe repeated the test with our clinic handset. Saved clips worked initially, then failed after being left offline for several days. In the details attached to that failed attempt, there was a line saying the playback token had expired. I'm not sure why a downloaded video needs an up-to-date online permission just to open the copy already on the phone.\n\nCould someone investigate? Asking patients to connect and refresh before each trip isn't a workable offline feature. Please also confirm whether they need to download everything again or whether updating the plan is enough."
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0"
+    },
+    {
+      "id": "7da8c83e-864f-4e32-b404-7b7d52642245",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Saved movement demos seem to have a use-by date",
+        "description": "Our patients keep the treatment clips on their handsets for places without reception. They run perfectly at first, but a few days later the viewing area is just dark and nothing starts, even though the saved-copy badges remain. Bringing the handset back onto Wi-Fi and fetching the latest programme makes those same clips usable again without another transfer. It feels like the permission to watch gets stale, rather than anything happening to the stored content."
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0"
+    },
+    {
+      "id": "daaaf02e-549d-4388-a2de-4183f826772f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Saved demos lose access",
+        "description": "Previously saved demos stop working when their viewing permission ages out, despite still being on the phone."
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0"
+    },
+    {
+      "id": "074f9eca-ebda-44fe-9341-b1d4fc2fd7a8",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 5.14.2 broke offline exercise viewing",
+        "description": "I think TendrelStep build 5.14.2 introduced this. We updated the clinic test phone last week, and now downloaded exercise videos turn black and offer Retry after a few days without internet. They played offline right after downloading, so the files themselves seem OK. Connecting and refreshing the patient's plan brings them back immediately, then they work offline again for a while. One patient who hasn't installed the update has since reported the same pattern, but the timing still makes me suspicious of this release. Can you check what changed around saved-video access?"
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0"
+    },
+    {
+      "id": "a95bf196-c6c2-4c8c-bd00-48b6110d5b55",
+      "kind": "negation",
+      "report": {
+        "title": "Downloaded videos play fine, but volume keeps jumping",
+        "description": "The downloaded exercise videos are working fine now: no black player, no retry message, and no trouble playing offline after several days. Our actual complaint is that each new clip starts at full volume even after the patient turns the previous one down. Could the home-exercise app remember their volume setting? It's startling when they're doing a quiet session."
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": null
+    },
+    {
+      "id": "61a54d4b-f35a-400c-8e5f-9838c47c75b2",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like a legacy mobile decoder issue, except refreshing fixes it",
+        "description": "Pasting this from the clinic channel: we initially called this 'exercise videos render black on legacy mobile decoders' because the first report came from an older handset. That explanation doesn't fit what we've tested, though. A brand-new clinic phone does it too, and both phones play the exact same downloaded clips perfectly on the day they're saved.\n\nAfter several days offline, both show a black video area and Retry. Changing orientation or restarting doesn't help. Connecting briefly and refreshing the exercise plan fixes both phones, without deleting or downloading the clips again. We can switch straight back to offline mode and watch them normally.\n\nThe failure details mention an expired playback token. This looks more like the app refusing access to an existing saved clip than a decoder being unable to render it. Please don't close this as unsupported older hardware."
+      },
+      "source_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0",
+      "expected_problem_id": "aa042584-5657-4039-a06d-d29cf60ca0f0"
+    },
+    {
+      "id": "44270f6a-709a-4fd4-8e38-5e75d49bd927",
+      "kind": "match",
+      "report": {
+        "title": "Older phones get sound but a black screen for exercise videos",
+        "description": "Pasting this from our front-desk thread at Willowcoil Physio because we've now had four patients describe the same thing. They open an exercise in the TendrelStep home app, press play, and hear the instructions normally, but the video area stays completely black. The progress bar moves and they can pause or skip forward. There isn't an error message.\n\nSo far this is happening on older handsets. One patient brought in a Pebblefin M4 that they've had for several years, and we reproduced it at reception. The exact same exercise looked normal on our newer clinic handset using that patient's account. Their written instructions and exercise pictures are also fine; it's specifically the moving demonstration that's missing.\n\nWe tried playing directly over the clinic connection, then saving the exercise for use without a connection. Both gave us sound with no visible demonstration. We deleted the saved copy and fetched it again, signed out and back in, and had support refresh the playback access. None of that changed the result. We also left the phone connected for a while in case it was simply waiting for the picture to load.\n\nThe patient says some demonstrations they saved before the 2.9 home-app update still show correctly, while the newer ones don't. We can't tell whether that's an app change or something different about the files, but it seems worth mentioning. There are no booking or reminder issues involved here.\n\nCould someone check whether the newer video files can actually be shown by these older phones? Please don't send us another download-again checklist without looking at that difference. These patients can hear what to do, but they need to see the movement to follow their plans safely."
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef"
+    },
+    {
+      "id": "3dadef9f-e7a6-4247-bbf5-2228d30064d4",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Spoken coaching comes through, but the movement demonstration is invisible",
+        "description": "Our patient at Fernloop Therapy gets a blank dark rectangle where the routine demonstration should be. The narration keeps going and the timer advances. This is on an ageing handset; a recently bought one shows the same routine properly. It makes no difference whether the handset is connected to the clinic Wi-Fi or using a saved copy in flight mode. Removing the saved item and fetching a fresh copy changed nothing. Earlier material still looks normal. Is the new media format asking these handsets to do something they can't?"
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef"
+    },
+    {
+      "id": "84ec2d67-9667-481a-bb94-dab279bf4e2c",
+      "kind": "missing_context",
+      "report": {
+        "title": "Can't see the movement",
+        "description": "On the older phone, the exercise clip stays black while the instructions are audible; the same clip looks fine on a newer phone."
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef"
+    },
+    {
+      "id": "9506ddb8-ef10-4a19-a931-3eb8a0454eda",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Think 3.1.4 broke patient exercise playback",
+        "description": "Ever since we installed TendrelStep home app 3.1.4, two patients with ageing phones have reported black exercise videos with perfectly normal audio. I'm blaming that update because that's when the complaints reached us. We rolled one handset back to 3.1.3, though, and the same clips still had no picture. They fail whether streamed or saved for offline use, including immediately after a fresh download. Older clips in the same plan show normally, and all the clips work on our newer test handset. Can you investigate before we tell everyone to avoid 3.1.4?"
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef"
+    },
+    {
+      "id": "63db77c9-c3ed-4134-a556-0edbd8ab0936",
+      "kind": "negation",
+      "report": {
+        "title": "Exercise list needs an alphabetical sort",
+        "description": "The exercise videos are working fine now, including on our older mobile devices: audio and picture both work, with no black screen during online or offline playback. This ticket is about finding items in the exercise library. Our therapists want an alphabetical sort, but the only ordering available is recently added. Searching is okay when you know the exact name; browsing a long list during an appointment is frustrating. Could alphabetical ordering be added?"
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": null
+    },
+    {
+      "id": "d46b95a6-2a08-4874-b8d4-36c65a66967e",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like expired playback tokens, but renewing them doesn't restore the picture",
+        "description": "We initially logged this as downloaded exercise videos using expired playback tokens. The patient said the saved exercises had stopped showing, so we assumed their offline access had timed out.\n\nThat explanation doesn't fit what we saw today. A freshly downloaded clip, opened immediately, has a black picture while the audio plays all the way through. Support renewed the playback token and we downloaded it again: same result. Streaming that exercise while connected also gives sound only, so this isn't limited to downloaded copies.\n\nThe affected handset is an old Lumenburrow P2. Using the same patient account and exercise on a newer handset gives a normal picture. A demonstration saved before the home-app 2.9 rollout still works on the old handset, too. It feels as though that phone cannot handle how the newer clips are packaged, rather than access expiring. There is no expired-token warning or request to reconnect."
+      },
+      "source_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef",
+      "expected_problem_id": "ab0e3390-1779-4162-8c3d-3e79469ce0ef"
+    },
+    {
+      "id": "6b06123d-51b0-44ca-b0d4-bf4b32c152dc",
+      "kind": "match",
+      "report": {
+        "title": "Big patient-record ZIP export fails, smaller exports work",
+        "description": "We need to export 38 patient records from TendrelStep for a clinic handover. The ZIP preparation ends with 'Could not prepare download'. Those records include about 2.7 GB of attachments, mostly scans and assessment videos. Exporting the same patients in groups of five works, and we can open all the resulting ZIPs. Even a single patient fails if their attachments total more than about 2 GB. It seems related to how much file content is being collected, not the number of patients."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4"
+    },
+    {
+      "id": "b9711c54-196a-4386-a430-9555d2949b6a",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Full chart handover stalls",
+        "description": "Can someone help us get our case histories out? A package with roughly 2.5 gigabytes of scans and rehab clips never becomes available, but doing a few charts at a time gives us usable copies. The exact same material comes through when we request it in bite-sized groups. Feels like there's a ceiling on how much the background job can hold at once."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4"
+    },
+    {
+      "id": "c7a5225c-906c-4eef-9990-6ec258938abe",
+      "kind": "missing_context",
+      "report": {
+        "title": "Heavy chart collections won't come through",
+        "description": "The really file-heavy collections won't come through as a single package, although every smaller portion does."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4"
+    },
+    {
+      "id": "1f73b0a5-0182-4159-8a38-603e0314effc",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 8.14.3 broke our larger downloads",
+        "description": "I'm blaming TendrelStep build 8.14.3 because this started after the update. Our archive request with 2.3 GB of attached documents now gives 'Could not prepare download'. A 700 MB selection completes normally. We also divided the failed request into four smaller selections and got everything out that way. No documents were removed or renamed between attempts. Please roll back whatever changed in this release."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4"
+    },
+    {
+      "id": "6cee63be-fc99-42e0-b1ea-5208eba4d7cf",
+      "kind": "negation",
+      "report": {
+        "title": "Exports are fine; contact list ordering is the nuisance",
+        "description": "Patient-record ZIP exports work fine for us now, including a large one with attachments. We are not seeing 'Could not prepare download'. My actual complaint is that the clinic's supplier contact directory can't be sorted alphabetically. It stays in creation order, so finding our equipment repair contact means scrolling through the whole thing."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": null
+    },
+    {
+      "id": "4de3e4ca-77cd-4951-983b-29869ee00e43",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought it was reserved attachment names, but renaming changes nothing",
+        "description": "Pasting our checks here because we initially suspected reserved attachment names were making the patient-record export fail.\n\nOur archive selection contains 24 charts with scans, intake forms and short movement clips. TendrelStep gets as far as preparing the ZIP, then shows 'Could not prepare download'. There is no indication of which attachment caused it.\n\nWe checked the filenames for reserved names and odd characters. Everything was ordinary, but we still renamed the files in a test copy to simple labels like scan_001.pdf and movement_002.mp4. That made no difference. The full selection still failed.\n\nThe useful clue is that every chart can be downloaded on its own. We then tried two halves of the original selection, without changing any attachment names, and both downloads completed. Recombining those halves brings the failure back. So there isn't one bad filename that consistently breaks things.\n\nThe combined attachments are about 2.8 GB. A different selection with more charts but only 600 MB of documents worked first time. We also tested one unusually heavy chart: it worked with about 1.7 GB included, but stopped working when we added enough clips to bring it to about 2.2 GB. Those extra clips download successfully in a separate request.\n\nOur local test setup showed the background process's RAM climbing throughout preparation and then disappearing before the error appeared. It looks like the whole collection is being held at once rather than passed through incrementally.\n\nFor now we're making several smaller ZIPs. Please don't send us back through filename cleanup unless there's another specific check to do."
+      },
+      "source_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4",
+      "expected_problem_id": "4571f47e-9fb4-4624-93b8-d0ea400246f4"
+    },
+    {
+      "id": "7e5054b7-0222-4c33-8243-d09385682cf4",
+      "kind": "match",
+      "report": {
+        "title": "Patient ZIP export breaks when a file is called CON.pdf",
+        "description": "We’re trying to export a patient record from TendrelStep and keep getting “Could not prepare download.” It’s a tiny record: two visit notes and one attached scan, about 180 KB altogether. The scan was uploaded as CON.pdf. I can open it normally inside the patient’s chart, so the document itself seems fine.\n\nI tried the same export without that attachment and the ZIP downloaded immediately. Then I put the same scan back with the filename intake-scan.pdf and it worked again. Changing it back to CON.pdf brings the error back. Nothing else in the record changed between attempts.\n\nCould you check why that particular filename stops the whole export? We shouldn’t have to hunt through documents and rename them before handing a patient their records."
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1"
+    },
+    {
+      "id": "d3b663c7-d91a-41b9-9839-dcf627cb8476",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Chart handover gets stuck on a scan called NUL",
+        "description": "The “Get a copy” action won’t finish for one client. We narrowed it down to a scanned referral labelled NUL.pdf. Giving that exact same document the label referral.pdf makes the bundle come through straight away. Put NUL.pdf back and we’re stuck again. The scan opens perfectly well in the chart either way."
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1"
+    },
+    {
+      "id": "2d25afec-2d11-423a-a81e-a3a9363ce592",
+      "kind": "missing_context",
+      "report": {
+        "title": "CON document blocks the bundle",
+        "description": "One oddly named document, CON.pdf, is stopping the whole chart bundle; a normal label makes it work."
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1"
+    },
+    {
+      "id": "20ffb179-ef7e-42a7-a2d0-95108bff8140",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.8.2 seems to have broken record downloads",
+        "description": "Since our move to TendrelStep 4.8.2, reception can’t export one patient’s records. I’m blaming the release because that’s the only system change we know about. The message is “Could not prepare download.” Other patients export normally, including much larger histories. This one has a single PDF named AUX.pdf. Removing it lets the ZIP generate, and uploading the identical PDF as referral-letter.pdf also fixes it. Is there a new restriction in 4.8.2 on what we can call uploaded files?"
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1"
+    },
+    {
+      "id": "6e25b52a-cb26-4b0a-8043-c4fadf29a453",
+      "kind": "negation",
+      "report": {
+        "title": "Record export works, but the delivery wording is confusing",
+        "description": "Patient-record ZIP exports are working fine for us now. Even the attachment named CON.pdf comes through, and we are not seeing “Could not prepare download.” Our complaint is the confirmation wording: “Sent to patient” appears when we’ve only saved the ZIP locally. Reception interpreted that as an automatic delivery and didn’t send the copy on. Please make the message say that the file was downloaded, not that it was sent."
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c58b347c-1ffe-4fe3-8196-0e95bf774bad",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like an export memory limit, but one tiny PDF is the trigger",
+        "description": "We initially logged this as a large patient-record export exceeding worker memory. The full chart has several years of notes and scans, and the ZIP never arrives; all we get is “Could not prepare download.” Someone suggested splitting the export into smaller batches, so we spent this morning testing that before sending anything to support.\n\nThe results don’t fit a size limit. A batch containing nearly all the scans completes successfully. A much smaller batch containing just the intake note and one 24 KB PDF does not. We also tried a separate test chart with no appointment history and only that PDF, and it gave the same message. There’s barely anything there to consume memory.\n\nThe PDF is called LPT1.pdf. It previews normally in TendrelStep and can be saved individually. I took that same file, changed its name to intake-copy.pdf, and added it back. The complete chart then exported successfully, including all the other material we had assumed was too large. With the old name restored, the complete chart stops again.\n\nSo although this looks like the large-export issue from the reception desk, reducing the number of records isn’t the useful workaround. Changing the name of this one document is. We haven’t altered its contents, compressed it, or changed any export settings. Could you investigate the name handling rather than just increase the memory allowance? We have older imported scans with similarly short labels and don’t know which other charts might be affected."
+      },
+      "source_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1",
+      "expected_problem_id": "1019abcb-c317-4e5c-8bd8-4f357c5abdd1"
+    },
+    {
+      "id": "71488ecb-6dba-4530-b20b-77f21e37a700",
+      "kind": "match",
+      "report": {
+        "title": "Two patients confirmed into the same therapist's 10:30 appointment",
+        "description": "Pasting this from the front-desk thread at Pebblefern Physio because we need someone to investigate.\n\nYesterday two patients booked Orven's 10:30 appointment through TendrelStep. Both received a successful booking screen and a confirmation message. Our reception calendar then showed two confirmed appointments for Orven, both starting at 10:30 and both lasting 45 minutes. These were different patients, not duplicate records for one person.\n\nWe contacted them separately. They had each opened the booking page while that slot was still free and happened to finish at almost exactly the same moment. The timestamps visible in their confirmation details are identical down to the second. Neither saw a warning that somebody else had taken the appointment.\n\nWe tried this again with two test patient accounts and two laptops. We selected the same therapist, date, appointment type, and start time on both, then clicked the final confirmation buttons together. Both screens said the booking was successful. Back at reception, there were again two confirmed entries occupying that one slot. If we finish on one laptop and wait before completing the other, the second person is told the slot is unavailable, which is what we'd expect.\n\nNobody on staff added an appointment manually, and this wasn't a recurring appointment. The therapist's schedule had one opening there, not capacity for two people.\n\nFor now we're checking each day's diary for overlaps and calling anyone affected, but that isn't sustainable. We need only one of these competing bookings to succeed. The other patient should be asked to choose another time, rather than arriving with a perfectly valid-looking confirmation."
+      },
+      "source_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "expected_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba"
+    },
+    {
+      "id": "e62ec39d-ad4d-4cd2-bfe1-d92fd3972164",
+      "kind": "paraphrase",
+      "report": {
+        "title": "One diary space, two green ticks",
+        "description": "At Thistledrift Clinic, two visitors reached the end of the web journey together and each got a green tick for Vessa's Tuesday 14:20 session. The desk team found both names stacked in that single diary cell. Each person had a success receipt, so neither had any reason to think they needed to choose again. We reproduced it using separate browsers: completing together gives both people the go-ahead; completing one and then the other sends the later person back to choose elsewhere. Looks like the race to grab that opening has two winners."
+      },
+      "source_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "expected_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba"
+    },
+    {
+      "id": "e6169965-7542-4124-8815-9fef590b3675",
+      "kind": "missing_context",
+      "report": {
+        "title": "Double-confirmed slot",
+        "description": "Two patients got confirmed for the same therapist and time when they booked together."
+      },
+      "source_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "expected_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba"
+    },
+    {
+      "id": "f8aca290-28a0-41c4-88e0-b170763fac93",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.2 seems to have introduced double bookings",
+        "description": "I'm blaming TendrelStep 6.8.2 because this is the first week we've noticed it at Brackenwhorl Physio. Two patients independently chose the same 09:15 slot with our therapist Nelvo, and both bookings were accepted. Their confirmations show the same second. Reception has two separate confirmed appointments, not one appointment with two names.\n\nWe can make it happen when two people press the last button together. Taking turns behaves normally: whoever goes second has to pick a different slot. Nothing else about the diary changed, so my first thought was the new release. Can you check whether rolling back would help? We haven't tested an older build, so the version connection is just my guess."
+      },
+      "source_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "expected_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba"
+    },
+    {
+      "id": "752dcd4d-40a1-4b94-8b69-ac6afe3447d4",
+      "kind": "negation",
+      "report": {
+        "title": "Concurrent booking checks are fine; printed invoices are unreadable",
+        "description": "We tested concurrent bookings for the same therapist and start time, and we do NOT get two confirmed appointments. One patient succeeds and the other is asked to choose another slot, so this ticket isn't about double booking. Our complaint is the invoice print layout: the line-item text is tiny even on a full-size page. Please add a larger-font option so customers can read their charges without a magnifier."
+      },
+      "source_problem_id": "1d133047-b04d-4836-8583-b41e3e25b5ba",
+      "expected_problem_id": null
+    },
+    {
+      "id": "8435543a-fc18-4e68-98d6-4709a2c08da3",
+      "kind": "match",
+      "report": {
+        "title": "Weekly bookings end in December even when we select March",
+        "description": "At Fernquill Physiotherapy, I created a weekly Tuesday appointment series in TendrelStep from 18 November 2025 through 3 March 2026. It saved without any warning, but the last appointment on the calendar is 30 December. Every Tuesday in January, February, and March is missing. I checked the end date before saving and it definitely said 3 March. We can book those January appointments individually, so the dates themselves aren't blocked. It looks like the repeating bookings just stop at the end of the year instead of continuing to the date we selected."
+      },
+      "source_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "expected_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e"
+    },
+    {
+      "id": "9c631eee-c527-47f6-9ceb-238d9714e66f",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Thursday visits vanish once January arrives",
+        "description": "Told TendrelStep to put the same patient in the diary every Thursday, beginning 6 November and finishing 26 February. The confirmation looked normal. November and December have all the expected entries; January and February have none. The final entry is the last Thursday in December. Why did it treat New Year's Eve as the finish line when I picked February?"
+      },
+      "source_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "expected_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e"
+    },
+    {
+      "id": "2b237655-7b85-43df-9683-366381c6e3ae",
+      "kind": "missing_context",
+      "report": {
+        "title": "Nothing carries into January",
+        "description": "Our repeating visits are there through December, but nothing carries into January despite being set to continue until spring."
+      },
+      "source_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "expected_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e"
+    },
+    {
+      "id": "e69a4b8b-f468-4225-83c8-92b7f5710b33",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 4.18.2 seems to have broken bookings into next year",
+        "description": "I'm blaming the 4.18.2 update for this because that's when reception noticed it. We are preparing longer courses of treatment at Fernquill Physiotherapy, and the repeat-booking screen is accepting a finish date in February but only putting visits in the diary through December.\n\nMy test was a Thursday slot at 10:30, starting 6 November 2025 and ending 26 February 2026, with a repeat interval of one week. I saved it, got the usual confirmation, and moved on. When I opened February to check the patient's schedule, there was nothing there. January was empty too. Going backwards, the final booking I could find was 25 December. Yes, that is a holiday, but I deliberately left the test slot available so we could see exactly what was generated.\n\nThere wasn't a message saying some dates were skipped, and the room and practitioner both have availability after New Year. Adding one January visit by hand works. Running the repeat setup again with a different patient produces the same cutoff. A course wholly within February also works.\n\nOne slightly confusing detail: another receptionist found a booking confirmation captured before we installed 4.18.2. That one also had a February finish date, and its patient has no January visits either. I still suspect the update because we only started getting complaints this week, but I can't explain that older example.\n\nPlease check this before we send out the next batch of schedules. Patients think they have a continuing slot reserved, while our diary makes it look as if their treatment finishes in December. We have no easy way to identify everyone affected without opening each course and comparing the intended finish with the actual last visit."
+      },
+      "source_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "expected_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e"
+    },
+    {
+      "id": "255c31d7-446b-4c93-a3da-a347ba11366a",
+      "kind": "negation",
+      "report": {
+        "title": "Repeating bookings are fine; printed receipts are too tiny",
+        "description": "We checked the recurring appointments after the update: our weekly series crosses the calendar-year boundary correctly, and no occurrences are dropped after December 31. January and February are both present. The issue I actually need help with is printing payment receipts. The text is so small that patients struggle to read the amount and payment method, and I can't find a receipt font-size setting. Please don't change our booking setup; that's working."
+      },
+      "source_problem_id": "2ebdf9f2-37f6-4784-bf2e-bda8078e180e",
+      "expected_problem_id": null
+    },
+    {
+      "id": "b71b0ad5-26f3-484b-868e-9ce3bbd81935",
+      "kind": "match",
+      "report": {
+        "title": "Reception can see restricted note text in patient search",
+        "description": "Flagging a confidentiality issue in TendrelStep. Our reception staff cannot open a clinical note marked as restricted, which is what we expect, but they can still read the beginning of that same note in the patient-search results.\n\nWe checked this with a dummy patient rather than using anyone's actual treatment details. A therapist created a restricted note starting with 'Private test entry: discussion intended for treating therapist only.' We then signed out and signed back in with a reception-only account. Looking up the dummy patient brought back a result with that sentence underneath the patient's name. Clicking through to the note showed the access-denied message, so the restriction is clearly doing something once you try to open it.\n\nThe concerning part is that nobody needs to click through. The text is already visible in the result card. Our receptionist originally spotted this while trying to find a patient by surname and asked why a private treatment entry was appearing alongside the matching records.\n\nWe are on 4.8 and noticed this after the update. I don't know whether it happened before, because we only recently started using the restricted setting regularly. We also tried a fresh browser session in case it was leftover content from a therapist login, but the reception account still got the same preview.\n\nPlease treat this as a privacy issue rather than a request to give reception more access. We want them to find the patient and manage bookings without seeing any text from notes they aren't allowed to open. For now we've asked staff not to put sensitive details at the beginning, but that isn't a workable fix."
+      },
+      "source_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "expected_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0"
+    },
+    {
+      "id": "6fe968e6-1a75-4e8e-bbe3-25a10017de4e",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Front-desk lookup cards give away therapist-only text",
+        "description": "The desk-only login gets a little extract from confidential treatment writeups when finding a client. Selecting the entry gives a 'not allowed' screen, yet the opening sentence has already appeared on the matching card. We tested with made-up content and got the same result. Shouldn't that whole extract be absent for someone who isn't authorised to view the underlying entry?"
+      },
+      "source_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "expected_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0"
+    },
+    {
+      "id": "8aa94122-afc1-4f63-a9f3-971a358cc47f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Private text visible at front desk",
+        "description": "Reception is seeing snippets of private treatment notes in lookup results, despite being blocked from the notes themselves."
+      },
+      "source_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "expected_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0"
+    },
+    {
+      "id": "f2610159-927d-4824-b546-e6f2d45ddeab",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.9.2 seems to have exposed private note snippets",
+        "description": "I think the 4.9.2 update broke reception access. That's the version we installed yesterday, and today our desk staff noticed text from restricted clinical notes in patient-search previews. The full note still refuses to open under their accounts, but the opening lines are displayed below the patient's name before they click anything. We reproduced it using a test record and a reception-only login. Nobody changed that account's permissions. Can you check what changed in 4.9.2? The desk team shouldn't get a sneak peek at something the app then tells them they aren't permitted to view."
+      },
+      "source_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "expected_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0"
+    },
+    {
+      "id": "d9f20f19-87df-446c-a43b-6a0f804fc1a5",
+      "kind": "negation",
+      "report": {
+        "title": "Help drawer covers the booking controls",
+        "description": "The reception-role check is fine here: patient-search previews do not show the first lines of restricted clinical notes, and reception cannot open those notes either. That's not the issue I'm reporting. My complaint is that the in-app help drawer covers the booking form's bottom controls on our small desk monitor. It also has no visible close button at that window size, so staff have to widen the browser every time they accidentally open help."
+      },
+      "source_problem_id": "dcd00417-8e06-4151-b81d-c0c1522654d0",
+      "expected_problem_id": null
+    },
+    {
+      "id": "45a12176-4397-416e-a01f-c252b316ed27",
+      "kind": "match",
+      "report": {
+        "title": "Editing a home-exercise plan wipes the completion history",
+        "description": "Pasting this over from our clinic channel because we've now seen it with three patients at Mosswick Physio.\n\nOur patient Nella Brindle had been ticking off her exercises every day since Monday. This morning I opened her existing home-exercise plan, changed the repetitions on the calf raises, and added one balance exercise. I left the other four exercises in place. After saving, the completion ticks from earlier in the week were gone for those four exercises too. The patient app and our clinician view now make it look like she hasn't done any of them.\n\nShe showed me a screenshot taken before the appointment, so this isn't just her remembering incorrectly. It had several days marked complete. The exercises are still there with the same names, and I haven't discharged her or created a separate plan.\n\nI tried it with our fictional training patient as well: mark two exercises complete, open the plan, change the instructions on one, then save. Both lose their earlier ticks, including the one I didn't touch. Ticking something off after the change works, but that only gives us a new mark; it doesn't bring back the earlier ones.\n\nWe need to adjust programmes as people progress without losing the record of what they already did. For now I've asked the team not to make changes midweek, which isn't a workable long-term approach. Can you check whether those earlier completions are recoverable?"
+      },
+      "source_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "expected_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386"
+    },
+    {
+      "id": "5745b5bc-144b-4052-acf9-3eeb00b36a28",
+      "kind": "paraphrase",
+      "report": {
+        "title": "One small routine tweak makes last week's green badges vanish",
+        "description": "A patient had five days of green 'done' badges beside her movements. I increased the hold time for just one movement in her routine and hit Save. When we opened the calendar again, every day before today looked blank, even beside movements I hadn't touched. The patient thought we'd thrown away all her hard work. Can we adjust the instructions without making her previous effort disappear?"
+      },
+      "source_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "expected_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386"
+    },
+    {
+      "id": "35f1b217-9554-48fc-8f4e-9b9627e84037",
+      "kind": "missing_context",
+      "report": {
+        "title": "Old ticks gone after a plan change",
+        "description": "The exercises we kept now have no past completion ticks after we changed the plan."
+      },
+      "source_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "expected_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386"
+    },
+    {
+      "id": "208a2d58-bd8b-409a-bf8c-f024e755eb97",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.2 is clearing our patients' exercise progress",
+        "description": "I think the TendrelStep 6.8.2 release has broken this. Since we noticed the new release banner, modifying a patient's home-exercise plan makes their earlier completed days disappear.\n\nToday I only changed the sets on one exercise. Two other exercises stayed exactly as they were, but their completion ticks vanished as well. Yesterday's work showed up before I saved and was blank afterwards. The patient can record today's exercises normally, so it seems specifically to affect anything logged before the update to the plan.\n\nPlease roll back whatever changed in 6.8.2. We use those marks during reviews and now can't tell who actually missed a day."
+      },
+      "source_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "expected_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386"
+    },
+    {
+      "id": "00c4b7db-d955-4ee5-8690-3bc882f9291d",
+      "kind": "negation",
+      "report": {
+        "title": "Exercise history is fine; favourites need alphabetical sorting",
+        "description": "To be clear, editing a home-exercise plan does NOT reset adherence history for us. Previously recorded completion ticks stay visible, including for exercises that remain in the plan. That part works fine.\n\nMy complaint is about the exercise-library favourites list: it stays in the order we added items, and there's no way to sort it alphabetically. We've got dozens of favourites now, so finding one during an appointment means scrolling through the whole list. Could we get an A–Z option?"
+      },
+      "source_problem_id": "e63251ed-fccc-41ee-978f-bd281409d386",
+      "expected_problem_id": null
+    },
+    {
+      "id": "1dfb5531-f224-4018-a66c-ebd22174a464",
+      "kind": "match",
+      "report": {
+        "title": "Waitlist sends follow-up offers to people needing an initial assessment",
+        "description": "We added someone to the TendrelStep waitlist for a 60-minute initial assessment with their preferred therapist. A 20-minute follow-up slot opened within their available hours, and they received an automated offer for it. The therapist and time were right, but the appointment type was wrong. Reception had to explain that we couldn't fit their first assessment into that gap. Can the waitlist check the requested appointment type before sending an offer?"
+      },
+      "source_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "expected_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51"
+    },
+    {
+      "id": "833fc806-ae41-4609-801d-12477f5d3461",
+      "kind": "paraphrase",
+      "report": {
+        "title": "First-visit queue is picking up return-visit gaps",
+        "description": "A new client joined our cancellation queue for a one-hour intake. When a twenty-minute return visit came free, TendrelStep texted them a link to take it. It was with the right practitioner and inside the hours they'd said they could come, but it wasn't the service they'd put their name down for. We need the queue to distinguish a first visit from a return visit, not just find an opening in the diary."
+      },
+      "source_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "expected_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51"
+    },
+    {
+      "id": "cddbdcc2-fa2e-4246-a989-e2e9bbe32070",
+      "kind": "missing_context",
+      "report": {
+        "title": "Wrong kind of visit in waitlist text",
+        "description": "Someone waiting for a full first assessment got a waitlist offer for a brief follow-up instead."
+      },
+      "source_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "expected_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51"
+    },
+    {
+      "id": "5713f8f0-9109-42ba-bf72-75628988affd",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 5.8.14 seems to have broken waitlist appointment types",
+        "description": "Flagging this as a possible regression in TendrelStep build 5.8.14, which we installed yesterday. Reception thinks the new release has stopped respecting the visit type when it sends cancellation offers.\n\nThis morning we had a new patient on the waitlist for a 60-minute initial assessment. Their entry specified that service, the clinician they wanted, and weekday mornings. An existing patient's 15-minute follow-up was cancelled with the same clinician at 10:15. The new patient immediately received a text inviting them to take that opening.\n\nThey called us because the link described a follow-up, and they have never attended our clinic before. We checked the waitlist entry rather than relying on what they'd told us: it still says initial assessment. Nobody at the desk changed it or manually sent the invitation. The clinician and the morning window both line up, so it looks as though those parts are being checked while the service selection isn't.\n\nI initially blamed yesterday's build because that's when we started paying attention to this. However, another receptionist found a saved message from last week, before the update, where somebody needing an initial assessment was also sent a short follow-up opening. So perhaps the release timing is a coincidence.\n\nFor now we're checking every cancellation manually before letting the queue run. We can't ask a clinician to squeeze a full assessment into fifteen minutes, and the texts make clients think we've found them a suitable visit."
+      },
+      "source_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "expected_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51"
+    },
+    {
+      "id": "8da0837c-cabd-4cfe-9d22-dd4a9ade3a2b",
+      "kind": "negation",
+      "report": {
+        "title": "Waitlist is fine; receipt list needs amount sorting",
+        "description": "The automated waitlist offers are working correctly for us now. Patients requesting a long initial assessment are not receiving short follow-up slots, and the requested appointment type is being respected alongside therapist and availability. This ticket is about the receipt screen instead: we can't sort receipts by total amount. Reception needs to review the largest payments first, but clicking the Amount heading does nothing and there's no sort option in the menu."
+      },
+      "source_problem_id": "9e0c92e9-672b-466a-b85d-3b9141efff51",
+      "expected_problem_id": null
+    },
+    {
+      "id": "5f7bb1f6-a4f4-4e1a-b021-0d2e1b6b7f24",
+      "kind": "match",
+      "report": {
+        "title": "Discharged patients still included in active caseload",
+        "description": "Our TendrelStep dashboard says therapist Nelvi has 38 active patients, but nine of those have already been discharged. Their individual records all show Discharged, with the correct end dates, so reception hasn't forgotten to finish their episodes.\n\nWe tried archiving one of those nine and the dashboard number immediately dropped to 37. Discharging another patient without archiving them did not reduce the number at all.\n\nWe don't normally archive people as soon as treatment ends because we still need easy access for follow-up correspondence. Surely a discharged patient shouldn't count toward a therapist's current workload just because their record hasn't been archived? At the moment we have to keep a separate tally before deciding who can take new referrals."
+      },
+      "source_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "expected_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1"
+    },
+    {
+      "id": "5fbcafa3-af66-442a-a7b9-93b21fb0fce8",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Finished care still pads the workload tiles",
+        "description": "The team overview gives Osvella 24 people to look after. Six have finished treatment, and opening each chart shows “Care complete.” That leaves 18 who are actually coming back. Moving one finished chart into long-term storage brought the tile down to 23; marking someone else's care complete left it unchanged. We need the allocation screen to reflect who still needs appointments, not everyone whose chart is still on the everyday shelf."
+      },
+      "source_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "expected_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1"
+    },
+    {
+      "id": "060c3dd5-8585-487a-92a2-e45f559b0294",
+      "kind": "missing_context",
+      "report": {
+        "title": "Finished patients still in our workload number",
+        "description": "The active caseload figure still includes people we've discharged but haven't archived."
+      },
+      "source_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "expected_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1"
+    },
+    {
+      "id": "82c168c6-ed5e-4a38-a3c9-bb4109f538a6",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.4.2 seems to have broken the caseload totals",
+        "description": "Posting this here before our next capacity meeting because I think TendrelStep 6.4.2 has introduced a counting issue. We installed that release on Monday, and this is the first week I've noticed the discrepancy. I can't say whether anyone checked the same figures before the update, but the timing looks suspicious.\n\nAt Marnelith Physiotherapy, the overview gives Quenra an active caseload of 46. We went through her list together and found 12 people whose treatment has ended. Every one of those records says Discharged. The dates are right, and nobody has reopened their care. There are no future appointments for them either.\n\nWe initially thought the page was showing yesterday's figures, so we left it overnight. This morning it still said 46. Refreshing and having another staff member open the overview gave the same result.\n\nReception then archived two of the discharged records as a test. The figure changed to 44 straight away. We discharged a different person after their final session, leaving their record unarchived, and the figure stayed at 44. So the discharge label seems to save properly; it just doesn't affect the number we're using for workload planning.\n\nPlease don't tell us to archive everyone as a workaround. Some finished patients still have correspondence pending, and our staff want those records readily available. The two test records can stay archived, but doing that for everyone would change our normal workflow.\n\nCould someone check whether the new release changed this screen? We're being asked to distribute new referrals using these totals, and Quenra looks much busier than she really is."
+      },
+      "source_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "expected_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1"
+    },
+    {
+      "id": "cadaa712-fab7-459f-a95c-3f036e7956fc",
+      "kind": "negation",
+      "report": {
+        "title": "Caseload counts are fine; invoice footer is getting cut off",
+        "description": "Just to separate this from the earlier dashboard discussion: our active caseload counts are correct. Discharged patients are not inflating the totals, and we aren't having to manually archive them to make the numbers right.\n\nMy ticket is about the payment instructions at the bottom of printed invoices. The last two lines are cut off on paper even though they're visible in the preview. We shortened the footer and it prints, but we'd like to keep the full instructions. This happens with ordinary invoices, not insurer claims or treatment-plan PDFs."
+      },
+      "source_problem_id": "a28f2afd-7f2e-48a4-99e4-d6bd20281cb1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "eff7ceaf-854a-462d-bf64-04eeca2e1ac3",
+      "kind": "match",
+      "report": {
+        "title": "Patient signature missing from signed treatment-plan PDF",
+        "description": "Support ticket from reception: We need help with the treatment-plan PDFs we download from patient records in TendrelStep. The patient has signed the plan, and the record shows it as signed with the correct signature timestamp, but their signature image is missing from the downloaded PDF. The clinician's signature is still there.\n\nWe noticed this when preparing a copy for someone who wanted to take their plan home. The patient signature area was empty, so reception assumed we had forgotten to collect it. We reopened the record and checked: the signed status was present, the date and time matched the appointment, and we could see the patient's handwriting in the app.\n\nWe downloaded the document again from the same record. Same result. We also opened the file on another reception computer to rule out a display issue. The patient signature area was still blank, while the clinician signature appeared normally. This is not a case where the whole signing section has disappeared; the labels and signing details remain visible.\n\nWe have now checked two other recently completed plans and found the same discrepancy. Please don't ask us to have everyone sign again without first checking the document generation. As far as we can tell, the signatures were collected successfully and are still available in the records.\n\nFor now we have stopped handing out these PDFs because they make completed plans look incomplete. Can you investigate why the patient signature doesn't carry through and confirm whether we can regenerate the existing plans once it is fixed?"
+      },
+      "source_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "expected_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749"
+    },
+    {
+      "id": "75794b69-a73c-472c-8865-727413ff170a",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Take-home care agreement loses the client's handwriting",
+        "description": "The person receiving care draws their name on the tablet and we can still see that scribble in TendrelStep afterward. The screen says the agreement is complete and shows when they accepted it. But when we save the printable copy to send home, the space for their handwritten mark is empty. Our physio's own mark comes through normally. It looks like the take-home copy isn't picking up what the client drew, even though the app clearly has it."
+      },
+      "source_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "expected_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749"
+    },
+    {
+      "id": "3563c94c-9513-4de7-b208-2aca3ca12ed9",
+      "kind": "missing_context",
+      "report": {
+        "title": "Only the patient signature is blank",
+        "description": "Treatment-plan PDF says the patient signed and shows when, but their signature is blank; the clinician's is there."
+      },
+      "source_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "expected_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749"
+    },
+    {
+      "id": "6f9425be-1874-48b1-ae7d-2ff4b0c7be3c",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Think 5.14.2 broke the signed plan downloads",
+        "description": "Flagging this as a possible regression in TendrelStep 5.14.2 because that's the release number we noticed when this started. Our treatment plans still show the patient as signed, complete with a signature timestamp, and their signature is visible when we open the record. Download the PDF, though, and the patient's signature box is empty. The treating physio's signature prints correctly. I tried downloading an older signed plan as well and got the same blank patient box. My guess is the latest release changed the layout, but that's just based on when reception first spotted it."
+      },
+      "source_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "expected_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749"
+    },
+    {
+      "id": "3b08ef6e-1f61-4bc7-95e0-9d088f42cb7d",
+      "kind": "negation",
+      "report": {
+        "title": "Signed PDFs are fine; emailed copy has an uneditable subject",
+        "description": "The treatment-plan PDF is not missing the patient's signature here. Both patient and clinician signatures appear correctly, along with the signed status and signature timestamp. Our complaint is about sending that PDF: TendrelStep gives the outgoing email the subject 'Your documents' and provides no way to customize it. We'd like to use 'Your treatment plan' so clients can find it later. The attachment itself is complete and looks fine."
+      },
+      "source_problem_id": "cf244b8d-2e37-4456-8f49-b4cb343b0749",
+      "expected_problem_id": null
+    },
+    {
+      "id": "d164559c-8342-4ce8-9ba8-8d2e3ff1f7de",
+      "kind": "match",
+      "report": {
+        "title": "Can't give our two locations different logos",
+        "description": "We run Mossquay Physio and Brindlefen Rehab as two locations under the same TendrelStep clinic account. They share reception staff and patient records, but each location has its own name and logo. Patients should see the appropriate logo on that location's online booking page and in the reminder header.\n\nYesterday I opened the Mossquay location, went into settings, and uploaded its green logo. The preview looked right, so I saved it. Our receptionist then checked the Brindlefen booking link and found the same green logo there too. Brindlefen should have the orange one. I uploaded the orange logo while working from Brindlefen, and now Mossquay shows orange as well.\n\nI initially thought I'd accidentally selected both locations. I tried again with only Mossquay selected and had another staff member check the public pages from a separate browser. Same result: whichever logo we upload last appears for both sites. The reminder previews also use that last uploaded logo, even when the appointment belongs to the other location.\n\nI've checked the location details screen and the booking-page options, but I can't find anywhere to choose a logo for an individual location. The only upload field seems to apply to the entire clinic account. There isn't an error message; everything saves successfully, just much more broadly than we intended.\n\nIs there a location-specific setting we're missing? We'd rather not split into separate accounts because our team needs the shared diary and records. For now we've put up a plain group logo, but neither branch wants that as the permanent solution. We need each location's booking page and reminder header to keep its own logo without replacing the other one."
+      },
+      "source_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "expected_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2"
+    },
+    {
+      "id": "f93ad78a-d0ff-4445-8b05-7ea4dc7c835e",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Both venues keep inheriting the same emblem",
+        "description": "Our two practices trade under separate identities but share one TendrelStep workspace. I put the blue bird artwork on the east site's reservation screen, and the west site's screen immediately picked it up too. Replacing it with the west site's sun symbol made the east site show the sun instead. The banners above the appointment texts follow along as well. I can't find an independent artwork picker for either venue. We need the bird for one and the sun for the other, not a single image shared between them."
+      },
+      "source_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "expected_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2"
+    },
+    {
+      "id": "790508fb-c0ed-4edd-86c8-09bb3bfa9570",
+      "kind": "missing_context",
+      "report": {
+        "title": "Branch logos won't stay separate",
+        "description": "Each branch needs its own logo, but we only seem to get one shared choice for all of them."
+      },
+      "source_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "expected_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2"
+    },
+    {
+      "id": "fa0732a1-76f7-4583-bf10-627b4f283d02",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 8.14.2 seems to have tied our site logos together",
+        "description": "Flagging this as an 8.14.2 regression because that's the release we were on when we noticed it. We just added our second location and uploaded its logo, which also replaced the logo on the original location's booking page. Switching the original back replaces the new site's logo too, including in reminder headers. I expected the location selector to scope the upload, but there's no separate logo field in either location's details. Can someone check the release? We didn't try separate site logos before this week, so I can't confirm they ever worked independently."
+      },
+      "source_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "expected_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2"
+    },
+    {
+      "id": "03d4fd45-4a9e-46db-b0f7-1e0c00c13c32",
+      "kind": "negation",
+      "report": {
+        "title": "Logo setup is fine; receipt list sorting is the issue",
+        "description": "The location-specific logo settings are working fine for us now. Changing one location's logo does not change it everywhere, and each booking page and reminder header shows the right branding. This ticket is about the payment receipt list: when I sort by receipt number, it puts R-100 before R-20. Nothing is missing and the amounts are correct, but reception has to hunt through the list because the numbers aren't ordered numerically."
+      },
+      "source_problem_id": "e5223e82-b3c8-4952-a98d-6eda833bd7c2",
+      "expected_problem_id": null
+    },
+    {
+      "id": "e0c45ce2-e4ce-4d69-86f6-199544a4b591",
+      "kind": "no_match",
+      "report": {
+        "title": "Tax is a penny higher on invoices with small extras",
+        "description": "Our bookkeeper spotted this on an invoice with three taxable consumables at 0.11 each, taxed at 5%. TendrelStep shows 0.03 tax, but calculating 5% on the 0.33 subtotal gives 0.02 after rounding. It looks like each item's tax gets rounded before being added together. We checked for an invoice setting to calculate tax on the subtotal instead but couldn't find one. These tiny differences are making our daily reconciliation awkward."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Invoice tax totals round each line instead of the subtotal",
+        "summary": "Invoices containing several low-value taxable items can show a tax total one minor currency unit higher than the clinic's subtotal-based calculation. The invoice calculator rounds tax per line and offers no subtotal-rounding setting."
+      }
+    },
+    {
+      "id": "c546ad9b-9152-4bb9-9a6d-2ac56da4b7f4",
+      "kind": "no_match",
+      "report": {
+        "title": "Refund completed, but pack session still missing",
+        "description": "Refunded a cancelled visit paid from a six-session pack: the payment value came back, but the pack stayed at five remaining instead of returning to six. Had to add the session back manually."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Refunds do not replenish prepaid session balances",
+        "summary": "Refunding an appointment paid from a prepaid session pack returns the payment value but leaves the pack's remaining-session count unchanged. Staff must manually restore the consumed session."
+      }
+    },
+    {
+      "id": "08101e58-2417-4046-9ae7-385eadd186bb",
+      "kind": "no_match",
+      "report": {
+        "title": "Emergency contact vanished when we merged duplicate records",
+        "description": "Ticket from reception at Brindlefern Physio: We had two records for the same patient. The older one had the correct appointment history, so we kept that as the main record. Its emergency-contact section was blank. The newer duplicate had the patient's emergency contact, including their relationship and contact details.\n\nAfter the merge, the appointments were where we expected them, but the emergency-contact section was still completely blank. We only noticed because the clinician checked it before the next visit. Reception had to ask the patient for those details again.\n\nIs there a way to recover the contact from the merged record? We expected an empty section in the retained record to pick up the information from the other one, not lose it."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Emergency contact removed during patient-record merge",
+        "summary": "Merging a duplicate patient into a primary record with an empty emergency-contact section discards the duplicate's emergency contact. The merge logic treats an empty primary value as authoritative rather than copying the populated value."
+      }
+    },
+    {
+      "id": "7585ddd4-2f88-4c03-a9b8-e6207a71d129",
+      "kind": "no_match",
+      "report": {
+        "title": "Where can patients request a copy of their records?",
+        "description": "A patient asked how to request their treatment notes through the portal. I logged in with our test patient and couldn't find a request form, submission button, or anywhere to see whether a request is pending. At the moment we're telling people to contact reception, then tracking requests in a separate spreadsheet. Are we overlooking something, or is this not available in TendrelStep?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Patient portal lacks self-service access-request submission",
+        "summary": "Patients cannot submit a record-access request from the portal. Clinics must receive and track these requests outside the app because no request form or status view exists."
+      }
+    },
+    {
+      "id": "6fec1a02-f963-47b9-b9b9-5c5455cc3ef2",
+      "kind": "no_match",
+      "report": {
+        "title": "Can't keyboard out of therapist filter",
+        "description": "Open the calendar's therapist filter using the keyboard and focus gets stuck inside it—Tab just cycles through the menu, Escape does nothing, and someone has to click it closed."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Keyboard focus becomes trapped in the calendar filter menu",
+        "summary": "Keyboard-only staff cannot leave the therapist filter menu using Tab or Escape once it is expanded. Its focus trap remains active until a pointer user closes the menu."
+      }
+    },
+    {
+      "id": "711f62e5-b206-4027-9f7c-cf6793e147b7",
+      "kind": "no_match",
+      "report": {
+        "title": "Room kiosk is named on every audit entry",
+        "description": "We need help understanding the audit history for our shared treatment-room device.\n\nOur clinicians use the same kiosk between appointments. Each person unlocks it with their own credentials before opening a patient record. The screen shows the clinician's name after unlocking, so staff have been assuming that edits made during that session would be recorded against that person.\n\nYesterday we reviewed a change to a treatment note and couldn't tell who had made it. The audit entry named the room kiosk account, not the clinician. We checked several other entries and found the same thing for note edits and changes to exercise plans.\n\nThis morning we tested it deliberately with two clinicians. The first unlocked the kiosk, changed a note in our test patient record, and locked it again. The second then unlocked it and made a different change. Both changes appeared in the audit history under the same kiosk account. Neither clinician's name appeared on those entries, even though their names were visible on the device while they worked.\n\nWe can sometimes work out who was in the room from the appointment calendar, but that is not reliable when someone covers a colleague or finishes documentation later. We need to know who actually performed each action, rather than which device they happened to use.\n\nIs there a configuration we're missing? If not, please advise whether staff should stop using the shared kiosk for record changes until individual attribution is available. We'd also like to know whether the earlier entries can be clarified without guessing from the rota."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Audit events identify a shared kiosk rather than the clinician",
+        "summary": "Actions performed after a clinician unlocks a shared treatment-room kiosk are attributed to the kiosk account in the audit log. The unlock identity is not passed to the audit-event writer."
+      }
+    },
+    {
+      "id": "059e4290-d7a5-4f87-9968-caea256fa30d",
+      "kind": "no_match",
+      "report": {
+        "title": "Exercise steps stay in the clinic language",
+        "description": "A patient switched the home-exercise app to Spanish, which is offered in the language picker. The menus changed, but the written instructions under every assigned exercise stayed in English, our clinic default. They closed and reopened the app, and we reassigned one exercise to check, but nothing changed. The patient can navigate the app now but still can't read the exercise steps."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Exercise instructions ignore the patient's selected language",
+        "summary": "Text instructions in the home-exercise app remain in the clinic's default language after a patient chooses another supported language. The instruction service does not receive the patient's language preference."
+      }
+    },
+    {
+      "id": "b0d86aaf-0cff-4576-a65b-6426130b9db1",
+      "kind": "no_match",
+      "report": {
+        "title": "Minus quantity adds stock through the usage log",
+        "description": "I accidentally entered -3 instead of 3 when recording elastic wrap used during a session. TendrelStep accepted it and our available stock went from 20 to 23. There wasn't a stock-adjustment entry explaining the increase, just the usage row with a negative number. I tried the same thing on a test item and it also saved without a warning. Can negative quantities be blocked here? Reception could unintentionally inflate stock while trying to log what was used."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Stock usage accepts negative quantities",
+        "summary": "The consumables log allows staff to record a negative quantity used, which increases available stock without a corresponding stock-adjustment event. Quantity validation checks only that the input is numeric."
+      }
+    },
+    {
+      "id": "ba7f94f8-bba3-4027-b028-b2d0e0c76ea3",
+      "kind": "no_match",
+      "report": {
+        "title": "Cancelled bookings still showing on subscribed calendar",
+        "description": "Our clinic manager subscribes to the TendrelStep appointment feed in a separate calendar app. New appointments show up fine, but cancelled ones keep sitting there as if they're still booked.\n\nWe cancelled a test appointment yesterday and refreshed the subscription several times. It disappeared from TendrelStep but remained on the subscribed calendar. A newly created test appointment came through during the same period, so the subscription is still updating. Starting a fresh subscription doesn't show the cancelled appointment; it's the existing calendar that won't clear it. Staff are now checking two calendars and getting conflicting availability."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "External calendar events lack cancellation updates",
+        "summary": "Appointments added through the external-calendar subscription remain on subscribers' calendars after cancellation in TendrelStep. The feed removes the event instead of emitting a cancellation entry that subscribers can process."
+      }
+    },
+    {
+      "id": "35475d3e-2930-4055-b7b1-cfa358650a6f",
+      "kind": "no_match",
+      "report": {
+        "title": "One insurer deposit can't be matched to multiple claims",
+        "description": "We received one remittance from our fictional test insurer, Vellune Cover, paying four claims together. The total equals the four outstanding claim amounts exactly, but reconciliation only lets me choose one claim for the payment. I can't select the other three or allocate portions of the same deposit across them.\n\nSupport workaround last time was to split the remittance into separate payment entries and match each one individually. That gets the claims cleared, but it turns one deposit into several entries and adds a lot of manual checking. We regularly receive these bundled payments. Can the matching screen handle one remittance against several claims without us breaking it up first?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Insurer remittance matching cannot handle combined payments",
+        "summary": "A remittance covering several claims cannot be automatically matched to those claims. The reconciliation screen supports only one payment-to-one-claim matches, requiring staff to split the remittance manually."
+      }
+    }
+  ]
+}

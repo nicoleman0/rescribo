@@ -14,6 +14,7 @@ dependencies = [
   "slack-sdk>=3.36,<4",
   "httpx>=0.28,<1",
   "cryptography>=46,<49",
+  "jsonschema>=4.23,<5",
 ]
 
 [dependency-groups]
@@ -26,6 +27,7 @@ dev = [
   "django-stubs[compatible-mypy]>=5.2,<5.3",
   "djangorestframework-stubs>=3.16,<4",
   "types-redis>=4.6,<5",
+  "types-jsonschema>=4.23,<5",
 ]
 
 [tool.uv]

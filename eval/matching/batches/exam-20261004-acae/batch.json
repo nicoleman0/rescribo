@@ -1,0 +1,1553 @@
+{
+  "batch_id": "exam-20261004-acae",
+  "split": "exam",
+  "data_source": "synthetic",
+  "generator": {
+    "provider": "openrouter",
+    "model": "openai/gpt-6.1-sol",
+    "prompt_version": "5e5590423407",
+    "created_at": "2026-10-04T12:38:06+00:00"
+  },
+  "problems": [
+    {
+      "id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "title": "Payroll export rejects fractional tip amounts",
+      "summary": "Payroll exports fail with 'Unable to complete export' when a timesheet contains tip amounts with more than two decimal places. Introduced in release 4.8, the export validator checks raw calculated tips instead of rounding them to the payroll format.",
+      "confusable_with": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "linked_reports": [
+        {
+          "id": "6edc1152-8c04-4e57-ab5e-f175353bda0f",
+          "title": "Export fails only when pooled tips are included",
+          "description": "Support paste — Brindleplume Kitchens: 'Unable to complete export' on the last pay period. Hours-only export works. Adding pooled tips makes it fail again. One employee has a calculated tip allocation of 18.375; manually changing it to 18.38 lets the export finish."
+        },
+        {
+          "id": "d2eed920-face-42af-a35d-1c8043f3b7c2",
+          "title": "Friday payroll blocked after 4.8",
+          "description": "AM handoff: Coppernest Canteens upgraded this week and now payroll export fails without identifying a row. We tested a copy of the period with tips removed and it downloaded immediately. Customer needs the tips included, not a workaround that leaves them out."
+        }
+      ]
+    },
+    {
+      "id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "title": "Payroll export hides expired connector authorization",
+      "summary": "Payroll exports fail with 'Unable to complete export' after the external payroll connector's authorization expires or is revoked. The connector error is incorrectly converted into a generic export failure, and the settings page continues to show 'Connected.'",
+      "confusable_with": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "linked_reports": [
+        {
+          "id": "d56d6ba5-d9b9-4ab6-846a-3a93b2fd5fc7",
+          "title": "Connected payroll account cannot export any period",
+          "description": "Ticket from Mothglass Dining: every payroll export fails, including an empty test period. Settings still says Connected. Disconnecting and authorizing the fictional WageWisp connector again fixed it. Their payroll administrator had revoked access during a permissions cleanup."
+        }
+      ]
+    },
+    {
+      "id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "title": "Clock-in geofence uses the group's headquarters coordinates",
+      "summary": "Employees at newly cloned locations receive 'You are outside the clock-in area' while standing inside the restaurant. The location-cloning flow copies headquarters coordinates rather than the new site's saved map pin; this began in version 4.6.",
+      "confusable_with": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "linked_reports": [
+        {
+          "id": "4146b988-ff8d-4583-b608-2dd3b21a6cad",
+          "title": "New site thinks everyone is at the wrong restaurant",
+          "description": "Support: Fernspoon Collective cloned its fourth location from the headquarters setup. Mobile clock-in says everyone is outside the area. Map pin on the location settings screen looks correct, but the distance shown in the clock-in diagnostic is the distance to headquarters."
+        },
+        {
+          "id": "7a1788ae-84d0-4263-90e0-ec36f59ddad2",
+          "title": "Whole opening team blocked by outside-area warning",
+          "description": "Sales escalation — Thimbleoak Tables opened a new site yesterday. All staff were on the premises and all got 'You are outside the clock-in area.' Existing sites are fine. Recreating the new site from scratch instead of cloning allowed a test clock-in."
+        }
+      ]
+    },
+    {
+      "id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "title": "Mobile clock-in retains an old geofence radius",
+      "summary": "Employees receive 'You are outside the clock-in area' after a manager enlarges the permitted radius. The mobile app caches the old radius until sign-out; version 4.9 refreshes it on app launch but still misses changes made while the app remains open.",
+      "confusable_with": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "linked_reports": [
+        {
+          "id": "dfa7bd35-2324-41c3-8b8a-9d40e475a17b",
+          "title": "Radius increase not reaching employees already signed in",
+          "description": "Ticket paste: manager at Velvetladle Houses expanded the clock-in area to include the rear staff entrance. A fresh login works there. People who had the app open before the change still get the outside-area message. Signing out and back in fixes each phone."
+        }
+      ]
+    },
+    {
+      "id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "title": "Accepted shift swaps retain outdated role eligibility",
+      "summary": "A shift swap stays at 'Accepted — awaiting approval' even when automatic approval is enabled and both employees now have the required role. The approval worker uses an eligibility snapshot from when the offer was created and does not refresh it after role assignments change.",
+      "confusable_with": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "linked_reports": [
+        {
+          "id": "86663d96-46c5-4f62-aefb-c77658ca1a70",
+          "title": "Training completed but accepted swap still pending",
+          "description": "AM note — Pebblemint Eateries: employee was added to the grill role this morning, then accepted a swap offered yesterday. It is stuck awaiting approval despite auto-approval being on. A brand-new offer between the same two people went through."
+        },
+        {
+          "id": "a0095afa-eacd-4b11-91e5-d14cb15f9ab1",
+          "title": "Old swap offers ignore new qualifications",
+          "description": "Support reproduction from Lanternroot Supper Rooms: role change is visible on both profiles. Existing accepted swaps stay pending; canceling and reoffering the same shifts resolves it. No manager approval requirement is configured for this location."
+        }
+      ]
+    },
+    {
+      "id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "title": "Swap approval setting silently resets during location edits",
+      "summary": "Accepted shift swaps unexpectedly remain at 'Accepted — awaiting approval' after a manager edits a location. The location update endpoint resets automatic swap approval to off when the request omits that setting, while the open settings screen still displays its previous value.",
+      "confusable_with": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "linked_reports": [
+        {
+          "id": "8c69f11d-45fd-4d04-a365-84557eced8a1",
+          "title": "Swaps stopped auto-approving after address correction",
+          "description": "Support handoff: Cinderpetal Dining corrected a location's mailing address and then every accepted swap started waiting for approval. Both employees already had the right roles before their offers were created. Reloading settings showed auto-approval off, although the manager's original tab still showed it on."
+        }
+      ]
+    },
+    {
+      "id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "title": "Overnight shifts disappear from the next day's schedule",
+      "summary": "Shifts crossing midnight are missing when employees open the schedule for the day on which those shifts end. The daily view selects shifts only by start date rather than including shifts overlapping the selected day; the weekly view still shows them.",
+      "confusable_with": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "linked_reports": [
+        {
+          "id": "d0d82d4b-d5d0-460b-abe9-371bfb7a3539",
+          "title": "Closing shift missing on Tuesday mobile view",
+          "description": "From Hollowacorn Kitchens: Monday 22:00–Tuesday 02:00 is visible in the weekly schedule but missing when the employee taps Tuesday. They thought the manager had deleted it. Same result on every phone tested."
+        }
+      ]
+    },
+    {
+      "id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "title": "Concurrent publishing omits shifts from employee schedules",
+      "summary": "Some published shifts are missing from employee schedules even though managers see them as published. If two managers publish the same week's changes simultaneously, one publication delta can overwrite the other in the employee schedule index; version 4.7 reduced but did not eliminate the race.",
+      "confusable_with": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "linked_reports": [
+        {
+          "id": "7ca9f892-4ee0-41cc-b0df-eff7596dbecc",
+          "title": "Managers see shifts that staff cannot see",
+          "description": "Escalation from Saffronmoss Rooms: two managers published different sections at almost the same time. Six daytime shifts are marked published in the manager view but absent from both daily and weekly employee views. Unpublish/re-publish by one manager restored them."
+        },
+        {
+          "id": "592c6215-2fd7-423e-bdc7-82a5e5593885",
+          "title": "Intermittent missing published shifts during weekly release",
+          "description": "Account notes: Fablefern Food Halls has two schedulers, one for kitchen and one for floor staff. Both finish their edits before the Monday schedule release and usually press Publish within a few seconds of each other. Last week several floor shifts vanished from employee schedules, while the kitchen shifts appeared normally. This week the reverse happened. The managers can still see every affected shift, with a published badge and the correct employee assigned. The missing shifts are ordinary afternoon shifts, not overnight shifts, and changing the day filter does not bring them back. Employees checked the web view as well as the mobile app, so this does not seem limited to phones. Support asked one manager to unpublish and publish the affected shifts while the other manager stayed out of the editor; all of them appeared immediately. We also tried refreshing an employee session before republishing, with no effect. Customer says it never happened when only one person handled publishing. They can coordinate a single publisher temporarily, but that is awkward because the two teams approve their schedules separately. Please keep the distinction between the manager's published state and the employee-visible schedule in the investigation."
+        }
+      ]
+    },
+    {
+      "id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "title": "Cross-site transfers double-count overlapping time",
+      "summary": "Weekly overtime totals are inflated when an employee transfers between locations during an open time entry. The transfer creates a second segment without closing the first, so the overtime calculator counts their overlapping minutes twice.",
+      "confusable_with": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "linked_reports": [
+        {
+          "id": "0527a365-1b8e-4578-bb58-ac1f0b4430af",
+          "title": "Overtime jumps after mid-shift location transfer",
+          "description": "Support — Willowcrust Taverns: employee worked 39 hours but summary shows 42, including two overtime hours. On Thursday they switched sites at 15:00. Detail has the first site running until 18:00 and the second running from 15:00 to 18:00."
+        }
+      ]
+    },
+    {
+      "id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "title": "Paid breaks counted twice in overtime totals",
+      "summary": "Weekly overtime totals are inflated for employees taking paid breaks. Starting in release 4.8, the calculator adds paid-break duration to gross shift duration even though those minutes are already included; individual time entries display the correct total.",
+      "confusable_with": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "linked_reports": [
+        {
+          "id": "56817706-373e-42e2-a821-cc13cd2a4986",
+          "title": "Overtime excess equals the week's paid breaks",
+          "description": "AM paste: Moonthistle Mess Halls sees 41.5 hours in the weekly total versus 39.5 when they add the entries. Employee stayed at one location all week. There are exactly two hours of paid breaks. Removing the paid-break labels from a test copy removes the extra two hours."
+        },
+        {
+          "id": "5611ee6c-22f5-4e13-ba0f-a144dee2ca71",
+          "title": "Single-site team gets unexpected overtime after upgrade",
+          "description": "Ticket: overtime started looking high immediately after 4.8. No overlapping punches or site transfers. Only staff with paid breaks are affected; unpaid breaks calculate correctly."
+        }
+      ]
+    },
+    {
+      "id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "title": "Reinstalled mobile apps stop receiving shift alerts",
+      "summary": "Shift-change push notifications do not arrive after an employee reinstalls the mobile app. The device registration service retains the invalid pre-reinstall token instead of replacing it, although the notification appears in the in-app inbox.",
+      "confusable_with": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "linked_reports": [
+        {
+          "id": "b8555c58-bc1f-4eba-a26d-b36f2c0bbfb1",
+          "title": "Inbox updates but phone alerts stopped after reinstall",
+          "description": "Support from Dewbarrel Dining: employee reinstalled to free storage and now gets no shift-change alerts. Notification permission is enabled. The changes are all in the inbox when they open the app. Other employees on the same shifts get their alerts."
+        },
+        {
+          "id": "f859d67b-e909-4b80-abd0-88f6bb1201b5",
+          "title": "New installation still using old device registration",
+          "description": "Internal ticket paste: reproduced on a test employee at Pollenpan Kitchens. Before reinstall, push works. After reinstall, inbox works but push does not. Removing the employee's device registration and logging in again restores delivery."
+        },
+        {
+          "id": "21d1d39e-359c-4f39-aecb-635537613a26",
+          "title": "One employee misses all push alerts",
+          "description": "AM: customer confirmed the affected employee reinstalled yesterday; quiet hours are disabled."
+        }
+      ]
+    },
+    {
+      "id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "title": "Quiet hours suppress alerts in the wrong time zone",
+      "summary": "Shift-change push notifications do not arrive during expected daytime hours for employees assigned to sites in different time zones. Quiet hours are evaluated in the group's headquarters time zone rather than the employee's selected home-site time zone, while the in-app inbox receives the notifications normally.",
+      "confusable_with": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "linked_reports": [
+        {
+          "id": "e65ed60c-424c-4039-8944-1462a8d2c45f",
+          "title": "Remote site's daytime changes arrive without push",
+          "description": "Account handoff — Wrenmallow Kitchens: staff at the eastern site get inbox items but no phone alert during their morning setup. Nobody reinstalled. Notifications resume later in the day. Their quiet-hours window lines up with headquarters time, not the home-site time shown on their profiles."
+        }
+      ]
+    },
+    {
+      "id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "title": "Timesheet notes with emoji prevent saving",
+      "summary": "Saving a timesheet edit fails with an unexplained error when the manager's note contains a four-byte Unicode character, such as certain emoji. The notes column still uses a restricted character encoding; deleting the character allows the same hours adjustment to save.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "8f23728d-1938-4912-b233-ef285eb6e13e",
+          "title": "Hours correction saves only after removing note emoji",
+          "description": "Ticket from Duskwick Dinners: manager added a thumbs-up emoji to an adjustment note and Save failed. Plain text note with the exact same punch changes worked."
+        }
+      ]
+    },
+    {
+      "id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "title": "Invitation retries create duplicate employee profiles",
+      "summary": "Retrying a pending employee invitation can create a second employee profile instead of resending the original invitation. The retry endpoint lacks an idempotency check, leaving managers with two profiles that share the same invitation destination.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "6811d11c-d8cc-4f83-92bf-9f057087d0aa",
+          "title": "Resend invitation added another staff record",
+          "description": "Support: Acornveil Cafeterias clicked Retry after an invitation timeout. Now the staff list has two profiles for the same new hire, one pending and one active. Customer has not assigned shifts to either yet."
+        },
+        {
+          "id": "66d77442-bbd9-4974-a1d8-f38ecfdf2de7",
+          "title": "Repeated retry produces repeated profiles",
+          "description": "Repro note from AM: clicked Retry twice on the same pending invite at Briarwhisk Dining. Three employee profiles total. Customer expected three attempts to deliver one invitation, not three employees."
+        }
+      ]
+    },
+    {
+      "id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "title": "Demoted managers retain timesheet approval access",
+      "summary": "A manager changed to a regular employee can continue approving timesheets from an existing browser session. The approval endpoint trusts the role embedded in the session token until that token expires instead of checking the current role.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "7a10759e-c225-4225-81e8-03f23fe5319e",
+          "title": "Former supervisor can still approve hours",
+          "description": "Security escalation — Clovercauldron Houses: we removed a supervisor's manager role. Their already-open tab still approved a pending timesheet. A fresh login correctly removes the approval controls. Please treat this as access revocation, not a missing menu update."
+        }
+      ]
+    },
+    {
+      "id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "title": "Accented staff names are corrupted in CSV downloads",
+      "summary": "Downloaded staff-directory CSV files display accented characters as garbled text in spreadsheet programs that require an encoding marker. The export is UTF-8 but lacks that marker; the names remain correct within SkilletSpan.",
+      "confusable_with": null,
+      "linked_reports": []
+    },
+    {
+      "id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "title": "Split-shift warning ignores long off-duty gaps",
+      "summary": "The compliance checker flags some split shifts as continuous work exceeding the configured maximum duration. It measures from the first shift's start to the final shift's end without subtracting the off-duty gap between them.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "28ca183a-e771-4443-933c-ebf9831b2827",
+          "title": "Lunch and dinner shifts trigger continuous-work warning",
+          "description": "Support paste — Hazelgoblet Rooms: 10:00–13:00 and 18:00–21:00 triggers a warning for eleven continuous hours. Employee is off duty for the five-hour gap. Customer's configured maximum is eight hours."
+        }
+      ]
+    },
+    {
+      "id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "title": "Staffing coverage counts shadow trainees as full workers",
+      "summary": "The staffing coverage meter includes employees marked 'shadow trainee' as fully covering their assigned stations. Managers consequently see a green coverage indicator even when all independently qualified workers have been removed from a station.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "ba3b59e9-f96c-439c-ac94-5a4565cbf81d",
+          "title": "Coverage green with only a trainee on the station",
+          "description": "Sales feedback from Mossribbon Kitchens: they scheduled one qualified cook plus a shadow trainee, then moved the cook elsewhere. Coverage stayed green for that station. They want shadow shifts visible without having them satisfy minimum staffing."
+        }
+      ]
+    },
+    {
+      "id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "title": "Calendar subscriptions remain stale after shift edits",
+      "summary": "Personal calendar subscriptions retain a shift's original start and end times after that shift is edited. The subscription feed changes the event body but not its revision timestamp, causing calendar clients to treat the event as unchanged.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "69a04a99-e575-467c-a278-508e0319ba5d",
+          "title": "Subscribed calendar keeps old shift time",
+          "description": "Ticket — Glimmergrain Dining: SkilletSpan correctly shows the shift moved from 16:00 to 17:00, but the employee's subscribed calendar still says 16:00 a day later. Removing and adding the subscription shows the new time. No issue with the schedule inside the product."
+        }
+      ]
+    },
+    {
+      "id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "title": "Delegated edits show the wrong author in the audit log",
+      "summary": "Schedule edits made through manager delegation are attributed only to the manager being represented, not the person who performed the edit. Release 4.9 added the acting person's identity to timesheet audit entries, but schedule audit entries still omit it.",
+      "confusable_with": null,
+      "linked_reports": []
+    }
+  ],
+  "cases": [
+    {
+      "id": "3473859d-4fac-4da5-ac7e-5524cf9370b2",
+      "kind": "match",
+      "report": {
+        "title": "Payroll export fails when pooled tips have extra decimal places",
+        "description": "We're trying to close payroll for the three locations in our Brindlepan restaurant group. SkilletSpan keeps giving us 'Unable to complete export' for the current pay period. This started after we moved to 4.8; the previous week's export went through normally.\n\nI narrowed it down by exporting each location separately. Two worked, but the third wouldn't export even after all its timesheets were approved. There wasn't anything obviously wrong in the grid: hours looked normal and every tip amount displayed as dollars and cents.\n\nOur bookkeeper checked the tip-pool calculations and found that one person's share was actually 18.4375, even though the screen showed 18.44. Another was 26.666666 from dividing a pool among three staff. If we replace those calculated values with 18.44 and 26.67, the same export completes. If we put the original calculated values back, it stops again with the same message.\n\nWe also tried a fresh test period with a single employee. A tip entry of 9.25 exports; 9.255 doesn't. Nothing else in the timesheet changes between those attempts. The destination account is still connected, and exports with whole-cent tips are arriving there.\n\nCould you make the export use the cents shown on screen? We shouldn't have to hunt through every pooled share and manually overwrite it just to send payroll. For now we've saved a copy of the original calculations so we can reconcile the adjustments, but this is going to be a lot of extra work every pay period."
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93"
+    },
+    {
+      "id": "ce67f6bc-6520-4a46-9641-58ec204aa941",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Pay-run handoff gets stuck on shared gratuities",
+        "description": "When we send this week's wage packet to our pay service, SkilletSpan stops before anything arrives. We traced it to splitting the cash jar: one server's share comes out to 12.345. The screen shows 12.35, so we didn't spot it at first. Replacing the stored share with 12.35 lets the packet go through immediately. Can the handoff use the same cents we see on screen instead of insisting that the underlying calculation already lands on an exact cent?"
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93"
+    },
+    {
+      "id": "81257016-fc03-4426-8dde-debc00ffd686",
+      "kind": "missing_context",
+      "report": {
+        "title": "Pooled gratuities blocking pay file",
+        "description": "The pay file won't go through when a shared gratuity carries fractions of a cent. Whole-cent entries are fine."
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93"
+    },
+    {
+      "id": "58bd5f42-6f49-4605-b049-0fc22f69ba10",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.9.2 seems to have broken our payroll export",
+        "description": "I'm blaming the 4.9.2 update we installed yesterday because this is our first payroll run since then. Export now says 'Unable to complete export.' After an hour of checking, I found a pooled tip share stored as 7.8125. Changing just that entry to 7.81 makes the export work. We haven't changed the payroll connection or employee setup. Is there something in 4.9.2 that stopped accepting these calculated shares? This is the first time we've split a pool four ways, so I don't have an older run with the same numbers to compare."
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93"
+    },
+    {
+      "id": "2c5a7c82-218d-415a-9d8d-024500a3ecc4",
+      "kind": "negation",
+      "report": {
+        "title": "Payroll export works, but the preview columns won't stay put",
+        "description": "Payroll export is completing fine now, including fractional tip amounts. We're not getting 'Unable to complete export,' and the pay service receives the expected cents. My complaint is the preview layout: I drag the tips column beside regular wages, but reopening the preview puts it back at the far right. Please remember my column order so I don't have to rearrange it for every review."
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": null
+    },
+    {
+      "id": "000070ba-7dc3-4801-b1f7-b8de92aa89cd",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like expired connector authorization, but reconnecting doesn't help",
+        "description": "The payroll export stops with 'Unable to complete export' and no explanation. We assumed the connector authorization had expired and that SkilletSpan was hiding the authorization warning, so we disconnected it and signed in again. The connection now shows active, but the same batch still won't send.\n\nHere's the odd part: a batch with tips entered as 10.50 sends successfully through that exact connector. Add our pooled share of 10.505 and it stops. Edit that share to 10.51, without reconnecting or changing any permissions, and it sends again. We can repeat this every time. The tip cell displays 10.51 in both cases, but opening the calculation reveals the extra digit in the failing one. This doesn't seem like an expired login after all."
+      },
+      "source_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93",
+      "expected_problem_id": "2dfe01e6-bb87-45c3-b7e6-d4c89ae18e93"
+    },
+    {
+      "id": "e7a3c836-0935-469d-9f6d-a46d0e6d803f",
+      "kind": "match",
+      "report": {
+        "title": "Payroll export fails while the connector still says Connected",
+        "description": "We can't send this week's payroll out of SkilletSpan for any of our four restaurants. Every attempt ends with “Unable to complete export,” with no explanation of what needs fixing. The payroll connector's settings page still shows “Connected,” so we initially assumed the connection was fine.\n\nOur payroll administrator checked the other end this morning and found that SkilletSpan's authorization had expired. Their access history shows it expired before our first failed export. Nothing in SkilletSpan warned us about that, either on the export screen or beside the connection status.\n\nWe spent most of yesterday looking for a bad timesheet because the message made this sound like a problem with the batch. We tried one location at a time, then a single employee with ordinary hours and no tips. Same result each time. We also checked that all the timesheets were approved. There wasn't anything obvious left to correct.\n\nAfter we disconnected the payroll account and authorized it again, the exact same batch went through without any edits. That seems pretty conclusive that the expired permission was what stopped it, not the hours or amounts we were sending.\n\nCould the app please tell us when the payroll provider no longer accepts its authorization? Even a prompt to reconnect would have saved a lot of time. “Connected” currently looks like confirmation that everything is healthy when it isn't. We don't need a technical diagnostic screen, just a useful message instead of the generic export error. Please also check whether the connection badge can update when access expires; our site managers kept referring to that green status as proof we should keep retrying."
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e"
+    },
+    {
+      "id": "6684527f-c7b8-4999-9326-e022c350fa10",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Green badge, but wage handoff goes nowhere",
+        "description": "The button that sends approved hours to our wage service stopped doing anything useful. It gives us the same catch-all warning each time, while the account setup screen still has its reassuring green badge. Our bookkeeper discovered that the wage service had withdrawn SkilletSpan's permission to talk to it during an access cleanup. Signing in there again and granting permission made the untouched batch go through. Why did the app keep presenting the link as healthy instead of asking us to sign in again?"
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e"
+    },
+    {
+      "id": "f31b93bd-4744-4285-92a2-e8996d809618",
+      "kind": "missing_context",
+      "report": {
+        "title": "Pay service link looks healthy when it isn't",
+        "description": "Our wage handoff is blocked until we renew access, but SkilletSpan still shows the account link as healthy."
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e"
+    },
+    {
+      "id": "c10bba69-072b-4f65-93b2-47ba080edd20",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.18.2 seems to have broken payroll delivery",
+        "description": "Blaming SkilletSpan build 6.18.2 here because this started right after we noticed the update. Payroll exports now say “Unable to complete export,” although the integration page says “Connected.” Our payroll admin says she removed the app's access while tidying permissions that same afternoon. We gave it access again and the export immediately worked, but I still think the new build is involved: surely it should have noticed the removal rather than letting us retry five times with that useless message."
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e"
+    },
+    {
+      "id": "42457193-7d53-4d58-b446-d1540dbb59ee",
+      "kind": "negation",
+      "report": {
+        "title": "Billing receipt gets cut off when printed",
+        "description": "Payroll export is working fine now: no “Unable to complete export” message, and the connector really is authorized when settings says “Connected.” This ticket is about something separate. When I print our SkilletSpan subscription receipt, the right edge of the tax breakdown is clipped off. The screen preview looks complete, but the printed copy loses the totals column even with the page set to landscape."
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": null
+    },
+    {
+      "id": "ca89d984-e8f2-4ced-a297-a3f2eee3c054",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought fractional tip amounts were rejecting our payroll export",
+        "description": "We first suspected fractional tip amounts because the failed payroll export included tips like 18.75 and 42.50. The only message was “Unable to complete export,” so we tried rounding the tips to whole amounts. Still failed. Then we tested an approved timesheet with zero tips, and that failed too.\n\nOur payroll service administrator checked its app access list and found that SkilletSpan's permission had been revoked during their security review. Meanwhile, SkilletSpan's connector settings continued to show “Connected.” There was no request to authorize it again and nothing in the export message pointing us toward account access.\n\nWe restored that permission and resent the original batch, including all the fractional tip amounts. It worked without changing a single amount. Please don't send us another suggestion to remove decimals from tips; we've already ruled that out. The issue is that a disconnected payroll account looks connected in SkilletSpan, and trying to send payroll just produces the generic failure."
+      },
+      "source_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e",
+      "expected_problem_id": "962476a2-3747-4dc2-8bbe-0302d13ccd6e"
+    },
+    {
+      "id": "1cd08e23-e4a0-40d5-94c3-a38277b2b8f9",
+      "kind": "match",
+      "report": {
+        "title": "Cloned restaurants are using headquarters for clock-in checks",
+        "description": "We opened two new restaurants for our fictional Hearthwhisk dining group this week, and nobody can clock in at either one. SkilletSpan says 'You are outside the clock-in area' while people are standing inside the restaurant, including the manager behind the counter.\n\nBoth locations were created by cloning an existing location after we moved to version 4.6. During setup, we changed the address and saved the map pin for each new site. Those pins still look right when I open the location settings. One is on the east side of town and the other is across the river, so this isn't two addresses for the same building.\n\nThe odd part: our opening lead went to headquarters to collect supplies and tried clocking in for the east-side restaurant from there. It worked immediately. She wasn't assigned a headquarters shift, and she hadn't changed the restaurant selected in the app. Back at the restaurant, the same selection gave her the outside-area message again.\n\nWe checked the boundary size too. It's the same setting as the older restaurants, where clock-in is working normally. Making the new site's boundary a little wider didn't help, which makes sense if the check is happening several miles away.\n\nIt looks like cloning picked up headquarters coordinates instead of the new site's saved map pin. Can you correct the actual coordinates used for these two locations? We have been recording arrivals manually, and I'd rather not disable location checks for the whole group just to get these openings through their first week."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48"
+    },
+    {
+      "id": "f8f7014b-d741-479f-acc6-0ef3ff639ea4",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Punches accepted at the admin office, not at our new branches",
+        "description": "We used 'Duplicate' to set up the two latest Hearthwhisk dining rooms, then adjusted their street addresses and moved the marker in setup. The attendance button refuses to start a shift at either venue, even with the crew right beside the kitchen. It tells them they aren't near enough to the workplace. Yet the same button accepts a punch for those venues from our central admin office. The older venues behave normally. Seems like the duplicated entries inherited the office's latitude and longitude, despite the correct marker being visible in setup."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48"
+    },
+    {
+      "id": "f9d0379f-0e73-45ba-acd4-a5490f471133",
+      "kind": "missing_context",
+      "report": {
+        "title": "New branches checking the wrong address",
+        "description": "Attendance checks for our new branches point to the main office rather than each branch's address."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48"
+    },
+    {
+      "id": "4657ec9b-5583-47ee-8cf9-9b5b18fe3a58",
+      "kind": "misleading_version",
+      "report": {
+        "title": "4.8 broke punches at our copied sites",
+        "description": "I'm blaming the 4.8 mobile update because that's when our opening crew first reported this. We recently made the new Copperladle sites by copying an existing site, and the app won't let anyone clock in from those restaurants. The location pages have the correct addresses and map pins. However, our coordinator can clock in for either new site while sitting at the group's headquarters. Existing sites still work. Please roll back whatever 4.8 changed about which address the app checks; it seems to be checking the office instead of the selected restaurant."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48"
+    },
+    {
+      "id": "810e43c4-0dc9-4abf-b283-364fc22cfc91",
+      "kind": "negation",
+      "report": {
+        "title": "Geofence is fine now; staff picker needs sorting",
+        "description": "The clock-in geofence works fine at our cloned location now. Nobody gets 'You are outside the clock-in area' when they're inside the restaurant, and it is definitely checking this site rather than headquarters. My actual complaint is the manual-entry staff picker: names appear in a different order every time I open it, and there's no alphabetical sort option. Finding someone during a busy service takes far too long."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": null
+    },
+    {
+      "id": "d4fa1db7-f8a8-42ec-b6b7-4a4e98ff99e9",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like an old geofence radius, but the circle is in the wrong place",
+        "description": "Support suggested the mobile clock-in app might be retaining an old geofence radius. We tested that: I changed the cloned branch's radius from 100 to 250 metres, and the accepted distance changed when we tested near headquarters. So the app seems to be picking up the radius edit.\n\nThe problem is the centre. At the actual branch, staff get the outside-clock-in-area message even in the middle of the dining room. At headquarters, they can clock in for that same branch. The branch's saved map pin is correct in settings, and the two buildings are several kilometres apart. This branch was created with the clone action after our 4.6 upgrade. Please check whether that action inherited the headquarters coordinates rather than the branch's pin; refreshing the radius won't fix a circle centred on the wrong building."
+      },
+      "source_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48",
+      "expected_problem_id": "0fbdc98b-6957-4a5f-872b-829f75ab9e48"
+    },
+    {
+      "id": "4008c6b4-4fdd-4dda-896a-e0fe1ca2f830",
+      "kind": "match",
+      "report": {
+        "title": "Clock-in still uses the smaller radius after we enlarge it",
+        "description": "We increased the clock-in geofence radius at our Bramble Ladle restaurant from 60 meters to 180 meters so staff could clock in from the employee entrance. The location pin hasn't moved, and the new radius is saved in the manager settings.\n\nPeople who were already using SkilletSpan on their phones still get 'You are outside the clock-in area' at that entrance. Walking closer to the building lets them clock in, which makes it look like their phones are still enforcing the original 60 meters. My phone and one server's phone were side by side: mine accepted the punch, hers rejected it. She signed out and back in without moving, and then hers accepted it too.\n\nWe tried again this morning with version 4.9. If someone launches the app after I change the radius, the larger area works. But if they leave the app open while I change it, they keep getting the outside-area message. Going to another screen and back doesn't help. Signing out fixes it, and fully closing the app and launching it again also worked in our 4.9 test.\n\nThis is causing a queue at the start of service because staff think they need a manager to correct every punch. We don't want to make the radius even larger as a workaround; the distance we set is already enough. Can the phone pick up the saved radius while someone is using it, rather than making everyone restart or sign out?"
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1"
+    },
+    {
+      "id": "c605cdc5-3c36-4fd2-bf7e-d96ae4155143",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Punch button doesn't pick up our wider allowance",
+        "description": "Our supervisor widened the allowed distance around the kitchen, but handsets already on the punch screen keep treating the employee patio as off-limits. Walk toward the door and the button succeeds. End your account session and enter your credentials again, and it succeeds from the patio too. The saved distance is correct in the admin panel; it's the copy on those handsets that seems stuck."
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1"
+    },
+    {
+      "id": "6e26fb3c-bead-43b4-a631-7e1ffaf5556e",
+      "kind": "missing_context",
+      "report": {
+        "title": "Wider punch zone not taking effect",
+        "description": "Some staff phones still enforce our previous, smaller punch zone even though the wider setting is saved."
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1"
+    },
+    {
+      "id": "cb15e5c4-d54c-4fdd-aa37-983eea3d37a1",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Did 4.9.2 break our entrance clock-ins?",
+        "description": "Blaming the 4.9.2 update for now because that's when we noticed this. I expanded our permitted clock-in distance while the closing crew had SkilletSpan open, and they continued getting 'You are outside the clock-in area' from the loading entrance. Restarting the app fixed it without anyone changing position. Oddly, a spare phone still on 4.9 behaved the same way when we repeated the edit with its punch screen open. Both phones work if we start them after saving the bigger distance. Whatever shipped in 4.9.2 feels broken, but the setting definitely saves."
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1"
+    },
+    {
+      "id": "92ebd9f0-9840-46d9-a1d4-0bf1e8b1862f",
+      "kind": "negation",
+      "report": {
+        "title": "Clock-in area works now, but confirmation is hard to read",
+        "description": "The enlarged geofence radius works fine on our mobile clock-in screen now. Nobody is getting 'You are outside the clock-in area,' including staff at the far entrance. My complaint is the successful clock-in confirmation: it's pale green text on a white background, and I can't read it reliably in bright sunlight. Please give that confirmation stronger contrast."
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "a3638475-fb1c-4bfb-89db-1d85f82d4069",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like headquarters geofence, but only existing sessions fail",
+        "description": "Our crew keeps calling this the 'group headquarters coordinates' issue because SkilletSpan says they're outside the clock-in geofence at our Fernpot location. I checked the map, though: the pin is on Fernpot, not headquarters, and headquarters is several kilometers away.\n\nThe failure started when I increased Fernpot's radius from 50 to 140 meters. Staff standing about 90 meters from the correct pin get rejected if they had the app open before my edit. Those same people can walk within 50 meters and punch successfully. A fresh login accepts them at 90 meters without any coordinate changes. On 4.9, a full relaunch also picks up the larger radius, but leaving the app open through another radius edit reproduces the rejection. It seems to be hanging onto the earlier distance, not choosing the group's headquarters."
+      },
+      "source_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1",
+      "expected_problem_id": "92bf6f5a-5e0a-49b9-998a-b194d4fbd2c1"
+    },
+    {
+      "id": "92199ec3-a369-4066-a428-ed4b97e997d5",
+      "kind": "match",
+      "report": {
+        "title": "Swap still waiting after both staff got the right role",
+        "description": "We have automatic swap approval enabled at our Copper Kettlewing location. One employee offered a bartender shift while the other was still listed as floor staff. Before the second employee accepted, we added the bartender role to their profile. Both employees now have the required role, but the swap is stuck at 'Accepted — awaiting approval.' Other eligible swaps go through automatically. Canceling this one and creating the same swap again makes it approve immediately, so it seems like the original request is still checking the roles they had when it was first offered."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92"
+    },
+    {
+      "id": "4f3fbc09-884b-46c0-8a1d-c5797778e257",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Old trade won't clear, identical fresh one does",
+        "description": "Our Tuesday bar-duty trade keeps saying a supervisor needs to review it, even though we use hands-off routing. When it was first posted, the person taking the slot wasn't yet cleared to work behind the bar. We updated their qualifications, and both people confirmed the trade afterward. Nothing moved. We withdrew it and posted an identical trade with the same two people and Tuesday hours; that one cleared straight away. Looks like the first attempt remembers who could do what back when it was posted."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92"
+    },
+    {
+      "id": "f57300c1-6b42-4365-81ed-258ff0dd053f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Earlier swaps won't clear",
+        "description": "Older swaps are still waiting after both people became qualified; new ones between the same people go through on their own."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92"
+    },
+    {
+      "id": "c12f268a-f7cf-40a4-86ea-f2dde97605a9",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.18.2 seems to have broken automatic swaps",
+        "description": "I'm blaming the 6.18.2 update because this is the first week we've noticed it, but I can't find anything in our setup that explains it.\n\nAt our Emberladle site, we let eligible swaps approve without a manager touching them. Last Thursday, one of our servers offered a closing bar shift to another team member. At that point, the recipient hadn't finished training, so their profile only had the server role. On Friday morning, our trainer signed them off and I added bartender to their roles. I checked both profiles afterward: both people can now work bartender shifts at this site.\n\nThe recipient accepted on Friday afternoon. It's now Monday and the card still says 'Accepted — awaiting approval.' Nobody has edited the location or turned automatic approval off. We have no other approval rule that should apply here. Two unrelated swaps processed normally over the weekend.\n\nI tried removing and adding the bartender role again, but that didn't help. Refreshing the schedule didn't help either. As a test, we canceled the pending swap and recreated it with exactly the same people, shift, and site. That replacement approved immediately.\n\nIt feels like the first request never noticed the training update. We have several more requests opened before people were signed off, and I'd rather not ask everyone to cancel and redo them. Can you check whether those older requests are looking at the current staff profiles? We can manually approve them, but that defeats why we enabled the automatic option."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92"
+    },
+    {
+      "id": "a05862ef-3960-43ff-941d-69a8758e5579",
+      "kind": "negation",
+      "report": {
+        "title": "Swaps work now, but department colors won't save",
+        "description": "Accepted shift swaps aren't getting stuck at 'Accepted — awaiting approval' for us. Automatic approval works fine, including after we change someone's role eligibility. My actual issue is the department color picker: I choose purple for prep, save it, and it goes back to gray when I reopen the screen. The department name saves correctly; only the color disappears."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": null
+    },
+    {
+      "id": "5bdcbde0-7adc-4435-b7b8-8917f9ee63e5",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like the swap approval setting silently reset, but it hasn't",
+        "description": "We initially thought a location edit had silently reset the swap approval setting. I checked the location settings twice, though, and automatic approval is still enabled. We haven't saved any location edits since before these requests were created.\n\nThe only changes were to staff roles: two people gained grill eligibility after their swap offers were already open. Their accepted swaps now sit awaiting approval even though both profiles show the grill role. Requests created after those role updates approve normally. We also canceled one stuck request and recreated it without touching the location settings, and the replacement approved right away. So this seems tied to when the request was created relative to the role changes, not to the approval toggle resetting."
+      },
+      "source_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92",
+      "expected_problem_id": "2a93168e-4574-4091-a2d9-76c12eb68f92"
+    },
+    {
+      "id": "955f9ab9-4162-41ba-8699-5844a57dcd18",
+      "kind": "match",
+      "report": {
+        "title": "Editing a location turns off automatic swap approval without telling us",
+        "description": "We have automatic swap approval enabled at our Copper Ladle location. Staff normally accept a shift swap and it goes straight through without a manager having to approve it.\n\nYesterday I changed the location's contact details and saved. After that, every new swap stayed at 'Accepted — awaiting approval.' The swap settings tab I already had open still showed automatic approval enabled, so I spent ages looking for something wrong with the employees.\n\nWhen I refreshed that tab, the switch was off. Nobody had intentionally changed it. I turned it back on and new swaps went through normally again.\n\nI tried changing only the location display name this morning and got the same result: save the location, swaps start waiting, refresh the settings tab, automatic approval is off. Leaving the settings tab open makes it look like nothing changed. Can saving unrelated location details please stop changing this switch?"
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d"
+    },
+    {
+      "id": "25059774-e27f-4ab6-b29a-246c5d5787ac",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Changing branch details brings back the supervisor sign-off queue",
+        "description": "At our Bramble Spoon branch, two crew members trading their rota slots should be enough to make the trade final. We switched on the option that skips supervisor sign-off weeks ago.\n\nBut whenever our area lead corrects the branch address or renames the branch, those trades start needing a supervisor's blessing again. The preference panel left open in another browser tab still has the toggle lit up. Reloading that tab reveals it's actually disabled. Enabling it again fixes subsequent trades, until the next branch-detail correction. This isn't about who can cover which job; even two servers exchanging identical duties get stuck."
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d"
+    },
+    {
+      "id": "dadd0ba8-dd0d-4dd6-aa2b-7b6e56ab1b3d",
+      "kind": "missing_context",
+      "report": {
+        "title": "Auto-approve doesn't stay on",
+        "description": "Our swap auto-approve toggle looks enabled until we reopen the page, but it keeps ending up disabled after unrelated location changes."
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d"
+    },
+    {
+      "id": "f486e7e7-1b32-4133-b8a2-083afee10b13",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.14.2 broke our swap approvals",
+        "description": "Pretty sure this started with SkilletSpan build 6.14.2. We installed it Tuesday and now accepted swaps keep needing manual approval.\n\nThe pattern seems to be that someone saves the location details first. Yesterday it was a new street address; today I just corrected the location nickname. Neither time did we touch the automatic approval option. My existing settings tab continued showing it enabled, but a fresh tab showed it disabled.\n\nTurning it back on makes swaps work again, so the staff aren't doing anything differently. Please check whatever changed in that release—we can't keep remembering to re-enable this after every tiny location edit."
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d"
+    },
+    {
+      "id": "39be3c76-34ff-47c5-a16c-a029b98a2bcc",
+      "kind": "negation",
+      "report": {
+        "title": "Swap approval is fine now, but printed schedules waste paper",
+        "description": "Just to separate this from our earlier ticket: accepted shift swaps no longer remain at 'Accepted — awaiting approval.' Automatic swap approval stays enabled after a manager edits a location, and refreshing the settings screen confirms it. That part is working fine now.\n\nThe issue we're reporting today is printing. A one-page weekly schedule prints with four completely blank pages after it. The print preview shows those extra pages too, even with only three staff on the schedule. We need to hand out paper copies, and trimming the page range manually every time is getting annoying."
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "52a35da2-ec81-4bbb-a9f0-3c43f49243e2",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like outdated role eligibility is holding accepted swaps",
+        "description": "Our supervisors thought accepted swaps were retaining outdated role eligibility because two employees who are both currently eligible for the counter role couldn't complete a trade. They had both agreed, but the trade sat waiting for approval.\n\nWe checked their roles, qualifications, and access to the site. Nothing had changed, and both people can be assigned directly to either shift. We also tested two kitchen staff with the same role and got the same waiting status. So I don't think the employee eligibility records are actually the issue.\n\nThe common event was a supervisor saving the site's address details. Automatic swap approval had been enabled beforehand. The browser tab showing that preference remained open and continued to show it as enabled afterward. Only when we loaded the page again did we discover it had become disabled.\n\nOur internal integration person checked the outgoing location save in the browser's network panel. It included the changed address fields but didn't include the automatic swap approval field at all. We weren't trying to change that preference, so that omission seemed reasonable. Nevertheless, after the save, the freshly loaded preference was off.\n\nWe re-enabled it and a trade between the original two counter staff completed immediately, with no role eligibility changes. Saving another address correction brought the waiting behavior back. Please investigate the location save rather than refreshing everyone's role assignments."
+      },
+      "source_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d",
+      "expected_problem_id": "0819de86-e04c-4b42-93a8-2297dda68d1d"
+    },
+    {
+      "id": "6d5e522a-4724-43ee-a081-b278caa1d24b",
+      "kind": "match",
+      "report": {
+        "title": "Overnight shifts disappear from the following day's schedule",
+        "description": "Our closing crew at Ember Ladle works 10 pm–3 am. In SkilletSpan, their shifts show on Tuesday's daily schedule, but Wednesday says they have nothing scheduled—even though they're supposed to be working until 3 am Wednesday. The weekly view still shows the full shifts. Can Wednesday's schedule include the part that runs past midnight?"
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468"
+    },
+    {
+      "id": "e127335a-ad15-4d5d-9413-c7c82da11565",
+      "kind": "paraphrase",
+      "report": {
+        "title": "After-hours crew gets an empty tile",
+        "description": "I'm checking the rota for our late kitchen team. A booking runs from 22:00 Thursday to 02:00 Friday. Tap Thursday and it's there; tap Friday and the panel is blank. The seven-date overview has the booking intact. It seems the date picker only recognizes when a booking begins, not every date it touches."
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468"
+    },
+    {
+      "id": "98d6fa02-729a-47ec-ac3f-cc366d464714",
+      "kind": "missing_context",
+      "report": {
+        "title": "Late close not carried over",
+        "description": "Our after-midnight hours aren't listed under the following date, though the full week still has them."
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468"
+    },
+    {
+      "id": "2a40a964-f1df-483f-8351-405b3b594149",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.14.2 broke our overnight roster",
+        "description": "Pretty sure this came with SkilletSpan build 6.14.2. Our Friday 9 pm–Saturday 4 am shift is visible if I open Friday, but Saturday's daily schedule is empty. Switching to the week shows it exactly as entered, so it hasn't actually been deleted. I checked a daytime Saturday shift and that one appears normally. Please roll back whatever changed in this release; staff checking Saturday think they're off until they look at Friday."
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468"
+    },
+    {
+      "id": "0e3b0642-72b3-4e84-8b90-6bbbe6c488f7",
+      "kind": "negation",
+      "report": {
+        "title": "Printed schedule text is too small",
+        "description": "Overnight shifts aren't disappearing from the next day's schedule for us; both daily and weekly views show them fine, including the hours after midnight. My complaint is about printing the roster. The printout uses such tiny text that the kitchen team can't read it on the noticeboard. There doesn't seem to be a font-size option, and enlarging the print cuts off the last column."
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": null
+    },
+    {
+      "id": "cf1f9b26-ddc2-4369-82ab-f02490f53fea",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like publishing omitted shifts from employee schedules",
+        "description": "We initially thought this was concurrent publishing dropping entries from employee schedules. Two supervisors had been updating the roster around the same time, and the late crew said their published shifts were missing.\n\nI tried to isolate it this morning at our Bramble Kettle location. Nobody else was editing or publishing. I created one shift, Monday 11 pm to Tuesday 5 am, and published it myself. The employee account shows it on Monday. On Tuesday, the daily view says there are no shifts. The weekly view shows the entire 11 pm–5 am entry with the correct location and role.\n\nThen I added a Tuesday 1 am–5 am shift for a test employee. That one appears on Tuesday immediately. Same publisher, same location, same end time. The difference is whether the shift begins on Monday or Tuesday.\n\nI also moved the original shift's start from Monday 11 pm to Tuesday 12:15 am and published that edit. Suddenly it appeared on Tuesday. Moving the start back to Monday made it vanish from Tuesday again, while it remained visible in the week.\n\nSo the publishing process seems to retain the entry. It's opening the ending date that makes it look omitted. We need staff checking Tuesday to see that they're working the first five hours of Tuesday, even if they clocked in Monday night. Re-publishing the unchanged roster hasn't helped."
+      },
+      "source_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468",
+      "expected_problem_id": "d6180795-5b91-4a04-8ebc-49878b768468"
+    },
+    {
+      "id": "09eb646a-76ba-4c80-86f1-0bed61ca8706",
+      "kind": "match",
+      "report": {
+        "title": "Two managers publishing at once leaves staff missing shifts",
+        "description": "We had two managers finishing next week's schedule at our Copper Ladle locations yesterday. One was adding lunch coverage at the courtyard restaurant, and the other was adjusting dinner coverage at the arcade restaurant. They both hit Publish within a few seconds of each other.\n\nOn the manager side, everything looks normal. Both sets of shifts are marked published, the employees are assigned, and there isn't an unpublished-changes warning. But several employees only see the dinner changes. The lunch shifts added by the other manager aren't on their schedules at all. These are ordinary daytime shifts, mostly 10 am–3 pm, so this isn't an issue with a shift crossing midnight.\n\nWe checked with three affected employees. Their mobile schedules and the staff view in a browser agree: the lunch assignments are missing. Signing out and back in didn't help. Meanwhile, both managers can still open those exact assignments and see the correct people attached to them. Nobody deleted them or moved them to another date.\n\nAs a test, we changed one missing assignment by five minutes and published again while the other manager stayed out of the schedule. That assignment immediately appeared for the employee. We did the same with the remaining missing assignments, one manager at a time, and those appeared too.\n\nWe're on 4.7. It seemed less frequent after that update, but yesterday's incident was the same pattern we saw before it. Can you check why one manager's published work apparently wins over the other's in the staff-facing schedule? We need both sets to reach staff without having to compare screenshots after every publish."
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13"
+    },
+    {
+      "id": "9f8bc308-ebe4-4915-b70f-3a1b0d8fe0ee",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Crew rota gets only half of our combined updates",
+        "description": "Our two floor leads were each finishing a batch of rota edits for the upcoming seven-day period. They clicked the button that sends the rota live at almost the exact same moment. The office screens showed both batches as ready for the crew, but the crew's personal views contained only one batch. The other lead's new work blocks weren't there. Sending that batch live again on its own made it show up. These were all afternoon hours, not anything crossing midnight."
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13"
+    },
+    {
+      "id": "997ea7b4-134b-42bf-b12d-10c1fcaa74ee",
+      "kind": "missing_context",
+      "report": {
+        "title": "Published on our side, absent for staff",
+        "description": "Some daytime assignments show as published in the manager view but are completely absent from the assigned staff members' schedules."
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13"
+    },
+    {
+      "id": "42db5aab-e795-4173-8dfb-57f5ff1bdfdc",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Think 4.8.2 broke delivery of published schedules",
+        "description": "Blaming 4.8.2 here because this became noticeable right after our update. At our two dining rooms, both managers published edits for the same week during the morning handoff. Both got the success message, but employees received only one manager's assignments. The other assignments still show as published to management.\n\nSupport asked us to check older examples, and we found a screenshot from before the update with the same mismatch, also from a morning when both managers published together. Still feels like the new release made it worse. Publishing the missing assignments again with just one manager working fixes the staff view. None of these shifts run overnight."
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13"
+    },
+    {
+      "id": "5b09b8d0-f531-48a8-957e-a86188181c86",
+      "kind": "negation",
+      "report": {
+        "title": "Published schedules are fine; printed header is clipped",
+        "description": "We're not seeing missing shifts from concurrent publishing anymore: two managers can publish the same week's changes and every employee gets the full schedule. Our complaint is the printable schedule header. Our fictional restaurant name, The Saffron Kite Dining Room, gets cut off halfway through even though there's blank space beside it. Can the print layout wrap the name instead of chopping it?"
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c103468d-3671-4541-a0a9-63692945ec08",
+      "kind": "confusable",
+      "report": {
+        "title": "Overnight shifts disappear from the next day's schedule after our joint publish",
+        "description": "The closing team says their overnight shifts disappeared from the next day's schedule, but I don't think midnight itself explains it. Our closing manager published a batch with 8 pm–2 am shifts while the opening manager published the same week's breakfast changes at almost the same instant. Staff can see the breakfast batch but not the closing batch, although both managers see everything marked published.\n\nThe closing batch also included two 4 pm–9 pm shifts, and those are missing for staff too. The overnight shifts are absent under both possible dates, not just the next day. We nudged one closing shift and published it again while nobody else was publishing; it came straight back, including its after-midnight hours. The missing items seem to follow which manager's batch they belonged to rather than whether they ran overnight."
+      },
+      "source_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13",
+      "expected_problem_id": "18008d44-dbfc-46f0-9c74-feb78bb54c13"
+    },
+    {
+      "id": "717ce981-f5e3-4184-a376-3eb328edaf39",
+      "kind": "match",
+      "report": {
+        "title": "Moving a clocked-in employee to another site adds overtime that wasn't worked",
+        "description": "Can someone check the weekly overtime calculation for our two kitchens, Brindlepan and Mossladle? We transferred a cook from Brindlepan to Mossladle while their time entry was still open. They stayed clocked in because it was one continuous workday, not a new shift.\n\nThe cook worked 10:00 to 18:00, and we changed their location at 14:00. Their timesheet now has a Brindlepan segment from 10:00 to 18:00 and a Mossladle segment from 14:00 to 18:00. The transfer seems to have started the new segment without ending the original one. Both rows include the last four hours of the day.\n\nThey had 34 hours earlier in the week. Adding this eight-hour day should put them at 42 hours, with two hours of overtime under our 40-hour rule. SkilletSpan shows 46 hours and six hours of overtime instead. That is exactly the extra four hours where the entries overlap.\n\nThis wasn't someone accidentally clocking in again. The manager changed the assigned site while the existing clock was running, and the cook only clocked out once at the end. There were no paid breaks recorded that day, either. We checked those because that was our first guess when payroll looked high.\n\nWe can manually shorten the Brindlepan row to end at 14:00, and then the weekly numbers look right. But we'd rather not have to inspect every person who helps at another kitchen during a shift. Is the original entry supposed to close automatically when we move someone? We're holding this payroll batch until we know which other transfers need correcting."
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d"
+    },
+    {
+      "id": "c5198c5d-a30b-42d4-84d2-88b4e0125eba",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Helping at another kitchen adds phantom premium hours",
+        "description": "Our floater went from Coppercrumb to Fernwhisk halfway through the day without punching out. The manager changed which kitchen they were attached to. Now the ledger has one row covering the whole day and another covering the afternoon. That afternoon is included in both rows, and both amounts feed into the higher-rate pay bucket. They were on duty for eight hours, but the pay preview credits twelve. Trimming the original kitchen's row back to the handoff fixes the extra pay. It looks like changing kitchens leaves the old running clock alive alongside the new one."
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d"
+    },
+    {
+      "id": "5d7fe4ea-de7d-4f08-af72-8747e6b8c9ce",
+      "kind": "missing_context",
+      "report": {
+        "title": "Too much OT for shared-site staff",
+        "description": "People who change sites while still clocked in are getting extra weekly OT for the same stretch of work."
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d"
+    },
+    {
+      "id": "c5fe4dee-b7c4-483c-9437-35ab65094216",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Blaming 6.8.2 for extra hours after site changes",
+        "description": "Ever since we installed SkilletSpan 6.8.2, payroll review has been a mess. Pretty sure that release broke overtime. Yesterday a cook was clocked in at Pebblepot from 09:00, then reassigned to Reedgriddle at 13:00, and finished at 17:00. We got two entries: 09:00–17:00 at the original site and 13:00–17:00 at the new one. The weekly calculation includes all twelve hours even though only eight were worked. Ending the original entry at 13:00 removes the extra overtime. Please roll back whatever changed in 6.8.2; we can't keep correcting these by hand."
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d"
+    },
+    {
+      "id": "e9e9f64a-0718-4edf-9a29-fff8fff5dd10",
+      "kind": "negation",
+      "report": {
+        "title": "Transfers are fine; the timesheet text is too small",
+        "description": "Cross-site transfers during an open time entry are working fine for us now. We aren't seeing overlapping segments double-counted or inflated weekly overtime totals. My actual complaint is the tiny text in the mobile timesheet detail screen. Increasing the phone's text size doesn't make those hour labels any bigger, and I have to take a screenshot and zoom in to read them. Could that screen respect the text-size setting?"
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c4504c41-7c81-4209-862c-4a79ba644f7f",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like paid breaks counted twice in overtime, but there aren't any breaks",
+        "description": "Payroll called this 'paid breaks counted twice in overtime totals' because the extra amount looked like duplicated paid time. I checked the break records, though: this person has no paid breaks or unpaid breaks for the day.\n\nWhat they did have was a location transfer while still clocked in. They started at Thistleplate at 11:00, were moved to Cinderfork at 15:00, and clocked out at 19:00. The Thistleplate entry still runs until 19:00, and the Cinderfork entry runs from 15:00 to 19:00. Those four hours appear under both restaurants and both get included in the weekly overtime calculation.\n\nRemoving break pay doesn't change anything because there isn't any to remove. Ending the first restaurant's entry at 15:00 does fix it. So the duplicate paid time seems to come from the handoff between restaurants, not the break settings."
+      },
+      "source_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d",
+      "expected_problem_id": "01ac46b6-284f-49b6-8a97-6209c1b61a9d"
+    },
+    {
+      "id": "c4f78a42-b696-4ad4-b265-a4ca08a523c5",
+      "kind": "match",
+      "report": {
+        "title": "Paid breaks are getting added again when weekly overtime is calculated",
+        "description": "Hi support — our payroll lead at Emberladle Kitchens found a mismatch while closing the week in SkilletSpan. The individual time entries look right, but the weekly overtime total is too high for staff who take paid breaks.\n\nOne example: a cook worked five shifts, each from 10:00 to 18:00, with a 15-minute paid break during each shift. Each entry correctly shows eight paid hours. That should be 40 hours for the week, with no overtime. Instead, the weekly summary shows 41 hours 15 minutes and puts 1 hour 15 minutes into overtime.\n\nThose break minutes are already inside the eight-hour shifts. It looks like the weekly calculation is taking the full shift duration and then adding the paid-break duration on top of it. The extra amount matches the breaks exactly.\n\nWe checked a second employee with three 20-minute paid breaks, and their weekly total is one hour above the sum of their entries. Staff without paid breaks don't have the discrepancy. An unpaid meal period also seems to behave normally.\n\nThis started showing up after we moved to release 4.8. Nobody in these examples worked at another location, and there are no duplicate punches or overlapping shifts. We haven't changed our overtime threshold or break policy.\n\nPlease don't ask us to shorten the shifts to compensate: the clock-in and clock-out records are accurate, and doing that would make the underlying timesheets wrong. For now we're manually comparing the weekly summary against every entry before approving payroll. Can you confirm whether we should hold approval until the weekly calculation is fixed?"
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466"
+    },
+    {
+      "id": "f531e9be-d43a-41e2-afe9-e472145669aa",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Premium-rate bucket grows whenever someone takes an on-the-house rest",
+        "description": "Five eight-hour days should land a crew member at 40 hours. Their daily cards agree. But if they log a quarter-hour rest that we cover, the end-of-week rollup lands at 41.25 and assigns 1.25 to the premium-rate bucket. It's treating those rests like extra attendance outside the clock punches, rather than part of the eight hours they were already there. People who skip those rests reconcile normally."
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466"
+    },
+    {
+      "id": "664511c4-65ca-41f8-b30c-3a79031686cf",
+      "kind": "missing_context",
+      "report": {
+        "title": "Extra overtime from paid rests",
+        "description": "Weekly overtime is higher by exactly our paid rest minutes, even though the daily hours already include them."
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466"
+    },
+    {
+      "id": "5d84ecbe-9621-4b4c-bb61-66184266bb52",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Mobile 5.1.3 seems to have broken our overtime figures",
+        "description": "I'm blaming the mobile 5.1.3 update because this is the first payroll we've checked since installing it. The punches themselves are fine: five eight-hour shifts show 40 hours when we add up the daily entries. With a paid 15-minute break on each day, though, the weekly screen says 41.25 hours and 1.25 overtime. Removing the paid-break records in a test copy brings it back to 40 without changing any punch times. These are all shifts at the same restaurant. Can we roll back the mobile update?"
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466"
+    },
+    {
+      "id": "46cd6a3f-0f17-433e-b348-c19d5f382898",
+      "kind": "negation",
+      "report": {
+        "title": "Overtime is fine; printed summaries are unreadable",
+        "description": "Paid breaks are NOT being counted twice in our weekly overtime totals. We checked that specifically, and the individual time entries and weekly totals agree. My complaint is the print layout: the hours column comes out in tiny pale-gray text, while the giant dark header eats most of the page. Please give us a readable, ink-friendly print option."
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": null
+    },
+    {
+      "id": "68281105-31f1-47a4-a796-14fb32b0dc35",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like transfer double-counting, but there isn't any overlapping time",
+        "description": "We're seeing what looks like the cross-site transfer double-counting issue in the weekly rollup. I checked for overlapping time between locations, but the affected server has no transfers at all this week and only worked at our Mosskettle dining room.\n\nTheir five shifts total 40 hours on the time-entry screen. Each contains a 20-minute paid break. The weekly total is 41 hours 40 minutes, with the extra 1 hour 40 minutes classified as overtime. That's exactly the five paid breaks, not a duplicated shift or an overlap between sites.\n\nIn a test copy, changing those breaks to zero minutes removes the excess while leaving the shift start and end times untouched. So the double-counted time seems to be inside each shift, not coming from another location."
+      },
+      "source_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466",
+      "expected_problem_id": "e9477153-c172-4a06-8593-8c0c8c186466"
+    },
+    {
+      "id": "bfc26c68-4269-43ac-99e0-98420c2a2f4e",
+      "kind": "match",
+      "report": {
+        "title": "No shift alerts after reinstalling SkilletSpan",
+        "description": "I uninstalled SkilletSpan and reinstalled it on the same phone yesterday. Since then, I haven't received a single push notification when my manager changes my shifts. The changes are there, and the notifications appear in the in-app inbox when I open it, but nothing shows on my lock screen. Notifications are allowed in my phone settings. Before the reinstall, these alerts worked normally. My coworker still gets alerts for the same schedule changes."
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81"
+    },
+    {
+      "id": "3a8656d7-5acd-45b1-bb76-8621e7c6a820",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Fresh setup went silent",
+        "description": "Had to remove SkilletSpan from my handset and download it again to clear some storage trouble. Ever since, rota edits don't make the handset buzz or show a banner. If I go into SkilletSpan myself, the little activity feed has all the manager's updates waiting there. So the news is getting to my account, just not catching my attention anymore. Sound and banners are enabled. This was working before I wiped it."
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81"
+    },
+    {
+      "id": "8d567839-c975-4ef4-b2b3-414a50e7a4d9",
+      "kind": "missing_context",
+      "report": {
+        "title": "Alerts only visible inside",
+        "description": "Since putting SkilletSpan back on my phone, shift updates only show inside it—nothing pops up anymore."
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81"
+    },
+    {
+      "id": "05a659d9-1268-4aac-8a65-420271ea39f0",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.8.3 broke my schedule notifications",
+        "description": "Pretty sure 6.8.3 is the culprit here. I deleted SkilletSpan and installed it again this morning, which put me on that build, and now shift-change pushes are completely silent. I've had three start-time changes today; all three have messages in the app inbox, but zero phone alerts. Permission is on and quiet hours are off. Another person at our Fernladle location is also on 6.8.3 and still gets them, though they haven't removed the app. Can you roll mine back or get the alerts working? I can't keep opening the schedule every ten minutes."
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81"
+    },
+    {
+      "id": "aef6c786-43e8-49fb-a8e9-af61726eef0c",
+      "kind": "negation",
+      "report": {
+        "title": "Schedule text is too small to read",
+        "description": "Shift-change push notifications are working fine, even after I reinstalled the mobile app. Nothing is missing from the in-app inbox either. My complaint is the tiny text on the weekly schedule: increasing my phone's text size doesn't make those shift times any bigger. I need to zoom in to read them, but that screen won't let me. Could you add a larger-text option?"
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": null
+    },
+    {
+      "id": "91714180-52df-4316-92cb-03cf8d7fa4d0",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like quiet hours, but only on phones where we installed again",
+        "description": "We initially thought quiet hours were suppressing alerts in the wrong time zone, because two people at our Bramblepot kitchen stopped getting shift-change banners while everyone else continued getting them. Both affected people had recently removed SkilletSpan and installed it again on their existing phones. Neither has changed location or traveled.\n\nI've checked the time-zone setting for the kitchen and both phones. They're consistent. We also turned quiet hours completely off for both accounts, rather than just moving the start and end times. That didn't help.\n\nToday we tried a change at 11 in the morning, well outside anyone's usual quiet hours. I moved a test shift by fifteen minutes. The person who never removed SkilletSpan got a banner immediately. The person who installed it again got nothing on the lock screen, no sound, and no vibration. When they opened SkilletSpan, the message about the fifteen-minute change was already sitting in the inbox with the correct time. We repeated this after lunch and got the same result.\n\nPhone notification permission is enabled. Other applications make sounds normally. Signing out and back in hasn't changed anything either. One affected person can still get SkilletSpan alerts on their spare handset, where the original installation is untouched, so it doesn't seem like their whole account has quiet hours stuck on.\n\nCould someone check what happens to a phone's alert setup when SkilletSpan is removed and added back? It feels as if the service is still trying to reach the old installation. We're asking staff to check the inbox manually for now, but that's not a workable way to tell someone their evening start time changed."
+      },
+      "source_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81",
+      "expected_problem_id": "6a904ff6-78a9-49ad-87e8-e53022e3eb81"
+    },
+    {
+      "id": "1dbdfaae-bc84-4424-b146-ad94a6c35cab",
+      "kind": "match",
+      "report": {
+        "title": "Quiet hours are following head office instead of my home site",
+        "description": "My SkilletSpan home site is Briar Dock, UTC-5, but our group headquarters at Lantern Quay uses UTC+8. I set quiet hours to 10 p.m.–7 a.m. At 10 a.m. here, a manager changed my shift and I got no push notification. The change was sitting in the in-app inbox when I opened it. That was 11 p.m. at headquarters. If I turn quiet hours off, the next shift-change push comes through immediately. Please use my home site's time zone for the quiet-hours window, not headquarters."
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276"
+    },
+    {
+      "id": "7cb2e9b1-08e8-4b3b-8b6a-1752cdc41ce3",
+      "kind": "paraphrase",
+      "report": {
+        "title": "The bedtime setting thinks lunch is the middle of the night",
+        "description": "Our Briar Dock crew keeps missing phone banners for roster edits around lunch. The bell feed inside SkilletSpan has every message, so nothing seems lost. We asked for uninterrupted sleep between ten at night and seven in the morning, but the app appears to read that window against the central office clock, thirteen hours ahead of ours. Taking off the bedtime restriction makes the banners return. Can that restriction follow the branch we actually work at?"
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276"
+    },
+    {
+      "id": "ef04ebe7-ce4c-4998-af55-cd79846429a9",
+      "kind": "missing_context",
+      "report": {
+        "title": "Lunch updates go silent",
+        "description": "Shift changes reach my inbox but not my phone at lunchtime here, when head office is in its quiet-hours window rather than mine."
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276"
+    },
+    {
+      "id": "000bd8f7-e17b-4cd3-92c7-f499a99944aa",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.14.2 broke daytime shift pushes",
+        "description": "Pretty sure this started with SkilletSpan mobile build 6.14.2. Since that release, our Briar Dock staff don't get shift-change pushes around 10 a.m., even though quiet hours are set for 10 p.m.–7 a.m. The inbox still gets the updates. Lantern Quay headquarters is thirteen hours ahead, so our morning is their late night. Staff at headquarters say everything looks normal. I tried disabling quiet hours on one affected phone and the next edit produced a push right away; switching them back on made it silent again. Can you roll back whatever changed in 6.14.2?"
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276"
+    },
+    {
+      "id": "f91e191a-612b-417c-b11a-ec927fad1868",
+      "kind": "negation",
+      "report": {
+        "title": "Location picker is exhausting to use",
+        "description": "Quiet hours and shift-change push notifications are working fine now. I get daytime alerts in my home site's time zone, and nothing is missing from the in-app inbox. My complaint is the location picker: it has no search box or favorites. I cover a lot of branches and have to scroll through the entire list every time I want to view another schedule. Please let me pin my usual locations."
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": null
+    },
+    {
+      "id": "acb23f65-fde8-4d88-9317-85022556ad84",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought reinstalling killed shift alerts, but the timing is weird",
+        "description": "Posting our testing notes because we initially filed this as 'reinstalled mobile apps stop receiving shift alerts.' I deleted and reinstalled SkilletSpan last week, and afterward it looked like push registration had broken. I was opening the app to discover shift edits that my phone had never announced.\n\nBut another cook at Briar Dock has the same behavior and has not reinstalled anything. We both get every edit in the inbox. Phone notification permission is enabled on both devices, and both devices can receive SkilletSpan pushes at other times.\n\nOur home branch is UTC-5. The group's Lantern Quay office is UTC+8. Both of us have quiet hours enabled from 10 p.m. to 7 a.m. Yesterday our manager made a test edit at 10:15 a.m. our time. Neither phone made a sound or showed a banner, but the messages were already inside the app. That would have been 11:15 p.m. at Lantern Quay.\n\nAt 7:15 p.m. here, another test edit reached both phones immediately. That would be 8:15 a.m. over there. We didn't sign out, reinstall again, or change permissions between those tests.\n\nThis morning we repeated the first test with my quiet-hours setting disabled and my coworker's still enabled. Mine received the push; theirs didn't. Both inboxes updated.\n\nSo although my reinstall made me notice it, this doesn't look like the app permanently stopped receiving shift alerts. It looks like our phones are being told to stay silent on the office's overnight schedule, not ours. We'd like to keep the nighttime setting without missing changes during our own working day."
+      },
+      "source_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276",
+      "expected_problem_id": "c8d1577c-0e87-461b-911c-1f91f77b5276"
+    },
+    {
+      "id": "8327ce6a-d41f-4038-a065-b94d864f11b2",
+      "kind": "match",
+      "report": {
+        "title": "Emoji in a timesheet note stops the edit from saving",
+        "description": "I corrected a missed clock-out and added the manager note “Stayed late for cleanup 👍”. SkilletSpan gave me a generic error when I hit Save, and the corrected hours didn't stick. Tried again twice, same result. Removed just the thumbs-up from the note and the exact same edit saved immediately. Can we please support emoji here or at least explain why the note is being rejected?"
+      },
+      "source_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "expected_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440"
+    },
+    {
+      "id": "ddabfec9-c3e1-40bf-9bd1-c66e83d17bc6",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Little celebration picture breaks the punch correction screen",
+        "description": "Bit of a weird one: I moved a crew member's departure from 9:00 to 9:30 and put “Thanks for covering 🎉” in the explanation box. Clicking Apply just produced the red “Something went wrong” banner. Nothing stuck. With plain wording in that box, Apply went through straight away. The time values were identical in both attempts, so it seems to be the little party picture rather than the correction itself."
+      },
+      "source_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "expected_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440"
+    },
+    {
+      "id": "24414d57-4e66-4ef7-9a87-44310bb1bd3f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Smiley in the note?",
+        "description": "Timesheet changes won't stick with a smiley in the note, but plain text is fine."
+      },
+      "source_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "expected_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440"
+    },
+    {
+      "id": "02ad8eac-34b8-4a25-809e-a9353a372e59",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.14.2 broke saving manager notes",
+        "description": "Please flag this as a regression in SkilletSpan 6.14.2. We first noticed it after that release appeared in the footer yesterday, and our closing managers are now having trouble correcting timesheets before payroll review.\n\nAt our Brindle Quay kitchen, I opened one employee's entry to fix a clock-out that was six minutes early. I added “Helped finish the closing checklist 🙌” as the manager note. Save returned a vague failure message with no indication of which field was wrong. The corrected clock-out reverted when I reopened the entry.\n\nI tried a different employee at our Moss Lantern site and got the same result with a thumbs-up in the note. This wasn't a permissions issue as far as I could tell: I was signed in with my usual manager account, and I could approve other entries. I also tried signing out and back in because I initially thought the new release had left my session in a bad state. That didn't help.\n\nThe workaround was surprisingly specific. I removed the little picture from each note, leaving the wording and corrected times untouched, and both entries saved. An exclamation mark was fine too. Putting the picture back made the failure return.\n\nOur team uses those symbols as a quick thank-you when someone stays late, so this isn't unusual text for us. Could you check what changed in 6.14.2? For now I've told the other managers to keep their notes plain, but we'd rather not have to guess which text will make an otherwise valid correction disappear."
+      },
+      "source_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "expected_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440"
+    },
+    {
+      "id": "34687e5c-0169-4c8a-bb5c-6f22e3382a82",
+      "kind": "negation",
+      "report": {
+        "title": "Timesheet notes save fine; location sidebar keeps collapsing",
+        "description": "The timesheet note issue isn't happening for me now: I can include emoji, save an hours adjustment, and reopen it without an unexplained error or missing changes. My actual complaint is the location sidebar. Every browser refresh collapses all the location groups, even if I just expanded them. I have twelve kitchens to jump between and keep having to open the same groups again. Please remember which sidebar groups I've expanded."
+      },
+      "source_problem_id": "11a7fee5-727d-49a5-b757-b55e7303d440",
+      "expected_problem_id": null
+    },
+    {
+      "id": "9a9bfb20-43e8-42b3-ba68-5c0453e98400",
+      "kind": "match",
+      "report": {
+        "title": "Retrying an invitation adds the same employee twice",
+        "description": "We've got a new starter at Copperladle Grove who hasn't accepted their SkilletSpan invitation yet. They said they couldn't find the message, so I opened their pending invitation and clicked the retry option. I expected that to resend the invitation attached to the employee profile we'd already set up.\n\nInstead, there are now two employee profiles with the same name and the exact same invitation email address. Both show as awaiting acceptance. This isn't two people with similar names, and I didn't use Add Employee a second time.\n\nBefore clicking retry, I had already assigned the first profile to our west dining room and entered their job role. The second profile looks like a fresh record, without those details. That was the first thing that made me realize I wasn't just seeing the same person in two different views.\n\nI refreshed the page and asked another manager to check from their account. They can see both entries too. We haven't deleted either one because we don't know which profile the invitation will connect to when the starter eventually opens it. We also don't want to lose the setup work on the first one.\n\nCould you tell us which entry to keep, and whether it's safe to use retry for the other outstanding invitations? We have several people starting this week. I don't want to turn every missing invitation message into another duplicate employee we have to clean up."
+      },
+      "source_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "expected_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679"
+    },
+    {
+      "id": "8c0d4469-c2c5-41bd-9588-eb04e0e505bb",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Nudging a new hire gives us an extra row in People",
+        "description": "Our starter hadn't finished joining, so I used “Send again” beside their name. Now the People screen has two separate entries for that one person, both pointing to the same inbox. One has the restaurant and role we filled in earlier; the other is mostly blank. We only wanted another copy of the welcome message, not another account to set up. Which entry will they land in when they finish joining?"
+      },
+      "source_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "expected_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679"
+    },
+    {
+      "id": "144ddb3f-cb27-469b-bff7-81d7c6aed8a0",
+      "kind": "missing_context",
+      "report": {
+        "title": "Unaccepted starter listed twice",
+        "description": "One person still waiting to join now has two staff entries sharing the same invitation address."
+      },
+      "source_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "expected_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679"
+    },
+    {
+      "id": "4c703163-d1bb-4597-822e-aad937babe64",
+      "kind": "misleading_version",
+      "report": {
+        "title": "I think 4.8.2 broke invitation retries",
+        "description": "Blaming SkilletSpan 4.8.2 here: when I retry an unaccepted employee invitation, it adds a second profile with the same email instead of just sending another message. Our other manager says they saw this before the update too, but it's really noticeable to me since we installed this release."
+      },
+      "source_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "expected_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679"
+    },
+    {
+      "id": "094c5ba2-cd1f-4481-b499-8b66d17d5931",
+      "kind": "negation",
+      "report": {
+        "title": "Invitation retries are fine, but the welcome wording isn't",
+        "description": "Retrying pending employee invitations works fine for us now. We aren't getting duplicate employee profiles, and the resend goes to the existing invitation destination as expected. My actual complaint is that we can't customize the welcome message. We need to include our first-day uniform instructions and tell starters which entrance to use, but there's nowhere to change the text. Copying that information into a separate message for every new starter is a pain."
+      },
+      "source_problem_id": "3a02d58f-0ec1-4052-9e0c-9b99e2612679",
+      "expected_problem_id": null
+    },
+    {
+      "id": "ef75bc68-0a54-4529-954f-af0bcb83539b",
+      "kind": "match",
+      "report": {
+        "title": "Manager demoted to employee can still approve timesheets",
+        "description": "We changed our former closing manager to a regular employee in SkilletSpan yesterday, but they were still able to approve other people's timesheets this morning.\n\nThis is at our fictional restaurant group, Copper Ladle Kitchens. The person is staying on as a server, so we didn't deactivate their account; we just removed the manager role and checked that their profile now says Employee. They had SkilletSpan open on the office laptop before we made that change and never signed out.\n\nToday they went back to that same tab, opened the pending timesheets, and clicked Approve on two of them. Both approvals went through. This wasn't just an old button still showing on the page: I checked from my own account, and the timesheets really were marked approved, with the former manager listed as the approver.\n\nWe then had them sign out and sign back in. After that, they couldn't get to the approval screen anymore. So the account change seems to work for a fresh login, but not for a login that's already open.\n\nWe're concerned because we assumed removing manager permissions took effect immediately. We don't always have access to every device someone has used, and asking them to close a tab isn't a reliable way to remove payroll-related permissions. Can you confirm whether other open logins could still approve hours after we downgrade someone?"
+      },
+      "source_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "expected_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25"
+    },
+    {
+      "id": "19711146-8a11-4b7f-a9b1-6383af6981d2",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Former shift lead can still sign off crew hours",
+        "description": "We moved our closing lead back to floor-only duties. Their account now has the same setup as the rest of the serving crew, but the tab they left open yesterday still lets them mark other people's weekly hours as ready for payroll. We checked from the owner's account and those sign-offs actually stuck. Opening the site in a private window doesn't give them those controls. Why does the older tab still let them do this?"
+      },
+      "source_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "expected_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25"
+    },
+    {
+      "id": "ff2009d3-7d46-4e93-8fd9-1b941dc2be9f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Removed permission didn't stick",
+        "description": "Someone we took off manager duties is still approving staff timesheets through a login they already had open."
+      },
+      "source_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "expected_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25"
+    },
+    {
+      "id": "810d4723-c302-4a7c-bfbf-b994a1e7bded",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 6.18.4 seems to have broken manager downgrades",
+        "description": "Pretty sure this started with SkilletSpan build 6.18.4. We switched a manager to Employee during yesterday's lunch service, and their profile shows the new role correctly. However, they kept their original browser window open and approved a pending timesheet afterward. I refreshed the timesheet on my computer and saw the approval recorded, so it definitely saved. They tried a new login on another computer and couldn't approve anything there. Please roll back whatever changed in 6.18.4—we need a downgrade to remove approval rights from the windows people already have open, not just the next time they log in."
+      },
+      "source_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "expected_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25"
+    },
+    {
+      "id": "0aaa8f27-e321-4f6f-b5fa-fb23c6446e26",
+      "kind": "negation",
+      "report": {
+        "title": "Approval permissions work; printed timesheets are unreadable",
+        "description": "Demoted managers do NOT retain timesheet approval access in our checks. We changed one to a regular employee and their existing browser session could no longer approve timesheets, which is exactly what we wanted. Our ticket is about printing: the timesheet printout uses extremely small, pale text even when there's plenty of room on the page. Increasing the print scale cuts off the last column. Please give us a readable print layout for staff to review their hours."
+      },
+      "source_problem_id": "33004b5f-51fb-4ebc-9ac0-4649f7f80a25",
+      "expected_problem_id": null
+    },
+    {
+      "id": "79e5c893-aa7d-44d3-8577-3330cbbceae8",
+      "kind": "match",
+      "report": {
+        "title": "Accented names get mangled in the staff CSV",
+        "description": "I'm putting together the contact roster for our fictional restaurant group, Copper Ladle Kitchens, and the staff-directory download is changing people's names when I open it in our spreadsheet app, GridNest.\n\nFor example, Luréna Vaskel becomes LurÃ©na Vaskel, and Tomás Neldrin becomes TomÃ¡s Neldrin. Their profiles and the directory inside SkilletSpan both show the correct spelling. It's only the downloaded CSV that looks wrong. Names without accents look normal, and the phone and location columns appear to be in the right places, so this doesn't seem like a shifted-column issue.\n\nI tried downloading from two different locations and got the same result. Another manager opened my attachment and saw the same strange characters. We haven't edited these employees recently, and I really don't want to change their actual names just to make the roster usable.\n\nOne of our office people tried opening the file through an import screen and explicitly choosing UTF-8. That made the names look right. Opening the same file normally still makes them look broken. They suggested the download might be missing whatever tells the spreadsheet which encoding to use, but that's beyond me.\n\nCan you make the directory download open correctly without us having to walk every location manager through an import wizard? We use this list for orientation packets, and the current output looks like we've misspelled our own team's names."
+      },
+      "source_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "expected_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2"
+    },
+    {
+      "id": "d09de32f-3944-4693-a570-f3d9b6eabe4d",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Roster handoff turns Luréna into LurÃ©na",
+        "description": "The people list looks fine on screen, but after I save the comma-separated attachment and open it in GridNest, Luréna Vaskel turns into LurÃ©na Vaskel. Only folks with little marks over their letters seem affected. Choosing the international-text option during manual import fixes it. Can the attachment carry that hint automatically? Our supervisors just double-click it."
+      },
+      "source_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "expected_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2"
+    },
+    {
+      "id": "c47b0103-fafd-484d-bc3e-c643ea2656ce",
+      "kind": "missing_context",
+      "report": {
+        "title": "Name spellings break in the roster attachment",
+        "description": "Names with accents look scrambled in the downloaded roster, but they're fine inside SkilletSpan."
+      },
+      "source_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "expected_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2"
+    },
+    {
+      "id": "e027b22a-d75c-4db0-9eed-b7194637f601",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.2 broke the directory download",
+        "description": "Pretty sure this is a regression from SkilletSpan 6.8.2. We installed that release yesterday, and today the staff-directory CSV opens with Maëvi Dorsen written as MaÃ«vi Dorsen in GridNest. The profile still says Maëvi, so the employee record hasn't changed.\n\nI downloaded it three times because I thought I'd grabbed a bad copy. Same result every time. Our back-office lead can make it readable by selecting UTF-8 in the import dialog, but opening it directly is still wrong. Please roll back whatever changed in 6.8.2; we shouldn't need special import settings just to read our staff list."
+      },
+      "source_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "expected_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2"
+    },
+    {
+      "id": "c3ad65a6-7084-4306-bb36-54ce0513b3d3",
+      "kind": "negation",
+      "report": {
+        "title": "Directory printout adds several empty pages",
+        "description": "To be clear, accented staff names are NOT corrupted in our CSV downloads. Luréna Vaskel appears correctly in the spreadsheet, with no garbled text, and the names are also correct inside SkilletSpan. That part works fine now.\n\nMy issue is with printing the directory directly from the app. A two-page roster produces six pages, and the last four contain nothing except the directory heading. I've checked the preview and those empty pages are already there before it reaches the printer. Can we get a print layout that stops after the last employee?"
+      },
+      "source_problem_id": "139e0a73-46e3-4b0f-a643-40edd65745f2",
+      "expected_problem_id": null
+    },
+    {
+      "id": "ca7b958c-db76-4cb2-98f0-e93ed5d1e7fc",
+      "kind": "match",
+      "report": {
+        "title": "Split-shift warning includes the hours between shifts",
+        "description": "SkilletSpan is flagging Lessa's split shift as 12 hours of continuous work. She's scheduled 8am–11am and then 5pm–8pm at our Alder Quay restaurant, with nothing assigned between 11 and 5. That's six hours working and six hours off duty. Our maximum continuous-work setting is eight hours, so neither shift should trigger it. The warning appears to be counting straight from the first start time to the last finish time instead of taking out the gap. If I remove either shift, the warning goes away."
+      },
+      "source_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "expected_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9"
+    },
+    {
+      "id": "c1cdaa6e-c934-452f-a0e3-e3e1c69e207e",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Lunch and dinner visits treated like one all-day stretch",
+        "description": "Can someone explain the red badge on Pella's Tuesday card? She's on the rota 09:00–12:00, goes home for the afternoon, then comes back 18:00–21:00. The badge says she's doing twelve hours, but she's only here for six. We allow eight in a row. It looks like the empty afternoon is being included as though she never left the kitchen."
+      },
+      "source_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "expected_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9"
+    },
+    {
+      "id": "5520b27d-cb4a-4ba3-85e6-b2cbfcebf725",
+      "kind": "missing_context",
+      "report": {
+        "title": "Time away still included",
+        "description": "The too-many-hours notice is counting the whole afternoon someone has free between their morning and evening bookings."
+      },
+      "source_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "expected_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9"
+    },
+    {
+      "id": "1f305ea0-92eb-4a1a-aad5-be63e4923fc6",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Did release 4.8.2 break the split-day check?",
+        "description": "We updated to SkilletSpan 4.8.2 yesterday and I'm blaming that release for the compliance banners we're seeing while preparing next week's rota. I can't prove the timing because this is the first week I've personally handled these bookings since the update.\n\nAt our Bramble Lantern site, Oren is booked for prep from 07:00 to 10:00 and dinner service from 17:00 to 21:00. The warning calls that fourteen hours against our ten-hour continuous-work limit. He is actually working seven hours. During those seven hours in the middle he leaves the restaurant, has no duties, and isn't expected to be available. These are two separate entries, not one entry with a meal break attached.\n\nI tried changing the evening booking to finish at 20:00. The number in the warning dropped to thirteen, even though the total time he'd be working would then be six hours. Moving his return time from 17:00 to 18:00 didn't change the warning's number at all. That makes it look like only his earliest arrival and latest departure matter, and the time he spends away isn't being deducted.\n\nDeleting the dinner entry clears the banner, but obviously we need him back for service. Please don't suggest raising our limit to fourteen hours as a workaround; that would let genuinely overlong bookings through too. Is there a way to get the check to recognize the afternoon away without turning it off? We're holding publication until we know which of these banners actually need a rota change."
+      },
+      "source_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "expected_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9"
+    },
+    {
+      "id": "aef2cb94-749e-476a-89f9-3933c5a31657",
+      "kind": "negation",
+      "report": {
+        "title": "Compliance check is fine; printed warnings waste ink",
+        "description": "The split-shift warning works fine now: long off-duty gaps aren't counted as continuous work, and nobody is incorrectly flagged for exceeding the maximum duration. My complaint is the print layout. Legitimate compliance warnings get a huge solid-black background, which eats toner and makes handwritten annotations unreadable. Could we have an outline-only print option?"
+      },
+      "source_problem_id": "f2b271d9-dc4b-4011-976e-925142431da9",
+      "expected_problem_id": null
+    },
+    {
+      "id": "6b0c0ffb-b07f-4d2b-a924-e3a0e3e881fb",
+      "kind": "match",
+      "report": {
+        "title": "Shadow trainees make an uncovered station look fully staffed",
+        "description": "We caught this while checking Friday dinner coverage at our Copper Ladle location in SkilletSpan. Grill needs two people who can work it independently. We originally had two qualified cooks and two new hires scheduled there, with both new hires marked 'shadow trainee.' The coverage meter was green, which made sense while the cooks were still on the schedule.\n\nThen I took one cook off grill and the other off the shift entirely. The two shadow trainees were the only people left assigned to grill, but the meter stayed green and still showed the requirement as satisfied. Neither of those new hires is allowed to run grill without someone training them. Their shifts are there so we can plan who they follow, not because they can replace the cooks.\n\nI checked the employee records because I thought we'd forgotten to set their training status. Both still say shadow trainee. If I remove their assignments too, the coverage warning finally appears. Putting just the trainees back makes it disappear again, without adding anyone qualified to work the station.\n\nThis nearly got published as our final dinner plan. Our shift lead spotted the names, but someone checking only the coverage colors would have assumed we were ready. Please make those trainee assignments visible without treating them as full workers for the station's minimum. We need to see that the learners are attending and also that we're still short two qualified cooks."
+      },
+      "source_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "expected_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c"
+    },
+    {
+      "id": "ee099ccc-cf32-45b8-a9dc-f247adcfba66",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Readiness badge says we're set with only apprentices",
+        "description": "At Thistle Pan, we put beginners on the rota alongside the people teaching them. Tonight I deleted every certified cook's grill slot and left just the beginners, whose profiles have the learning-only designation. The little readiness badge still said we had enough people for service. It seems to treat someone who must be supervised exactly like someone allowed to run grill alone. Those are extra learning places, not replacements for the experienced crew."
+      },
+      "source_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "expected_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c"
+    },
+    {
+      "id": "6f2ae5f2-c7d3-42e0-a344-835015861a7d",
+      "kind": "missing_context",
+      "report": {
+        "title": "Only learners left, still looks covered",
+        "description": "The station still shows enough coverage when everyone left on it is a shadow trainee and nobody can work it alone."
+      },
+      "source_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "expected_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c"
+    },
+    {
+      "id": "33abe896-a25c-4840-8040-754852fc066c",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.2 seems to have broken trainee coverage",
+        "description": "I'm blaming the SkilletSpan 6.8.2 update for this: prep turns green with two shadow trainees scheduled and no qualified prep worker. Taking the experienced person off doesn't reduce the covered headcount at all. We can't actually open prep with those two unsupervised.\n\nOur assistant lead says she saw the same thing before we installed 6.8.2, but this is the release where I noticed it, so that's what I've put on the ticket. The training labels are definitely still saved on both profiles. Could you check why those assignments satisfy the staffing requirement?"
+      },
+      "source_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "expected_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c"
+    },
+    {
+      "id": "25f14e38-0455-4f91-b107-3a178781b27b",
+      "kind": "negation",
+      "report": {
+        "title": "Coverage is correct; printed schedule cuts off our footer",
+        "description": "The staffing coverage meter is working fine for us now. Employees marked shadow trainee do not count as full workers, and removing all independently qualified workers from a station does not leave a green coverage indicator.\n\nMy actual issue is printing the weekly schedule. The bottom line of our custom footer gets clipped off, including the closing checklist reminder. It appears in the print preview but not on the paper, even with plenty of blank space below the shift rows. Can we get a little more room for that footer?"
+      },
+      "source_problem_id": "78fae637-8566-49de-95c3-096ff6c50a1c",
+      "expected_problem_id": null
+    },
+    {
+      "id": "74afae0e-115d-4129-99a5-cc103d676aae",
+      "kind": "match",
+      "report": {
+        "title": "Calendar subscription keeps the old shift times after we edit them",
+        "description": "Our staff subscribe to their SkilletSpan schedules in their personal calendars. When we change a published shift, the times in SkilletSpan update correctly, but the subscribed calendar event keeps its original start and end times.\n\nYesterday I moved Nessa's dinner shift at Copper Ladle from 4–10 pm to 5–11 pm. She could see 5–11 in SkilletSpan right away. Her calendar still showed 4–10 this morning, even after she manually refreshed it. Two other people have reported the same thing after I shortened their shifts last week. This isn't a missing shift: the appointment is there, on the right date, attached to the right employee. It's just showing the hours we originally published.\n\nI tried adding a note to Nessa's shift so we could tell whether anything was reaching the calendar connection. Looking at the subscription feed directly, the event now contains the new hours and my note. However, the last-modified value is exactly the same as it was before I made those changes. I'm not a calendar expert, but it looks like the receiving app has no reason to replace the copy it already has.\n\nIf I remove the subscription and add it again from scratch, the correct hours appear. Asking everyone to do that whenever a manager adjusts coverage isn't workable, especially across our six kitchens. Staff use these calendars to arrange rides and childcare, so an hour makes a real difference.\n\nCould someone check why an edited shift isn't being marked as updated in the subscription? We'd like existing calendar entries to refresh, rather than needing to tell people to delete and reconnect their schedules."
+      },
+      "source_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "expected_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d"
+    },
+    {
+      "id": "42b5e93a-87d9-437a-821c-c102c2b2ef2d",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Dinner moved, but my phone still says four",
+        "description": "The rota in SkilletSpan says I'm working 5–11 now. The little block in my phone's day planner still says 4–10, which was what my supervisor first posted. I use the automatic link, not something I typed in myself. Pulling down to reload doesn't help. Disconnecting that link and setting it up again brings in the right hours, but the next adjustment gets stuck the same way. Can you make the linked copy follow the rota?"
+      },
+      "source_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "expected_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d"
+    },
+    {
+      "id": "ef2aff0b-7fbf-4aa3-925a-af5cfd47fd8d",
+      "kind": "missing_context",
+      "report": {
+        "title": "Connected calendar hours stuck",
+        "description": "My subscribed work calendar still has the original shift hours even though the revised hours are right in SkilletSpan."
+      },
+      "source_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "expected_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d"
+    },
+    {
+      "id": "f52c68c1-9f3d-474d-82ee-acb6ebd041ea",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 8.14.2 broke calendar updates?",
+        "description": "I'm blaming SkilletSpan build 8.14.2 because that's when I first noticed this. We moved a prep shift from 7–12 to 8–1, and the app shows the new hours while my subscribed calendar keeps 7–12. Refreshing doesn't fix it; reconnecting does. Our floor lead says she also had this happen before that build, so maybe my timing is a coincidence. Either way, published shifts show up initially, but later time changes aren't making it into entries already on our calendars."
+      },
+      "source_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "expected_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d"
+    },
+    {
+      "id": "3658e915-177f-4aea-90af-d958ae439f8a",
+      "kind": "negation",
+      "report": {
+        "title": "Calendar updates are fine; printed rota logo is stretched",
+        "description": "Our personal calendar subscriptions aren't stale: edited shifts update their start and end times correctly, including ones we changed this morning. My complaint is about the printable weekly rota. The Copper Ladle logo comes out stretched across the whole header instead of keeping its proportions. The schedule itself is readable, but the printout looks awful on the staff noticeboard. Can we preserve the logo's aspect ratio?"
+      },
+      "source_problem_id": "fd5e4f18-2d19-49af-b20f-2ae92958ce7d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "3002cb23-f141-4994-befb-b605fdab1a68",
+      "kind": "match",
+      "report": {
+        "title": "Delegated schedule changes look like the manager made them",
+        "description": "We need help figuring out who actually changed a shift at our Copperladle Kitchens locations. I was covering for our site manager yesterday using the manager delegation option in SkilletSpan. From my own login, I moved a server's Thursday shift from 4 pm to 6 pm and then shortened another shift by an hour. Both changes saved correctly, so this isn't a problem with the schedule itself.\n\nWhen we checked the schedule audit log this morning, both entries showed only the manager I was representing. My name wasn't anywhere in the entries, including when we opened the details. That manager was off yesterday and didn't touch the app. The log makes it look like they personally made both changes.\n\nI tried a second change while another supervisor watched, just to rule out someone else having changed the same shift. Same result: the represented manager gets listed as the author, with nothing identifying the person actually doing the work. I wasn't signed into their account or sharing their password; I was using the access they had delegated to me.\n\nWe thought this had been addressed in 4.9 because delegated timesheet changes now show both people. I checked one of those entries and can see who performed the action as well as whose authority they used. Schedule changes don't seem to have that same information.\n\nThis is becoming awkward when staff ask who changed their hours. We can explain it from memory today, but that won't help us review something a month later. Could the schedule history show the actual editor alongside the manager they were representing?"
+      },
+      "source_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "expected_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7"
+    },
+    {
+      "id": "b4fb275b-c8bf-439f-8918-bd7ad389580b",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Rota history credits the person who was away",
+        "description": "I was covering our site lead's duties through the stand-in access they gave me. I used my own sign-in to move two dinner assignments. In the activity trail, the name beside each change belongs to the site lead, who was on leave. Expanding the rows still gives no clue that I was the one clicking. The equivalent trail for recorded work hours includes both of us, so why does the rota only credit the absent person?"
+      },
+      "source_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "expected_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7"
+    },
+    {
+      "id": "a2d34119-0c8a-4200-9acb-e3347b070ae7",
+      "kind": "missing_context",
+      "report": {
+        "title": "Can't tell who made the change",
+        "description": "The shift history only names the person being covered for, not whoever used their delegated access."
+      },
+      "source_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "expected_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7"
+    },
+    {
+      "id": "9873d835-6324-4032-8ff4-4ec870cc6c39",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Did 5.2.1 break the names on schedule history?",
+        "description": "Since our move to SkilletSpan 5.2.1, we've noticed a pretty concerning attribution issue. I'm blaming that update because it's when our team first spotted it.\n\nOur assistant supervisor changed Saturday's kitchen shifts using delegated manager access. The schedule audit entries all name the site manager instead, even though that person wasn't working that day. There is no second name or 'performed by' detail anywhere we can find. The assistant was definitely using their own account.\n\nTimesheet history still identifies the person doing the work under delegation. It's just the schedule history that makes the represented manager look like the editor. Can you check whether 5.2.1 caused this?"
+      },
+      "source_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "expected_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7"
+    },
+    {
+      "id": "b6f7ab43-fe35-4679-90f8-278b97bf0a4d",
+      "kind": "negation",
+      "report": {
+        "title": "Audit authors are fine; weekly view keeps losing my zoom",
+        "description": "To be clear, delegated schedule edits are NOT showing the wrong author for us. The audit log correctly shows who performed the edit and which manager they were representing, so please don't route this as an attribution issue.\n\nMy complaint is that the weekly schedule view forgets my zoom level whenever I leave it to open a staff profile. When I come back, the rows are huge again and I have to zoom out to compare the whole week. Nothing is missing and the changes are saved; I just want the view to remember its display setting."
+      },
+      "source_problem_id": "d64fb631-6b37-442d-92a7-cd64f38d6ca7",
+      "expected_problem_id": null
+    },
+    {
+      "id": "ebdcc0ba-bfc2-4b97-8f91-be14e915c228",
+      "kind": "no_match",
+      "report": {
+        "title": "Leave balance keeps growing while employee is on unpaid leave",
+        "description": "Could someone check the balance for Nera at our Copper Ladle site? She has approved unpaid leave from June 3 through June 21, but SkilletSpan has added leave hours on both weekly accrual runs since she went out. Our group policy says unpaid-leave days don't earn leave. The absence is definitely approved, not just requested, and the dates look right on her profile. I can adjust the balance manually, but I don't want to keep subtracting hours every week or accidentally take away anything she earned before the leave started."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Leave accrual does not stop during unpaid leave",
+        "summary": "Employees continue earning leave balance during an unpaid leave interval even when the group's accrual policy excludes those days. The accrual job does not consult approved unpaid-leave records."
+      }
+    },
+    {
+      "id": "199a448f-2908-4aee-9e90-ccf084769d41",
+      "kind": "no_match",
+      "report": {
+        "title": "How do I make summer availability expire?",
+        "description": "I'm available every Tuesday and Thursday afternoon until August 28, then my classes start. I can set the weekly pattern in SkilletSpan, but I can't find an end date anywhere. Do I really have to remember to delete it myself in August?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Recurring availability has no end-date option",
+        "summary": "Employees cannot set a recurring availability pattern that ends on a specified date. Seasonal availability must be removed manually when the season finishes."
+      }
+    },
+    {
+      "id": "1ba72c11-3831-4c2d-8265-f7d014ea5267",
+      "kind": "no_match",
+      "report": {
+        "title": "Clock-in works, but my screen reader doesn't tell me",
+        "description": "Posting this for our accessibility ticket. I use a screen reader with the mobile clock. When I activate Clock In, I don't hear a success message or anything else that tells me the punch went through. A coworker watching my screen said a confirmation banner appeared, so it seems the clock-in itself worked.\n\nI checked Time History afterward and the entry was there. That is currently the only way I can confirm it on my own. It's especially confusing during the morning rush: I can't tell whether I should wait, try the button again, or start work. Please have the app announce the confirmation when it appears rather than requiring me to go looking for the recorded punch."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Clock-in confirmation is not announced to screen readers",
+        "summary": "The mobile app successfully records a clock-in, but its confirmation banner is not exposed as an accessibility announcement. Screen-reader users cannot tell that the action succeeded without navigating to their time history."
+      }
+    },
+    {
+      "id": "038afa17-e471-4c18-bd18-185dada09ddc",
+      "kind": "no_match",
+      "report": {
+        "title": "Printed roster cuts off the station names",
+        "description": "The published schedule looks fine on screen, but our printout chops both “Patio Service — East Counter” and “Patio Service — West Counter” down to the same text. The labels don't wrap, so staff can't tell which counter they're assigned to. We need the full station names on the kitchen noticeboard copy."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Published schedule printouts clip station labels",
+        "summary": "Long station labels are cut off in printable schedule layouts instead of wrapping. The on-screen schedule shows the full labels, but printed assignments can become ambiguous."
+      }
+    },
+    {
+      "id": "de0a0583-6533-4811-9d1d-da743b8a2fcc",
+      "kind": "no_match",
+      "report": {
+        "title": "Closed restaurant missing from old timesheet search",
+        "description": "We're reviewing last winter's hours for the former Mossgate restaurant, which we archived after it closed. Historical timesheet search no longer lists it in the location selector, and I don't see an option for archived sites.\n\nI temporarily reactivated Mossgate and could immediately find the records. Archived it again and it disappeared from the search again. We'd rather not put a closed restaurant back into the active site list whenever someone needs to answer a payroll question. Is there another way to search its old timesheets without reopening it?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Archived locations cannot be included in historical search",
+        "summary": "The historical timesheet search excludes archived locations and offers no control to include them. Managers must temporarily reactivate a closed restaurant to inspect its old records."
+      }
+    },
+    {
+      "id": "5511a038-51d4-4e43-ad54-80358b14d793",
+      "kind": "no_match",
+      "report": {
+        "title": "Copied closing template has no tasks",
+        "description": "Duplicated our evening close template to make a shorter Sunday version. The station and shift length copied over, but the closing checklist didn't. We only noticed after publishing: every shift made from the new template had zero checklist tasks, while the original still has all nine."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Shift-template duplication drops attached checklists",
+        "summary": "Duplicating a shift template copies its duration and station but omits its opening or closing checklist. Shifts created from the duplicate therefore have no checklist tasks."
+      }
+    },
+    {
+      "id": "e28b4b20-cb62-416c-b62b-5a52f99fef98",
+      "kind": "no_match",
+      "report": {
+        "title": "New profile picture is sideways",
+        "description": "My photo is upright in my phone's gallery and was taken with the phone held vertically. After uploading it to SkilletSpan, my profile shows me sideways. Tried uploading the same picture again and got the same result."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Employee profile photos rotate after upload",
+        "summary": "Profile photos taken in portrait orientation appear sideways after upload. The image-processing service discards orientation metadata without rotating the underlying image."
+      }
+    },
+    {
+      "id": "89558dc6-67d4-43ed-a77e-62deb5c95623",
+      "kind": "no_match",
+      "report": {
+        "title": "Can't submit 3.6 miles between sites",
+        "description": "I covered lunch at Fernwick and then drove to our Ashmere kitchen for prep. The trip was 3.6 miles, but the mileage reimbursement form rejects that value and asks for a whole number. Our reimbursement policy pays for the actual distance to one decimal place. I don't want to claim 4 miles when I drove 3.6, and entering 3 would short me. Can the form accept the distance we actually traveled?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Mileage reimbursement entries reject fractional distances",
+        "summary": "Employees recording travel between restaurants can enter only whole distance units for reimbursement. Fractional distances are rejected rather than accepted or rounded under the group's reimbursement policy."
+      }
+    },
+    {
+      "id": "adbcf982-518a-4478-9557-7494adaf71ea",
+      "kind": "no_match",
+      "report": {
+        "title": "Sorting stations at one site changes the other site's order",
+        "description": "We manage two restaurants with very different layouts. At Bellrow, we'd like the schedule columns to run Host, Dining Room, Patio, then Kitchen. At Reedquay, the kitchen assignments need to come first because that's how their shift lead does the briefing.\n\nYesterday I reordered the stations while working in Bellrow. Today Reedquay's manager asked why I'd rearranged their schedule too. We tried setting Reedquay back, and that also changed Bellrow. Switching the location selector before dragging the stations doesn't seem to make a difference.\n\nThese are shared station names, so we don't want to create duplicate stations just to get a different display order. Is there a way to save the ordering separately for each restaurant? Right now we're undoing each other's changes."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Station ordering cannot differ between locations",
+        "summary": "Reordering stations for one restaurant changes their order throughout the group. The product stores one group-wide display order and does not support site-specific ordering."
+      }
+    },
+    {
+      "id": "ad0cd903-b729-4ec0-b0fb-a22bfb4fe574",
+      "kind": "no_match",
+      "report": {
+        "title": "Canceling face unlock leaves login stuck",
+        "description": "If I cancel the biometric prompt in the SkilletSpan mobile app, the sign-in screen stops responding. I can't tap password sign-in or any other control. Closing the app completely and reopening it lets me try again, but I'd expect Cancel to let me use my password instead."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Mobile sign-in freezes after canceling biometric unlock",
+        "summary": "Canceling the biometric unlock prompt leaves the mobile sign-in screen unresponsive. Employees must restart the app before they can choose password sign-in."
+      }
+    }
+  ]
+}

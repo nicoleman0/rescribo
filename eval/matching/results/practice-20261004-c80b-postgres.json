@@ -1,0 +1,136 @@
+{
+  "batch_id": "practice-20261004-c80b",
+  "split": "practice",
+  "method": "postgres text search, english config, OR query, ts_rank_cd, id tie-break",
+  "postgres_version": "17.11",
+  "cases": 122,
+  "metrics": {
+    "expected_match": {
+      "recall_at_10": {
+        "hits": 86,
+        "total": 92,
+        "rate": 0.935
+      },
+      "top1": {
+        "hits": 54,
+        "total": 92,
+        "rate": 0.587
+      },
+      "top3": {
+        "hits": 77,
+        "total": 92,
+        "rate": 0.837
+      }
+    },
+    "by_kind": {
+      "confusable": {
+        "recall_at_10": {
+          "hits": 12,
+          "total": 12,
+          "rate": 1.0
+        },
+        "top1": {
+          "hits": 4,
+          "total": 12,
+          "rate": 0.333
+        },
+        "top3": {
+          "hits": 12,
+          "total": 12,
+          "rate": 1.0
+        }
+      },
+      "match": {
+        "recall_at_10": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        },
+        "top1": {
+          "hits": 18,
+          "total": 20,
+          "rate": 0.9
+        },
+        "top3": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        }
+      },
+      "misleading_version": {
+        "recall_at_10": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        },
+        "top1": {
+          "hits": 13,
+          "total": 20,
+          "rate": 0.65
+        },
+        "top3": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        }
+      },
+      "missing_context": {
+        "recall_at_10": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        },
+        "top1": {
+          "hits": 17,
+          "total": 20,
+          "rate": 0.85
+        },
+        "top3": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        }
+      },
+      "paraphrase": {
+        "recall_at_10": {
+          "hits": 14,
+          "total": 20,
+          "rate": 0.7
+        },
+        "top1": {
+          "hits": 2,
+          "total": 20,
+          "rate": 0.1
+        },
+        "top3": {
+          "hits": 5,
+          "total": 20,
+          "rate": 0.25
+        }
+      }
+    },
+    "no_match": {
+      "false_suggestion": {
+        "hits": 30,
+        "total": 30,
+        "rate": 1.0
+      },
+      "by_kind": {
+        "negation": {
+          "hits": 20,
+          "total": 20,
+          "rate": 1.0
+        },
+        "no_match": {
+          "hits": 10,
+          "total": 10,
+          "rate": 1.0
+        }
+      }
+    },
+    "pool_size": {
+      "max": 10,
+      "mean": 10.0
+    }
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "seed": 2985929429,
+  "batch_sha256": "7d92b27c5840e718cdabe3b4b2a17e21788e04a9b8f246f411f87883609ba2fb",
+  "verdicts": [
+    {
+      "case_id": "2d069bcc-ff0c-4eff-a2df-6129b005f9fe",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly identifies session timeout (401 response) causing the note to hang on 'Saving\u2026' without a login prompt since the 4.5 update, matching this problem and ruling out rich text."
+    },
+    {
+      "case_id": "6fe968e6-1a75-4e8e-bbe3-25a10017de4e",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes reception staff being able to see preview snippets of restricted clinical notes in search results despite lacking permission to open the notes."
+    },
+    {
+      "case_id": "61a54d4b-f35a-400c-8e5f-9838c47c75b2",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report specifically describes downloaded exercise videos failing with a black player and retry prompt due to expired playback tokens after being offline, which is resolved by reconnecting and refreshing the plan."
+    },
+    {
+      "case_id": "3c3aa50d-46e1-4121-bef2-b69e57489805",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes visit entries failing to save when containing copied styling and inline images while plain text works fine, which matches the problem with pasted rich text."
+    },
+    {
+      "case_id": "d8f76fd3-7c45-4918-b846-a7647e551b2b",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report describes appointment text messages failing when containing little pictures (emojis) and succeeding once they are removed, which directly matches the problem of Unicode characters in reminder templates causing SMS dispatch failures."
+    },
+    {
+      "case_id": "6f9425be-1874-48b1-ae7d-2ff4b0c7be3c",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes treatment-plan PDFs omitting the patient signature while showing the timestamp and retaining the clinician's signature."
+    },
+    {
+      "case_id": "82c168c6-ed5e-4a38-a3c9-bb4109f538a6",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report describes discharged patients continuing to count toward active caseload totals until their records are archived, which exactly matches the known problem."
+    },
+    {
+      "case_id": "997f1aa0-87e8-4c62-a1b5-da810b9bdc84",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly clarifies that Unicode reminders send successfully and instead complains about an editor navigation issue not covered by any listed problem."
+    },
+    {
+      "case_id": "71488ecb-6dba-4530-b20b-77f21e37a700",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely describes two patients booking the same appointment slot when confirming simultaneously, resulting in double-booked confirmed appointments."
+    },
+    {
+      "case_id": "e69a4b8b-f468-4225-83c8-92b7f5710b33",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes weekly recurring appointments silently truncating after the end of December when set to end in the following calendar year."
+    },
+    {
+      "case_id": "bbb41b99-fb03-4ec5-a6f9-82c64f144407",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes online booking slots going missing during the week following a daylight-saving time change while remaining visible on the internal calendar."
+    },
+    {
+      "case_id": "8da0837c-cabd-4cfe-9d22-dd4a9ade3a2b",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly states that the waitlist issue is not occurring and instead describes an unlisted problem regarding sorting the receipt list by amount."
+    },
+    {
+      "case_id": "3b08ef6e-1f61-4bc7-95e0-9d088f42cb7d",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly rules out the known signature bug and instead describes an uncustomizable email subject line, which is not among the listed problems."
+    },
+    {
+      "case_id": "03d4fd45-4a9e-46db-b0f7-1e0c00c13c32",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly confirms location-specific logos are working and describes a receipt sorting issue that does not match any listed problem."
+    },
+    {
+      "case_id": "6b06123d-51b0-44ca-b0d4-bf4b32c152dc",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely describes patient-record ZIP exports failing with 'Could not prepare download' when attachments exceed around 2 GB, with smaller batches succeeding."
+    },
+    {
+      "case_id": "5745b5bc-144b-4052-acf9-3eeb00b36a28",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes editing an exercise plan causing previously recorded completion badges to disappear from the calendar view."
+    },
+    {
+      "case_id": "1d6ca86f-e489-4bf7-9e0f-5f86eb4c9e9d",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes online booking slots remaining unavailable after deleting a therapist's leave block until availability is rebuilt, matching the expected problem."
+    },
+    {
+      "case_id": "e62ec39d-ad4d-4cd2-bfe1-d92fd3972164",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report describes two users simultaneously booking the exact same appointment slot and both receiving confirmations, which matches the concurrent booking problem."
+    },
+    {
+      "case_id": "5392fed1-2f02-4110-84e6-a257755100c7",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly denies experiencing the migrated patient reminder issue and instead complains about invoice footer character limits, which does not match any listed problem."
+    },
+    {
+      "case_id": "4d0b29c1-12e2-49e1-b848-4d7c1d0dd7cd",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly denies experiencing the leave-cancellation bug and asks about invoice font sizes, which does not match any listed problem."
+    }
+  ]
+}

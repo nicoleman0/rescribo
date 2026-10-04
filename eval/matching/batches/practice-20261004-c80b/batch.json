@@ -1,0 +1,1589 @@
+{
+  "batch_id": "practice-20261004-c80b",
+  "split": "practice",
+  "data_source": "synthetic",
+  "generator": {
+    "provider": "openrouter",
+    "model": "openai/gpt-6.1-sol",
+    "prompt_version": "834b81d4e19e",
+    "created_at": "2026-10-04T12:24:15+00:00"
+  },
+  "problems": [
+    {
+      "id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "title": "Invoice CSV fails on accented client names",
+      "summary": "Invoice CSV exports fail with “Could not build export” when a client name contains certain accented characters. Quivell 3.8 introduced an ASCII-only conversion in the client-name column; exports containing only unaccented names succeed.",
+      "confusable_with": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "linked_reports": [
+        {
+          "id": "eb900053-96bd-420b-b54b-859d4ec7d8ed",
+          "title": "CSV error for one client",
+          "description": "Support paste — Vellun Studio: “Invoice CSV keeps saying it couldn't build the export. Exporting just our client Mórava works as PDF, not CSV. Other clients export normally.”"
+        },
+        {
+          "id": "7a92287d-eb43-484b-a643-4a75d62e60c2",
+          "title": "Date range was a red herring",
+          "description": "Account team note: Nuvrel Atelier initially blamed the quarter-end date range. We narrowed it to four invoices and it still failed. Changing the accented character in the client name made the same selection download immediately. They need the original spelling on invoices, so renaming the client isn't a usable workaround."
+        }
+      ]
+    },
+    {
+      "id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "title": "Large invoice CSV exports time out",
+      "summary": "Invoice CSV exports fail with “Could not build export” when the selection exceeds roughly 50,000 invoice lines. The export worker times out while loading line items; splitting the date range usually succeeds.",
+      "confusable_with": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "linked_reports": [
+        {
+          "id": "34229cd4-8979-41e2-bd9e-bf2451c529cd",
+          "title": "Full-history CSV won't download",
+          "description": "Ticket from Brindlequay Design: “Monthly invoice CSV files work. All-history CSV spins for a minute and says it couldn't build the export. None of our client names have accents.”"
+        },
+        {
+          "id": "6f390f25-7ae0-4b2b-b02f-89c541c61972",
+          "title": "Year-end export blocked",
+          "description": "Support handoff — Orynfold Creative needs an invoice CSV for a bookkeeping migration. They selected all invoices across five years, including a large number of itemized production charges. The download starts spinning, then returns “Could not build export.” There is no partial file.\n\nWe tested a single month and it worked. A quarter also worked. Combining the busiest two years failed again. The same failure happens for both workspace owners, so this doesn't look like a permission issue. Their client names are plain text without accented letters or unusual punctuation.\n\nThey were understandably confused because the invoice list itself loads quickly and PDF downloads for individual invoices are fine. We explained that those are separate paths, but they still need one consolidated CSV rather than dozens of files. For now they are exporting month by month and stitching the results together manually. Please keep this attached to the large-export issue, not the client-name encoding issue; the small samples contain the same clients as the failing export."
+        }
+      ]
+    },
+    {
+      "id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "title": "SVG logos disappear from invoice PDFs",
+      "summary": "Invoice PDFs show an empty logo area when the workspace logo is an SVG using masks or external font references. The PDF renderer cannot resolve those SVG features, although the invoice preview displays them correctly.",
+      "confusable_with": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "linked_reports": [
+        {
+          "id": "36ece085-b5ae-4ef6-8d21-17a667c3b061",
+          "title": "Logo visible in preview, absent in PDF",
+          "description": "Vaskel Works ticket: “Our logo is there on the invoice screen but the PDF has a blank space. We uploaded an SVG yesterday. A PNG version shows up.”"
+        }
+      ]
+    },
+    {
+      "id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "title": "Older uploaded logos disappear from invoice PDFs",
+      "summary": "Invoice PDFs intermittently show an empty logo area for logos uploaded more than seven days earlier, including PNG and JPEG files. The PDF worker reuses an expired asset-access token; Quivell 3.9.1 fixed newly generated invoices but not previously queued jobs.",
+      "confusable_with": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "linked_reports": [
+        {
+          "id": "c9c974c3-38ea-44e5-9f9d-ce8f100caef8",
+          "title": "Re-upload fixes blank PDF logo temporarily",
+          "description": "Slack paste — Telnora Bureau says their PNG logo vanished from downloaded invoices again. Re-uploading the identical file fixes it for about a week. Browser preview remains correct throughout."
+        },
+        {
+          "id": "d8906851-c6c4-4ed6-be71-41005f3e7ce9",
+          "title": "Queued PDFs still missing branding after update",
+          "description": "Support note: Merivane Collective upgraded to 3.9.1 and fresh invoice PDFs now include the logo. Three PDFs requested before the update still arrive without it when retried from the export queue. The source image is a JPEG, not an SVG."
+        }
+      ]
+    },
+    {
+      "id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "title": "Bank feed duplicates pending card transactions",
+      "summary": "Some card purchases appear twice in the bank feed, once as pending and once as settled. The importer does not merge records when the fictional bank connector replaces the transaction identifier on settlement.",
+      "confusable_with": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "linked_reports": [
+        {
+          "id": "79cc570f-0f6b-440e-8514-1bcd2815dbc8",
+          "title": "Same card purchase twice",
+          "description": "Orvelune Studio: “Bank feed has two copies of the materials purchase. One says pending, one says settled, same amount. We haven't disconnected the bank.”"
+        },
+        {
+          "id": "3ca84320-e54e-49ed-9183-9526dd6c5fc5",
+          "title": "Duplicates appear when purchases clear",
+          "description": "Support triage: At Fenquill Design the duplicates arrive two or three days after the initial card entry. Each pair has different bank transaction IDs and different status labels. Reconnecting wasn't involved. Staff are worried about claiming the same cost twice."
+        }
+      ]
+    },
+    {
+      "id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "title": "Bank reconnection imports overlapping transactions",
+      "summary": "Reconnecting a bank feed can import a second copy of already settled transactions from the previous fourteen days. Reconnection resets the import cursor, and the overlap batch bypasses the usual duplicate check.",
+      "confusable_with": "a275af97-c71e-4e09-8a18-58b096305361",
+      "linked_reports": [
+        {
+          "id": "d7b1ad97-f6b4-4cd0-9ae9-a893f355aa7d",
+          "title": "Two weeks of duplicates after reconnect",
+          "description": "Ticket — Dulvane Workshop: “Bank access expired. We reconnected and now nearly every settled transaction from the last fortnight is doubled. No pending entries involved.”"
+        },
+        {
+          "id": "1c0af9c8-158c-49b1-a79d-894afd6bd463",
+          "title": "Duplicate feed rows share bank IDs",
+          "description": "Account manager paste: Quarnel Creative sent a comparison of duplicated rows. Same bank ID, date, description and amount on both copies. The second set appeared immediately after reconnecting the account."
+        },
+        {
+          "id": "71bf6de3-2dd4-4382-b7cd-bd3438263611",
+          "title": "Reconnect workaround caused more duplicates",
+          "description": "Support follow-up: We asked Lenvora Studio to reconnect to restore a stalled feed. That restored imports but also copied eleven previously imported settled payments. They have paused reconciliation until we confirm which copies to remove."
+        }
+      ]
+    },
+    {
+      "id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "title": "Timers double-count the autumn clock change",
+      "summary": "A timer spanning the repeated hour during the autumn daylight-saving transition can add an extra hour to tracked time. Duration is calculated from local clock values rather than elapsed timestamps in the timer service.",
+      "confusable_with": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "linked_reports": [
+        {
+          "id": "ad14f81e-e4d7-4bdb-8a85-7cdb1e013cb5",
+          "title": "Overnight timer has an extra hour",
+          "description": "Nerquay Atelier support ticket: “Worked through the clock change on a deadline. Timer says three hours, but I only worked two. I stayed online the whole time.”"
+        }
+      ]
+    },
+    {
+      "id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "title": "Timers double-count after offline retries",
+      "summary": "Tracked time can be added twice when a timer is stopped offline and the browser retries the buffered save after reconnecting. Quivell 3.7 removed duplicate visible entries in some cases, but the daily total can still include both saves.",
+      "confusable_with": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "linked_reports": [
+        {
+          "id": "a8914f20-befc-4c5c-a8f4-67565d285a52",
+          "title": "One timer entry, doubled daily total",
+          "description": "Slack paste — Sovrindle Design: “Stopped a 45-minute timer on a train with no signal. Back online, the day total went up by 90 minutes. Only one entry is visible.”"
+        },
+        {
+          "id": "cec93ccf-04fd-4067-8bf1-15c070a9fbb9",
+          "title": "Offline timer issue survived 3.7",
+          "description": "Support note: Vornella Bureau expected 3.7 to fix this. The duplicate row no longer appears, but the daily total is still doubled after an offline stop. Their screenshot is from an ordinary afternoon, nowhere near a daylight-saving change."
+        }
+      ]
+    },
+    {
+      "id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "title": "Password-protected receipts stay in Processing",
+      "summary": "Expense claims with password-protected PDF receipts remain in “Processing” and cannot be submitted. The receipt extraction worker fails to surface the password-required error, leaving the claim waiting for extraction indefinitely.",
+      "confusable_with": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "linked_reports": [
+        {
+          "id": "2ad9ac13-05b2-41a1-939c-4d1a74b17c89",
+          "title": "Receipt processing never ends",
+          "description": "Elnovar Studio: “Uploaded a supplier PDF receipt and the claim has said Processing since yesterday. The PDF asks for a password when opened locally. A photo receipt works.”"
+        }
+      ]
+    },
+    {
+      "id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "title": "Claims stay in Processing after approver removal",
+      "summary": "Submitted expense claims remain in “Processing” when their assigned approver has been removed from the workspace. The approval router retains the removed member's identifier instead of assigning the fallback approver.",
+      "confusable_with": "af7543b0-d113-4801-aeef-f9d708948041",
+      "linked_reports": [
+        {
+          "id": "d7ad4fee-b676-47cb-8201-96f89c5d461c",
+          "title": "Claims stranded after team cleanup",
+          "description": "Account team — Fenvora Collective removed their former finance lead last week. Six submitted claims now say Processing, even though the receipt details are already extracted. New claims routed to the replacement approver work."
+        },
+        {
+          "id": "6fd93329-e7ea-4ada-bd36-1e35988f52ef",
+          "title": "Receipt replacement didn't move claim",
+          "description": "Support paste: “We tried replacing the receipt with a plain image because another ticket mentioned PDFs. Still stuck. The history shows approval assigned to a member who no longer exists.” — Ulquern Works"
+        }
+      ]
+    },
+    {
+      "id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "title": "Discounted invoice totals differ by a cent",
+      "summary": "Invoices with fractional unit prices and percentage discounts can show totals a cent or two above the expected amount. The calculation rounds each line before applying the invoice-level discount rather than rounding the discounted aggregate.",
+      "confusable_with": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "linked_reports": [
+        {
+          "id": "42e8f81c-4182-4501-995d-75af3b095f3f",
+          "title": "Tiny total mismatch on discounted invoice",
+          "description": "Trevquill Atelier: “Our invoice total is two cents higher than the calculation in our worksheet. All amounts are in the workspace currency. It happens with fractional rates and a 15% discount.”"
+        }
+      ]
+    },
+    {
+      "id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "title": "Converted invoice totals use stale exchange rates",
+      "summary": "Foreign-currency invoice totals can differ from the expected converted amount after the invoice date changes. Since Quivell 3.8, editing the date updates the displayed exchange rate but leaves the total calculated using the previously cached rate.",
+      "confusable_with": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "linked_reports": [
+        {
+          "id": "2cc3f1bc-aee9-4d9d-a8be-6f5bb298d405",
+          "title": "Total doesn't match visible exchange rate",
+          "description": "Ticket — Yelvorn Design: “Changed the invoice date and the displayed exchange rate changed, but the converted total didn't. No discount on this invoice.”"
+        },
+        {
+          "id": "43d717bb-03e4-4ba4-9a3c-d8b3cf3c52cc",
+          "title": "Finance reconciliation of converted totals",
+          "description": "Support handoff for Avrindle Bureau: Their finance team noticed that a foreign-currency invoice total no longer agrees with the rate shown in the invoice editor. They first described it as a rounding error because the initial difference was small. We reproduced it with a larger amount and the discrepancy grew proportionally.\n\nThe invoice was drafted with one date, then moved to a later date before sending. The rate label refreshed immediately, but the converted total stayed at the old value. Changing the date back makes the visible rate and total agree again. Creating a brand-new invoice with the later date also produces the expected total.\n\nThere are no percentage discounts, fractional quantities or unusual tax settings on the example. Every line is a whole-number amount. Their saved PDF carries the stale converted total as well, so this isn't just a label problem in the editor. They are rebuilding affected drafts as a workaround and have asked whether already-sent invoices need correction. Please attach this to the cached exchange-rate defect rather than the discount-rounding defect."
+        }
+      ]
+    },
+    {
+      "id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "title": "Archived projects remain available for new time entries",
+      "summary": "The time-entry project picker includes archived projects, allowing staff to record new work against them. The picker uses a cached project list without applying the archived-state filter.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "b02105fe-36c6-4e31-ab0f-8dc40b1215bc",
+          "title": "Closed project still in timer dropdown",
+          "description": "Molvessa Creative: “Archived last year's packaging project, but everyone can still pick it in the timer and save new time. Refreshing doesn't remove it.”"
+        }
+      ]
+    },
+    {
+      "id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "title": "Month-end recurring invoices skip short months",
+      "summary": "Monthly recurring invoices scheduled for the 29th, 30th or 31st can skip months without that calendar day instead of running on the last day of the month. Quivell 3.6 corrected schedules created afterward, but older schedules retain the defective recurrence rule.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "c82fb946-1b00-4a74-af15-e2c34ae37fcd",
+          "title": "Retainer invoice missing for short month",
+          "description": "Slack paste — Ivranel Studio: “Recurring invoice is set to the 31st. Nothing generated in the month ending on the 30th. This schedule has existed since before 3.6.”"
+        },
+        {
+          "id": "52c2c253-4d16-4498-a121-d3057a386aec",
+          "title": "Old and new schedules behave differently",
+          "description": "Support note: Rulvessa Works created a test recurrence with the same settings as their old one. The new schedule runs on month-end; the original skips short months. They want a fix without recreating all their retainers."
+        }
+      ]
+    },
+    {
+      "id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "title": "Cloned tasks lose their non-billable setting",
+      "summary": "Cloning a non-billable task creates a billable task even when the source task is explicitly marked non-billable. The clone operation omits the billing flag and falls back to the workspace default.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "f0d07b7d-06ac-4490-870b-493df3d9b4a1",
+          "title": "Internal tasks become billable when copied",
+          "description": "Zelquora Atelier: “We clone our internal review task for each project. The copy always starts billable, although the original isn't. We keep catching internal time in draft invoices.”"
+        }
+      ]
+    },
+    {
+      "id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "title": "Aged receivables ignore applied credit notes",
+      "summary": "The aged-receivables dashboard shows the original outstanding invoice amount even after a credit note has been applied. Its balance query subtracts payments but not credit allocations, overstating debt in the age buckets.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "bb0e6a0f-98a7-4ad9-9e73-1a898ac85a77",
+          "title": "Aging dashboard disagrees with invoice balance",
+          "description": "Support paste — Brelnova Design: “Invoice balance is correct after the credit, but aged receivables still says the client owes the full amount. No payment has been recorded; this was a credit adjustment.”"
+        },
+        {
+          "id": "aaf519e9-210c-48ef-896d-3d42d5afa553",
+          "title": "Credit not reflected in overdue bucket",
+          "description": "Account manager note: Olvessa Collective's bookkeeper confirmed the credit note is applied, not merely drafted. The invoice page shows the reduced balance. The over-60-day dashboard bucket hasn't changed after two days."
+        }
+      ]
+    },
+    {
+      "id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "title": "Browser printing clips long invoice notes",
+      "summary": "Printing an invoice directly from the browser cuts off notes longer than one page. The print stylesheet places the notes in a fixed-height container; downloaded invoice PDFs are unaffected.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "a72e26b9-19b3-444a-9928-d47f2db73c64",
+          "title": "Terms cut off on browser print",
+          "description": "Yornavel Bureau: “Our second page of invoice terms disappears when using the browser's Print command. Downloaded PDF includes everything.”"
+        }
+      ]
+    },
+    {
+      "id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "title": "Undoing reimbursement leaves claims marked Paid",
+      "summary": "Undoing a recorded expense reimbursement removes the reimbursement transaction but leaves the related claims marked “Paid.” The reversal handler does not reset claim status, preventing those claims from being included in a replacement reimbursement batch.",
+      "confusable_with": null,
+      "linked_reports": []
+    },
+    {
+      "id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "title": "Restricted members can see margin dashboard",
+      "summary": "Members without permission to view financial margins can still open the project-margin dashboard from a saved dashboard shortcut. Quivell 3.9 hid the navigation item but did not add the corresponding authorization check to the dashboard data endpoint.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "d25cd591-9742-4594-80da-7902325420bc",
+          "title": "Hidden dashboard still opens from shortcut",
+          "description": "Support escalation — Kelvurne Studio tested their restricted designer role. The margin navigation item is gone, but a previously saved dashboard shortcut still opens and displays cost and margin figures."
+        },
+        {
+          "id": "25af683c-7992-43ed-93ad-0aae0bb7853a",
+          "title": "Role restriction only affects menu",
+          "description": "Account team: Arvessa Workshop needs margin information limited to owners. They verified the restriction in settings, signed out and back in, and still accessed live figures through the old shortcut. This is not merely a cached screenshot."
+        }
+      ]
+    },
+    {
+      "id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "title": "Bulk expense tagging keeps only the first tag",
+      "summary": "Applying two or more tags through the bulk expense editor saves only the first selected tag. The bulk update serializer sends a single tag value, while editing expenses individually preserves multiple tags.",
+      "confusable_with": null,
+      "linked_reports": [
+        {
+          "id": "fb9494cf-3fac-4f02-9716-c00f4326e53d",
+          "title": "Second bulk tag disappears",
+          "description": "Pelquora Creative: “Selected twenty expenses and added Campaign plus Travel. Only Campaign survived. Adding Travel to one expense at a time works.”"
+        },
+        {
+          "id": "0b976f2f-a47c-42ab-8ee3-e4d073b975b9",
+          "title": "Tag order determines which one survives",
+          "description": "Support reproduction: With the same expense selection, whichever tag Nolvessa Atelier picks first is the only one saved. Both tags are valid and neither is archived."
+        },
+        {
+          "id": "639dc319-3aed-4464-81e7-d11e952ddc53",
+          "title": "Bulk classification workaround",
+          "description": "Slack paste — Dravune Studio is doing two separate single-tag bulk operations for now. Selecting both tags in one operation silently loses the second; there is no warning."
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "ba772e97-59e0-4d44-ab09-8c45bab6bc7b",
+      "kind": "match",
+      "report": {
+        "title": "Invoice CSV won't export for clients with accents",
+        "description": "Tavlune says “Could not build export” when I download invoice CSVs that include our client Lumévara Studio. I narrowed it down by exporting one invoice at a time: theirs fails, while an invoice for Pindlewick Works downloads normally. As a test, I changed Lumévara to Lumevara on the client record and the same invoice exported immediately. Put the é back and it stopped working again. We need the proper spelling on their invoices, so leaving the accent out isn't a workable fix. Their PDF downloads fine."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51"
+    },
+    {
+      "id": "8fcc5af0-ac6b-4454-8a84-a2a90fcd41b3",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Spreadsheet handoff breaks on one account",
+        "description": "Our bookkeeper can't get the billing ledger out of Tavlune when it includes work for Brumélo Atelier. The download button gives a generic rejection instead of a file. It seems to dislike the little mark over the e in that account's label: spelling it Brumelo lets the exact same selection through. This happens even with a single bill selected, so there isn't much data involved. The printable document is unaffected."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51"
+    },
+    {
+      "id": "910739f4-9700-4630-ac79-01017b339b5e",
+      "kind": "missing_context",
+      "report": {
+        "title": "Accents upset the spreadsheet download",
+        "description": "Billing spreadsheets aren't available for customers whose names have accented letters; the plain-letter ones are fine."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51"
+    },
+    {
+      "id": "d5736dc1-f6f8-44fa-a28d-468c26c9161a",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Did Tavlune 4.1 break CSV downloads?",
+        "description": "I'm blaming the 4.1 release because that's when we first noticed this, although we hadn't needed a CSV for this customer before. Invoice export now gives “Could not build export” for Nuvélin Workshop. It's only two invoices, and retrying doesn't help. Other customers export without any trouble. My colleague temporarily removed the accent from Nuvélin and both invoices downloaded, then restored the proper spelling and got the error again. It feels like 4.1 changed something about how customer names are handled. Can you check? We don't want to alter customer records every time we send figures to our accountant."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51"
+    },
+    {
+      "id": "386a4107-4b1e-4a0b-9dc9-068ee122a52b",
+      "kind": "negation",
+      "report": {
+        "title": "CSV is fine; emailed invoice subject keeps resetting",
+        "description": "Invoice CSV exports work fine now, including accented client names. We're not getting “Could not build export.” My complaint is with the send-invoice window: I replace the email subject with our customer's purchase-order reference, but going back to edit the message body resets the subject to the default. Please keep the subject I've entered."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": null
+    },
+    {
+      "id": "f4031218-a09f-4891-ab1d-2f5c827a013c",
+      "kind": "confusable",
+      "report": {
+        "title": "Large invoice CSV export looks like a timeout, but one row triggers it",
+        "description": "Support ticket from the accounts desk at Dravindle Design: We initially thought our large invoice CSV export was timing out. We were pulling the whole quarter, around 850 invoices, and the download never arrived. The page eventually showed “Could not build export.” We tried again outside our busiest hours and got the same result.\n\nI spent this morning splitting the batch because I assumed there was a size limit or a slow export queue. A chunk of 400 worked, but another chunk of 20 didn't. That seemed odd for a timeout, so I kept cutting the smaller selection down. It turns out a single invoice for Pélarune House is enough to reproduce it. There is only one line item on that invoice, no attachment, and nothing unusual in its amount or date.\n\nFor comparison, I selected more than 700 invoices belonging to our other customers and that CSV arrived in a few seconds. I then tried the Pélarune invoice by itself again and it was rejected almost immediately. So the larger batch doesn't seem to need more waiting time; it seems to contain something the download can't handle.\n\nThe strongest clue is the customer spelling. In a test copy of the record, replacing Pélarune with Pelarune made that same invoice downloadable. Restoring the é brought the error straight back. I didn't change the invoice number, notes, dates, or amount during that test.\n\nCan you investigate that rather than just raising the maximum batch size? We need the accented spelling retained for the customer, and excluding their invoices from our quarterly spreadsheet leaves the accountant with an incomplete set. The PDF for this invoice still opens normally."
+      },
+      "source_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "expected_problem_id": "6776938a-a668-4c1b-8daf-86db73e5cd51"
+    },
+    {
+      "id": "4b66098e-71e4-4ce4-9126-633ae09207ee",
+      "kind": "match",
+      "report": {
+        "title": "Big invoice CSV export ends with “Could not build export”",
+        "description": "Our bookkeeper at Bramble Kite Studio needs all our invoices from last year out of DraftHarbor. The selection contains about 54,000 invoice lines, and the CSV export sits there for several minutes before showing “Could not build export.” A smaller selection with around 18,000 lines downloads normally. We tried exporting the year in three chunks, and each chunk worked. It seems to be the amount of line-item data rather than any particular invoice: the same invoices that won't export together are fine in the smaller files."
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+    },
+    {
+      "id": "f9194bad-0680-4b98-9135-fd3cb9129e87",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Whole-year billing spreadsheet never arrives",
+        "description": "The little spinning circle just keeps going when I ask for the agency's entire annual billing history in a comma-separated file. Eventually I get a red notice instead of a download. There are a bit over fifty thousand individual charges in that batch. Taking just a few months at a time gives me usable files, including all the same customers and charges. Can you make the full-year download work without us having to stitch several files together?"
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+    },
+    {
+      "id": "d931b3c7-4533-4148-b3af-52b9a75c8296",
+      "kind": "missing_context",
+      "report": {
+        "title": "Larger invoice CSVs won't download",
+        "description": "The big invoice CSV downloads aren't completing; small ones are still fine."
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+    },
+    {
+      "id": "fa764d45-9001-40b5-9053-1ced8b7f6152",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8 broke our annual invoice download",
+        "description": "Pasting this from our finance channel because we need it sorted before the accountant's meeting.\n\nI'm blaming the DraftHarbor 6.8 release. That's the version shown in the footer, and this is the first annual close we've done since it appeared. Our usual invoice CSV download now ends with “Could not build export.” Nothing arrives in Downloads, and refreshing the page doesn't reveal a finished file anywhere.\n\nWe're pulling the whole previous financial year for Lantern Pebble Design. There are only a few thousand invoices, so initially I couldn't understand why this would be considered a big job. However, our invoices are very detailed: we bill individual tasks separately, and the selected set adds up to roughly 57,400 lines. The download request runs for several minutes before the error appears. I repeated it twice yesterday and once this morning, with the same result.\n\nFor comparison, I asked our coordinator to pull the first quarter. That produced a CSV immediately. The second, third, and fourth quarters also worked on their own. We checked that those four files cover the same invoices as the annual selection; we haven't excluded a troublesome customer or changed any invoice content. Even the quarter containing our most detailed invoice came through.\n\nThe accountant can combine the quarterly files this time, but that's extra work and creates another opportunity to miss something. We need one complete file for our archive as well. Please check what changed in 6.8, especially around preparing larger downloads. If there's a size limit now, it ought to say so before we wait around for an error."
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+    },
+    {
+      "id": "07e7cf83-f2c0-4b7f-bd97-74f419b8ad94",
+      "kind": "negation",
+      "report": {
+        "title": "Invoice CSV is fine now, but success notices block the menu",
+        "description": "Our large invoice CSV exports no longer time out, and we haven't seen “Could not build export” this week. Even the full-year file downloaded successfully. My actual complaint is the green success notification: it stays over the top-right navigation until I dismiss it, and I can't click the account menu underneath. Please make that notice disappear automatically or move it somewhere that doesn't cover controls."
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "062d0c7a-a767-4838-9a6b-9186300c5ca8",
+      "kind": "confusable",
+      "report": {
+        "title": "Thought accented client names were breaking the CSV",
+        "description": "We suspected accented client names because our annual invoice CSV includes customers such as Café Luméline and Atelier Brévique. It waits a few minutes and then says “Could not build export.” But a small CSV containing those exact clients and their accented names downloads correctly. We also tried a large batch containing only clients without accents, and that failed too. The common factor seems to be volume: both unsuccessful batches have over 50,000 invoice lines. Breaking the annual selection into shorter date ranges gets every invoice out, accents included."
+      },
+      "source_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "expected_problem_id": "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+    },
+    {
+      "id": "e134325c-8a6c-43f0-87ce-7996e9a339e0",
+      "kind": "match",
+      "report": {
+        "title": "SVG logo is blank in exported invoice PDFs",
+        "description": "Our agency uses a masked SVG as its workspace logo in Quillnest. It looks correct in the invoice preview, but when we download the PDF, the logo area is empty. The rest of the invoice looks normal. I uploaded the file this morning, so it isn't an old upload. Our designer made a copy without the mask and that copy appears in the PDF. Can you make the export work with the original artwork?"
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593"
+    },
+    {
+      "id": "a407a7bd-5d54-4f10-9366-20d31f897c29",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Brand artwork gets left out of the downloadable bill",
+        "description": "The on-page mockup has our little agency emblem at the top, but the document we save and send to clients has just white space there. We're using vector artwork with cutout effects and lettering fetched from a separate typeface asset. A flattened image of the same design comes through fine. We'd rather not replace our crisp brand artwork with a blurry picture just to send a bill."
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593"
+    },
+    {
+      "id": "c10339cc-cf5b-46d1-9e03-8bf9d77540a3",
+      "kind": "missing_context",
+      "report": {
+        "title": "Masked SVG missing on downloaded invoice",
+        "description": "Our masked SVG logo shows in the preview but not in the invoice PDF."
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593"
+    },
+    {
+      "id": "6d6fc9ee-cbee-4aa4-ba64-ca32495e8c1a",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.18 seems to have broken our invoice branding",
+        "description": "Since Quillnest 4.18, the SVG logo at the top of our invoice PDFs is missing. I'm blaming the release because that's when we noticed it, although we also switched to new brand artwork that week. The invoice preview still shows the whole logo. Our designer says the new file uses a mask and loads its lettering from an external font reference. I tried uploading it again with a different filename, but the PDF still has a blank space. A PNG replacement exports normally. Could you check whether 4.18 changed something?"
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593"
+    },
+    {
+      "id": "91743286-8a8c-4a50-8ef0-4eaaac9c723b",
+      "kind": "negation",
+      "report": {
+        "title": "Invoice logo works; saved footer text won't stay saved",
+        "description": "The SVG logo does not disappear from our invoice PDFs anymore; the preview and downloaded file both show it fine. This ticket is about the default footer message. I change it to our new payment instructions, hit Save, and get a success message. When I reopen the settings, the old wording is back. I've had to paste the new footer into every invoice manually."
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": null
+    },
+    {
+      "id": "a2b9da82-7204-4765-9be6-413d5357a543",
+      "kind": "confusable",
+      "report": {
+        "title": "Older uploaded logos disappear from invoice PDFs — but fresh uploads do too",
+        "description": "Pasting this over from our agency's internal chat because we initially thought Quillnest had stopped keeping older uploaded logos.\n\nThe logo we've had on the account for months is missing from every invoice PDF we downloaded today. There's still room reserved for it above our address, just no artwork. In the invoice preview, it looks completely normal.\n\nI assumed the old upload had somehow expired, so I removed it and uploaded the original SVG again. Same result. Then our designer exported a brand-new SVG from the current artwork and I uploaded that too. Still blank in the downloaded PDF, despite being visible before downloading.\n\nWe did a few comparisons rather than keep replacing the logo at random. The original artwork uses a mask to cut a shape out of the emblem, and the lettering points to a separate font file. A simple SVG containing just a solid shape appears in the PDF. A copy of our actual logo with the cutout rebuilt as ordinary paths and the lettering converted to outlines also appears. The untouched version still doesn't.\n\nSo although this started with an older uploaded logo, the upload date doesn't seem to explain it. A file created and uploaded five minutes ago fails in exactly the same way if we keep those artwork features. No error message appears during upload or download, and all the invoice amounts and client details are present.\n\nWe can use the outlined copy temporarily, but please don't close this as an old-file issue. We'd like the original logo to export the way it looks on screen."
+      },
+      "source_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "expected_problem_id": "f48c3712-8c98-4e42-8690-8191cec59593"
+    },
+    {
+      "id": "0e45aed6-9c76-44b7-995b-711851d40b15",
+      "kind": "match",
+      "report": {
+        "title": "Older PNG and JPEG logos leave a blank space on invoice PDFs",
+        "description": "Pasting the notes from our billing desk at Mothfern Design: our agency logo is visible in Nuvelliqua's invoice preview, but some downloaded invoice PDFs have an empty space where it should be. The invoice amounts and client details are all there. It's just the logo that's missing.\n\nThe PNG we're using was uploaded about three weeks ago. I tried our JPEG alternative, which was uploaded last month, and got the same result. Neither file is an SVG. It isn't every invoice, either: two exports yesterday looked normal, while three others had the blank area. Downloading an affected invoice again sometimes gives us the same blank copy.\n\nAs a test, I uploaded the exact same PNG again this morning and selected the new copy. A fresh invoice export then included it. I haven't changed the dimensions, transparency, or anything else in the file. That makes me think this is related to how long the image has been stored rather than the artwork itself. The trouble seems to start once it's been there longer than a week.\n\nWe also have a batch that was already waiting to export when we moved to 3.9.1. New invoices made after that update seem okay so far, but the waiting batch still came back without the logo. Those invoices are for different clients and use different line items, so I can't find a common template setting that would explain it.\n\nCould you check the older exports before we resend them? We'd rather not keep replacing our company logo every billing cycle, and we don't want clients getting unbranded invoices while the preview tells us everything looks fine."
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+    },
+    {
+      "id": "da9b1ab9-ab48-445e-a15d-5c80823b61a6",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Our letterhead emblem stops appearing on customer bills",
+        "description": "The artwork we added a fortnight ago still looks right on screen, but the downloadable billing attachments sometimes have a bare patch at the top. Adding an identical copy today makes it show up again. Nothing about the picture changed; only how recently we added it. Can you stop us having to refresh our branding every week?"
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+    },
+    {
+      "id": "cd53d6db-3aaa-4991-a6a9-6cf1b7430712",
+      "kind": "missing_context",
+      "report": {
+        "title": "Blank logo spot in PDFs",
+        "description": "Invoice PDFs sometimes omit our long-stored logo, but a freshly uploaded copy shows up."
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+    },
+    {
+      "id": "2e1dad0f-0399-40e8-9499-5fdc87603021",
+      "kind": "misleading_version",
+      "report": {
+        "title": "I think 3.8.6 broke our invoice branding",
+        "description": "Since moving to Nuvelliqua 3.8.6, some invoice PDFs are missing our logo. I'm blaming that release because it's the only change I remember making. The logo is a JPEG we uploaded twelve days ago, and it still appears in the editor. A PNG uploaded around the same time also fails on some exports. Oddly, uploading the same JPEG again fixes the next export, so the file itself seems fine. We need the branding back without having to replace the image."
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+    },
+    {
+      "id": "1448d490-7ede-4ce4-a98a-ccee8b4d8d8b",
+      "kind": "negation",
+      "report": {
+        "title": "PDF logos are fine now; invoice email subjects aren't customizable",
+        "description": "Our older uploaded PNG and JPEG logos no longer disappear from invoice PDFs, including the ones we've had saved for months. That part works fine now. My actual request is about the outgoing email subject: Nuvelliqua won't let us save our own wording as the default. We have to rewrite it for every send. Please add a reusable subject setting."
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": null
+    },
+    {
+      "id": "80c54c3f-bc57-4971-9e2e-47eaf04b8aaa",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like the SVG logo disappearing issue, but we're using raster files",
+        "description": "Someone in our team called this the 'SVG logos disappear from invoice PDFs' issue, so that's what I searched for. However, the selected logo is definitely a PNG, not an SVG. We also reproduced it with a JPEG.\n\nBoth images had been in our account for more than seven days before this started. The preview shows the logo, but some exported PDFs have a completely empty logo area. Re-adding the unchanged PNG gives us a working export immediately. Selecting the older saved copy again brings the problem back on some attempts.\n\nOne other detail: we installed 3.9.1 while a set of invoice exports was still waiting. Invoices we created and exported afterward have their logos, but that earlier waiting set still arrived with blank branding. Retrying the download just gives us the same result.\n\nThis doesn't look like an SVG rendering limitation to us, because there isn't an SVG involved and the very same raster artwork works when freshly added. Could the export service be holding onto an old permission to fetch the image? That's only a guess, but the age of the saved file and whether the export was already waiting seem more relevant than its format."
+      },
+      "source_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "expected_problem_id": "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+    },
+    {
+      "id": "3afb28ca-57ed-4808-b09a-2e457a2de53b",
+      "kind": "match",
+      "report": {
+        "title": "Pending card purchases aren't being replaced when they settle",
+        "description": "In Quillnest, our Vellune Bank feed is showing the same card purchase twice: one pending entry and one settled entry. The pending one never goes away. For example, our 46.20 stationery purchase was pending on Monday, then a second entry for 46.20 arrived on Wednesday with the same merchant. We only paid once. I checked the connector details and the transaction ID is different on the settled entry. It looks like Quillnest adds that as a new purchase instead of merging it with the pending one. We haven't disconnected or reconnected the account."
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": "a275af97-c71e-4e09-8a18-58b096305361"
+    },
+    {
+      "id": "cbd1c70e-33fe-4548-b5d1-c9ae54c392b5",
+      "kind": "paraphrase",
+      "report": {
+        "title": "One spend, two lines",
+        "description": "Our studio's money activity in Quillnest keeps both the 'awaiting confirmation' line and the 'completed' line for a single checkout. Same shop, same amount, one charge on the statement. Looking at the raw details, the reference supplied for the completed line isn't the reference supplied for the earlier one. Shouldn't the completed line take the earlier one's place? At the moment we have to hide the old line manually or our spending looks inflated."
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": "a275af97-c71e-4e09-8a18-58b096305361"
+    },
+    {
+      "id": "1868f12f-6ece-4716-ac72-486c939ad80e",
+      "kind": "missing_context",
+      "report": {
+        "title": "Old pending line still there",
+        "description": "A card charge has completed, but its pending copy is still sitting beside it in our feed."
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": "a275af97-c71e-4e09-8a18-58b096305361"
+    },
+    {
+      "id": "3921a295-9b4a-49fc-942c-3d3a67ba2c61",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.18.2 seems to have broken card matching",
+        "description": "Pretty sure this is the Quillnest 4.18.2 release. Since the update, we've noticed card payments listed once as pending and again as settled, so the expense total is too high. Please roll back whatever changed in the bank sync.\n\nOne wrinkle: when I went back through older activity, I found the same thing on two purchases from before the update. In all three cases, Vellune Bank gives the completed payment a different reference from the temporary one. The temporary entry stays open indefinitely, even though the amount and merchant match. Normal settled-only payments look fine, and the connection has stayed active throughout. Still, 4.18.2 is when this became noticeable to us."
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": "a275af97-c71e-4e09-8a18-58b096305361"
+    },
+    {
+      "id": "0991284d-4230-4fec-8494-f699e35a9a89",
+      "kind": "negation",
+      "report": {
+        "title": "Account nickname won't save",
+        "description": "The bank feed is fine now: pending card transactions don't appear twice when they become settled, and we're not seeing duplicates. My issue is the account nickname. I rename it to 'Studio operating account', hit Save, and it looks correct until I refresh. Then it goes back to the original name. Could someone check why that setting isn't sticking?"
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": null
+    },
+    {
+      "id": "f86769cd-7ccf-444b-b811-00fb95d71779",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like overlapping imports, but we never reconnected",
+        "description": "Pasting this from our finance channel because the usual advice about bank reconnection doesn't fit what we're seeing.\n\nWe have what looks like an overlapping import in Quillnest: two rows for one payment, both counting toward the outgoing total. My first thought was that somebody had reconnected Vellune Bank and pulled the same date range again. Nobody has. The connection has been running continuously, with no authorization prompts or manual imports.\n\nI watched the latest example rather than deleting it immediately. A 73.60 payment to the fictional supply shop Brindlefoil first arrived as pending. Two days later, the bank marked that payment settled and Quillnest added another 73.60 row. The first row stayed pending. The merchant text is the same, and the bank's own statement contains only one debit.\n\nThe useful bit might be the references in the connector details. The first row has reference VF-TEMP-731; the later row has VF-FINAL-908. Those are the two references the bank supplied for the same payment at different stages. Quillnest seems to treat the second reference as a completely separate item rather than updating the earlier row.\n\nThis isn't a whole batch of old transactions being imported again. Transfers and payments that arrive already settled remain single entries. It's only the card spends we first see before they're finalized. Another automatic refresh didn't clear the leftover pending rows.\n\nCan you check that handoff before asking us to disconnect and reconnect? We'd rather not introduce a genuine overlapping import while trying to fix this one."
+      },
+      "source_problem_id": "a275af97-c71e-4e09-8a18-58b096305361",
+      "expected_problem_id": "a275af97-c71e-4e09-8a18-58b096305361"
+    },
+    {
+      "id": "f390fa26-1d50-4490-91e3-fad454f6e006",
+      "kind": "match",
+      "report": {
+        "title": "Reconnecting our bank feed brought in settled transactions twice",
+        "description": "Support ticket from the studio owner:\n\nOur bank feed needed reconnecting yesterday, so I went through the authorization screen and got it working again. As soon as the connection was restored, the transaction list filled up with another copy of payments we had already reconciled.\n\nThese aren't pending card payments changing into completed payments. Every example I've checked was already settled before the connection dropped. Some were matched to invoices and others were assigned to expense claims. Those original entries are still there, with their matches intact, but there's now another row with the same date, amount, and description sitting unmatched beside each one.\n\nThe dates seem important: the extra rows cover roughly the last two weeks. I can see a payment from thirteen days ago twice, but an older payment from three weeks ago still appears only once. Our actual bank statement has one entry for each payment, so this isn't money moving twice.\n\nI checked with our bookkeeper because I thought someone might have uploaded a statement file. Nobody did. The only action was reconnecting the existing feed after the app asked us to sign in again. We didn't add a new account or change which account the feed points to.\n\nThis has made the reconciliation screen pretty confusing. It looks like clients have paid twice and like we have a pile of uncategorized spending, even though we'd finished all of that work before the feed disconnected. We haven't deleted anything because we're worried about removing the rows that are linked to invoices.\n\nCan you help identify which entries came in after the reconnect and remove just those? We also need to know whether reconnecting again will create another set."
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+    },
+    {
+      "id": "4c899876-09a7-43a6-80bb-5ba6f5771fba",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Restoring the account link made cleared entries appear twice",
+        "description": "We had to authorize access to our business account again. Once that finished, the money activity screen showed pairs of identical lines for items we'd already ticked off. The original lines still have their invoice associations; the newly arrived ones don't. It's only the recent fortnight that has doubled up, not our older history. The statement from the account provider still shows each item once. It looks as though the app went back over a stretch we'd already dealt with when access was restored."
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+    },
+    {
+      "id": "44c422a3-2e18-4c9c-aafd-778955d10889",
+      "kind": "missing_context",
+      "report": {
+        "title": "Recent cleared entries doubled after relinking",
+        "description": "Relinking the account has left two of each already-cleared entry from the last couple of weeks."
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+    },
+    {
+      "id": "d923c048-0732-4f86-97a7-58ddec7ef491",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 5.8.2 seems to have broken reconciliation",
+        "description": "I'm blaming Draftmoss 5.8.2 because we noticed this right after the release banner appeared. Our feed had stopped updating, and I reconnected it that afternoon. Immediately afterward, settled transactions from the preceding fourteen days appeared again as unmatched rows, alongside the originals we'd already reconciled. Older entries weren't affected, and the bank statement hasn't changed. My colleague saw the release banner too but didn't reconnect her account, and her list is normal. Still, can you roll our workspace back? We can't trust the totals with these extra rows."
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+    },
+    {
+      "id": "756bd868-71c2-4082-a7fa-9bab781e888c",
+      "kind": "negation",
+      "report": {
+        "title": "Bank reconnection is fine; account names are the headache",
+        "description": "Reconnecting the bank feed works fine now: no duplicate transactions, no overlapping imports, and settled payments stay matched. What I actually need help with is naming the accounts in the sidebar. We have three studio accounts with almost identical provider labels, and Draftmoss won't let us give them our own display names. Can we please rename them without changing anything at the bank?"
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c9d4680e-d3b8-4180-8e6e-f05cc803405d",
+      "kind": "confusable",
+      "report": {
+        "title": "Bank feed duplicates pending card transactions? These were already cleared",
+        "description": "Pasting the question from our accounts channel: 'Is this that pending card transactions thing?'\n\nThe bank feed has duplicate card transactions, but none of the affected purchases were pending when this happened. They had all cleared several days earlier, and we'd already attached the receipts and reconciled them. We also have a duplicated incoming client transfer, which wasn't a card purchase at all.\n\nThe extras arrived together right after I reconnected the feed following an expired authorization. They cover the most recent fourteen days, including entries we had finished matching last week. Nothing older has been repeated. Each original remains reconciled, while its new twin is unmatched. Before reconnecting, there was just one row per purchase or transfer. So although the team keeps calling this 'pending card duplicates,' it seems tied to restoring the connection rather than a payment moving out of pending."
+      },
+      "source_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "expected_problem_id": "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+    },
+    {
+      "id": "34be478f-a0d9-4eba-93ed-c096dc1a74e7",
+      "kind": "match",
+      "report": {
+        "title": "Timer added an extra hour when the clocks went back",
+        "description": "Pasting this from our overnight production chat: I left a Quillpuddle timer running across the autumn daylight-saving change. I worked for 90 minutes, but stopping it produced a 2-hour-30-minute entry. This was the night the local clock repeated the 1 a.m. hour. My separate stopwatch showed 90 minutes, and I never paused or restarted the app timer. It looks as though the hour we went through twice has been included twice in the total. Please correct the entry before we invoice the client."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+    },
+    {
+      "id": "896933e5-169e-40cf-911f-019610082cdb",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Overnight session billed for time I didn't work",
+        "description": "Sunday's late shift came out as two and a half hours on the client sheet, although I was only at my desk for ninety minutes. During that session, my laptop display returned to an earlier reading and went through the same set of minute labels again. Quillpuddle seems to have charged for that second pass as extra work. Sessions before and after that overnight adjustment look right."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+    },
+    {
+      "id": "d3ee1d3c-a4a6-41d2-a82c-0c589fdf0c58",
+      "kind": "missing_context",
+      "report": {
+        "title": "Too much time on the fallback night",
+        "description": "My overnight entry has an extra sixty minutes on the night we put the clocks back."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+    },
+    {
+      "id": "d091d785-e73b-460c-bdcc-a357ddb1122a",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.8.2 broke overnight timer totals",
+        "description": "I'm blaming Quillpuddle 6.8.2 because we received that release just before this happened. Our studio had a late delivery on the weekend the clocks went back, and my running timer saved 3 hours 10 minutes for a session that actually lasted 2 hours 10 minutes. It stayed running while the local display went through the earlier hour again. Daytime entries on the same release are correct, and another overnight session later in the week was correct too. Still, that update is the only app change I know about. Can you check it? I don't want to explain an extra hour on the client's invoice."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+    },
+    {
+      "id": "fd377b4d-a62f-42bd-af3f-5b57f5c8b92f",
+      "kind": "negation",
+      "report": {
+        "title": "Timer is fine; completion sound is far too loud",
+        "description": "The timer spanning the autumn clock change did not double-count anything for me. No extra hour, and the tracked duration matched my stopwatch. My actual complaint is the piercing sound when I stop a session. It interrupts everyone in our shared studio, and I can't find a setting to mute just that sound without muting the whole browser."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": null
+    },
+    {
+      "id": "9aa65a0e-94f7-4c9b-a1b5-07f3c9bd0a1c",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like a duplicate sync or retry, but I was online throughout",
+        "description": "Support asked whether this might be an offline retry double-counting my time, so I checked what I could before sending this over.\n\nI started one Quillpuddle timer during our overnight packaging review and stopped it after 95 minutes. The saved entry says 155 minutes. There aren't two rows to merge or delete; there's one row with a total that is exactly sixty minutes too high. I didn't manually add any time, reopen the task, or press Start a second time.\n\nThe laptop was plugged in, awake, and connected throughout. We were on a continuous review call, and I could see incoming comments in the app while the timer was running. There was no offline banner, reconnect notice, or retry button. I also checked from another browser afterward: the same inflated total is already saved there, so it isn't just a stale display on my laptop.\n\nThe unusual thing about this session is that it crossed the seasonal rollback. I watched the system's time display return to the earlier hour while we were still working. My phone's stopwatch kept going normally and ended at 95 minutes. The app's total was 155.\n\nA short test after the repeated hour had finished saved the right amount, using the same laptop and connection. Another colleague who worked earlier that evening also has a correct entry.\n\nCould someone check how the total is worked out across that backward jump, rather than treating this as a duplicate upload? We need the original session kept, just with the actual amount of work recorded."
+      },
+      "source_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "expected_problem_id": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+    },
+    {
+      "id": "b392ceed-77e5-40e1-8f9e-70d9a1a7b3d1",
+      "kind": "match",
+      "report": {
+        "title": "Stopping a timer offline counts the same work twice",
+        "description": "Pasting from the Brindle Loom support ticket: I ran a timer for 24 minutes, lost Wi-Fi, and stopped it while offline. Once I reconnected, the browser retried the save and my daily total went up by 48 minutes. On Quivell 3.7 I only see one 24-minute entry, so deleting a duplicate isn't an option. The row looks right; the total is still counting both saves."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+    },
+    {
+      "id": "56173a6c-4e6c-4626-9017-84691e75c739",
+      "kind": "paraphrase",
+      "report": {
+        "title": "One work session, two helpings of billable minutes",
+        "description": "Our studio's connection dropped while I was working on a packaging mockup. I clicked Done at 18 minutes with the laptop still in airplane mode. When I put it back on the network, the little pending indicator cleared. There's just one line for the mockup, showing 18 minutes, but the figure at the top of today's sheet increased by 36. It looks as though the app accepted that same bit of work once when I finished it and again when the connection returned."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+    },
+    {
+      "id": "a9f40d28-9088-4911-9b60-80cd935e180d",
+      "kind": "missing_context",
+      "report": {
+        "title": "One row, twice the minutes",
+        "description": "After the connection came back, my finished session appeared once but contributed twice its minutes to the day's figure."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+    },
+    {
+      "id": "62a0b828-4fff-4ef2-a5bf-59c2ce6b86ab",
+      "kind": "misleading_version",
+      "report": {
+        "title": "The 4.2 navigation update has broken our hours",
+        "description": "From Marnel at Copper Fern Studio:\n\nI'm blaming Quivell 4.2 because this became noticeable immediately after the navigation redesign. We use the app throughout the day, and I don't remember having to audit the hours widget before that release.\n\nYesterday I had 95 minutes logged before starting a 32-minute illustration task. Our router went down toward the end of it. I pressed Stop anyway, got the pending-save indicator, and left the tab open. After the router came back, that indicator disappeared without me clicking anything else. The task list showed a single 32-minute entry, but the day's number was 159 minutes rather than 127.\n\nI refreshed, signed out, and opened the account on another laptop. Same number everywhere. This isn't just an animation showing an old value, and nobody else entered work under my account. There wasn't another running timer either. I haven't edited or rounded the entry.\n\nOne of our designers then checked an older screenshot from 4.1 and found the same mismatch after she'd finished a task on a train with no connection. So perhaps the redesign merely made the number easier to notice, but 4.2 is still the release we're pointing at internally.\n\nCould support check whether the pending submission is being accepted again when the tab gets a connection? We need the hours to be reliable before making invoices. Right now the individual rows look perfectly reasonable, which makes this much harder to catch than an obvious extra row."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+    },
+    {
+      "id": "c521d08f-c00c-4603-865a-1d3faa6c1d3d",
+      "kind": "negation",
+      "report": {
+        "title": "Timers are fine now; task search loses my place",
+        "description": "The offline timer retries aren't double-counting for us anymore. I stopped a timer without a connection this morning, reconnected, and both the entry and daily total were correct. My actual complaint is the task picker: searching for a task, opening it, then returning clears my search and scrolls me to the top. Please keep the search text and position when I go back."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": null
+    },
+    {
+      "id": "4e3fe2da-f7b1-4a6e-bedc-c21e5b45d2fc",
+      "kind": "confusable",
+      "report": {
+        "title": "Looks like the autumn clock-change double count, but it's July",
+        "description": "Our producer called this the 'clocks going back' bug because a half-hour timer became an hour in the daily total. But this happened on a July afternoon, not during the autumn clock change. The laptop's clock and time zone stayed unchanged, and the session didn't cross midnight. The relevant bit seems to be that I stopped the timer in a room with no Wi-Fi, then walked back to my desk. The pending save cleared when the connection returned. Only one half-hour entry is visible, but the total gained a full hour. Another session completed while connected counted normally."
+      },
+      "source_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "expected_problem_id": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+    },
+    {
+      "id": "1fa7e800-39b4-4216-87c3-b8c1fd99a0f2",
+      "kind": "match",
+      "report": {
+        "title": "Password-protected PDF receipts never leave Processing",
+        "description": "In Brindlefolio, my expense claim has been stuck in Processing since yesterday. The receipt is a password-protected PDF from a supplier. When I open it on my laptop, it asks for a password before showing anything, but uploading it here doesn't give me a warning or anywhere to enter that password. The Submit button stays disabled. I tried a fresh claim with the same receipt and got the same result. Saving an unlocked copy and attaching that instead lets the claim finish processing almost immediately. Could the app at least tell us the original file needs a password rather than leaving it waiting forever?"
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": "af7543b0-d113-4801-aeef-f9d708948041"
+    },
+    {
+      "id": "2c172ca3-0721-4d1a-8b13-63be017e70c2",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Locked attachments leave purchases in limbo",
+        "description": "The supplier's document needs a secret code before you can read it. After I attach it to a purchase entry, the little spinner just keeps going and I can't send the entry to my manager. There's no explanation or box for the code. An unrestricted copy of the exact same document goes through straight away."
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": "af7543b0-d113-4801-aeef-f9d708948041"
+    },
+    {
+      "id": "769d9c4f-95ad-4916-81d1-1a05cb10cd31",
+      "kind": "missing_context",
+      "report": {
+        "title": "Locked receipt stuck",
+        "description": "My expense with a locked receipt is still waiting; the unlocked ones are fine."
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": "af7543b0-d113-4801-aeef-f9d708948041"
+    },
+    {
+      "id": "c02c6929-8139-4b52-8a89-10190d2a9006",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.18 broke protected receipt uploads",
+        "description": "Pretty sure this started with Brindlefolio 6.18. Since our workspace got that release, the password-protected PDF receipts for our studio purchases just sit in Processing and we can't submit the expenses. I've left one overnight, refreshed the page, and tried uploading it again. Still nothing, and no error banner. Our approver and team permissions haven't changed. Weirdly, if I open the supplier PDF locally with its password and save an unprotected copy, that copy works in the same claim. Regular PDFs also work. I'm blaming the release because that's when we noticed it, but I don't have an older build to compare against. Please don't ask us to keep re-uploading the originals; we've done that several times already."
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": "af7543b0-d113-4801-aeef-f9d708948041"
+    },
+    {
+      "id": "0925747d-1d59-46d3-bebf-8e5488b890c6",
+      "kind": "negation",
+      "report": {
+        "title": "Receipt processing is fine; expense notes lose line breaks",
+        "description": "Password-protected PDF receipts aren't leaving our expense claims stuck in Processing now—we attach unlocked copies and can submit them normally. The actual issue is the notes field: I write three separate lines explaining a purchase, save it, then reopen it and everything has been squashed into one line. Please preserve the formatting. It makes our longer explanations hard to read."
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": null
+    },
+    {
+      "id": "d1f4b80a-02b6-4024-8457-93323e621fa1",
+      "kind": "confusable",
+      "report": {
+        "title": "Claims stay in Processing after approver removal, but only with locked receipts",
+        "description": "Pasting the details from our studio's internal thread because we initially thought this was an approver removal issue.\n\nWe removed our former approver from the workspace on Monday and assigned a replacement. Two expense claims were still showing Processing on Tuesday, so everyone assumed removing the approver had stranded them. I checked that the replacement was selected on both claims, but neither could be submitted. There's no approval request in the replacement's queue because we can't get that far.\n\nHere's the bit that doesn't fit the approver theory: ordinary receipts finish processing and submit to the new approver without any trouble. The two stuck claims both have supplier PDFs that ask for a password when opened outside Brindlefolio. The passwords are valid; we can read both documents on our computers. The app never asks us for them or says it can't read the attachment. It just leaves the claim in Processing.\n\nI also created a completely new claim after the approver change and assigned the replacement from the beginning. With one of those protected PDFs attached, that new claim gets stuck too. So this isn't limited to claims that existed when the old approver was removed.\n\nFinally, I made an unlocked copy of one receipt. Swapping that into the original stuck claim made it ready to submit, without touching its approver or any team settings. The other claim is still waiting with its protected original attached. Can someone check why unreadable receipts leave us waiting instead of telling us what needs fixing?"
+      },
+      "source_problem_id": "af7543b0-d113-4801-aeef-f9d708948041",
+      "expected_problem_id": "af7543b0-d113-4801-aeef-f9d708948041"
+    },
+    {
+      "id": "95de5ffc-1c94-4f09-852e-fc0e031884a2",
+      "kind": "match",
+      "report": {
+        "title": "Expense claims stuck in Processing after we removed their approver",
+        "description": "Hi support — our agency uses Draftquay, and we have five expense claims that nobody can approve now.\n\nThey were submitted last week and assigned to our studio lead, Velka Norrin. Velka left the agency on Friday, so I removed her from the workspace. All five claims still show Processing today. We have a fallback approver configured, and I expected those claims to go to that person once Velka was removed, but nothing appeared in their approval queue.\n\nOn the individual claim pages, the approval section still points to Velka. Her profile no longer opens, and she is definitely absent from the member list. It looks as though the claims are waiting for someone who cannot sign in anymore.\n\nI checked with the people who filed them: the receipts are ordinary image uploads, and they were visible before and after the membership change. This doesn't seem to be a receipt-reading delay. One person submitted a new claim this morning, and that one reached the fallback approver normally. It's only the claims already waiting for Velka that are stranded.\n\nWe tried changing the default approver and refreshing the pages, but the existing claims didn't move. We'd rather not ask everyone to withdraw and recreate their expenses, since the descriptions and project allocations have already been checked.\n\nCan you move these to our current approver, and confirm what should happen when an approver leaves? We need to reimburse the team this week, and at the moment there isn't an approval action available to anyone who still belongs to the workspace."
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+    },
+    {
+      "id": "a1fff76f-71f8-4ad4-95bc-d86437e30c00",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Reimbursement requests still waiting on our departed studio lead",
+        "description": "Our old studio lead is no longer on the team roster, but the out-of-pocket requests sent to her before she left still show her name beside 'Waiting for sign-off.' The backup reviewer has an empty inbox. Requests raised today reach him just fine; the earlier ones seem permanently tied to the departed colleague. Can those be handed over without everyone starting again?"
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+    },
+    {
+      "id": "db5012d6-f18e-4ba2-938a-5aa3eccac17f",
+      "kind": "missing_context",
+      "report": {
+        "title": "Still waiting on someone who left",
+        "description": "Our expense claims are stuck waiting for approval from a person who is no longer a workspace member, rather than reaching the backup."
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+    },
+    {
+      "id": "2c04afe3-d9ea-450f-9dc0-7e2dd7c2b339",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 4.18.7 seems to have broken approval handovers",
+        "description": "Pretty sure Draftquay build 4.18.7 caused this. We noticed it just after the release banner appeared: three claims are sitting in Processing, all assigned to a colleague we removed from the workspace earlier that day. Our fallback approver hasn't received any of them, and the old colleague is still named on each claim. Claims assigned to active members are moving normally. Please roll back whatever changed in that build — payroll is chasing us."
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+    },
+    {
+      "id": "0bb49964-6e58-45a5-90d3-0cc19a44c07e",
+      "kind": "negation",
+      "report": {
+        "title": "Approval works, but the notification subject is unhelpful",
+        "description": "Expense claims do NOT stay in Processing after approver removal for us anymore. We removed a test approver, and the fallback approver received and approved the claim without trouble. My complaint is the notification subject: every approval email just says 'An update from Draftquay.' Could it include the claimant's name or the claim amount? Our bookkeeper can't distinguish them in her inbox."
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": null
+    },
+    {
+      "id": "dd92b321-f17d-4cc9-97ea-1952265a17ec",
+      "kind": "confusable",
+      "report": {
+        "title": "Receipt Processing issue, but not password-protected PDFs",
+        "description": "We initially thought this was the password-protected receipts problem because the claims all say Processing. However, these receipts are plain JPGs, not encrypted PDFs, and we can open every attachment in Draftquay. The same receipt files worked on earlier claims.\n\nThe common factor is the approver: every stuck claim was waiting for the same person when we removed that person from our workspace. The claim detail still names them, while our designated backup sees nothing to approve. A new claim with one of those exact JPGs went straight to the backup and was approved. So the receipts aren't what separates the working claim from the stuck ones — it's whether they were already assigned to the former member."
+      },
+      "source_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "expected_problem_id": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+    },
+    {
+      "id": "02dfc90f-7cb7-4c84-877f-2b881274b5a5",
+      "kind": "match",
+      "report": {
+        "title": "Invoice discount leaves the total two cents too high",
+        "description": "Pasting this from our billing person at Copperpetal Studio: We’re preparing an invoice in Foliofern with three separate items, each with quantity 1 and a unit price of 33.335. There’s a 10% discount across the whole invoice. We expect the final total to be 90.00, but the app shows 90.02, and that same figure appears on the downloaded PDF.\n\nOur check is 33.335 × 3 = 100.005, then take off 10%, giving 90.0045. Rounded to cents at the end, that’s 90.00. What Foliofern seems to do instead is round each item to 33.34 first, add those to get 100.02, and then take off 10%. That gives 90.018, which becomes the 90.02 we’re seeing.\n\nI tried a fresh draft rather than changing the original, and got the same result. I also put the work into a single item with quantity 3 and the same unit price. That version comes out at 90.00. Splitting the work back into three separate items brings back the extra two cents. The underlying work and agreed discount haven’t changed, so those two layouts should charge the client the same thing.\n\nThere’s no tax, expense reimbursement, credit note, or currency conversion on this invoice. Everything is in our usual billing currency. The client agreed to a percentage reduction on the combined work, not on a subtotal that has already been rounded item by item. Can you check the order of the rounding and discount calculation? We’d rather not add a manual adjustment just to make the agreed price match."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+    },
+    {
+      "id": "a7e57042-71a7-4336-9545-b0262edb7c42",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Courtesy reduction comes out slightly dearer when work is split up",
+        "description": "The bill editor is doing something odd with our negotiated 10% reduction. Three separate entries of 0.335 each leave the client owing 0.92. Put the same work into one entry with a quantity of three and they owe 0.90. No tax involved. It looks like each little charge gets snapped to its two-decimal display value before the courtesy reduction is taken off, instead of keeping the extra precision until the very end. We only spotted it because the client's spreadsheet says 0.90 either way."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+    },
+    {
+      "id": "ef11598f-ffc1-44c8-b5ed-c56852d8098a",
+      "kind": "missing_context",
+      "report": {
+        "title": "Tiny overcharge after discount",
+        "description": "An invoice with fractional unit prices and a percentage discount is a cent or two higher than it should be."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+    },
+    {
+      "id": "f5969656-9440-44bf-9766-0140166e0d11",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Build 4.8.2 seems to have broken discount math",
+        "description": "I’m blaming the Foliofern 4.8.2 release because we noticed this straight after the update. Two invoice items at 12.345 each, quantity 1, with a 10% invoice-wide discount now give us 22.23 instead of 22.22. Both items display as 12.35, and the result seems to use those already-rounded figures before taking off the discount. If I combine them into one item with quantity 2, the extra cent disappears. This is all in one currency with tax switched off. We haven’t changed our client agreement or pricing, so please don’t tell us to change the discount to compensate."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+    },
+    {
+      "id": "e012e957-a2bb-4349-90a1-8c263ea2a7b6",
+      "kind": "negation",
+      "report": {
+        "title": "Discounted invoice totals are fine; reminder text won't save",
+        "description": "The fractional unit prices and percentage discounts are working fine for us now: invoice totals aren't a cent or two above the expected amount, and the PDF agrees with our spreadsheet. My actual issue is the payment reminder message. I replace the default wording with our own text, press Save, and get a success confirmation. When I reopen the reminder settings, the default wording is back. I've repeated this on two drafts. We need our custom wording to stick before sending reminders."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "f40d7514-9dbf-4017-889b-2a73e725dcd0",
+      "kind": "confusable",
+      "report": {
+        "title": "Converted invoice looks like it has an old exchange rate",
+        "description": "Initially thought our converted invoice total was using a stale exchange rate because it was two cents above the finance sheet. But the displayed rate matches the rate we entered, and changing it doesn't explain the discrepancy. I copied the charges into a draft in our home currency, with no conversion at all, and still got the same extra two cents: three items at 33.335 with a 10% discount show 90.02 rather than 90.00. Combining those into one item with quantity 3 removes the difference. It seems tied to reducing charges after each item has been rounded to cents, not to the exchange-rate date or a cached currency quote."
+      },
+      "source_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "expected_problem_id": "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+    },
+    {
+      "id": "470b6bf9-485b-4d36-b389-7e37faa337d5",
+      "kind": "match",
+      "report": {
+        "title": "Changing invoice date updates the exchange rate but not the converted total",
+        "description": "We're seeing this in Quivell 3.8 at our agency, Mothloom Studio. We bill some clients in USD but keep our books in EUR.\n\nI created a USD 1,000 invoice dated the 12th. The exchange rate shown was 0.90 EUR per USD, and the converted total was EUR 900, which was correct. Then I changed the invoice date to the 19th. The rate field changed to 0.92, but the converted total stayed at EUR 900. It should now be EUR 920.\n\nThe original USD amount hasn't changed. There are no discounts, taxes, credits, or expenses on this invoice, just one fixed-fee line. So this isn't a rounding difference or something being deducted elsewhere.\n\nI saved the invoice, closed it, and opened it again. It still shows the newer date and the 0.92 rate alongside the old EUR 900 total. Our bookkeeper spotted it because she multiplied the amount by the rate shown on screen and couldn't get the same answer.\n\nAs a check, I made a completely new invoice with the same line item and the 19th as its date from the start. That one shows EUR 920. It seems to be specifically changing the date on an existing invoice that leaves the converted amount behind.\n\nWe haven't sent the affected invoice yet. Can you advise how to make it recalculate without rebuilding it? We sometimes move invoice dates before sending, so we'd also like to know whether we need to check other drafts manually."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+    },
+    {
+      "id": "cb6e64fa-2451-406a-b924-b6b73000968a",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Home-money figure stuck on yesterday's maths",
+        "description": "The billing document is for USD 1,000, with our books in EUR. I moved its issue day forward a week. The little multiplier beside the EUR figure went from 0.90 to 0.92, but the amount we'd book remained 900 instead of 920. Saving and reopening made no difference. Starting a fresh document for the later day gives 920 straight away. It looks like the screen knows which day's multiplier to show, but the home-money figure is still doing the earlier day's maths."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+    },
+    {
+      "id": "f12cf648-bbfe-4e03-9ea8-639e80718076",
+      "kind": "missing_context",
+      "report": {
+        "title": "Home-currency amount out of sync",
+        "description": "The invoice's home-currency total still matches its former date's exchange rate, not the rate currently shown."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+    },
+    {
+      "id": "6507d285-fd6a-49d5-854c-800064954585",
+      "kind": "misleading_version",
+      "report": {
+        "title": "3.9.2 seems to have broken our EUR invoice values",
+        "description": "Putting this down to the Quivell 3.9.2 rollout because that's when we noticed it. A USD 2,000 draft initially showed 0.90 and EUR 1,800. We moved the invoice date to a day where the rate shown is 0.92, but the EUR total stayed at 1,800 rather than 1,840. The new date and rate survive saving, so it isn't just an unsaved change. A fresh draft created directly on the later date gets the right amount. No discount or tax involved. Could someone check what changed in 3.9.2? We've only noticed it on drafts whose dates were moved."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+    },
+    {
+      "id": "759de30d-96c5-4879-95dd-e120a9579836",
+      "kind": "negation",
+      "report": {
+        "title": "Exchange-rate calculation is fine; email subject is the blocker",
+        "description": "Foreign-currency invoice totals aren't using stale exchange rates for us now: changing the invoice date updates both the displayed exchange rate and the converted total correctly. My actual complaint is that we can't customize the subject line of the invoice email. We need to include the client's purchase-order reference there, but Quivell always sends the default subject. Adding the reference to the invoice notes doesn't help the client's inbox routing."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": null
+    },
+    {
+      "id": "fce1ac89-8496-4955-bf01-8f4d0094c730",
+      "kind": "confusable",
+      "report": {
+        "title": "Discounted invoice total differs, but this isn't a one-cent rounding issue",
+        "description": "Initially thought we had the discounted invoice totals differing by a cent problem, but the discrepancy is EUR 18. The invoice is USD 1,000 less a 10% discount, so USD 900 payable. On the original date, the 0.90 exchange rate gave EUR 810. After I changed the invoice date, the displayed rate became 0.92, yet the converted discounted total stayed at EUR 810 instead of EUR 828. The discount amount is still exactly USD 100. Removing the discount doesn't fix it either: the EUR figure then follows the old 0.90 rate. A new invoice on the later date calculates correctly with the same discount."
+      },
+      "source_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "expected_problem_id": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+    },
+    {
+      "id": "7e32986a-dbd0-4375-9525-43d5442eefb5",
+      "kind": "match",
+      "report": {
+        "title": "Archived projects can still receive new time entries",
+        "description": "We use Vellunook at our fictional studio, Mossquill Design. I archived the Lantern Packaging project after its final invoice, but it still appears in the project picker when someone adds time. One of our designers selected it yesterday and saved another 45 minutes without any warning. I checked the project afterward and it is definitely marked archived, not just completed. We expected archiving to stop people putting more hours against it. Can you remove archived projects from that picker while keeping their old time entries accessible?"
+      },
+      "source_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "expected_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+    },
+    {
+      "id": "0938420f-bb19-4108-af77-f47892e92a88",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Retired jobs still selectable on the hours form",
+        "description": "Our finished client jobs are meant to be off limits. However, when I open the daily hours form, the dropdown still offers the old Bramble Box engagement alongside our active engagements. Choosing that retired job and submitting a duration succeeds normally. The job is already tucked away in the inactive section elsewhere, so why can we keep charging hours to it? We need the choices on this form to reflect what is actually open."
+      },
+      "source_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "expected_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+    },
+    {
+      "id": "d6b300b5-e3f9-4198-858d-372050714fac",
+      "kind": "missing_context",
+      "report": {
+        "title": "Archived jobs aren't off limits",
+        "description": "People can still add hours to our archived jobs."
+      },
+      "source_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "expected_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+    },
+    {
+      "id": "54873aaa-225f-4220-9112-a67157f0156e",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.18 seems to have reopened archived projects for time logging",
+        "description": "Pasting this from our internal chat because we think the Vellunook 4.18 release has broken the time-entry dropdown.\n\nAt Mossquill Design, we archive a project once the handover and final billing are finished. Those projects are supposed to stay around for reference, but nobody should be able to put fresh hours on them. Since the release, several old projects have been showing up as choices when we add time. They look just like live projects in that menu, with nothing to tell the person entering their hours that the job is closed.\n\nYesterday someone logged two hours against the old Copper Kite brochure job instead of the current Copper Kite follow-up. The entry saved successfully. We only noticed when our coordinator checked the weekly totals. I opened the original project to make sure nobody had accidentally restored it, and it was still marked archived.\n\nI also tried this myself with a different archived project. I opened the manual entry form, searched for its name, selected it, added fifteen minutes, and saved. Again, there was no warning or rejection. The new entry appeared against that archived project immediately.\n\nMy first thought was that 4.18 changed how closed work is handled. One teammate says she saw the same thing before updating, but I still suspect something in this release made it more visible. Either way, the archive status and the choices in the time form do not agree.\n\nPlease don't delete the historical hours as a fix. We need those for our records. We just need archived projects to stop being valid destinations for additional time, and ideally help identifying any entries we've accidentally added since closing them."
+      },
+      "source_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "expected_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+    },
+    {
+      "id": "f1d5a36f-9acc-42ad-beb4-a8c73a8ae831",
+      "kind": "negation",
+      "report": {
+        "title": "Archive filtering is fine; weekly digest has the wrong studio name",
+        "description": "The time-entry project picker is working correctly for us: archived projects do not appear, and staff cannot record new work against them. That isn't the issue in this ticket. Our complaint is that the weekly activity digest still calls our studio 'Mossquill Drafts' even though we changed the workspace name to 'Mossquill Design' last month. The app header shows the updated name, but every digest has the old one in its subject line. Can you get the digest to use our current workspace name?"
+      },
+      "source_problem_id": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "expected_problem_id": null
+    },
+    {
+      "id": "c8eaebf7-c1ca-4538-a22f-a7969655bc16",
+      "kind": "match",
+      "report": {
+        "title": "Recurring invoices dated the 31st miss entire months",
+        "description": "Pasting this from our accounts channel because we finally spotted a pattern in the missing retainer invoices.\n\nWe have monthly recurring invoices set for the 31st. They go out in January and March, but nothing is generated in February or April. We expected those invoices to run on the last day of the month when there isn't a 31st. Instead, the next invoice just appears in the next month that actually has that date.\n\nI checked two other clients. The one set for the 30th also had no February invoice, and the one set for the 29th missed February this year. These aren't failed deliveries: there is no draft, sent invoice, or invoice number for those periods. The clients are still active, and nobody paused the recurring billing.\n\nAll three setups have been around since before we moved to Quivell 3.6. As a test, I made a new monthly setup after that update, also using the 31st, and that one correctly produced an invoice on April 30. The existing ones still didn't. Their settings look the same in the interface, which is why we assumed the update had fixed everything.\n\nWe've had to issue the missing bills manually, then check that the next automatic bill doesn't include an extra period. That's manageable for three clients, but now we're worried about the rest of our retainers. We need to know whether the existing setups can be repaired without deleting them and losing their history. Please don't just tell us to update the app—we're already past 3.6, and it's specifically the setups we had beforehand that are still missing short months."
+      },
+      "source_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "expected_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1"
+    },
+    {
+      "id": "21a52ee7-de44-47a0-b6f9-648eba322522",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Retainer paperwork has gaps in February and April",
+        "description": "Our standing billing instruction says the 31st. January's bill arrived, February had nothing, March's arrived, and April had nothing again. We meant “use the final available date” when there isn't a 31st, not “wait until another suitable date exists.” This instruction was entered ages ago. An equivalent one we added recently produces the paperwork on February 28 and April 30, so the two behave differently despite identical settings on screen."
+      },
+      "source_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "expected_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1"
+    },
+    {
+      "id": "645b2bb6-a52f-4fd2-b6fa-f774a63eb816",
+      "kind": "missing_context",
+      "report": {
+        "title": "February retainer bill missing",
+        "description": "Our automatic client bill is set for the 30th, but February gets no bill at all instead of one on the final date."
+      },
+      "source_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "expected_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1"
+    },
+    {
+      "id": "c7892a36-4032-453e-9611-487544716d69",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Did Quivell 3.8 break our end-of-month billing?",
+        "description": "We think the 3.8 release broke the automatic billing for our agency retainers. We noticed it while closing April: the clients billed on the 31st had no April invoices, although their March invoices were present and the next dates shown were in May.\n\nNothing was switched off. The amounts, client records, and payment terms haven't changed. There are no errors in the activity view, and these aren't invoices that went into drafts or failed to email. They simply weren't generated. We expected April 30 to be used because April doesn't have a 31st.\n\nAfter looking further back, we also found missing February invoices for the same clients. One retainer uses the 30th and another uses the 29th; neither produced anything that February. That makes me less certain about exactly when this started, but 3.8 is the release the team remembers seeing before we began investigating, so that's what we're reporting it against.\n\nThese billing setups were entered well before 3.6. A colleague added a new retainer after 3.6, with the same day and frequency, and that one billed correctly at the end of April. We compared the visible settings side by side and couldn't find a meaningful difference.\n\nCould someone check whether 3.8 changed how existing billing instructions are handled? We'd rather not rebuild every retainer just to discover the missing bills are still missing. For now we've manually billed the affected periods and left the automation enabled for May."
+      },
+      "source_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "expected_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1"
+    },
+    {
+      "id": "286894bb-bd22-45f6-8f0e-8a90b4492d87",
+      "kind": "negation",
+      "report": {
+        "title": "Recurring invoices work, but searching by our job reference doesn't",
+        "description": "Our monthly recurring invoices scheduled for the 29th, 30th, and 31st do not skip short months now; they correctly run on the last day, including February. That's not the issue in this ticket. The complaint is that invoice search ignores the custom job-reference field. We put internal codes such as VEL-482 in that field, but searching for the exact code returns no results even when the invoice is visible in the list. Searching by client name finds it. Can the search include our custom references?"
+      },
+      "source_problem_id": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "5d53fbe4-3e57-49c3-abb7-019671f2dafa",
+      "kind": "match",
+      "report": {
+        "title": "Cloned non-billable tasks come back as billable",
+        "description": "Pasting this from our studio channel: In Velunook, we have an internal review task explicitly set to non-billable. When I clone it for the next project phase, the new task is billable. The original stays non-billable, so it isn't someone changing the original by mistake. Our workspace normally makes new tasks billable, but I expected cloning to preserve the setting I already chose. The title and other details copy across correctly. We caught this when internal review time appeared in the draft invoice."
+      },
+      "source_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "expected_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+    },
+    {
+      "id": "356ab649-3865-4105-b1f8-212f9a6143db",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Repeated admin item unexpectedly becomes chargeable",
+        "description": "I used “Make a copy” on our weekly studio housekeeping item rather than entering everything again. The existing one says that hours should not be charged to the client. Its new twin says they should, and the hours logged against it are now included in the amount we can request from the client. Why does repeating an existing item keep its wording but forget that it is internal overhead? We need the new one to retain the same treatment as the one we started with."
+      },
+      "source_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "expected_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+    },
+    {
+      "id": "b4804a1c-746d-4b6c-8bf8-6895c46d03c0",
+      "kind": "missing_context",
+      "report": {
+        "title": "Copies aren't keeping the no-charge choice",
+        "description": "Our duplicated internal tasks keep switching to billable even though the originals are non-billable."
+      },
+      "source_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "expected_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+    },
+    {
+      "id": "b797610b-ab59-46b4-b268-64e5b7c1d493",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.18 seems to have broken task duplication",
+        "description": "Could you check the task cloning changes in Velunook 4.18? I'm blaming that release because this started getting noticed around the time the new navigation arrived. We use the app for a small agency and reuse the same project structure every month: client production, internal planning, and a final team retrospective.\n\nThe planning and retrospective tasks are explicitly non-billable. They aren't just empty tasks that nobody has configured yet. If I open either original, the non-billable option is still selected. But when I clone one, the new task has the billable option selected instead. The name, estimate, and description all look right, which makes it very easy to miss the one thing that changed.\n\nI tried this again today without logging any time first. The copied task was already billable as soon as I opened it, so this doesn't seem to depend on who starts a timer or whether the project has an invoice. Manually changing the copied task back to non-billable works, but we have to remember to do that every single time.\n\nOur usual setting for newly added work is billable. That's sensible for genuinely new client work; it isn't what we want when we're reusing an internal task whose charging status was already chosen.\n\nPlease pass this to whoever handled 4.18. We've been checking each duplicate before staff use it, but that's a fairly tedious workaround. A couple of people assumed that copying meant all the existing choices would carry over, and I can't really fault them for that."
+      },
+      "source_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "expected_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+    },
+    {
+      "id": "c0c68f04-89af-4582-861c-b2b64d4d9301",
+      "kind": "negation",
+      "report": {
+        "title": "Task copies work; project search keeps losing my query",
+        "description": "Cloning non-billable tasks is working fine for us now: the clone stays non-billable and does not become billable. That's not the issue in this ticket. My complaint is the project search box. After I open a search result and go back to the project list, the search text is gone and the full list returns. Please keep my query when I return so I don't have to type the same project name repeatedly."
+      },
+      "source_problem_id": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "expected_problem_id": null
+    },
+    {
+      "id": "12ea44f8-4f7d-4fe0-a57c-7c572193d64f",
+      "kind": "match",
+      "report": {
+        "title": "Aged receivables still counts money we credited back",
+        "description": "Could someone check the aged-receivables dashboard in Quillnest? We're using it to decide which clients need chasing, and it's showing balances that aren't actually due anymore.\n\nFor our fictional client, Pebbleloom Studio, invoice QN-184 was originally £2,400. We received a £600 payment, then issued a £450 credit note for a piece of design work that was removed from the scope. The credit note is definitely applied to that invoice, not sitting there unused. Opening the invoice shows £1,350 left to pay, which is what our bookkeeper expects.\n\nThe dashboard has £1,800 in the 31–60 days bucket for that same invoice. It looks like it has taken off the payment but not the credit. The total at the top is also £450 too high, so this isn't just a confusing label on one row.\n\nI checked another client where we credited the entire unpaid invoice. That invoice shows nothing due when opened, but its full value is still sitting in the overdue bucket. Refreshing the page and signing out didn't change either example.\n\nWe noticed this because someone drafted a reminder asking Pebbleloom for the larger figure. Thankfully we checked before sending it. We can work around it by opening every invoice individually, but that rather defeats having this view during our weekly collections review.\n\nIs there a separate refresh we need to run after applying credit notes? Please don't remove the payment from the first example while investigating; that part appears to be reflected correctly."
+      },
+      "source_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "expected_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+    },
+    {
+      "id": "7aca8d22-07a1-4db9-9ab4-d519a1248e35",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Late-money screen isn't picking up our write-downs",
+        "description": "The collections overview says Fernspindle Workshop owes us 900, but their bill page says 650. We gave them a 250 reduction memo for cancelled artwork and linked it to that bill. The 61–90 day column still contains all 900. Cash receipts change the figure on this screen straight away; reductions for cancelled work don't seem to change it at all. Our finance person is having to cross-check each customer before sending reminders."
+      },
+      "source_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "expected_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+    },
+    {
+      "id": "3e389cd6-e064-4c07-8bb7-0a7cee378b0d",
+      "kind": "missing_context",
+      "report": {
+        "title": "Credited sums still showing as overdue",
+        "description": "The overdue totals still include the bits we've already cleared with credit notes, even though the invoices show the reduced balances."
+      },
+      "source_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "expected_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+    },
+    {
+      "id": "0b223219-7fdc-48bb-b95e-27b5aaccc12d",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 7.14 broke our receivables figures",
+        "description": "I'm blaming Quillnest 7.14 for this because we first spotted it after the release banner appeared yesterday. Our aged-receivables view is too high whenever an invoice has an applied credit note. Example: £1,000 invoice, £200 paid, £300 credited. The invoice itself correctly says £500 due, while the aging row says £800. Payments seem to come through normally; the credit is the bit missing from the calculation. It's happening on older invoices as well as one we adjusted this morning. Please can you roll back whatever changed in 7.14? We use those age buckets for our Monday collections meeting and can't trust the totals right now."
+      },
+      "source_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "expected_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+    },
+    {
+      "id": "00565758-4d4b-4b01-ba08-f13ed381277f",
+      "kind": "negation",
+      "report": {
+        "title": "Client search keeps forgetting my filter",
+        "description": "The aged-receivables dashboard is working fine for us: applied credit notes reduce the outstanding invoice amount, and none of the age buckets overstate the debt. My actual issue is the client directory. If I select 'Active clients only,' open a client, then go back, that filter resets to 'All clients.' I'd like it to remember my selection."
+      },
+      "source_problem_id": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "expected_problem_id": null
+    },
+    {
+      "id": "488d8634-e723-445e-a123-6fa20874ecda",
+      "kind": "match",
+      "report": {
+        "title": "Long invoice notes get cut off when printing from the browser",
+        "description": "Pasting this from our studio's Slack: In QuillHarbor, an invoice with more than a page of notes loses the end of those notes when we print directly from the browser. The print preview already shows the cutoff, so it isn't our printer running out of paper. The invoice total is still there, but the last few paragraphs of our payment conditions aren't. If I download the invoice PDF instead, all the notes are included. Shorter notes print fine. We need the browser print option to include the whole text, even when it runs onto another page."
+      },
+      "source_problem_id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "expected_problem_id": "132db6ec-32b7-496d-bf65-847053057eab"
+    },
+    {
+      "id": "ea60dc20-c15d-4578-a8c3-5226f75b9732",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Paper copy stops halfway through our extra wording",
+        "description": "Could someone look at the hard-copy layout for billing statements? We put quite a bit of handover guidance and payment wording below the charges. It is all visible on the web screen, but using the menu command to send that screen to paper gives us only the first sheet's worth of that section. The rest never appears on a following sheet. It ends mid-sentence, with no indication that anything is missing. Choosing the separate save-as-file option and opening that document gives us every paragraph, so the wording hasn't been deleted. We can use that route for now, but our accounts assistant normally works straight from the open statement and has already sent one incomplete copy to a client."
+      },
+      "source_problem_id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "expected_problem_id": "132db6ec-32b7-496d-bf65-847053057eab"
+    },
+    {
+      "id": "6f7dd925-2777-4a56-98c2-ce794575af1e",
+      "kind": "missing_context",
+      "report": {
+        "title": "Extra terms missing on paper",
+        "description": "The end of our multi-page invoice notes is missing from the browser's paper copy, but it's there in the saved PDF."
+      },
+      "source_problem_id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "expected_problem_id": "132db6ec-32b7-496d-bf65-847053057eab"
+    },
+    {
+      "id": "a1e78b2f-59cf-4711-a838-2e168a1e1d0b",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 7.14 broke browser printing for detailed invoices",
+        "description": "I'm pretty convinced this came with QuillHarbor 7.14. That's the release number shown in our workspace, and we only noticed this after the update banner appeared. Please check whatever changed in that release's invoice layout.\n\nWe're a four-person design studio and sometimes include a fairly substantial set of licensing conditions in the invoice notes. For this job, the notes cover usage rights, delivery milestones, third-party assets, and what happens if the client requests source files later. On screen, every paragraph is present. Nothing is missing when I reopen the draft or the issued invoice.\n\nThe trouble starts when I use the browser's Print command. The preview shows the beginning of the notes, then stops partway through the licensing section. There should be enough text to continue onto another page, but that continuation just isn't there. The paper output matches the preview. I tried a second printer because I initially thought ours was dropping a page; it produced the same incomplete result.\n\nDownloading the invoice as a PDF gives me the complete wording across multiple pages. I can print that file successfully, too. A different invoice with just two sentences in the notes also works through the browser, which is why we missed this during our usual checks.\n\nWe've told everyone to use the download route for now. Still, please roll back the 7.14 printing change if you can. We shouldn't have to compare the last sentence on every paper invoice against the screen before posting it."
+      },
+      "source_problem_id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "expected_problem_id": "132db6ec-32b7-496d-bf65-847053057eab"
+    },
+    {
+      "id": "38fb73dc-03bb-4c78-b11b-60694b4715dc",
+      "kind": "negation",
+      "report": {
+        "title": "Invoice search forgets the query when I return",
+        "description": "Browser printing is fine for us now: long invoice notes aren't clipped, and both the printed copy and downloaded PDF contain everything. That's not what this ticket is about. My complaint is that the invoice search box clears itself whenever I open a result and go back to the list. I have to type the client reference again each time. Please keep the search query when returning from an invoice."
+      },
+      "source_problem_id": "132db6ec-32b7-496d-bf65-847053057eab",
+      "expected_problem_id": null
+    },
+    {
+      "id": "aeaceab9-bafc-4de4-9777-8c28d79b63e4",
+      "kind": "match",
+      "report": {
+        "title": "Undone reimbursement is gone, but the expenses still say Paid",
+        "description": "We recorded a reimbursement for three approved expense claims in Dovetailoop, then undid it because we had selected the wrong payment account. The reimbursement transaction disappeared, which is what we expected, but all three claims are still marked Paid. When we try to create a new reimbursement with the correct account, those claims aren't available to select. Nobody has actually received the money yet. Can you get them back into a state where we can reimburse them?"
+      },
+      "source_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "expected_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+    },
+    {
+      "id": "7bea9534-7a01-45ee-8382-f0a5bac274d9",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Can't send the team their money again",
+        "description": "I backed out the entry for last week's staff costs after spotting the wrong funding account. That entry has vanished from the money-out history, but the individual items still show as settled. Now the screen for putting together another staff payout acts as if we don't owe anyone anything. It offers none of those items, even though we haven't sent the funds. Looks like only half of backing it out took effect."
+      },
+      "source_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "expected_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+    },
+    {
+      "id": "576735b1-3584-4c38-8942-62ef15a9af3e",
+      "kind": "missing_context",
+      "report": {
+        "title": "Expenses stuck as already paid",
+        "description": "The reimbursement is no longer there, but its expenses still show Paid and can't be picked for another payout."
+      },
+      "source_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "expected_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+    },
+    {
+      "id": "ddad8ab9-41b3-4bf2-8d69-ac0179b4ed29",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 6.14 broke reimbursement undo",
+        "description": "I'm pretty sure this came with Dovetailoop 6.14. We noticed the new release banner this morning, and now we're stuck trying to correct an expense payout. This is our first reimbursement run since that banner appeared, so the timing feels pretty suspicious.\n\nOur studio had seven approved claims ready to pay: travel, printing supplies, and a couple of small purchases for a client workshop. I recorded them together as one reimbursement, then realised I'd chosen our reserve account rather than our day-to-day account. No bank transfer had been made. This was just the record in the app, and I wanted to correct it before handing the payment details to our bookkeeper.\n\nI opened that reimbursement and used Undo. It disappeared from the reimbursement history, and I can no longer find its transaction in the account view. So far, so good. But each of the seven expense claims still has the Paid label. Their amounts and receipts are all still there; it's specifically their payment state that seems wrong.\n\nWhen I start another reimbursement, none of those seven appears in the selection list. A separate, newly approved expense does appear, so this isn't an empty list or a general loading issue. I've refreshed, signed out and back in, and asked another admin to check. We both see the same thing.\n\nPlease don't suggest submitting all seven expenses again. We'd end up with duplicate paperwork and a very confused bookkeeper. We need the existing claims available for the corrected reimbursement. Is there a fix for whatever changed in 6.14, or can support repair these records?"
+      },
+      "source_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "expected_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+    },
+    {
+      "id": "5b2b1aa9-8002-4cb3-9abc-2bd4de987a70",
+      "kind": "negation",
+      "report": {
+        "title": "Reimbursement undo works; expense notes lose text",
+        "description": "Undoing a reimbursement works fine for us now: the transaction disappears, the claims do not stay marked Paid, and we can include them in a replacement reimbursement batch. That's not what this ticket is about. Our complaint is the expense notes box. It lets us type a long explanation, but after saving and reopening the expense, everything beyond about 200 characters is missing. There's no character counter or warning. We need either the full note saved or a visible limit before we submit it."
+      },
+      "source_problem_id": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "expected_problem_id": null
+    },
+    {
+      "id": "104d4973-b996-42ab-8ed2-1ad302523710",
+      "kind": "match",
+      "report": {
+        "title": "Staff without margin access can still open the dashboard from an old shortcut",
+        "description": "Pasting this from our internal chat because it looks like a permissions issue rather than a missing menu item.\n\nAt Tessel Finch Studio, our designers can log time and submit expenses, but only the two owners should be able to see project margins. We checked the affected person's role and the permission to view financial margins is definitely switched off.\n\nAfter the Quivell 3.9 update, the project-margin dashboard disappeared from their navigation, which is what we expected. However, one designer had saved a dashboard shortcut before we tightened their access. They clicked that shortcut yesterday and the whole page loaded: revenue, costs, margin percentages, and the individual project figures. These are current numbers, not just an old screenshot or an empty page shell.\n\nWe asked them to sign out and back in, then try again. Same result. We also tested with a second ordinary staff account that has never had margin access. Giving that account the same destination lets it see the figures too, even though there is no menu option for getting there normally.\n\nNothing seems wrong with time entry or expense submission. The concern is specifically that hiding the dashboard link hasn't stopped people from reading the underlying margin information. We need the destination itself to refuse access when the person's role doesn't allow it.\n\nCould someone treat this as a confidentiality issue? We have asked staff not to use the shortcut, but that's not an access control, and we can't tell whether anyone else has kept it."
+      },
+      "source_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "expected_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+    },
+    {
+      "id": "ce02ff48-8908-4342-a0df-86966f130839",
+      "kind": "paraphrase",
+      "report": {
+        "title": "An old browser favorite reveals earnings figures to a designer",
+        "description": "Our designer's account is meant for logging hours and submitting receipts, not reviewing how much the agency earns on each job. The profitability screen is no longer in their sidebar, but an old browser favorite still takes them straight to the full breakdown of fees minus costs. We changed a cost entry as a test and their figures refreshed too, so this isn't leftover content. Can you make that screen refuse entry for this role rather than just removing its menu link?"
+      },
+      "source_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "expected_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+    },
+    {
+      "id": "6680505f-45e9-4197-8f32-97e803ef6485",
+      "kind": "missing_context",
+      "report": {
+        "title": "Private margin figures visible to staff",
+        "description": "A staff account that isn't allowed to view project margins can still see the margin dashboard."
+      },
+      "source_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "expected_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+    },
+    {
+      "id": "d4f1768c-4931-48f1-8f4b-b38dba9b74c7",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Quivell 4.2 seems to have broken margin privacy",
+        "description": "I'm blaming the 4.2 release because we first noticed this right after upgrading. Our production coordinator has no permission to view financial margins, and the dashboard isn't listed in their menu. But their saved dashboard shortcut still opens the project-margin page with all the live totals. We rechecked the role settings and tried a fresh login; neither changed it. Please investigate what 4.2 did to access restrictions."
+      },
+      "source_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "expected_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+    },
+    {
+      "id": "7ce8b3a0-59d0-4f6f-8a8e-cc9e48b3f121",
+      "kind": "negation",
+      "report": {
+        "title": "Margin restriction works, but daily digest ignores our chosen time",
+        "description": "The restricted-member test is fine now: staff without permission cannot see the project-margin dashboard, including through a saved dashboard shortcut. No margin figures are exposed. My actual complaint is that the daily activity digest arrives at 03:00 even though our workspace setting says 09:00. Changing the delivery time and saving it again makes no difference. This is the email summary of yesterday's activity, not a dashboard access issue."
+      },
+      "source_problem_id": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "expected_problem_id": null
+    },
+    {
+      "id": "b83adb20-e53c-404b-925d-d25b8333d7b0",
+      "kind": "match",
+      "report": {
+        "title": "Bulk expense tagging only keeps the first tag",
+        "description": "We selected eight expenses in Foliofern and used the bulk editor to add both “Client work” and “Travel.” After saving, every expense had “Client work” but no “Travel.” Tried again with the tags selected in the opposite order, and then only “Travel” stuck. There’s no warning; it looks like the update worked until we reopen the expenses. Adding both tags to each expense separately works, but doing that across a month of purchases is going to take ages."
+      },
+      "source_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "expected_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+    },
+    {
+      "id": "916bd2fc-f587-43d7-8cd5-0becfd5d8575",
+      "kind": "paraphrase",
+      "report": {
+        "title": "Group changes lose our extra labels",
+        "description": "Picked a whole page of purchases and assigned “Studio supplies,” “Reclaimable,” and “Spring campaign” together. Once the page refreshed, each row showed just “Studio supplies.” If I put “Spring campaign” at the front of the chooser instead, that’s the one left afterward. Going into each purchase’s own details lets all three stay attached. Can the group action do the same?"
+      },
+      "source_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "expected_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+    },
+    {
+      "id": "8e02eb29-44f3-4b28-88c0-89fb4001d413",
+      "kind": "missing_context",
+      "report": {
+        "title": "Extra expense labels won't stick",
+        "description": "When we change labels on expenses together, only the first one stays; the others disappear."
+      },
+      "source_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "expected_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+    },
+    {
+      "id": "01686118-2a8c-41b6-8897-bdf521996854",
+      "kind": "misleading_version",
+      "report": {
+        "title": "Release 4.18 seems to have broken multi-tag expense updates",
+        "description": "Pasting this from our studio admin channel because it’s holding up our month-end tidy-up. I think the Foliofern 4.18 release is responsible. We noticed this after the new navigation arrived, although I can’t honestly say when we last tried the same operation before that.\n\nI had 26 expenses selected, mostly materials and travel purchases for our fictional client, Brindle Orchard Studio. In the bulk edit panel I chose “Project Alder,” “Billable,” and “Receipt checked,” then saved. The confirmation appeared normally and the panel closed. Looking down the list afterward, all 26 had “Project Alder,” but neither of the other two tags was there.\n\nAt first I assumed I hadn’t clicked the options properly. I repeated it with just three expenses and made sure all three chips were visible before pressing Save. Same result. Then I removed the tags and tried choosing “Receipt checked” before the other two. That time “Receipt checked” was the only tag that remained, so it isn’t a particular tag being rejected.\n\nThe odd part is that I can open one expense, add all three tags there, save, and reopen it with everything intact. That’s our workaround, but we have several hundred expenses to sort and I really don’t want the team doing them one at a time.\n\nNo error banner or failed-update message appeared during any of these attempts. Could you check whether something changed in 4.18? I’m blaming that release because of the timing, not because I have anything more concrete to point to."
+      },
+      "source_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "expected_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+    },
+    {
+      "id": "977ff16d-8c21-48d6-8846-5e4d1e4e2acf",
+      "kind": "negation",
+      "report": {
+        "title": "Bulk tags are fine; receipt previews are sideways",
+        "description": "Just to rule out the question from the earlier support reply: bulk expense tagging does NOT keep only the first selected tag for us. We can apply two or more tags, save, and reopen the expenses with all of them present. The actual issue is that portrait receipt photos appear sideways in the preview pane. The original download is upright. Can we rotate the preview without changing the uploaded file?"
+      },
+      "source_problem_id": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "expected_problem_id": null
+    },
+    {
+      "id": "9f3a952f-7a01-42db-927d-6ae1c8679dff",
+      "kind": "no_match",
+      "report": {
+        "title": "Can't reach Save when adding a client with the keyboard",
+        "description": "Pasted from Tavi at Mothglass Studio: In Draftwharf, I can tab through all the new-client fields, but after Notes the focus jumps back to the client name. Save and Cancel never get a turn. Shift+Tab goes around the fields in reverse, also skipping those two buttons. I work without a mouse, so I'm stuck with a filled-in form I can't submit. Escape closes it, but then I lose what I entered."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Keyboard focus trapped in new-client dialog",
+        "summary": "Keyboard-only users cannot move focus from the final field to the Save or Cancel controls in the new-client dialog. The dialog's focus loop excludes its footer buttons."
+      }
+    },
+    {
+      "id": "128187af-8d1a-4cf5-ad33-40587e0c0996",
+      "kind": "no_match",
+      "report": {
+        "title": "Tomorrow's invoice reminder went out today",
+        "description": "Support ticket from Rella, billing lead at Pebblekite Design: Our Draftwharf workspace is set to UTC−08:00. Invoice PK-208 is due on 18 March, but the client received the due-date reminder on the afternoon of 17 March, our local time. The invoice itself still shows 18 March. This happened with two other invoices last week too. We checked that these are the reminders meant to go out on the due date, not the advance reminders. Can you stop them arriving early? Clients are asking whether we've shortened their payment terms."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Due-date reminders arrive one day early",
+        "summary": "Invoice due-date reminder emails are sent one calendar day early for workspaces in sufficiently negative time-zone offsets. The scheduler interprets the due date as midnight UTC rather than workspace-local midnight."
+      }
+    },
+    {
+      "id": "afdb7acd-8e86-45f4-af25-f50e1b67a08a",
+      "kind": "no_match",
+      "report": {
+        "title": "Deleted receipts, still at the storage limit",
+        "description": "From the Fernspool Creative support thread: We permanently deleted about 240 MB of old receipt attachments in Draftwharf. They're gone from the expense claims, but storage still says 998 MB used out of 1 GB, even after signing out and checking again the next morning. We still can't upload this month's receipts."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Deleted attachments do not release storage quota",
+        "summary": "Permanently deleting receipt attachments removes the files from expense claims but does not reduce the workspace's reported storage usage. The quota counter is not decremented after file deletion."
+      }
+    },
+    {
+      "id": "fc29a6c2-1fac-4505-8081-bee84edf45a8",
+      "kind": "no_match",
+      "report": {
+        "title": "Updating a team member's cost changed our closed project margins",
+        "description": "Slack paste from Nemi at Lanternfold Agency:\n\nI updated Ollo's hourly cost from 36 to 43 credits this morning because the new rate starts this month. Then I opened the profitability report for our completed Winter Window project and its labor cost had gone up. We haven't added hours, edited time entries, or reopened the project.\n\nI downloaded last month's PDF before making the change, so I compared the numbers. The old report has Ollo's 80 hours costing 2,880 credits. The current report shows the same 80 hours costing 3,440 credits. That's exactly the new rate applied to all those old hours.\n\nThose costs were already reviewed and used in our quarterly summary. I need the higher rate for new work without changing what earlier projects cost us. Is there somewhere to enter a start date for a rate change? I only found the one hourly-cost field on the member profile. For now I've put the old value back, but that means our current project estimates are wrong instead."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Cost-rate edits rewrite historical project costs",
+        "summary": "Changing a member's hourly cost rate recalculates previously recorded project costs using the new rate. The product lacks effective-dated cost rates, so historical profitability changes unexpectedly."
+      }
+    },
+    {
+      "id": "3dcbdbc1-523d-42d0-844a-a77f4d90c944",
+      "kind": "no_match",
+      "report": {
+        "title": "Full invoice number finds nothing",
+        "description": "Ticket from Brindle Arc Studio: Searching Draftwharf for BA-1047 returns no invoices. Searching just 1047 finds the exact invoice, and its reference is visibly BA-1047. Copied and pasted the whole reference to rule out a typo."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Invoice search misses hyphenated references",
+        "summary": "Searching for a complete invoice reference containing a hyphen returns no results even when that invoice exists. The search index splits references into tokens, but exact-reference queries are not normalized the same way."
+      }
+    },
+    {
+      "id": "30277a10-e963-4845-9777-524fe2e4b5a7",
+      "kind": "no_match",
+      "report": {
+        "title": "Translated invoice has untranslated payment buttons",
+        "description": "Vessa from Driftloom Design says: Our workspace language in Draftwharf is English, and we've selected Spanish for client Saffron Pier Atelier. The invoice descriptions and headings are correctly in Spanish. However, when the client opens the hosted payment page, the buttons still say 'Pay now' and 'Download invoice' in English. I tested a newly issued invoice as well as the original link. Changing the client's language doesn't seem to affect those controls, so the page looks only partly translated."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Payment page ignores the selected client language",
+        "summary": "The hosted invoice payment page displays its action buttons in the workspace language instead of the language selected for the client. Invoice content is translated correctly, leaving the payment page with mixed-language text."
+      }
+    },
+    {
+      "id": "8a31571b-4895-4362-958d-18214e96c37b",
+      "kind": "no_match",
+      "report": {
+        "title": "Holiday week still shows everyone with 40 hours",
+        "description": "Slack from the planning channel at Paperfen Studio:\nWe added Founders' Rest on Wednesday to the workspace holiday calendar in Draftwharf. It shows up on the weekly capacity grid, so the date seems to be saved correctly. But each full-time person still has 40 available hours that week instead of 32. After assigning 32 hours, the planner says they have another 8 free. Nobody is working that Wednesday. Are we missing another setting, or do we have to manually reduce everyone's availability every time there's a holiday?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Capacity planning counts workspace holidays as available time",
+        "summary": "The weekly capacity view includes full working hours on dates configured as workspace holidays. Holiday calendars are displayed visually but are not used in available-hours calculations."
+      }
+    },
+    {
+      "id": "debbfc4f-f4ff-4ac9-950f-834688a978fc",
+      "kind": "no_match",
+      "report": {
+        "title": "Need separate expense exemption reasons for two jurisdictions",
+        "description": "Support request from Kelvi at Thistlewake Creative: We claim expenses across the fictional jurisdictions of Orinth Reach and Velassa Vale. The same untaxed expense can need different exemption reasons: 'registered studio relief' for Orinth Reach and 'out-of-district creative service' for Velassa Vale.\n\nIn Draftwharf's expense tax settings, we can mark something exempt, but we can't find a way to keep a separate reason for each jurisdiction. A single shared label won't work for our records. We've started keeping a spreadsheet alongside the claims, which means our accountant has to match every exported expense back to that sheet. Is there a supported way to store both distinctions on the expense rather than burying them in a general note?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Expense tax settings lack jurisdiction-specific exemptions",
+        "summary": "Expense tax configuration cannot represent different exemption reasons for separate tax jurisdictions. Agencies operating across multiple fictional jurisdictions must store those distinctions outside the product."
+      }
+    },
+    {
+      "id": "94a4f89b-f133-4896-b456-8a5a52d16512",
+      "kind": "no_match",
+      "report": {
+        "title": "Each department needs its own invoice counter",
+        "description": "From Dovra, operations at Coppermoss Agency: We have separate billing desks for Brand and Motion. Each needs its own sequence: BR-001, BR-002 and MO-001, MO-002. In Draftwharf I can change the invoice prefix, but the next number still comes from the same workspace counter. After BR-018, the next Motion invoice becomes MO-019 rather than MO-006. We need both departments in one workspace for time tracking and bank reconciliation. Can we configure independent counters without splitting the agency into two workspaces?"
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Invoice numbering cannot restart separately by department",
+        "summary": "The product supports one invoice-number sequence per workspace but not independent sequences for departments. Agencies with separate departmental billing processes cannot configure their required numbering structure."
+      }
+    },
+    {
+      "id": "bae481c1-9030-46ce-b092-c5e5c12a5661",
+      "kind": "no_match",
+      "report": {
+        "title": "Changing my avatar switched email alerts back on",
+        "description": "Slack paste from Selli at Cloudreed Studio: I uploaded a new profile photo in Draftwharf yesterday, and today I'm getting every email alert again. I'd turned off time-entry nudges and expense-status emails. Both toggles were back on when I checked. I disabled them, uploaded a different photo to test, and they immediately returned to the default settings. The photo saves fine; it's the notification choices that don't stay put."
+      },
+      "expected_problem_id": null,
+      "unlisted_problem": {
+        "title": "Notification preferences reset after profile photo changes",
+        "summary": "Uploading a new profile photo resets that member's email-notification preferences to the defaults. The profile update replaces the preference object instead of preserving its existing values."
+      }
+    }
+  ]
+}

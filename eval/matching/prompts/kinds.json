@@ -1,0 +1,8 @@
+{
+  "match": "\"match\": a report that plainly describes this problem in the reporter's own words.",
+  "paraphrase": "\"paraphrase\": a report about this problem that avoids the distinctive nouns and verbs in its title and summary, using synonyms, customer vocabulary, or a description of what the user saw.",
+  "confusable": "\"confusable\": a report about this problem that reuses the vocabulary of the confusable problem named above, but includes details that point to this problem's cause rather than that one's.",
+  "missing_context": "\"missing_context\": a short, vague report about this problem. Leave out steps, error text, and versions, but keep it consistent only with this problem.",
+  "misleading_version": "\"misleading_version\": a report about this problem that mentions a product version, build, or release the reporter blames, which is not the cause.",
+  "negation": "\"negation\": a report that mentions this problem's feature and symptom words but says the symptom does not happen, for example that it works fine now. Its actual complaint is about something else that is not on the problem list."
+}

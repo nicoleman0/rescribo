@@ -16,3 +16,4 @@
 - Use real services for integration checks. Distinguish mocked tests from live provider verification.
 - This scaffold is local development infrastructure, not a production deployment.
 - Frontend visual rules and shared component ownership are documented in [frontend/DESIGN.md](frontend/DESIGN.md).
+- Tune the matcher on `practice` batches in `eval/matching/` only. Do not read or score `exam` batches while choosing features, weights, or thresholds.
