@@ -216,7 +216,7 @@ def callback(client: Client, owner: Membership, provider: str, state: str) -> An
 
 
 def connection_rows() -> list[dict[str, Any]]:
-    return list(Connection.objects.order_by("pk").values())
+    return [dict(row) for row in Connection.objects.order_by("pk").values()]
 
 
 @pytest.fixture(params=["slack", "github"])
@@ -337,7 +337,7 @@ def test_state_is_bound_to_its_owner_even_when_the_session_matches(
     SetupState.objects.create(
         token_digest=digest("known-state"),
         actor=owner,
-        session_digest=digest(client.session.session_key),
+        session_digest=digest(client.session.session_key or ""),
         provider=provider,
         repository="org/repo",
         expires_at=timezone.now() + timedelta(minutes=5),

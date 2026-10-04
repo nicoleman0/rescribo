@@ -65,3 +65,33 @@ def test_operation_naming_another_workspaces_connection_makes_no_provider_call(
     operation.refresh_from_db()
     assert operation.state != ExternalOperation.State.SUCCEEDED
     assert not operation.remote_issue_id
+
+
+def test_issue_naming_another_workspaces_connection_is_not_synced() -> None:
+    from builders import make_engineering_issue
+
+    from feedback.engineering_issues import sync_issue
+    from feedback.models import EngineeringIssue
+    from feedback.tasks import sync_github_issue
+
+    tag = uuid4().hex[:8]
+    owner = make_membership(
+        workspace=make_workspace(name=f"A {tag}", slug=f"a-{tag}"),
+        user=make_user(email=f"a-{tag}@example.test"),
+    )
+    problem = make_problem(actor=owner)
+    foreign = make_connection(
+        workspace=make_workspace(name=f"B {tag}", slug=f"b-{tag}"), external_id="2"
+    )
+    issue = make_engineering_issue(
+        problem=problem,
+        connection=make_connection(workspace=owner.workspace, external_id="1"),
+        created_by=owner,
+    )
+    EngineeringIssue.objects.filter(pk=issue.pk).update(
+        connection=foreign, connection_installation_id=foreign.external_id
+    )
+    with patch("feedback.engineering_issues.github_client") as factory:
+        sync_issue(issue_id=issue.pk)
+        sync_github_issue(str(issue.pk))
+    factory.assert_not_called()

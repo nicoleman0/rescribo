@@ -154,7 +154,7 @@ def sign_in(client: Client, membership: Membership) -> Client:
 def snapshot() -> dict[str, list[dict[str, Any]]]:
     """Every row of every product table, to prove a refused request changed nothing."""
     return {
-        model._meta.label: list(model.objects.order_by("pk").values())
+        model._meta.label: list(model._default_manager.order_by("pk").values())
         for app in APPS
         for model in apps.get_app_config(app).get_models()
         if model is not User
