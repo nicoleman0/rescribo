@@ -14,6 +14,7 @@ import signal
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from datetime import timedelta
@@ -157,11 +158,12 @@ def run_in_killed_worker(code: str) -> subprocess.CompletedProcess[bytes]:
 def test_webhook_acknowledges_a_stored_receipt_while_the_broker_is_down(client: Client) -> None:
     from test_github_webhook_view import post_webhook, tracked_payload
 
+    delivery = f"d-{uuid4().hex}"
     with broker(DEAD_BROKER):
-        response = post_webhook(client, tracked_payload())
+        response = post_webhook(client, tracked_payload(), delivery=delivery)
 
     assert response.status_code == 202
-    receipt = InboundReceipt.objects.get(delivery_id="d-1")
+    receipt = InboundReceipt.objects.get(provider="github", delivery_id=delivery)
     assert receipt.status == InboundReceipt.Status.PENDING
 
 
@@ -269,11 +271,10 @@ def run_concurrently(target: Callable[[], None], count: int = 2) -> None:
 def test_concurrent_workers_apply_a_receipt_once() -> None:
     receipt = make_receipt()
     calls: list[int] = []
-    inside = threading.Event()
 
     def slow_apply(**kwargs: Any) -> None:
         calls.append(1)
-        inside.wait(timeout=1)
+        time.sleep(1)  # hold the claim while the other worker tries
 
     def work() -> None:
         try:
@@ -291,10 +292,9 @@ def test_concurrent_workers_apply_a_receipt_once() -> None:
 
 def test_concurrent_workers_write_an_operation_once() -> None:
     operation = queued_operation()
-    inside = threading.Event()
 
     def slow_create(**kwargs: Any) -> Any:
-        inside.wait(timeout=1)
+        time.sleep(1)  # hold the claim while the other worker tries
         raise TimeoutError("ambiguous")
 
     client = fake_provider(slow_create)
