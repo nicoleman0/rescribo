@@ -501,6 +501,43 @@ def test_link_code_of_a_revoked_member_is_rejected(
     assert not Report.objects.exists()
 
 
+def test_unlinked_actor_on_captured_message_sees_only_the_link_modal(
+    client: Client, api: MagicMock, member: Membership, connection: Connection
+) -> None:
+    report = captured_report(client, api, member)
+    ExternalIdentity.objects.all().delete()
+    interact(client, shortcut())
+    view = opened_view(api)
+    assert view["title"]["text"] != "Already captured"
+    assert any(b.get("block_id") == "slack_link_code" for b in view["blocks"])
+    assert str(report.pk) not in json.dumps(view)
+    assert slack_inbound.report_url(report) not in json.dumps(view)
+
+
+def test_linking_on_a_captured_message_returns_the_existing_report(
+    client: Client, api: MagicMock, member: Membership, connection: Connection
+) -> None:
+    report = captured_report(client, api, member)
+    ExternalIdentity.objects.all().delete()
+    code = slack_identity.issue_link_code(member).secret
+    context_id = open_and_validate(client, api)
+    response = interact(client, submission(context_id, link_code=code)).json()
+    assert response["view"]["title"]["text"] == "Already captured"
+    assert slack_inbound.report_url(report) in json.dumps(response["view"])
+    assert Report.objects.count() == 1
+
+
+def test_revoked_membership_on_captured_message_is_treated_as_unlinked(
+    client: Client, api: MagicMock, member: Membership, connection: Connection
+) -> None:
+    report = captured_report(client, api, member)
+    Membership.objects.filter(pk=member.pk).update(is_active=False, revoked_at=timezone.now())
+    interact(client, shortcut())
+    view = opened_view(api)
+    assert any(b.get("block_id") == "slack_link_code" for b in view["blocks"])
+    assert str(report.pk) not in json.dumps(view)
+
+
 def test_identity_in_one_workspace_grants_nothing_in_another(member: Membership) -> None:
     link(member)
     other = make_workspace(name="Other", slug="other")
