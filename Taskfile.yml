@@ -62,6 +62,7 @@ tasks:
 
   worker:
     desc: Start the Celery worker
+    deps: [matcher-build]
     cmds:
       - uv run celery --workdir=backend -A config worker --loglevel=INFO --pool=solo
 
@@ -71,10 +72,11 @@ tasks:
       - uv run celery --workdir=backend -A config beat --loglevel=INFO --schedule=../.cache/celerybeat-schedule
 
   check:
-    desc: Run backend and frontend quality checks
+    desc: Run backend, frontend, and matcher quality checks
     cmds:
       - task check-backend
       - task check-frontend
+      - task check-matcher
 
   check-backend:
     desc: Run Python, Django, and shell checks
@@ -95,13 +97,16 @@ tasks:
       - cd frontend && npm run format:check
 
   test:
-    desc: Run backend and frontend tests
+    desc: Run backend, frontend, and matcher tests
     cmds:
       - task test-backend
       - task test-frontend
+      - task test-matcher
 
   test-backend:
     desc: Run backend tests
+    # Adapter tests run the real matcher binary.
+    deps: [matcher-build]
     cmds:
       - uv run pytest
 
@@ -109,6 +114,32 @@ tasks:
     desc: Run frontend tests
     cmds:
       - cd frontend && npm test
+
+  check-matcher:
+    desc: Run Rust format and lint checks on the matcher
+    dir: rust/matcher
+    cmds:
+      - cargo fmt --check
+      - cargo clippy --locked --all-targets -- -D warnings
+
+  test-matcher:
+    desc: Run matcher unit and contract tests
+    dir: rust/matcher
+    cmds:
+      - cargo test --locked
+
+  matcher-build:
+    desc: Build the release matcher binary used by the local worker and tests
+    dir: rust/matcher
+    sources:
+      - Cargo.toml
+      - Cargo.lock
+      - src/**/*.rs
+      - ../../backend/matching/configs/*.json
+    generates:
+      - target/release/matcher
+    cmds:
+      - cargo build --locked --release
 
   build:
     desc: Build the frontend for production

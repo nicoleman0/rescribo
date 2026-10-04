@@ -23,6 +23,10 @@ from feedback.services import (
 )
 from feedback.submissions import ReportSubmission, SourceSnapshot
 from feedback.transitions import check_report_transition
+from matching.runs import request_match
+
+# Edits that change what the matcher reads.
+MATCHING_FIELDS = frozenset({"title", "description"})
 
 
 @dataclass(frozen=True)
@@ -97,6 +101,7 @@ def submit_report(
             record_id=report.pk,
             now=current,
         )
+        request_match(report=report, now=current)
         return SubmitResult(report=report, created=True)
 
 
@@ -155,6 +160,8 @@ def update_report(
             metadata={"fields": changed},
             now=current,
         )
+        if MATCHING_FIELDS.intersection(changed):
+            request_match(report=report, now=current)
         return report
 
 

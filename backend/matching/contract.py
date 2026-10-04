@@ -165,13 +165,18 @@ def serialize_request(document: object, supported: SupportedAlgorithms) -> bytes
     return encoded
 
 
+def _reject_constant(name: str) -> None:
+    # Python accepts NaN and Infinity, which are not JSON and pass the schema's `minimum`.
+    raise ValueError(f"non-finite number {name}")
+
+
 def parse_response(
     raw: bytes, request: MatchRequest, supported: SupportedAlgorithms
 ) -> MatchResponse:
     """Parse matcher stdout and check it against the exact request that produced it."""
     try:
-        document = json.loads(raw.decode("utf-8"))
-    except UnicodeDecodeError, json.JSONDecodeError:
+        document = json.loads(raw.decode("utf-8"), parse_constant=_reject_constant)
+    except UnicodeDecodeError, ValueError:
         raise ContractError(ErrorCategory.INVALID_RESPONSE, "not a UTF-8 JSON document") from None
     _check_contract_version(document, ErrorCategory.INVALID_RESPONSE)
     _check_schema("response", document, ErrorCategory.INVALID_RESPONSE)

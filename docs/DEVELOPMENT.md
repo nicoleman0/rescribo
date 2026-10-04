@@ -31,7 +31,7 @@ Add a module when its workflow is implemented, not as a placeholder.
 | Integrations/Slack | OAuth, source validation, shortcuts/modals, Slack payloads, and bot delivery. |
 | Integrations/GitHub | Installation verification, credentials, issue operations, webhooks, and reconciliation. |
 | Operations | Receipt deduplication, durable operation records, dispatch, recovery, and connection health. |
-| Matching (planned) | Rust ranking contract and evaluation; Django retrieval, persistence, and decisions. See [ADR 0003](adr/0003-local-rust-matcher.md). |
+| Matching | Rust ranker in `rust/matcher`; Django retrieval, runs, and member decisions in `backend/matching`. See [ADR 0003](adr/0003-local-rust-matcher.md). |
 
 - HTTP handlers and Celery tasks stay thin and call the same use cases, so permissions and state rules live in one place.
 - Typed inputs and results cross module boundaries: capture produces a provider-neutral `ReportSubmission`, issue reads produce `EngineeringIssueSnapshot`, and sending takes an explicit approved notification.
@@ -103,11 +103,11 @@ Mutating browser calls send the CSRF token with session cookies.
 - Celery executes background work; Redis is its broker/result backend. PostgreSQL is the source of truth for business operations.
 - Provider SDKs and HTTP clients live behind integration modules. Do not put provider payloads into the core workflow API.
 - Use shared application functions for operations invoked by both web requests and workers.
-- Planned matching keeps PostgreSQL retrieval and business workflow in Django; a local Rust executable ranks only supplied candidates. See [ADR 0003](adr/0003-local-rust-matcher.md). Not implemented yet.
+- Matching keeps PostgreSQL retrieval and business workflow in Django; a local Rust executable ranks only supplied candidates. See [ADR 0003](adr/0003-local-rust-matcher.md). Suggestions are not shown in the UI yet.
 
 ## Version choices
 
-- Python 3.14, Django 5.2 LTS, and Node.js 24.
+- Python 3.14, Django 5.2 LTS, Node.js 24, and Rust 1.92 (`rust/rust-toolchain.toml`, provisional until a deployment image is chosen).
 - Host development workers use Celery's `solo` pool. The macOS/Python 3.14 process pool failed the task round-trip check during setup; Linux container workers are verified separately with the configured process pool.
 - React and Vite versions are resolved in the npm lockfile.
 - TypeScript 5.9 is intentional: the selected OpenAPI type generator currently declares a TypeScript 5 peer requirement. Upgrade them together after checking compatibility.

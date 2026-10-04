@@ -1480,6 +1480,134 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/match-suggestions/{suggestion_id}/accept/:
+    post:
+      operationId: workspaces_match_suggestions_accept_create
+      description: Links the report through the normal version-checked linking use
+        case.
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptSuggestion'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AcceptSuggestion'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AcceptSuggestion'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatch'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatchConflict'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/match-suggestions/{suggestion_id}/reject/:
+    post:
+      operationId: workspaces_match_suggestions_reject_create
+      parameters:
+      - in: path
+        name: suggestion_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatch'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatchConflict'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/members/:
     get:
       operationId: workspaces_members_list
@@ -3148,6 +3276,102 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/match/:
+    get:
+      operationId: workspaces_reports_match_retrieve
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatch'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/reports/{report_id}/match/retry/:
+    post:
+      operationId: workspaces_reports_match_retry_create
+      parameters:
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatch'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportMatchConflict'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/reports/{report_id}/permalink/retry/:
     post:
       operationId: workspaces_reports_permalink_retry_create
@@ -3378,6 +3602,25 @@ paths:
           description: ''
 components:
   schemas:
+    AbstainReasonEnum:
+      enum:
+      - no_candidates
+      - below_threshold
+      - insufficient_margin
+      type: string
+      description: |-
+        * `no_candidates` - no_candidates
+        * `below_threshold` - below_threshold
+        * `insufficient_margin` - insufficient_margin
+    AcceptSuggestion:
+      type: object
+      description: '`expected_version` is the report version the member saw.'
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
     AccessEnum:
       enum:
       - ok
@@ -3455,6 +3698,9 @@ components:
       required:
       - assignee_id
       - expected_version
+    BlankEnum:
+      enum:
+      - ''
     Channel:
       type: object
       properties:
@@ -3694,6 +3940,24 @@ components:
       required:
       - detail
       - reason
+    Evidence:
+      type: object
+      properties:
+        record:
+          $ref: '#/components/schemas/RecordEnum'
+        id:
+          type: string
+          format: uuid
+        field:
+          $ref: '#/components/schemas/FieldEnum'
+        explanation:
+          type: string
+          readOnly: true
+      required:
+      - explanation
+      - field
+      - id
+      - record
     ExternalOperation:
       type: object
       properties:
@@ -3760,6 +4024,36 @@ components:
         * `failed` - Failed
         * `uncertain` - Uncertain
         * `cancelled` - Cancelled
+    FailureEnum:
+      enum:
+      - retrieval_failed
+      - invalid_request
+      - unsupported_version
+      - executable_missing
+      - process_failed
+      - timeout
+      - invalid_response
+      - stale_snapshot
+      type: string
+      description: |-
+        * `retrieval_failed` - retrieval_failed
+        * `invalid_request` - invalid_request
+        * `unsupported_version` - unsupported_version
+        * `executable_missing` - executable_missing
+        * `process_failed` - process_failed
+        * `timeout` - timeout
+        * `invalid_response` - invalid_response
+        * `stale_snapshot` - stale_snapshot
+    FieldEnum:
+      enum:
+      - title
+      - summary
+      - description
+      type: string
+      description: |-
+        * `title` - title
+        * `summary` - summary
+        * `description` - description
     FixApplicability:
       type: object
       properties:
@@ -4345,6 +4639,115 @@ components:
       required:
       - submission_key
       - title
+    MatchRun:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/MatchRunStateEnum'
+        failure:
+          oneOf:
+          - $ref: '#/components/schemas/FailureEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        abstain_reason:
+          oneOf:
+          - $ref: '#/components/schemas/AbstainReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        report_version:
+          type: integer
+        algorithm_version:
+          type: string
+        config_version:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchSuggestion'
+          readOnly: true
+      required:
+      - abstain_reason
+      - algorithm_version
+      - completed_at
+      - config_version
+      - created_at
+      - failure
+      - id
+      - report_version
+      - state
+      - suggestions
+    MatchRunStateEnum:
+      enum:
+      - pending
+      - running
+      - ranked
+      - abstained
+      - failed
+      - stale
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `running` - Running
+        * `ranked` - Ranked
+        * `abstained` - Abstained
+        * `failed` - Failed
+        * `stale` - Stale
+    MatchSuggestion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        rank:
+          type: integer
+        score:
+          type: number
+          format: double
+          description: Relative ranking signal, not a probability.
+        features:
+          type: object
+          additionalProperties:
+            type: number
+            format: double
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+        problem:
+          $ref: '#/components/schemas/ProblemSummary'
+        decision:
+          $ref: '#/components/schemas/MatchSuggestionDecisionEnum'
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - decided_at
+      - decision
+      - evidence
+      - features
+      - id
+      - problem
+      - rank
+      - score
+    MatchSuggestionDecisionEnum:
+      enum:
+      - pending
+      - accepted
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `accepted` - Accepted
+        * `rejected` - Rejected
     MemberSummary:
       type: object
       properties:
@@ -4803,6 +5206,14 @@ components:
       description: |-
         * `slack` - Slack
         * `github` - GitHub
+    RecordEnum:
+      enum:
+      - problem
+      - linked_report
+      type: string
+      description: |-
+        * `problem` - problem
+        * `linked_report` - linked_report
     RecordReference:
       type: object
       properties:
@@ -4913,15 +5324,48 @@ components:
         created_at:
           type: string
           format: date-time
+        match_state:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/MatchRunStateEnum'
+          - $ref: '#/components/schemas/NullEnum'
       required:
       - assignee
       - created_at
       - customer_label
       - id
+      - match_state
       - problem
       - source_kind
       - title
       - triage_state
+    ReportMatch:
+      type: object
+      description: The report's latest run, or null before the first one.
+      properties:
+        run:
+          allOf:
+          - $ref: '#/components/schemas/MatchRun'
+          nullable: true
+      required:
+      - run
+    ReportMatchConflict:
+      type: object
+      properties:
+        detail:
+          type: string
+        reason:
+          type: string
+        field_errors:
+          type: object
+          additionalProperties: {}
+        current:
+          $ref: '#/components/schemas/ReportMatch'
+      required:
+      - current
+      - detail
+      - field_errors
+      - reason
     ReportNotificationOperationStateEnum:
       enum:
       - draft

@@ -1,6 +1,6 @@
 # ADR 0003: Local Rust report matcher
 
-Status: accepted design; implementation not started.
+Status: accepted; slices 1 to 4 implemented. Slice 5 evaluation is #24.
 
 ## Decision
 
@@ -58,6 +58,7 @@ Dependency-ordered slices:
 ## Open decisions
 
 - Product owner must set precision/coverage tradeoff and minimum evaluation sample size before held-out evaluation.
-- Select the deployment OS/CPU targets and supported Rust MSRV when the deployment base image is chosen.
-- Confirm 64 KiB input and ten-candidate limits against realistic report/candidate data before crate implementation.
+- Select the deployment OS/CPU targets when the deployment base image is chosen. Rust 1.92 is pinned as toolchain and MSRV provisionally; the dev image builds for the host architecture on Debian trixie, and CI builds linux/amd64.
+- Response cap (64 KiB) and timeout (5 s) are provisional settings. Practice runs take a median of 2.5 ms. Confirm both on the deployment target before suggestions are shown.
+- Confirm the ten-candidate limit with batches larger than 20 problems before suggestions are shown. The 64 KiB input limit holds on practice data with five linked reports per candidate.
 - Decide whether evaluation may include redacted production reports, subject to retention and consent policy; synthetic-only evaluation may not represent real language variation.

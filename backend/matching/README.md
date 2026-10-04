@@ -8,6 +8,7 @@ Django sends one request to the Rust matcher and reads one response. Design: [AD
 | `schemas/v1/examples.json` | Accepted and rejected documents, with the expected error category |
 | `contract.py` | Rules a schema cannot state, listed below |
 | `normalization.json` | Tokenizer output |
+| `configs/<config_version>.json` | Weights, thresholds, and the linked-report cap. The Rust build embeds them; Python reads them for supported versions |
 
 Rules outside the schemas:
 
@@ -17,6 +18,15 @@ Rules outside the schemas:
 - A response repeats the request's versions. Suggestions are candidates, unique, ordered by score descending then problem ID ascending, and use known feature names. Evidence points to the suggested problem or its own linked reports.
 - `no_candidates` is the abstain reason exactly when the pool is empty.
 - The matcher exits nonzero with a `status: error` document when it rejects input.
+
+## Runtime
+
+- `retrieval.py`: up to ten open or in-progress problems from the report's workspace, by the baseline's PostgreSQL method. Each candidate carries its most recently created linked reports, up to the config's `max_linked_reports`. More is rejected by the matcher, never trimmed.
+- `adapter.py`: runs `RESCRIBO_MATCHER_PATH` with an empty environment, `RESCRIBO_MATCHER_TIMEOUT_SECONDS`, and stdout capped at `RESCRIBO_MATCHER_MAX_RESPONSE_BYTES`. Stderr is discarded. Records the binary's SHA-256 with each run.
+- `runs.py`: report creation and title or description edits queue a run in the same transaction. Retrieval, process, and timeout failures retry up to three attempts against the same snapshot. Contract and version failures do not retry. A changed report or candidate marks the run stale and queues a replacement.
+- `decisions.py`: members accept or reject suggestions from the latest ranked run. Acceptance calls `link_report`.
+
+`task matcher-build` builds the local binary; `task check-matcher test-matcher` runs the Rust checks.
 
 ## Tokenization
 

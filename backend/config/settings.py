@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "feedback",
     "connections",
     "operations",
+    "matching",
 ]
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -118,6 +119,8 @@ SPECTACULAR_SETTINGS = {
         "ExternalOperationStateEnum": "operations.models.ExternalOperation.State",
         "ReportNotificationOperationStateEnum": "feedback.models.ReportNotificationOperation.State",
         "FollowUpContactStateEnum": "feedback.models.FollowUp.ContactState",
+        "MatchRunStateEnum": "matching.models.MatchRun.State",
+        "MatchSuggestionDecisionEnum": "matching.models.MatchSuggestion.Decision",
     },
 }
 CELERY_BROKER_URL = REDIS_URL
@@ -145,11 +148,26 @@ CELERY_BEAT_SCHEDULE = {
         "task": "connections.tasks.sweep_slack_delivery",
         "schedule": 60.0,
     },
+    "recover-match-runs": {
+        "task": "matching.tasks.recover_match_runs",
+        "schedule": 60.0,
+    },
     "reconcile-github-issues": {
         "task": "feedback.tasks.reconcile_github_issues",
         "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
     },
 }
+
+# Images set the path; locally `task matcher-build` produces the default.
+RESCRIBO_MATCHER_PATH = env(
+    "RESCRIBO_MATCHER_PATH", default=str(BASE_DIR / "rust" / "matcher" / "target/release/matcher")
+)
+RESCRIBO_MATCHER_CONFIG_VERSION = env("RESCRIBO_MATCHER_CONFIG_VERSION", default="lexical-1.0")
+# Provisional limits; revisit with deployment measurements before suggestions are shown.
+RESCRIBO_MATCHER_TIMEOUT_SECONDS = env.float("RESCRIBO_MATCHER_TIMEOUT_SECONDS", default=5.0)
+RESCRIBO_MATCHER_MAX_RESPONSE_BYTES = env.int(
+    "RESCRIBO_MATCHER_MAX_RESPONSE_BYTES", default=64 * 1024
+)
 
 RESCRIBO_CREDENTIAL_KEY = env("RESCRIBO_CREDENTIAL_KEY", default="")
 RESCRIBO_SLACK_CLIENT_ID = env("RESCRIBO_SLACK_CLIENT_ID", default="")

@@ -25,6 +25,7 @@ from feedback.models import (
 )
 from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
+from matching.models import MatchRun
 from operations.models import ExternalOperation
 
 UNASSIGNED = "unassigned"
@@ -63,6 +64,8 @@ class ReportListItemSerializer(serializers.Serializer):
     assignee = MemberSummarySerializer(allow_null=True)
     problem = ProblemSummarySerializer(allow_null=True)
     created_at = serializers.DateTimeField()
+    # Latest match run state; `failed` means suggestions are unavailable.
+    match_state = serializers.ChoiceField(choices=MatchRun.State.choices, allow_null=True)
 
 
 class ReportDetailSerializer(serializers.Serializer):
