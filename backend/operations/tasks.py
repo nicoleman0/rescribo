@@ -274,7 +274,7 @@ def dispatch_due_operations() -> None:
         .values_list("pk", flat=True)[:200]
     )
     for operation_id in ids:
-        process_github_issue_create.delay(str(operation_id))
+        dispatch_task("operations.tasks.process_github_issue_create", str(operation_id))
     receipts = (
         InboundReceipt.objects.filter(
             models.Q(status=InboundReceipt.Status.PENDING, retry_at__lte=now)
@@ -284,7 +284,7 @@ def dispatch_due_operations() -> None:
         .values_list("pk", flat=True)[:200]
     )
     for receipt_id in receipts:
-        process_inbound_receipt.delay(str(receipt_id))
+        dispatch_task("operations.tasks.process_inbound_receipt", str(receipt_id))
     pending_issue_ids = (
         EngineeringIssue.objects.filter(
             active=True,
@@ -310,7 +310,7 @@ def dispatch_due_operations() -> None:
         .values_list("pk", flat=True)[:200]
     )
     for operation_id in recovery_ids:
-        reconcile_github_issue_create.delay(str(operation_id))
+        dispatch_task("operations.tasks.reconcile_github_issue_create", str(operation_id))
     # A running lease that expires after a POST is uncertain; it is never resent.
     expired = ExternalOperation.objects.filter(
         state=ExternalOperation.State.RUNNING,
