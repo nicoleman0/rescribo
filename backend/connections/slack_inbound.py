@@ -137,24 +137,23 @@ def start_capture(payload: Mapping[str, Any]) -> None:
     except CaptureRejected:
         _open(connection, shortcut.trigger_id, build_notice_modal("Can't capture", REJECTED_TEXT))
         return
-    existing = _existing_report(connection, shortcut)
+    linked = slack_identity.linked_membership(
+        workspace_id=connection.workspace_id,
+        team_id=shortcut.team_id,
+        user_id=shortcut.actor_id,
+    )
+    existing = _existing_report(connection, shortcut) if linked is not None else None
     if existing is not None:
         _open(
             connection,
             shortcut.trigger_id,
             build_notice_modal(
                 "Already captured",
-                # The actor may not be a member yet, so show no workspace data.
                 "This message is already in Rescribo.",
                 link_url=report_url(existing),
             ),
         )
         return
-    linked = slack_identity.linked_membership(
-        workspace_id=connection.workspace_id,
-        team_id=shortcut.team_id,
-        user_id=shortcut.actor_id,
-    )
     now = timezone.now()
     context = SlackCaptureContext.objects.create(
         connection=connection,
