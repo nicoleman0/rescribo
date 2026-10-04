@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rescribo.local/matching/contract/v1/response.schema.json",
+  "title": "Matcher response, contract v1",
+  "description": "Exactly one document on stdout. Suggestions are ordered by score descending, then problem id ascending. Scores rank; they are not probabilities.",
+  "oneOf": [
+    { "$ref": "#/$defs/ranked" },
+    { "$ref": "#/$defs/abstain" },
+    { "$ref": "#/$defs/error" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "version_name": { "type": "string", "pattern": "^[a-z0-9][a-z0-9.-]{0,63}$" },
+    "ranked": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "algorithm_version", "config_version", "status", "suggestions"],
+      "properties": {
+        "contract_version": { "const": "1" },
+        "algorithm_version": { "$ref": "#/$defs/version_name" },
+        "config_version": { "$ref": "#/$defs/version_name" },
+        "status": { "const": "ranked" },
+        "suggestions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": { "$ref": "#/$defs/suggestion" }
+        }
+      }
+    },
+    "abstain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "algorithm_version", "config_version", "status", "abstain_reason"],
+      "properties": {
+        "contract_version": { "const": "1" },
+        "algorithm_version": { "$ref": "#/$defs/version_name" },
+        "config_version": { "$ref": "#/$defs/version_name" },
+        "status": { "const": "abstain" },
+        "abstain_reason": { "enum": ["no_candidates", "below_threshold", "insufficient_margin"] }
+      }
+    },
+    "error": {
+      "description": "Returned with a nonzero exit code when the matcher rejects its input. Versions are absent because the input may not carry valid ones.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract_version", "status", "error"],
+      "properties": {
+        "contract_version": { "const": "1" },
+        "status": { "const": "error" },
+        "error": { "enum": ["invalid_request", "unsupported_version"] }
+      }
+    },
+    "suggestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problem_id", "score", "features", "evidence"],
+      "properties": {
+        "problem_id": { "$ref": "#/$defs/uuid" },
+        "score": { "type": "number", "minimum": 0 },
+        "features": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_]{0,63}$" },
+          "additionalProperties": { "type": "number", "minimum": 0 }
+        },
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/evidence" }
+        }
+      }
+    },
+    "evidence": {
+      "description": "A field of a record supplied in the request. Python renders the explanation from it.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["record", "id", "field"],
+          "properties": {
+            "record": { "const": "problem" },
+            "id": { "$ref": "#/$defs/uuid" },
+            "field": { "enum": ["title", "summary"] }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["record", "id", "field"],
+          "properties": {
+            "record": { "const": "linked_report" },
+            "id": { "$ref": "#/$defs/uuid" },
+            "field": { "enum": ["title", "description"] }
+          }
+        }
+      ]
+    }
+  }
+}

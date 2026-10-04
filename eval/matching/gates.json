@@ -1,0 +1,18 @@
+{
+  "recorded_by": "Nick Coleman",
+  "recorded_at": "2026-10-04",
+  "top1_precision_min": 0.8,
+  "coverage_min": 0.5,
+  "exam_min_cases": 240,
+  "spot_check_sample_size": 20,
+  "always_required": [
+    "zero invalid evidence references",
+    "zero cross-workspace references",
+    "deterministic replay"
+  ],
+  "definitions": {
+    "top1_precision": "Share of shown suggestions whose top problem is the expected one. A suggestion on a no-match case counts as wrong.",
+    "coverage": "Share of cases with an expected problem that get a suggestion.",
+    "exam_min_cases": "Exam cases, across usable exam batches, before a result counts."
+  }
+}

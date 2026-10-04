@@ -10,13 +10,14 @@ Match suggestions need a fixed contract and labelled data before any ranker is b
 - Specify normalization and tokenization with fixtures, and confirm the ten-candidate and 64 KiB limits.
 - Generate practice and exam cases from known problems, so each case has its expected answer when written. Use a different model from the one that tunes the matcher.
 - Add `task eval:label`: a terminal tool that shows a random sample of each batch for a quick right/wrong check.
+- Add `task eval:review-model`: a reviewer model checks the same sample through OpenRouter, recording each verdict's model and reason. Folds in #66.
 - Record the PostgreSQL baselines.
 - Record precision, coverage, sample-size, and spot-check sample gates before any exam run.
 
 ## Roles
 
 - Agents: generate cases, build the tools, and later build and tune the matcher on practice cases only.
-- Maintainer: sets the gates, spot-checks each batch, and signs off results.
+- Maintainer: sets the gates, spot-checks batches or chooses a reviewer model, and signs off results.
 - Exam cases stay in the repository. Agents must not tune against them.
 
 ## Capabilities

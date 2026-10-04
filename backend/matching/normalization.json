@@ -1,0 +1,209 @@
+{
+  "description": "Tokenizer fixtures. Rules: backend/matching/README.md. These fixtures are the authority.",
+  "fixtures": [
+    {
+      "name": "plain words",
+      "input": "CSV export times out",
+      "tokens": [
+        "csv",
+        "export",
+        "times",
+        "out"
+      ]
+    },
+    {
+      "name": "punctuation separates",
+      "input": "Login fails!!! (again)",
+      "tokens": [
+        "login",
+        "fails",
+        "again"
+      ]
+    },
+    {
+      "name": "hyphen separates",
+      "input": "sign-in page",
+      "tokens": [
+        "sign",
+        "in",
+        "page"
+      ]
+    },
+    {
+      "name": "underscore and slash separate",
+      "input": "error_code/42",
+      "tokens": [
+        "error",
+        "code",
+        "42"
+      ]
+    },
+    {
+      "name": "dot between letters separates",
+      "input": "app.example.com",
+      "tokens": [
+        "app",
+        "example",
+        "com"
+      ]
+    },
+    {
+      "name": "url",
+      "input": "https://example.com/a?b=1",
+      "tokens": [
+        "https",
+        "example",
+        "com",
+        "a",
+        "b",
+        "1"
+      ]
+    },
+    {
+      "name": "whitespace and newlines",
+      "input": "line one\n\tline  two",
+      "tokens": [
+        "line",
+        "one",
+        "line",
+        "two"
+      ]
+    },
+    {
+      "name": "empty",
+      "input": "",
+      "tokens": []
+    },
+    {
+      "name": "whitespace only",
+      "input": " \n\t ",
+      "tokens": []
+    },
+    {
+      "name": "negation keeps the contraction together",
+      "input": "Doesn't sync",
+      "tokens": [
+        "doesnt",
+        "sync"
+      ]
+    },
+    {
+      "name": "right single quotation mark joins like an apostrophe",
+      "input": "won’t load",
+      "tokens": [
+        "wont",
+        "load"
+      ]
+    },
+    {
+      "name": "possessive",
+      "input": "customer's invoice",
+      "tokens": [
+        "customers",
+        "invoice"
+      ]
+    },
+    {
+      "name": "apostrophes at word edges separate",
+      "input": "'quoted' users'",
+      "tokens": [
+        "quoted",
+        "users"
+      ]
+    },
+    {
+      "name": "version keeps dots between digits",
+      "input": "Broke in v2.4.1.",
+      "tokens": [
+        "broke",
+        "in",
+        "v2.4.1"
+      ]
+    },
+    {
+      "name": "decimal",
+      "input": "3.5 seconds",
+      "tokens": [
+        "3.5",
+        "seconds"
+      ]
+    },
+    {
+      "name": "leading dots",
+      "input": "..5",
+      "tokens": [
+        "5"
+      ]
+    },
+    {
+      "name": "comma separates digits",
+      "input": "10,000 rows",
+      "tokens": [
+        "10",
+        "000",
+        "rows"
+      ]
+    },
+    {
+      "name": "duplicates and order are kept",
+      "input": "Sync sync SYNC",
+      "tokens": [
+        "sync",
+        "sync",
+        "sync"
+      ]
+    },
+    {
+      "name": "accented letters",
+      "input": "Café Crème",
+      "tokens": [
+        "café",
+        "crème"
+      ]
+    },
+    {
+      "name": "uppercase accented",
+      "input": "ÉCHEC",
+      "tokens": [
+        "échec"
+      ]
+    },
+    {
+      "name": "lowercase, not case folding",
+      "input": "Straße",
+      "tokens": [
+        "straße"
+      ]
+    },
+    {
+      "name": "greek final sigma",
+      "input": "ΟΔΟΣ",
+      "tokens": [
+        "οδος"
+      ]
+    },
+    {
+      "name": "decomposed accent splits: no normalization form",
+      "input": "Café",
+      "tokens": [
+        "cafe"
+      ]
+    },
+    {
+      "name": "scripts without spaces stay one token",
+      "input": "导出失败 timeout",
+      "tokens": [
+        "导出失败",
+        "timeout"
+      ]
+    },
+    {
+      "name": "emoji separates",
+      "input": "export 🔥 broken",
+      "tokens": [
+        "export",
+        "broken"
+      ]
+    }
+  ]
+}

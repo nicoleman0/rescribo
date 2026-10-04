@@ -1,0 +1,106 @@
+{
+  "seed": 1850428297,
+  "batch_sha256": "d62c0dd80ab89e3fbf1ea1d7917563bd9c5db203041ee28cf329c245b233d7b2",
+  "verdicts": [
+    {
+      "case_id": "80c54c3f-bc57-4971-9e2e-47eaf04b8aaa",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "f4031218-a09f-4891-ab1d-2f5c827a013c",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "b392ceed-77e5-40e1-8f9e-70d9a1a7b3d1",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "a407a7bd-5d54-4f10-9366-20d31f897c29",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "2e1dad0f-0399-40e8-9499-5fdc87603021",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "6f7dd925-2777-4a56-98c2-ce794575af1e",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "01686118-2a8c-41b6-8897-bdf521996854",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "d091d785-e73b-460c-bdcc-a357ddb1122a",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "5d53fbe4-3e57-49c3-abb7-019671f2dafa",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "896933e5-169e-40cf-911f-019610082cdb",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "0b223219-7fdc-48bb-b95e-27b5aaccc12d",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "44c422a3-2e18-4c9c-aafd-778955d10889",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "1fa7e800-39b4-4216-87c3-b8c1fd99a0f2",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "30277a10-e963-4845-9777-524fe2e4b5a7",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "576735b1-3584-4c38-8942-62ef15a9af3e",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "470b6bf9-485b-4d36-b389-7e37faa337d5",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "a2b9da82-7204-4765-9be6-413d5357a543",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "f5969656-9440-44bf-9766-0140166e0d11",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "1448d490-7ede-4ce4-a98a-ccee8b4d8d8b",
+      "right": true,
+      "reviewer": "person"
+    },
+    {
+      "case_id": "c7892a36-4032-453e-9611-487544716d69",
+      "right": true,
+      "reviewer": "person"
+    }
+  ]
+}

@@ -1,0 +1,126 @@
+{
+  "seed": 1848331500,
+  "batch_sha256": "0c3d135179d1b318872a515ed4c0e31de709a0a2cb4e9d1df75b9bed3f096f2c",
+  "verdicts": [
+    {
+      "case_id": "7cb2e9b1-08e8-4b3b-8b6a-1752cdc41ce3",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report describes push notifications for schedule edits being suppressed during daytime hours because quiet hours are being evaluated against headquarters time instead of the local branch time zone."
+    },
+    {
+      "case_id": "46cd6a3f-0f17-433e-b348-c19d5f382898",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly denies experiencing the paid break overtime calculation bug and complains about print formatting, which is not among the listed problems."
+    },
+    {
+      "case_id": "92199ec3-a369-4066-a428-ed4b97e997d5",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely matches the issue where an accepted shift swap stays awaiting approval because it evaluates an outdated role snapshot from when the offer was created."
+    },
+    {
+      "case_id": "aef6c786-43e8-49fb-a8e9-af61726eef0c",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly states push notifications work fine after reinstalling and complains about font size, which does not match any listed problem."
+    },
+    {
+      "case_id": "0aaa8f27-e321-4f6f-b5fa-fb23c6446e26",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly denies experiencing the demoted manager access issue and reports an unlisted problem regarding timesheet printing layout."
+    },
+    {
+      "case_id": "33abe896-a25c-4840-8040-754852fc066c",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes staffing coverage treating shadow trainees as fully qualified workers and showing green coverage when qualified staff are removed."
+    },
+    {
+      "case_id": "c5fe4dee-b7c4-483c-9437-35ab65094216",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely describes an unclosed first time entry upon a cross-site transfer causing overlapping hours to inflate overtime calculations."
+    },
+    {
+      "case_id": "4c703163-d1bb-4597-822e-aad937babe64",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes duplicate employee profiles being created upon retrying pending invitations, matching the expected problem despite mentioning a version number."
+    },
+    {
+      "case_id": "3002cb23-f141-4994-befb-b605fdab1a68",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely describes delegated schedule edits showing only the represented manager in the audit log rather than the actual editor, matching the listed problem."
+    },
+    {
+      "case_id": "ff2009d3-7d46-4e93-8fd9-1b941dc2be9f",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report directly describes a demoted manager continuing to approve timesheets using an existing open session, matching the known problem."
+    },
+    {
+      "case_id": "094c5ba2-cd1f-4481-b499-8b66d17d5931",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly confirms that duplicate employee profiles are not occurring and instead requests a feature to customize the welcome email text, matching none of the listed problems."
+    },
+    {
+      "case_id": "e127335a-ad15-4d5d-9413-c7c82da11565",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes an overnight shift disappearing from the following day's daily view while still appearing on the weekly overview and on its start date."
+    },
+    {
+      "case_id": "199a448f-2908-4aee-9e90-ccf084769d41",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report asks about setting an expiration date for recurring availability patterns, which does not match any of the listed product problems."
+    },
+    {
+      "case_id": "25f14e38-0455-4f91-b107-3a178781b27b",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly states the staffing coverage issue is not occurring and raises an unlisted printing issue regarding clipped footers."
+    },
+    {
+      "case_id": "d4fa1db7-f8a8-42ec-b6b7-4a4e98ff99e9",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly identifies that a newly cloned branch inherited headquarters coordinates rather than its own map pin, matching the expected problem."
+    },
+    {
+      "case_id": "f486e7e7-1b32-4133-b8a2-083afee10b13",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report precisely describes automatic swap approval being turned off in the background after location edits while the open tab still displays it as enabled."
+    },
+    {
+      "case_id": "02ad8eac-34b8-4a25-809e-a9353a372e59",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes timesheet edits failing to save when emoji are included in manager notes and succeeding once they are removed."
+    },
+    {
+      "case_id": "ca89d984-e8f2-4ced-a297-a3f2eee3c054",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report explicitly confirms that the failure was caused by revoked external payroll authorization while settings still showed 'Connected', matching the expected problem description."
+    },
+    {
+      "case_id": "664511c4-65ca-41f8-b30c-3a79031686cf",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes weekly overtime being inflated by paid break minutes that are already part of the shift total."
+    },
+    {
+      "case_id": "f57300c1-6b42-4365-81ed-258ff0dd053f",
+      "right": true,
+      "reviewer": "model:google/gemini-3.8-flash",
+      "note": "The report accurately describes shift swaps remaining stuck awaiting approval because role qualifications were obtained after the swap was created, matching the expected problem."
+    }
+  ]
+}

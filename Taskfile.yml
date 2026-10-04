@@ -149,6 +149,26 @@ tasks:
       - cd frontend && npm exec openapi-typescript -- openapi.yaml -o ../.cache/schema.d.ts
       - diff -u frontend/src/api/schema.d.ts .cache/schema.d.ts
 
+  eval:baseline:
+    desc: Record the PostgreSQL text-search baseline for a batch (batch id)
+    cmds:
+      - uv run python scripts/eval_baseline.py {{.CLI_ARGS}}
+
+  eval:generate:
+    desc: Generate a matching evaluation batch through OpenRouter
+    cmds:
+      - uv run python scripts/eval_generate.py {{.CLI_ARGS}}
+
+  eval:review-model:
+    desc: Spot-check a batch with a reviewer model through OpenRouter (batch id, --model)
+    cmds:
+      - uv run python scripts/eval_review_model.py {{.CLI_ARGS}}
+
+  eval:label:
+    desc: List evaluation batches, or spot-check one (batch id)
+    cmds:
+      - uv run python scripts/eval_label.py {{.CLI_ARGS}}
+
   browsers:
     desc: Install Chromium for browser tests
     dir: frontend
