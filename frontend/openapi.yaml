@@ -5341,14 +5341,18 @@ components:
       - triage_state
     ReportMatch:
       type: object
-      description: The report's latest run, or null before the first one.
+      description: The report's latest run, or null before the first one or while
+        suggestions are off.
       properties:
+        suggestions_enabled:
+          type: boolean
         run:
           allOf:
           - $ref: '#/components/schemas/MatchRun'
           nullable: true
       required:
       - run
+      - suggestions_enabled
     ReportMatchConflict:
       type: object
       properties:

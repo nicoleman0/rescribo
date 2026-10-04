@@ -4,6 +4,7 @@ from collections.abc import Callable
 from typing import Any
 from uuid import UUID
 
+from django.conf import settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
 from drf_spectacular.utils import extend_schema
@@ -45,8 +46,20 @@ WRITE_ERRORS = {
 
 class MatchView(WorkspaceView):
     def report_match(self, report_id: UUID) -> dict[str, Any]:
+        # Read the run even when off, so access checks are the same either way.
         run = latest_run(actor=self.membership, report_id=report_id)
-        return ReportMatchSerializer({"run": run}).data
+        enabled = settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED
+        return ReportMatchSerializer(
+            {"suggestions_enabled": enabled, "run": run if enabled else None}
+        ).data
+
+    def disabled(self) -> Response | None:
+        if settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED:
+            return None
+        return Response(
+            {"detail": "Match suggestions are turned off.", "reason": "suggestions_disabled"},
+            status=404,
+        )
 
     def error(self, error: FeedbackError, current: Callable[[], Any]) -> Response:
         detail = CONFLICT_DETAILS.get(type(error))
@@ -71,6 +84,8 @@ class ReportMatchView(MatchView):
 class ReportMatchRetryView(MatchView):
     @extend_schema(request=None, responses={202: ReportMatchSerializer, **WRITE_ERRORS})
     def post(self, request: Request, workspace_id: UUID, report_id: UUID) -> Response:
+        if disabled := self.disabled():
+            return disabled
         try:
             retry_match(actor=self.membership, report_id=report_id)
         except FeedbackError as error:
@@ -84,6 +99,9 @@ class SuggestionDecisionView(MatchView):
         raise NotImplementedError
 
     def handle(self, suggestion_id: UUID, data: dict[str, Any]) -> Response:
+        if disabled := self.disabled():
+            return disabled
+
         def current() -> dict[str, Any]:
             return self.report_match(
                 suggestion_report_id(actor=self.membership, suggestion_id=suggestion_id)

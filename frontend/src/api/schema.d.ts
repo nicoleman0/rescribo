@@ -1861,8 +1861,9 @@ export interface components {
             created_at: string;
             match_state: (components["schemas"]["MatchRunStateEnum"] | components["schemas"]["NullEnum"]) | null;
         };
-        /** @description The report's latest run, or null before the first one. */
+        /** @description The report's latest run, or null before the first one or while suggestions are off. */
         ReportMatch: {
+            suggestions_enabled: boolean;
             run: components["schemas"]["MatchRun"] | null;
         };
         ReportMatchConflict: {

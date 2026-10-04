@@ -163,6 +163,8 @@ RESCRIBO_MATCHER_PATH = env(
     "RESCRIBO_MATCHER_PATH", default=str(BASE_DIR / "rust" / "matcher" / "target/release/matcher")
 )
 RESCRIBO_MATCHER_CONFIG_VERSION = env("RESCRIBO_MATCHER_CONFIG_VERSION", default="lexical-1.0")
+# Off until a frozen config passes eval/matching/gates.json on an exam. Runs still execute.
+RESCRIBO_MATCH_SUGGESTIONS_ENABLED = env.bool("RESCRIBO_MATCH_SUGGESTIONS_ENABLED", default=False)
 # Provisional limits; revisit with deployment measurements before suggestions are shown.
 RESCRIBO_MATCHER_TIMEOUT_SECONDS = env.float("RESCRIBO_MATCHER_TIMEOUT_SECONDS", default=5.0)
 RESCRIBO_MATCHER_MAX_RESPONSE_BYTES = env.int(

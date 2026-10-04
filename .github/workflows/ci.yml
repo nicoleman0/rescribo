@@ -114,6 +114,7 @@ jobs:
       - run: task bootstrap
       - run: uv sync --locked
       - run: task services migrate
+      - run: task matcher-build
       - name: Worker smoke check
         run: |
           setsid task worker > /tmp/feedback-worker.log 2>&1 &
@@ -121,6 +122,9 @@ jobs:
           trap 'kill -TERM -"$worker_pid" 2>/dev/null || true' EXIT
           task worker-check
           task github-product-worker-check
+      - name: Show worker log
+        if: failure()
+        run: cat /tmp/feedback-worker.log
       - name: Stop local services
         if: always()
         run: docker compose down

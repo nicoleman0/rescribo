@@ -9,6 +9,13 @@ Synthetic cases that decide whether match suggestions are shown. Requirements: `
 - The maintainer fills in `gates.json` before any exam run, and `spot_check_sample_size` before the first review.
 - Generators and reviewer models must not be the tuning agent's model (Claude) or the evaluation baseline (Jev), and a reviewer must not be the batch's generator. The tools refuse them.
 
+## Scoring
+
+- `task eval:matcher -- <batch_id>... --config <version>`: the release binary against PostgreSQL order on the same pools, with gates. An exam scores once per config. `--sweep` tunes on practice batches.
+- `task eval:jev -- <batch_id>... --run 1|2 --yes`: the Jev baseline. Paid; without `--yes` it prints the estimate.
+- `task eval:review -- <result file>`: triaged failures, then a sample of passes.
+- Latest report: `docs/MATCHING_EVALUATION.md`.
+
 ## Layout
 
 ```text
@@ -17,7 +24,7 @@ prompts/                      Generator prompts; their hash is the batch's promp
 reviewer/prompt.md            Reviewer model prompt
 batches/<batch_id>/batch.json One synthetic workspace: problems and cases
 batches/<batch_id>/review.json Spot-check seed, batch hash, and verdicts
-results/                      Recorded metrics (`task eval:baseline`)
+results/                      Recorded metrics (`task eval:baseline`, `eval:matcher`, `eval:jev`)
 ```
 
 ## Batch format
