@@ -1,0 +1,4431 @@
+{
+  "batch_ids": [
+    "practice-20261004-c80b"
+  ],
+  "split": "practice",
+  "data_source": "synthetic",
+  "generators": [
+    "openai/gpt-6.1-sol"
+  ],
+  "config_version": "lexical-1.0",
+  "cases": 122,
+  "class_balance": {
+    "confusable": 12,
+    "match": 20,
+    "misleading_version": 20,
+    "missing_context": 20,
+    "negation": 20,
+    "no_match": 10,
+    "paraphrase": 20
+  },
+  "retrieval": {
+    "recall_at_10": {
+      "hits": 86,
+      "total": 92,
+      "rate": 0.935,
+      "ci95": [
+        0.865,
+        0.97
+      ]
+    },
+    "missed_by_kind": {
+      "paraphrase": 6
+    },
+    "pool_size_mean": 10.0
+  },
+  "ranking": {
+    "rust": {
+      "top1_precision": {
+        "hits": 54,
+        "total": 91,
+        "rate": 0.593,
+        "ci95": [
+          0.491,
+          0.689
+        ]
+      },
+      "coverage": {
+        "hits": 66,
+        "total": 92,
+        "rate": 0.717,
+        "ci95": [
+          0.618,
+          0.799
+        ]
+      },
+      "top1_recall": {
+        "hits": 54,
+        "total": 92,
+        "rate": 0.587,
+        "ci95": [
+          0.485,
+          0.682
+        ]
+      },
+      "top3_recall": {
+        "hits": 62,
+        "total": 92,
+        "rate": 0.674,
+        "ci95": [
+          0.573,
+          0.761
+        ]
+      },
+      "ranking_top1_on_retrieved": {
+        "hits": 54,
+        "total": 86,
+        "rate": 0.628,
+        "ci95": [
+          0.522,
+          0.723
+        ]
+      },
+      "abstention": {
+        "hits": 31,
+        "total": 122,
+        "rate": 0.254,
+        "ci95": [
+          0.185,
+          0.338
+        ]
+      },
+      "false_suggestion_on_no_match": {
+        "hits": 25,
+        "total": 30,
+        "rate": 0.833,
+        "ci95": [
+          0.664,
+          0.927
+        ]
+      },
+      "by_kind": {
+        "confusable": {
+          "cases": 12,
+          "suggested": 11,
+          "top1": 4
+        },
+        "match": {
+          "cases": 20,
+          "suggested": 17,
+          "top1": 16
+        },
+        "misleading_version": {
+          "cases": 20,
+          "suggested": 17,
+          "top1": 17
+        },
+        "missing_context": {
+          "cases": 20,
+          "suggested": 17,
+          "top1": 17
+        },
+        "negation": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 0
+        },
+        "no_match": {
+          "cases": 10,
+          "suggested": 5,
+          "top1": 0
+        },
+        "paraphrase": {
+          "cases": 20,
+          "suggested": 4,
+          "top1": 0
+        }
+      },
+      "failures": {
+        "false_suggestion": 25,
+        "ranking_miss": 11,
+        "retrieval_miss": 6,
+        "wrong_abstention": 21
+      }
+    },
+    "postgres_order": {
+      "top1_precision": {
+        "hits": 54,
+        "total": 122,
+        "rate": 0.443,
+        "ci95": [
+          0.358,
+          0.531
+        ]
+      },
+      "coverage": {
+        "hits": 92,
+        "total": 92,
+        "rate": 1.0,
+        "ci95": [
+          0.96,
+          1.0
+        ]
+      },
+      "top1_recall": {
+        "hits": 54,
+        "total": 92,
+        "rate": 0.587,
+        "ci95": [
+          0.485,
+          0.682
+        ]
+      },
+      "top3_recall": {
+        "hits": 77,
+        "total": 92,
+        "rate": 0.837,
+        "ci95": [
+          0.748,
+          0.899
+        ]
+      },
+      "ranking_top1_on_retrieved": {
+        "hits": 54,
+        "total": 86,
+        "rate": 0.628,
+        "ci95": [
+          0.522,
+          0.723
+        ]
+      },
+      "abstention": {
+        "hits": 0,
+        "total": 122,
+        "rate": 0.0,
+        "ci95": [
+          0.0,
+          0.031
+        ]
+      },
+      "false_suggestion_on_no_match": {
+        "hits": 30,
+        "total": 30,
+        "rate": 1.0,
+        "ci95": [
+          0.886,
+          1.0
+        ]
+      },
+      "by_kind": {
+        "confusable": {
+          "cases": 12,
+          "suggested": 12,
+          "top1": 4
+        },
+        "match": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 18
+        },
+        "misleading_version": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 13
+        },
+        "missing_context": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 17
+        },
+        "negation": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 0
+        },
+        "no_match": {
+          "cases": 10,
+          "suggested": 10,
+          "top1": 0
+        },
+        "paraphrase": {
+          "cases": 20,
+          "suggested": 20,
+          "top1": 2
+        }
+      },
+      "failures": {
+        "false_suggestion": 30,
+        "ranking_miss": 32,
+        "retrieval_miss": 6
+      }
+    }
+  },
+  "invalid_responses": [],
+  "replay_mismatches": [],
+  "median_run_ms": 2.67,
+  "gates": {
+    "declared": {
+      "recorded_by": "Nick Coleman",
+      "recorded_at": "2026-10-04",
+      "top1_precision_min": 0.8,
+      "coverage_min": 0.5,
+      "exam_min_cases": 240,
+      "spot_check_sample_size": 20,
+      "always_required": [
+        "zero invalid evidence references",
+        "zero cross-workspace references",
+        "deterministic replay"
+      ],
+      "definitions": {
+        "top1_precision": "Share of shown suggestions whose top problem is the expected one. A suggestion on a no-match case counts as wrong.",
+        "coverage": "Share of cases with an expected problem that get a suggestion.",
+        "exam_min_cases": "Exam cases, across usable exam batches, before a result counts."
+      }
+    },
+    "checks": {
+      "top1_precision": false,
+      "coverage": true,
+      "exam_min_cases": false,
+      "zero_invalid_evidence": true,
+      "zero_cross_workspace": true,
+      "deterministic_replay": true
+    },
+    "pass": false
+  },
+  "case_records": [
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "ba772e97-59e0-4d44-ab09-8c45bab6bc7b",
+      "kind": "match",
+      "expected": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "8fcc5af0-ac6b-4454-8a84-a2a90fcd41b3",
+      "kind": "paraphrase",
+      "expected": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "910739f4-9700-4630-ac79-01017b339b5e",
+      "kind": "missing_context",
+      "expected": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+      ],
+      "rust": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d5736dc1-f6f8-44fa-a28d-468c26c9161a",
+      "kind": "misleading_version",
+      "expected": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "386a4107-4b1e-4a0b-9dc9-068ee122a52b",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f4031218-a09f-4891-ab1d-2f5c827a013c",
+      "kind": "confusable",
+      "expected": "6776938a-a668-4c1b-8daf-86db73e5cd51",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "4b66098e-71e4-4ce4-9126-633ae09207ee",
+      "kind": "match",
+      "expected": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f9194bad-0680-4b98-9135-fd3cb9129e87",
+      "kind": "paraphrase",
+      "expected": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+      ],
+      "rust": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d931b3c7-4533-4148-b3af-52b9a75c8296",
+      "kind": "missing_context",
+      "expected": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "fa764d45-9001-40b5-9053-1ced8b7f6152",
+      "kind": "misleading_version",
+      "expected": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "07e7cf83-f2c0-4b7f-bd97-74f419b8ad94",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "062d0c7a-a767-4838-9a6b-9186300c5ca8",
+      "kind": "confusable",
+      "expected": "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "e134325c-8a6c-43f0-87ce-7996e9a339e0",
+      "kind": "match",
+      "expected": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "pool": [
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a407a7bd-5d54-4f10-9366-20d31f897c29",
+      "kind": "paraphrase",
+      "expected": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c10339cc-cf5b-46d1-9e03-8bf9d77540a3",
+      "kind": "missing_context",
+      "expected": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "pool": [
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "af7543b0-d113-4801-aeef-f9d708948041"
+      ],
+      "rust": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "6d6fc9ee-cbee-4aa4-ba64-ca32495e8c1a",
+      "kind": "misleading_version",
+      "expected": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "pool": [
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "91743286-8a8c-4a50-8ef0-4eaaac9c723b",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+      ],
+      "rust": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a2b9da82-7204-4765-9be6-413d5357a543",
+      "kind": "confusable",
+      "expected": "f48c3712-8c98-4e42-8690-8191cec59593",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+      ],
+      "rust": {
+        "suggestions": [
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0e45aed6-9c76-44b7-995b-711851d40b15",
+      "kind": "match",
+      "expected": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "pool": [
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "da9b1ab9-ab48-445e-a15d-5c80823b61a6",
+      "kind": "paraphrase",
+      "expected": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "pool": [
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "cd53d6db-3aaa-4991-a6a9-6cf1b7430712",
+      "kind": "missing_context",
+      "expected": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "pool": [
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "2e1dad0f-0399-40e8-9499-5fdc87603021",
+      "kind": "misleading_version",
+      "expected": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "pool": [
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "1448d490-7ede-4ce4-a98a-ccee8b4d8d8b",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "80c54c3f-bc57-4971-9e2e-47eaf04b8aaa",
+      "kind": "confusable",
+      "expected": "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+      "pool": [
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f48c3712-8c98-4e42-8690-8191cec59593",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "3afb28ca-57ed-4808-b09a-2e457a2de53b",
+      "kind": "match",
+      "expected": "a275af97-c71e-4e09-8a18-58b096305361",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "cbd1c70e-33fe-4548-b5d1-c9ae54c392b5",
+      "kind": "paraphrase",
+      "expected": "a275af97-c71e-4e09-8a18-58b096305361",
+      "pool": [
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "1868f12f-6ece-4716-ac72-486c939ad80e",
+      "kind": "missing_context",
+      "expected": "a275af97-c71e-4e09-8a18-58b096305361",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "3921a295-9b4a-49fc-942c-3d3a67ba2c61",
+      "kind": "misleading_version",
+      "expected": "a275af97-c71e-4e09-8a18-58b096305361",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0991284d-4230-4fec-8494-f699e35a9a89",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f86769cd-7ccf-444b-b811-00fb95d71779",
+      "kind": "confusable",
+      "expected": "a275af97-c71e-4e09-8a18-58b096305361",
+      "pool": [
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+      ],
+      "rust": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f390fa26-1d50-4490-91e3-fad454f6e006",
+      "kind": "match",
+      "expected": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "pool": [
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "4c899876-09a7-43a6-80bb-5ba6f5771fba",
+      "kind": "paraphrase",
+      "expected": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "44c422a3-2e18-4c9c-aafd-778955d10889",
+      "kind": "missing_context",
+      "expected": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "pool": [
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d923c048-0732-4f86-97a7-58ddec7ef491",
+      "kind": "misleading_version",
+      "expected": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "pool": [
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "756bd868-71c2-4082-a7fa-9bab781e888c",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+      ],
+      "rust": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c9d4680e-d3b8-4180-8e6e-f05cc803405d",
+      "kind": "confusable",
+      "expected": "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "34be478f-a0d9-4eba-93ed-c096dc1a74e7",
+      "kind": "match",
+      "expected": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "pool": [
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "896933e5-169e-40cf-911f-019610082cdb",
+      "kind": "paraphrase",
+      "expected": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d3ee1d3c-a4a6-41d2-a82c-0c589fdf0c58",
+      "kind": "missing_context",
+      "expected": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "pool": [
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d091d785-e73b-460c-bdcc-a357ddb1122a",
+      "kind": "misleading_version",
+      "expected": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "fd377b4d-a62f-42bd-af3f-5b57f5c8b92f",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+      ],
+      "rust": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "9aa65a0e-94f7-4c9b-a1b5-07f3c9bd0a1c",
+      "kind": "confusable",
+      "expected": "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+      "pool": [
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "b392ceed-77e5-40e1-8f9e-70d9a1a7b3d1",
+      "kind": "match",
+      "expected": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "pool": [
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+      ],
+      "rust": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "56173a6c-4e6c-4626-9017-84691e75c739",
+      "kind": "paraphrase",
+      "expected": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "pool": [
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a9f40d28-9088-4911-9b60-80cd935e180d",
+      "kind": "missing_context",
+      "expected": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "62a0b828-4fff-4ef2-a5bf-59c2ce6b86ab",
+      "kind": "misleading_version",
+      "expected": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c521d08f-c00c-4603-865a-1d3faa6c1d3d",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "4e3fe2da-f7b1-4a6e-bedc-c21e5b45d2fc",
+      "kind": "confusable",
+      "expected": "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+      "pool": [
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041"
+      ],
+      "rust": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "1fa7e800-39b4-4216-87c3-b8c1fd99a0f2",
+      "kind": "match",
+      "expected": "af7543b0-d113-4801-aeef-f9d708948041",
+      "pool": [
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "2c172ca3-0721-4d1a-8b13-63be017e70c2",
+      "kind": "paraphrase",
+      "expected": "af7543b0-d113-4801-aeef-f9d708948041",
+      "pool": [
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "769d9c4f-95ad-4916-81d1-1a05cb10cd31",
+      "kind": "missing_context",
+      "expected": "af7543b0-d113-4801-aeef-f9d708948041",
+      "pool": [
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c02c6929-8139-4b52-8a89-10190d2a9006",
+      "kind": "misleading_version",
+      "expected": "af7543b0-d113-4801-aeef-f9d708948041",
+      "pool": [
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0925747d-1d59-46d3-bebf-8e5488b890c6",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d1f4b80a-02b6-4024-8457-93323e621fa1",
+      "kind": "confusable",
+      "expected": "af7543b0-d113-4801-aeef-f9d708948041",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "95de5ffc-1c94-4f09-852e-fc0e031884a2",
+      "kind": "match",
+      "expected": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a1fff76f-71f8-4ad4-95bc-d86437e30c00",
+      "kind": "paraphrase",
+      "expected": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "db5012d6-f18e-4ba2-938a-5aa3eccac17f",
+      "kind": "missing_context",
+      "expected": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+      ],
+      "rust": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "2c04afe3-d9ea-450f-9dc0-7e2dd7c2b339",
+      "kind": "misleading_version",
+      "expected": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "af7543b0-d113-4801-aeef-f9d708948041"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0bb49964-6e58-45a5-90d3-0cc19a44c07e",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+      ],
+      "rust": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "dd92b321-f17d-4cc9-97ea-1952265a17ec",
+      "kind": "confusable",
+      "expected": "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "02dfc90f-7cb7-4c84-877f-2b881274b5a5",
+      "kind": "match",
+      "expected": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a7e57042-71a7-4336-9545-b0262edb7c42",
+      "kind": "paraphrase",
+      "expected": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "ef11598f-ffc1-44c8-b5ed-c56852d8098a",
+      "kind": "missing_context",
+      "expected": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "pool": [
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f5969656-9440-44bf-9766-0140166e0d11",
+      "kind": "misleading_version",
+      "expected": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "e012e957-a2bb-4349-90a1-8c263ea2a7b6",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab"
+      ],
+      "rust": {
+        "suggestions": [
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f40d7514-9dbf-4017-889b-2a73e725dcd0",
+      "kind": "confusable",
+      "expected": "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "470b6bf9-485b-4d36-b389-7e37faa337d5",
+      "kind": "match",
+      "expected": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "cb6e64fa-2451-406a-b924-b6b73000968a",
+      "kind": "paraphrase",
+      "expected": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f12cf648-bbfe-4e03-9ea8-639e80718076",
+      "kind": "missing_context",
+      "expected": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "6507d285-fd6a-49d5-854c-800064954585",
+      "kind": "misleading_version",
+      "expected": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "759de30d-96c5-4879-95dd-e120a9579836",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "fce1ac89-8496-4955-bf01-8f4d0094c730",
+      "kind": "confusable",
+      "expected": "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "7e32986a-dbd0-4375-9525-43d5442eefb5",
+      "kind": "match",
+      "expected": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0938420f-bb19-4108-af77-f47892e92a88",
+      "kind": "paraphrase",
+      "expected": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d6b300b5-e3f9-4198-858d-372050714fac",
+      "kind": "missing_context",
+      "expected": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "54873aaa-225f-4220-9112-a67157f0156e",
+      "kind": "misleading_version",
+      "expected": "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+      ],
+      "rust": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "f1d5a36f-9acc-42ad-beb4-a8c73a8ae831",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c8eaebf7-c1ca-4538-a22f-a7969655bc16",
+      "kind": "match",
+      "expected": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "pool": [
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "21a52ee7-de44-47a0-b6f9-648eba322522",
+      "kind": "paraphrase",
+      "expected": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "645b2bb6-a52f-4fd2-b6fa-f774a63eb816",
+      "kind": "missing_context",
+      "expected": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c7892a36-4032-453e-9611-487544716d69",
+      "kind": "misleading_version",
+      "expected": "da317468-98a9-4da5-9245-99564d0bdaa1",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "f48c3712-8c98-4e42-8690-8191cec59593"
+      ],
+      "rust": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "286894bb-bd22-45f6-8f0e-8a90b4492d87",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "5d53fbe4-3e57-49c3-abb7-019671f2dafa",
+      "kind": "match",
+      "expected": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "pool": [
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "356ab649-3865-4105-b1f8-212f9a6143db",
+      "kind": "paraphrase",
+      "expected": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "b4804a1c-746d-4b6c-8bf8-6895c46d03c0",
+      "kind": "missing_context",
+      "expected": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "pool": [
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+          "a275af97-c71e-4e09-8a18-58b096305361"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "b797610b-ab59-46b4-b268-64e5b7c1d493",
+      "kind": "misleading_version",
+      "expected": "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+      "pool": [
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "c0c68f04-89af-4582-861c-b2b64d4d9301",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+      ],
+      "rust": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "12ea44f8-4f7d-4fe0-a57c-7c572193d64f",
+      "kind": "match",
+      "expected": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "pool": [
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "7aca8d22-07a1-4db9-9ab4-d519a1248e35",
+      "kind": "paraphrase",
+      "expected": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "pool": [
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "3e389cd6-e064-4c07-8bb7-0a7cee378b0d",
+      "kind": "missing_context",
+      "expected": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "pool": [
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "0b223219-7fdc-48bb-b95e-27b5aaccc12d",
+      "kind": "misleading_version",
+      "expected": "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+      "pool": [
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+      ],
+      "rust": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "00565758-4d4b-4b01-ba08-f13ed381277f",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "488d8634-e723-445e-a123-6fa20874ecda",
+      "kind": "match",
+      "expected": "132db6ec-32b7-496d-bf65-847053057eab",
+      "pool": [
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "ea60dc20-c15d-4578-a8c3-5226f75b9732",
+      "kind": "paraphrase",
+      "expected": "132db6ec-32b7-496d-bf65-847053057eab",
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "6f7dd925-2777-4a56-98c2-ce794575af1e",
+      "kind": "missing_context",
+      "expected": "132db6ec-32b7-496d-bf65-847053057eab",
+      "pool": [
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "a1e78b2f-59cf-4711-a838-2e168a1e1d0b",
+      "kind": "misleading_version",
+      "expected": "132db6ec-32b7-496d-bf65-847053057eab",
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "132db6ec-32b7-496d-bf65-847053057eab",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "38fb73dc-03bb-4c78-b11b-60694b4715dc",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+      ],
+      "rust": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "132db6ec-32b7-496d-bf65-847053057eab",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "aeaceab9-bafc-4de4-9777-8c28d79b63e4",
+      "kind": "match",
+      "expected": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "pool": [
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+      ],
+      "rust": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "7bea9534-7a01-45ee-8382-f0a5bac274d9",
+      "kind": "paraphrase",
+      "expected": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "retrieval_miss"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "retrieval_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "576735b1-3584-4c38-8942-62ef15a9af3e",
+      "kind": "missing_context",
+      "expected": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "pool": [
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "132db6ec-32b7-496d-bf65-847053057eab"
+      ],
+      "rust": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "ddad8ab9-41b3-4bf2-8d69-ac0179b4ed29",
+      "kind": "misleading_version",
+      "expected": "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+      "pool": [
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "a275af97-c71e-4e09-8a18-58b096305361",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "5b2b1aa9-8002-4cb3-9abc-2bd4de987a70",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "132db6ec-32b7-496d-bf65-847053057eab"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "104d4973-b996-42ab-8ed2-1ad302523710",
+      "kind": "match",
+      "expected": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "pool": [
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "ce02ff48-8908-4342-a0df-86966f130839",
+      "kind": "paraphrase",
+      "expected": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "af7543b0-d113-4801-aeef-f9d708948041"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "6680505f-45e9-4197-8f32-97e803ef6485",
+      "kind": "missing_context",
+      "expected": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "pool": [
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+      ],
+      "rust": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "d4f1768c-4931-48f1-8f4b-b38dba9b74c7",
+      "kind": "misleading_version",
+      "expected": "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+      "pool": [
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "7ce8b3a0-59d0-4f6f-8a8e-cc9e48b3f121",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "b83adb20-e53c-404b-925d-d25b8333d7b0",
+      "kind": "match",
+      "expected": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "pool": [
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "916bd2fc-f587-43d7-8cd5-0becfd5d8575",
+      "kind": "paraphrase",
+      "expected": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "pool": [
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": "wrong_abstention"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": "ranking_miss"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "8e02eb29-44f3-4b28-88c0-89fb4001d413",
+      "kind": "missing_context",
+      "expected": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "pool": [
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "a275af97-c71e-4e09-8a18-58b096305361"
+      ],
+      "rust": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "01686118-2a8c-41b6-8897-bdf521996854",
+      "kind": "misleading_version",
+      "expected": "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+      "pool": [
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": null
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "977ff16d-8c21-48d6-8846-5e4d1e4e2acf",
+      "kind": "negation",
+      "expected": null,
+      "pool": [
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51"
+      ],
+      "rust": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "9f3a952f-7a01-42db-927d-6ae1c8679dff",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "128187af-8d1a-4cf5-ad33-40587e0c0996",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "132db6ec-32b7-496d-bf65-847053057eab"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "afdb7acd-8e86-45f4-af25-f50e1b67a08a",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "da317468-98a9-4da5-9245-99564d0bdaa1",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+          "af7543b0-d113-4801-aeef-f9d708948041"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "fc29a6c2-1fac-4505-8081-bee84edf45a8",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "3dcbdbc1-523d-42d0-844a-a77f4d90c944",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "da317468-98a9-4da5-9245-99564d0bdaa1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "30277a10-e963-4845-9777-524fe2e4b5a7",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "f48c3712-8c98-4e42-8690-8191cec59593",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "6776938a-a668-4c1b-8daf-86db73e5cd51",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "8a31571b-4895-4362-958d-18214e96c37b",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "f9dfbc14-08a6-48f1-a3f1-00dc62a24dbd",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "below_threshold",
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "debbfc4f-f4ff-4ac9-950f-834688a978fc",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "50b69738-1df3-4f3c-86d8-eb26cb5e531c",
+        "7e4389dd-d7c3-4840-9ea3-8f02d9d0621e",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "7b747f64-877b-4991-b43c-c5e0b8db79bd",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+      ],
+      "rust": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "50b69738-1df3-4f3c-86d8-eb26cb5e531c"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "94a4f89b-f133-4896-b456-8a5a52d16512",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "d9c3033e-36d7-43e5-a9b0-1af450e017e1",
+        "a275af97-c71e-4e09-8a18-58b096305361",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "6776938a-a668-4c1b-8daf-86db73e5cd51",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "da317468-98a9-4da5-9245-99564d0bdaa1",
+        "132db6ec-32b7-496d-bf65-847053057eab",
+        "9a4f2428-90f6-4ca0-be01-caf829828d1d"
+      ],
+      "rust": {
+        "suggestions": [],
+        "abstain_reason": "insufficient_margin",
+        "failure": null
+      },
+      "postgres_order": {
+        "suggestions": [
+          "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+          "d9c3033e-36d7-43e5-a9b0-1af450e017e1"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    },
+    {
+      "batch_id": "practice-20261004-c80b",
+      "case_id": "bae481c1-9030-46ce-b092-c5e5c12a5661",
+      "kind": "no_match",
+      "expected": null,
+      "pool": [
+        "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+        "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+        "3ab2afd1-6d66-435e-a9d8-c0b10da74c75",
+        "f0d0a5e7-ae71-4e6a-80c7-474d2090a6e4",
+        "d84dbb9e-bd8f-49ab-b5bd-9d640e4415c2",
+        "af7543b0-d113-4801-aeef-f9d708948041",
+        "ee23a537-d8b6-454b-91c5-cc0e6939525b",
+        "1dc93e90-c535-4999-bf8f-eb3a277faf3d",
+        "bfd5102d-2937-4a7b-8763-75d05992e4a0",
+        "da317468-98a9-4da5-9245-99564d0bdaa1"
+      ],
+      "rust": {
+        "suggestions": [
+          "af7543b0-d113-4801-aeef-f9d708948041"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      },
+      "postgres_order": {
+        "suggestions": [
+          "e5a656f1-5b2d-4eed-b484-0267bf19535b",
+          "d1f3f53d-0817-4dbf-a631-593262e3f9b1",
+          "3ab2afd1-6d66-435e-a9d8-c0b10da74c75"
+        ],
+        "abstain_reason": null,
+        "failure": "false_suggestion"
+      }
+    }
+  ]
+}

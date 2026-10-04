@@ -6,12 +6,13 @@ use std::sync::OnceLock;
 
 use serde::Deserialize;
 
-use crate::rank::{ALGORITHM_VERSION, FEATURES};
+use crate::rank::{ALGORITHM_VERSIONS, FEATURES};
 
 /// Every file in backend/matching/configs/. A test fails if one is missing here.
-pub const SOURCES: &[&str] = &[include_str!(
-    "../../../backend/matching/configs/lexical-1.0.json"
-)];
+pub const SOURCES: &[&str] = &[
+    include_str!("../../../backend/matching/configs/lexical-1.0.json"),
+    include_str!("../../../backend/matching/configs/lexical-2.0.json"),
+];
 
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -30,7 +31,7 @@ pub struct Config {
 impl Config {
     pub fn parse(source: &str) -> Result<Config, String> {
         let config: Config = serde_json::from_str(source).map_err(|error| error.to_string())?;
-        if config.algorithm_version != ALGORITHM_VERSION {
+        if !ALGORITHM_VERSIONS.contains(&config.algorithm_version.as_str()) {
             return Err(format!(
                 "{}: unknown algorithm {}",
                 config.config_version, config.algorithm_version

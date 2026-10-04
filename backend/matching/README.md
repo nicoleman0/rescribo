@@ -40,6 +40,11 @@ Applied to every title, description, and summary. The rules are written for Rust
 
 No Unicode normalization form is applied, so a decomposed accent splits the word. Scripts written without spaces produce one token per run.
 
+## Algorithms
+
+- `lexical-1`: IDF-weighted overlap between the report's tokens and each candidate's title, summary, and linked reports.
+- `lexical-2`: the same, but report clauses that say something works are left out. Clauses split at `.` before whitespace, `;`, `!`, `?`, line breaks, and the words `but` and `however`. A clause with `fine`, `fixed`, `resolved`, `works`, `worked`, `working`, `anymore`, or `no longer` is left out. Plain negation (`not`, `doesn't`) is kept, because reports use it to describe symptoms.
+
 ## Limits
 
 Measured on `practice-20261004-c80b` (generated, 0 to 3 linked reports per problem):

@@ -23,6 +23,11 @@ def no_dispatch(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(runs, "dispatch_task", lambda name, ref: None)
 
 
+@pytest.fixture(autouse=True)
+def suggestions_on(settings: Any) -> None:
+    settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED = True
+
+
 def sign_in(client: Client, membership: Membership) -> None:
     client.force_login(membership.user)
     session = client.session
@@ -62,7 +67,45 @@ def test_read_before_and_after_ranking(client: Client, actor: Membership) -> Non
     assert pending["run"]["suggestions"] == []
 
     MatchRun.objects.filter(report=report).delete()
-    assert client.get(api(actor, f"reports/{report.pk}/match/")).json() == {"run": None}
+    assert client.get(api(actor, f"reports/{report.pk}/match/")).json() == {
+        "suggestions_enabled": True,
+        "run": None,
+    }
+
+
+def test_suggestions_off_hides_runs_and_refuses_decisions(
+    client: Client, actor: Membership, settings: Any
+) -> None:
+    report, suggestion = ranked_report(actor)
+    settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED = False
+
+    read = client.get(api(actor, f"reports/{report.pk}/match/"))
+    accept = post(
+        client,
+        api(actor, f"match-suggestions/{suggestion.pk}/accept/"),
+        {"expected_version": report.version},
+    )
+    reject = post(client, api(actor, f"match-suggestions/{suggestion.pk}/reject/"))
+    retry = post(client, api(actor, f"reports/{report.pk}/match/retry/"))
+
+    assert read.json() == {"suggestions_enabled": False, "run": None}
+    assert [accept.status_code, reject.status_code, retry.status_code] == [404, 404, 404]
+    assert accept.json()["reason"] == "suggestions_disabled"
+    suggestion.refresh_from_db()
+    assert suggestion.decision == MatchSuggestion.Decision.PENDING
+
+
+def test_suggestions_off_still_hides_other_workspaces(
+    client: Client, actor: Membership, settings: Any
+) -> None:
+    settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED = False
+    report = make_report(actor=actor, title="CSV export times out")
+    outsider = make_membership(
+        workspace=make_workspace(slug="other"), user=make_user(email="o@example.test")
+    )
+    sign_in(client, outsider)
+
+    assert client.get(api(outsider, f"reports/{report.pk}/match/")).status_code == 404
 
 
 def test_ranked_read_shows_evidence_and_rank_not_confidence(

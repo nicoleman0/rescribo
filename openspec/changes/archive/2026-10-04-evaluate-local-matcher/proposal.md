@@ -21,6 +21,7 @@ Not in scope: using real link decisions from the app as labels. That needs the r
 
 ### Modified Capabilities
 - `matching-evaluation`: adds separate retrieval/ranking reporting, failure triage, exam rotation, the hosted baseline, and the rule against unsupported quality claims
+- `match-suggestions`: suggestions are hidden behind a setting that stays off until the gates pass
 
 ## Impact
 

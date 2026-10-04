@@ -185,6 +185,23 @@ tasks:
     cmds:
       - uv run python scripts/eval_baseline.py {{.CLI_ARGS}}
 
+  eval:matcher:
+    desc: Score the Rust matcher against PostgreSQL order (batch ids, --config; --sweep on practice)
+    deps: [matcher-build]
+    cmds:
+      - cd rust/matcher && cargo build --release --locked --example rank_with_config
+      - uv run python scripts/eval_matcher.py {{.CLI_ARGS}}
+
+  eval:jev:
+    desc: Record the Jev baseline for batches (batch ids, --run 1|2; paid, needs --yes)
+    cmds:
+      - uv run python scripts/eval_jev.py {{.CLI_ARGS}}
+
+  eval:review:
+    desc: Step through a result's triaged failures and a sample of passes (result file name)
+    cmds:
+      - uv run python scripts/eval_review.py {{.CLI_ARGS}}
+
   eval:generate:
     desc: Generate a matching evaluation batch through OpenRouter
     cmds:

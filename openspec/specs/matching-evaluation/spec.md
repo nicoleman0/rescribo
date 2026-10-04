@@ -51,3 +51,42 @@ Exam cases SHALL stay in the repository but MUST NOT be used to choose features,
 #### Scenario: Agent tuning
 - **WHEN** an agent tunes the matcher
 - **THEN** it reads and scores practice cases only
+
+### Requirement: Retrieval and ranking reported separately
+The evaluation SHALL report candidate recall@10 and gold matches omitted by retrieval separately from ranking. Ranking is compared with PostgreSQL text-search order on the same candidate pool, reporting top-1 precision, top-3 recall, coverage, abstention, false suggestions on no-match cases, and evidence validity.
+
+#### Scenario: Retrieval miss
+- **WHEN** a gold match was not retrieved
+- **THEN** it counts as a retrieval miss, not a ranking failure
+
+### Requirement: No unsupported quality claims
+Results SHALL state sample sizes, test conditions, and limitations. The project MUST NOT claim matching quality if the gates are not met.
+
+#### Scenario: Gates missed
+- **WHEN** the held-out result misses a gate
+- **THEN** the report says so and suggestions stay disabled
+
+### Requirement: Automatic failure triage
+Each failed exam case SHALL be classified automatically as a retrieval miss, ranking miss, false suggestion, or wrong abstention.
+
+#### Scenario: Right problem never retrieved
+- **WHEN** the expected problem is absent from the candidate pool
+- **THEN** the case is tagged as a retrieval miss before any human review
+
+### Requirement: Spent exams rotate
+Once exam results are used to decide what to fix, those cases SHALL be moved to the practice set by hand. A fresh exam batch MUST be generated and spot-checked before the next exam result counts.
+
+#### Scenario: Retest after a fix
+- **WHEN** the matcher is changed after reviewing exam failures
+- **THEN** the next score comes from a new exam batch, not the reviewed one
+
+### Requirement: Hosted model baseline
+The evaluation SHALL also rank each exam case's candidate pool with a pinned hosted decision model and report the same metrics beside Rust and PostgreSQL ordering. The baseline MUST run only in evaluation tooling on synthetic cases, never in the product. Model version, repeat-run agreement, and cost SHALL be recorded.
+
+#### Scenario: Three-way comparison
+- **WHEN** the exam runs
+- **THEN** the report shows Rust, PostgreSQL ordering, and the hosted baseline on the same candidate pools with the same metrics
+
+#### Scenario: Product matching
+- **WHEN** the application runs matching for a report
+- **THEN** no hosted model is called

@@ -1,0 +1,12 @@
+{
+  "algorithm_version": "lexical-2",
+  "config_version": "lexical-2.0",
+  "max_linked_reports": 5,
+  "weights": {
+    "linked_overlap": 1.0,
+    "summary_overlap": 0.35,
+    "title_overlap": 1.0
+  },
+  "min_score": 0.4,
+  "min_margin": 0.025
+}

@@ -61,8 +61,9 @@ class MatchRunSerializer(serializers.Serializer):
 
 
 class ReportMatchSerializer(serializers.Serializer):
-    """The report's latest run, or null before the first one."""
+    """The report's latest run, or null before the first one or while suggestions are off."""
 
+    suggestions_enabled = serializers.BooleanField()
     run = MatchRunSerializer(allow_null=True)
 
 

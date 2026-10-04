@@ -1,6 +1,6 @@
 # ADR 0003: Local Rust report matcher
 
-Status: accepted; slices 1 to 4 implemented. Slice 5 evaluation is #24.
+Status: accepted; slices 1 to 4 implemented. Slice 5 evaluated in #24: `lexical-2.0` failed the precision gate, so suggestions stay off ([report](../MATCHING_EVALUATION.md)).
 
 ## Decision
 
