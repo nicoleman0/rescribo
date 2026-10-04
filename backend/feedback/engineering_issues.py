@@ -465,7 +465,9 @@ def sync_issue(
         return
 
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=connection.workspace_id)
+        # NO KEY: a full row lock blocks the KEY SHARE that member writes take through their
+        # activity rows, and deadlocks against a member holding a report this sync locks next.
+        Workspace.objects.select_for_update(no_key=True).get(pk=connection.workspace_id)
         locked_connection = Connection.objects.select_for_update().get(pk=connection.pk)
         problem = Problem.objects.select_for_update().get(pk=problem.pk)
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
