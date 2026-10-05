@@ -12,10 +12,14 @@ from builders import (
     make_notification,
     make_problem,
     make_report,
+    make_user,
+    make_workspace,
 )
 from django.utils import timezone
 
+from accounts.models import Membership
 from connections.models import Connection
+from connections.services import disconnect
 from feedback.engineering_issues import apply_installation_webhook, apply_issue_webhook
 from feedback.errors import DeliveryNotReady
 from feedback.follow_ups import draft_notification
@@ -347,3 +351,135 @@ def test_installation_unsuspend_does_not_touch_issues() -> None:
     issue.refresh_from_db()
     assert connection.status == Connection.Status.ERROR  # untouched; refresh confirms health
     assert issue.access == EngineeringIssue.Access.SUSPENDED
+
+
+def shared_binding() -> list[tuple[Membership, Connection]]:
+    """Two workspaces bound to the same installation and repository."""
+    bound = []
+    for slug in ("first", "second"):
+        actor = make_membership(
+            workspace=make_workspace(slug=slug),
+            user=make_user(email=f"{slug}@example.test"),
+            role=Membership.Role.OWNER,
+        )
+        bound.append((actor, make_connection(workspace=actor.workspace)))
+    return bound
+
+
+def close_issue_555(installation_id: str) -> None:
+    closed = {**ISSUE_PAYLOAD, "state": "closed", "state_reason": "completed"}
+    factory = patched_client(github_mock(get_issue=closed))
+    try:
+        apply_issue_webhook(
+            installation_id=installation_id,
+            event=issue_event(action="closed", updated_at="2026-09-20T21:05:00Z"),
+        )
+    finally:
+        factory.stop()
+
+
+def test_shared_repository_event_reaches_only_the_workspace_that_linked_the_issue() -> None:
+    (first, first_connection), (second, _) = shared_binding()
+    linked = make_problem(actor=first)
+    issue = make_engineering_issue(
+        problem=linked,
+        connection=first_connection,
+        created_by=first,
+        provider_updated_at=STORED_UPDATED_AT,
+    )
+    unlinked = make_problem(actor=second)
+
+    close_issue_555(first_connection.external_id)
+
+    issue.refresh_from_db()
+    linked.refresh_from_db()
+    unlinked.refresh_from_db()
+    assert issue.state == "closed" and linked.needs_review is True
+    assert unlinked.needs_review is False
+    assert not EngineeringIssue.objects.filter(workspace=second.workspace).exists()
+    assert (
+        not Activity.objects.filter(workspace=second.workspace)
+        .exclude(action=Activity.Action.PROBLEM_CREATED)
+        .exists()
+    )
+
+
+def test_shared_issue_event_updates_each_workspace_on_its_own() -> None:
+    bound = shared_binding()
+    rows = []
+    for actor, connection in bound:
+        problem = make_problem(actor=actor)
+        issue = make_engineering_issue(
+            problem=problem,
+            connection=connection,
+            created_by=actor,
+            provider_updated_at=STORED_UPDATED_AT,
+        )
+        rows.append((actor, problem, issue))
+
+    close_issue_555(bound[0][1].external_id)
+
+    for actor, problem, issue in rows:
+        issue.refresh_from_db()
+        problem.refresh_from_db()
+        assert issue.state == "closed" and problem.needs_review is True
+        updates = Activity.objects.filter(
+            record_id=problem.pk, action=Activity.Action.PROBLEM_UPDATED
+        )
+        assert [row.workspace_id for row in updates] == [actor.workspace_id]
+
+
+def test_shared_installation_deletion_marks_every_bound_workspace() -> None:
+    bound = shared_binding()
+    issues = [
+        make_engineering_issue(
+            problem=make_problem(actor=actor),
+            connection=connection,
+            created_by=actor,
+            provider_updated_at=timezone.now(),
+        )
+        for actor, connection in bound
+    ]
+
+    apply_installation_webhook(
+        installation_id=bound[0][1].external_id,
+        event=InstallationEvent(
+            event="installation", action="deleted", repositories_removed=(), access_lost=True
+        ),
+    )
+
+    for (_, connection), issue in zip(bound, issues, strict=True):
+        connection.refresh_from_db()
+        issue.refresh_from_db()
+        assert connection.status == Connection.Status.ERROR
+        assert connection.error_code == "access_lost"
+        assert issue.access == EngineeringIssue.Access.ACCESS_LOST
+
+
+def test_disconnecting_one_shared_workspace_leaves_the_other_syncing() -> None:
+    bound = shared_binding()
+    issues = [
+        make_engineering_issue(
+            problem=make_problem(actor=actor),
+            connection=connection,
+            created_by=actor,
+            provider_updated_at=STORED_UPDATED_AT,
+        )
+        for actor, connection in bound
+    ]
+    (_, kept_connection), (leaving, leaving_connection) = bound
+    installation_id = kept_connection.external_id
+
+    disconnect(leaving, "github", leaving_connection.version)
+    close_issue_555(installation_id)
+
+    kept_connection.refresh_from_db()
+    leaving_connection.refresh_from_db()
+    kept_issue, leaving_issue = issues
+    kept_issue.refresh_from_db()
+    leaving_issue.refresh_from_db()
+    assert kept_connection.status == Connection.Status.ACTIVE
+    assert kept_connection.external_id == installation_id
+    assert leaving_connection.status == Connection.Status.DISCONNECTED
+    assert kept_issue.state == "closed"
+    assert leaving_issue.state == "open"
