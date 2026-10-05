@@ -54,7 +54,7 @@ def delete_report(actor: Membership, report_id: UUID, version: int, confirmation
 
 def delete_workspace(actor: Membership, confirmation: str) -> None:
     with transaction.atomic():
-        workspace = lock_owner(actor)
+        workspace = lock_owner(actor, deleting=True)
         if confirmation != workspace.slug:
             raise ValidationError(
                 {"confirmation": ["Type the workspace slug to confirm permanent deletion."]}

@@ -9,6 +9,7 @@ from django.db import models, transaction
 from django.utils import timezone
 
 from accounts.models import Membership, Workspace
+from accounts.services import lock_workspace
 from connections.models import Connection
 from feedback.engineering_issues import (
     apply_installation_webhook,
@@ -60,7 +61,9 @@ def process_github_issue_create(operation_id: str) -> None:
     if hint is None:
         return
     with transaction.atomic():
-        workspace = Workspace.objects.select_for_update().filter(pk=hint["workspace_id"]).first()
+        workspace = (
+            Workspace.objects.select_for_update(no_key=True).filter(pk=hint["workspace_id"]).first()
+        )
         connection = (
             Connection.objects.select_for_update()
             .filter(pk=hint["connection_id"], workspace_id=hint["workspace_id"])
@@ -98,7 +101,11 @@ def process_github_issue_create(operation_id: str) -> None:
 
     # Verify the frozen approval immediately before the external write.
     with transaction.atomic():
-        workspace = Workspace.objects.select_for_update().filter(pk=operation.workspace_id).first()
+        workspace = (
+            Workspace.objects.select_for_update(no_key=True)
+            .filter(pk=operation.workspace_id)
+            .first()
+        )
         connection = (
             Connection.objects.select_for_update()
             .filter(pk=operation.connection_id, workspace_id=operation.workspace_id)
@@ -196,11 +203,12 @@ def process_github_issue_create(operation_id: str) -> None:
 
     try:
         with transaction.atomic():
-            Workspace.objects.select_for_update().get(pk=operation.workspace_id)
+            lock_workspace(operation.workspace_id)
             connection = Connection.objects.select_for_update().get(
                 pk=operation.connection_id, workspace_id=operation.workspace_id
             )
-            problem = Problem.objects.select_for_update().get(
+            # NO KEY: linking the issue locks the problem's reports next, see lock_workspace.
+            problem = Problem.objects.select_for_update(no_key=True).get(
                 pk=operation.problem_id,
                 workspace_id=operation.workspace_id,
             )
@@ -440,7 +448,7 @@ def revalidate_github_connection(connection_id: str) -> None:
         return
     issue_ids: list[str] = []
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+        lock_workspace(hint["workspace_id"])
         connection = Connection.objects.select_for_update().filter(pk=connection_id).first()
         if (
             connection is None
@@ -573,11 +581,11 @@ def reconcile_github_issue_create(operation_id: str) -> None:
         )
         return
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=hint.workspace_id)
+        lock_workspace(hint.workspace_id)
         connection = Connection.objects.select_for_update().get(
             pk=hint.connection_id, workspace_id=hint.workspace_id
         )
-        problem = Problem.objects.select_for_update().get(
+        problem = Problem.objects.select_for_update(no_key=True).get(
             pk=hint.problem_id, workspace_id=hint.workspace_id
         )
         operation = ExternalOperation.objects.select_for_update().get(pk=operation_id_uuid)
