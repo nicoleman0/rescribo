@@ -27,7 +27,7 @@ tasks:
     desc: Start PostgreSQL and Redis containers
     deps: [bootstrap]
     cmds:
-      - docker compose up -d --wait postgres redis
+      - docker compose up -d --wait --wait-timeout 120 postgres redis
 
   stop:
     desc: Stop PostgreSQL and Redis containers

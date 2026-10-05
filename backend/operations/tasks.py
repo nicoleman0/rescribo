@@ -64,12 +64,23 @@ def process_github_issue_create(operation_id: str) -> None:
         workspace = (
             Workspace.objects.select_for_update(no_key=True).filter(pk=hint["workspace_id"]).first()
         )
-        connection = Connection.objects.select_for_update().filter(pk=hint["connection_id"]).first()
+        connection = (
+            Connection.objects.select_for_update()
+            .filter(pk=hint["connection_id"], workspace_id=hint["workspace_id"])
+            .first()
+        )
         problem = Problem.objects.select_for_update().filter(pk=hint["problem_id"]).first()
         operation = ExternalOperation.objects.select_for_update().filter(pk=operation_uuid).first()
-        if workspace is None or connection is None or problem is None:
+        if workspace is None or problem is None:
             return
         if operation is None or operation.state != ExternalOperation.State.QUEUED:
+            return
+        if connection is None:
+            # The connection belongs to another workspace. Fail before any provider call.
+            operation.state = ExternalOperation.State.CANCELLED
+            operation.safe_error = "connection_mismatch"
+            operation.completed_at = now
+            operation.save(update_fields=["state", "safe_error", "completed_at"])
             return
         if operation.due_at > now:
             return
@@ -96,7 +107,9 @@ def process_github_issue_create(operation_id: str) -> None:
             .first()
         )
         connection = (
-            Connection.objects.select_for_update().filter(pk=operation.connection_id).first()
+            Connection.objects.select_for_update()
+            .filter(pk=operation.connection_id, workspace_id=operation.workspace_id)
+            .first()
         )
         problem = (
             Problem.objects.select_for_update()
@@ -191,7 +204,9 @@ def process_github_issue_create(operation_id: str) -> None:
     try:
         with transaction.atomic():
             lock_workspace(operation.workspace_id)
-            connection = Connection.objects.select_for_update().get(pk=operation.connection_id)
+            connection = Connection.objects.select_for_update().get(
+                pk=operation.connection_id, workspace_id=operation.workspace_id
+            )
             # NO KEY: linking the issue locks the problem's reports next, see lock_workspace.
             problem = Problem.objects.select_for_update(no_key=True).get(
                 pk=operation.problem_id,
@@ -297,6 +312,7 @@ def dispatch_due_operations() -> None:
         EngineeringIssue.objects.filter(
             active=True,
             connection__status=Connection.Status.ACTIVE,
+            connection__workspace_id=models.F("workspace_id"),
             sync_requested_generation__gt=models.F("sync_completed_generation"),
         )
         .filter(
@@ -522,6 +538,12 @@ def reconcile_github_issue_create(operation_id: str) -> None:
     )
     if hint is None or hint.state != ExternalOperation.State.UNCERTAIN:
         return
+    if hint.connection.workspace_id != hint.workspace_id:
+        # The connection belongs to another workspace. Never mint its installation token.
+        ExternalOperation.objects.filter(pk=operation_id_uuid).update(
+            recovery_requested=False, safe_error="connection_mismatch"
+        )
+        return
     claim = uuid4()
     now = timezone.now()
     with transaction.atomic():
@@ -560,7 +582,9 @@ def reconcile_github_issue_create(operation_id: str) -> None:
         return
     with transaction.atomic():
         lock_workspace(hint.workspace_id)
-        connection = Connection.objects.select_for_update().get(pk=hint.connection_id)
+        connection = Connection.objects.select_for_update().get(
+            pk=hint.connection_id, workspace_id=hint.workspace_id
+        )
         problem = Problem.objects.select_for_update(no_key=True).get(
             pk=hint.problem_id, workspace_id=hint.workspace_id
         )

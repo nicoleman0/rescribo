@@ -5,6 +5,7 @@ from uuid import UUID, uuid4
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 
 from accounts.models import Membership
@@ -349,7 +350,10 @@ def sync_issue(
 ) -> None:
     current = now or timezone.now()
     hint = (
-        EngineeringIssue.objects.filter(pk=issue_id, active=True)
+        # An issue naming another workspace's connection is never synced with its credentials.
+        EngineeringIssue.objects.filter(
+            pk=issue_id, active=True, connection__workspace_id=F("workspace_id")
+        )
         .values("pk", "problem_id", "workspace_id", "connection_id")
         .first()
     )
