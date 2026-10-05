@@ -4,8 +4,7 @@ Track the pilot in [issue #57](https://github.com/nicoleman0/rescribo/issues/57)
 Start after #13 merges. Record the tested commit and each journey's
 Pass / Fail / Blocked / Not run result there. Create one issue per finding,
 label it `uat` plus `bug` or `enhancement`, and link it to the tracker.
-The reusable UAT finding form becomes available after its repository file merges
-into the default branch. Until then, use the fields listed in the tracker.
+File findings with the "UAT finding" issue form.
 
 ## Starting from scratch
 
