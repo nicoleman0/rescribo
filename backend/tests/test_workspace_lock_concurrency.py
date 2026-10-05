@@ -11,13 +11,15 @@ from unittest.mock import patch
 import pytest
 from builders import make_membership, make_problem, make_user
 from concurrency import race
+from django.db import connections, transaction
 from issue_world import World, github_reads
 
 from accounts.models import Membership
 from connections.services import disconnect
 from feedback.engineering_issues import apply_issue_webhook, link_issue
-from feedback.follow_ups import draft_notification
+from feedback.follow_ups import draft_notification, record_outcome
 from feedback.models import Activity, FollowUp, Problem, ReportNotificationOperation
+from feedback.problems import confirm_linked_report_fix
 from feedback.services import locked_problem, locked_report, write_activity
 from operations.github_issue_create import create_draft
 
@@ -155,3 +157,66 @@ def test_disconnecting_does_not_deadlock_with_a_member_activity_write() -> None:
     assert_both_finished(outcomes)
     world.connection.refresh_from_db()
     assert world.connection.status == "disconnected"
+
+
+def still_affected(world: World) -> FollowUp:
+    follow_up = FollowUp.objects.get(report=world.report)
+    return record_outcome(
+        actor=world.actor,
+        follow_up_id=follow_up.pk,
+        state="still_affected",
+        note="The customer still sees the failure.",
+        expected_version=follow_up.version,
+    )
+
+
+def test_recording_an_outcome_does_not_deadlock_with_a_member_drafting_a_follow_up() -> None:
+    world = World()
+
+    outcomes = race(
+        lambda: hold_report(world),
+        lambda: still_affected(world),
+        then=lambda: draft_follow_up(world),
+    )
+
+    assert_both_finished(outcomes)
+    assert outcomes["challenger"].contact_state == FollowUp.ContactState.STILL_AFFECTED
+
+
+def test_confirming_a_report_fix_does_not_deadlock_with_a_member_drafting_a_follow_up() -> None:
+    world = World()
+
+    def confirm() -> FollowUp:
+        return confirm_linked_report_fix(
+            actor=world.actor,
+            report_id=world.report.pk,
+            expected_version=world.report.version,
+            expected_resolution_revision=Problem.objects.get(
+                pk=world.problem.pk
+            ).resolution_revision,
+        )
+
+    outcomes = race(lambda: hold_report(world), confirm, then=lambda: draft_follow_up(world))
+
+    assert_both_finished(outcomes)
+
+
+def test_flagging_a_problem_for_review_does_not_wait_on_a_member_reference() -> None:
+    world = World()
+    # Stands in for any member insert that references the problem by foreign key.
+    member = connections.create_connection("default")
+    try:
+        with member.cursor() as cursor:
+            cursor.execute("BEGIN")
+            cursor.execute(
+                f"SELECT 1 FROM {Problem._meta.db_table} WHERE id = %s FOR KEY SHARE",
+                [world.problem.pk],
+            )
+        with transaction.atomic():
+            with connections["default"].cursor() as cursor:
+                cursor.execute("SET LOCAL lock_timeout = '2s'")
+            still_affected(world)
+    finally:
+        member.close()
+
+    assert Problem.objects.get(pk=world.problem.pk).needs_review

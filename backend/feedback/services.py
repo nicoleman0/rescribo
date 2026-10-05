@@ -76,9 +76,14 @@ def locked_report(*, actor: Membership, report_id: UUID) -> Report:
         raise NotFound(record="report") from error
 
 
-def locked_problem(*, actor: Membership, problem_id: UUID, no_key: bool = False) -> Problem:
+def locked_problem(*, actor: Membership, problem_id: UUID) -> Problem:
+    """Lock a problem as a mutex for its transaction.
+
+    NO KEY, as in lock_workspace: member writes take KEY SHARE on the problem through rows that
+    reference it. Nothing deletes or re-keys a single problem, so no caller needs FOR UPDATE.
+    """
     try:
-        return Problem.objects.select_for_update(of=("self",), no_key=no_key).get(
+        return Problem.objects.select_for_update(of=("self",), no_key=True).get(
             pk=problem_id, workspace_id=actor.workspace_id
         )
     except Problem.DoesNotExist as error:
