@@ -121,7 +121,7 @@ def link_issue(
             or connection.status != Connection.Status.ACTIVE
         ):
             raise IssueProviderUnavailable()
-        problem = locked_problem(actor=actor, problem_id=problem_id, no_key=True)
+        problem = locked_problem(actor=actor, problem_id=problem_id)
         require_version(row=problem, expected_version=expected_version)
         if ExternalOperation.objects.filter(
             problem=problem,

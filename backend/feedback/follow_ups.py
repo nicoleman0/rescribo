@@ -205,7 +205,7 @@ def _locked_outcome_rows(*, actor: Membership, follow_up_id: UUID) -> tuple[Foll
     # Fix confirmation and issue reopening also lock the problem before its reports.
     if snapshot["report__problem_id"] is not None:
         problem = (
-            Problem.objects.select_for_update()
+            Problem.objects.select_for_update(no_key=True)
             .filter(workspace_id=actor.workspace_id, pk=snapshot["report__problem_id"])
             .first()
         )
@@ -781,8 +781,9 @@ def correct_outcome(
 
 
 def _flag_problem_needs_review(*, actor: Membership, problem_id: UUID, now: datetime) -> None:
+    # NO KEY matches the outcome lock; a full lock here would upgrade it.
     problem = (
-        Problem.objects.select_for_update(of=("self",))
+        Problem.objects.select_for_update(of=("self",), no_key=True)
         .filter(workspace_id=actor.workspace_id, pk=problem_id)
         .first()
     )
