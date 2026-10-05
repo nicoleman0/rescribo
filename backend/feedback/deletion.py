@@ -1,12 +1,14 @@
 """Owner deletion of primary records; upstream content and backups are not erased."""
 
+import logging
 from uuid import UUID
 
 from django.db import transaction
 from django.db.models import Q
 from rest_framework.exceptions import NotFound, ValidationError
 
-from accounts.models import Invitation, Membership
+from accounts.models import Invitation, Membership, Workspace
+from connections.errors import PROVIDER_ERRORS
 from connections.models import Connection
 from connections.services import cancel_notifications, lock_owner
 from feedback.models import (
@@ -18,7 +20,10 @@ from feedback.models import (
     ReportNotificationOperation,
 )
 from feedback.services import require_version, write_activity
+from integrations.slack import client as slack_client
 from operations.models import ExternalOperation
+
+logger = logging.getLogger(__name__)
 
 
 def delete_report(actor: Membership, report_id: UUID, version: int, confirmation: str) -> None:
@@ -52,13 +57,39 @@ def delete_report(actor: Membership, report_id: UUID, version: int, confirmation
         )
 
 
+def _require_workspace_confirmation(confirmation: str, workspace: Workspace) -> None:
+    if confirmation != workspace.slug:
+        raise ValidationError(
+            {"confirmation": ["Type the workspace slug to confirm permanent deletion."]}
+        )
+
+
+def _revoke_slack_token(workspace_id: UUID) -> None:
+    """Best effort: a Slack outage must not block deletion, and no lock is held here."""
+    credential = (
+        Connection.objects.filter(workspace_id=workspace_id, provider=Connection.Provider.SLACK)
+        .exclude(credential="")
+        .values_list("credential", flat=True)
+        .first()
+    )
+    if credential is None:
+        return
+    try:
+        slack_client.revoke_token(credential)
+    except PROVIDER_ERRORS as error:
+        logger.warning(
+            "Slack token revocation failed during workspace deletion: %s", type(error).__name__
+        )
+
+
 def delete_workspace(actor: Membership, confirmation: str) -> None:
+    # Reject before the network call; the transaction below repeats the checks under locks.
+    with transaction.atomic():
+        _require_workspace_confirmation(confirmation, lock_owner(actor))
+    _revoke_slack_token(actor.workspace_id)
     with transaction.atomic():
         workspace = lock_owner(actor, deleting=True)
-        if confirmation != workspace.slug:
-            raise ValidationError(
-                {"confirmation": ["Type the workspace slug to confirm permanent deletion."]}
-            )
+        _require_workspace_confirmation(confirmation, workspace)
         cancel_notifications(actor.workspace_id)
         Connection.objects.filter(workspace=workspace).update(
             credential="", external_id="", status="disconnected"

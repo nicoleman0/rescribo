@@ -16,6 +16,11 @@ def bot_client(credential: str, *, timeout: int = 10) -> WebClient:
     return WebClient(token=decrypt(credential), timeout=timeout)
 
 
+def revoke_token(credential: str) -> None:
+    """Invalidate the bot token at Slack so it cannot be used after deletion."""
+    bot_client(credential).auth_revoke()
+
+
 def eligible_channel(credential: str, channel_id: str, *, timeout: int = 10) -> SlackChannel:
     """Fetch current channel state and raise `ChannelRejected` when it is not eligible."""
     response = bot_client(credential, timeout=timeout).conversations_info(channel=channel_id)

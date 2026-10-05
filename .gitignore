@@ -26,3 +26,6 @@ backend/staticfiles/
 .worktrees/
 rust/matcher/target/
 .task/
+
+# Local database dumps hold tenant data.
+backups/

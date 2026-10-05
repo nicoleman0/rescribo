@@ -140,6 +140,10 @@ CELERY_BEAT_SCHEDULE = {
         "task": "operations.tasks.dispatch_due_operations",
         "schedule": 60.0,
     },
+    "purge-receipt-payloads": {
+        "task": "operations.tasks.purge_receipt_payloads_task",
+        "schedule": 3600.0,
+    },
     "sweep-slack-capture": {
         "task": "connections.tasks.sweep_slack_capture",
         "schedule": 300.0,

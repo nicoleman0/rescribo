@@ -29,6 +29,7 @@ from integrations.github_app.webhooks import InstallationEvent, IssueEvent
 from operations.dispatch import dispatch_task
 from operations.github_issue_create import LEASE_TTL, exact_body, marker_for
 from operations.models import ExternalOperation, InboundReceipt
+from operations.receipt_retention import purge_receipt_payloads
 from operations.retries import MAX_ATTEMPTS, next_retry_at
 
 logger = logging.getLogger(__name__)
@@ -423,6 +424,11 @@ def process_inbound_receipt(receipt_id: str) -> None:
         lease_token=None,
         lease_expires_at=None,
     )
+
+
+@shared_task
+def purge_receipt_payloads_task() -> None:
+    purge_receipt_payloads()
 
 
 @shared_task
