@@ -6,7 +6,7 @@ from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.models import Workspace
+from accounts.services import lock_workspace
 from connections.models import Connection
 from feedback.engineering_issues import sync_issue
 from feedback.models import (
@@ -34,7 +34,7 @@ def reconcile_github_issues() -> None:
             continue
         dispatch_ids: list[str] = []
         with transaction.atomic():
-            Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+            lock_workspace(hint["workspace_id"])
             connection = Connection.objects.select_for_update().get(pk=connection_id)
             if connection.status != Connection.Status.ACTIVE:
                 continue
@@ -96,7 +96,7 @@ def _complete_reconciliation_target(issue_id: UUID) -> None:
     if hint is None:
         return
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+        lock_workspace(hint["workspace_id"])
         connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
         Problem.objects.select_for_update().get(pk=hint["problem_id"])
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue_id)

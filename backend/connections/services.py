@@ -20,8 +20,13 @@ from feedback.notifications import invalidate_pending_notifications
 from integrations.slack.policy import REQUIRED_BOT_SCOPES
 
 
-def lock_owner(actor: Membership) -> Workspace:
-    workspace = Workspace.objects.select_for_update().filter(pk=actor.workspace_id).first()
+def lock_owner(actor: Membership, *, deleting: bool = False) -> Workspace:
+    """Lock the workspace for an owner action; only deleting it needs a full row lock."""
+    workspace = (
+        Workspace.objects.select_for_update(no_key=not deleting)
+        .filter(pk=actor.workspace_id)
+        .first()
+    )
     if workspace is None:
         raise NotFound()
     if not Membership.objects.filter(

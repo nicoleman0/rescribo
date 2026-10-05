@@ -7,7 +7,8 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 
-from accounts.models import Membership, Workspace
+from accounts.models import Membership
+from accounts.services import lock_workspace
 from connections.models import Connection
 from feedback.engineering_issues import default_issue_body, require_active_connection
 from feedback.errors import (
@@ -49,7 +50,7 @@ def create_draft(
     draft_id: UUID | None = None,
 ) -> ExternalOperation:
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         connection = require_active_connection(
             Connection.objects.select_for_update()
             .filter(
@@ -152,7 +153,7 @@ def approve_draft(
     expired = False
     try:
         with transaction.atomic():
-            Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+            lock_workspace(actor.workspace_id)
             connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
             problem = Problem.objects.select_for_update().get(
                 pk=problem_id, workspace_id=actor.workspace_id
@@ -241,7 +242,7 @@ def request_recovery(
     reference: str = "",
 ) -> ExternalOperation:
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         operation = _locked_uncertain_operation(
             actor=actor, problem_id=problem_id, operation_id=operation_id
         )
@@ -281,7 +282,7 @@ def abandon_creation(
             "reason_required", detail="Record what you checked before stopping recovery."
         )
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         operation = _locked_uncertain_operation(
             actor=actor, problem_id=problem_id, operation_id=operation_id
         )

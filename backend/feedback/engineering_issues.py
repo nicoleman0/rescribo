@@ -7,7 +7,8 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from accounts.models import Membership, Workspace
+from accounts.models import Membership
+from accounts.services import lock_workspace
 from connections.errors import PROVIDER_ERRORS
 from connections.models import Connection
 from feedback.errors import (
@@ -106,7 +107,7 @@ def link_issue(
         raise IssueProviderUnavailable() from error
 
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         connection = Connection.objects.select_for_update().get(pk=connection.pk)
         if (
             selected_binding
@@ -119,7 +120,7 @@ def link_issue(
             or connection.status != Connection.Status.ACTIVE
         ):
             raise IssueProviderUnavailable()
-        problem = locked_problem(actor=actor, problem_id=problem_id)
+        problem = locked_problem(actor=actor, problem_id=problem_id, no_key=True)
         require_version(row=problem, expected_version=expected_version)
         if ExternalOperation.objects.filter(
             problem=problem,
@@ -180,7 +181,7 @@ def refresh_issue(
     if issue.connection.status != Connection.Status.ACTIVE:
         raise ConnectionNotReady()
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         connection = Connection.objects.select_for_update().get(pk=issue.connection_id)
         locked_problem = Problem.objects.select_for_update().get(pk=problem.pk)
         locked_issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
@@ -357,7 +358,7 @@ def sync_issue(
     claim = uuid4()
     target_generation = 0
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+        lock_workspace(hint["workspace_id"])
         connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
         problem = Problem.objects.select_for_update().get(pk=hint["problem_id"])
         issue = EngineeringIssue.objects.select_for_update().get(pk=hint["pk"])
@@ -465,11 +466,10 @@ def sync_issue(
         return
 
     with transaction.atomic():
-        # NO KEY: a full row lock blocks the KEY SHARE that member writes take through their
-        # activity rows, and deadlocks against a member holding a report this sync locks next.
-        Workspace.objects.select_for_update(no_key=True).get(pk=connection.workspace_id)
+        lock_workspace(connection.workspace_id)
         locked_connection = Connection.objects.select_for_update().get(pk=connection.pk)
-        problem = Problem.objects.select_for_update().get(pk=problem.pk)
+        # NO KEY: member drafts key rows to the problem while holding a report we lock next.
+        problem = Problem.objects.select_for_update(no_key=True).get(pk=problem.pk)
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
         if issue.sync_lease_token != claim:
             return
@@ -598,7 +598,7 @@ def _finish_issue_sync_failure(
     retry_after_seconds: int | None = None,
 ) -> None:
     with transaction.atomic():
-        Workspace.objects.select_for_update().get(pk=workspace_id)
+        lock_workspace(workspace_id)
         Connection.objects.select_for_update().get(pk=connection_id)
         Problem.objects.select_for_update().get(pk=problem_id)
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue_id)
@@ -706,7 +706,7 @@ def apply_installation_webhook(
         if hint is None:
             continue
         with transaction.atomic():
-            Workspace.objects.select_for_update().get(pk=hint["workspace_id"])
+            lock_workspace(hint["workspace_id"])
             connection = Connection.objects.select_for_update().get(pk=connection_id)
             if event.action in {"unsuspend", "new_permissions_accepted"}:
                 revalidate.append(str(connection.pk))

@@ -76,9 +76,9 @@ def locked_report(*, actor: Membership, report_id: UUID) -> Report:
         raise NotFound(record="report") from error
 
 
-def locked_problem(*, actor: Membership, problem_id: UUID) -> Problem:
+def locked_problem(*, actor: Membership, problem_id: UUID, no_key: bool = False) -> Problem:
     try:
-        return Problem.objects.select_for_update(of=("self",)).get(
+        return Problem.objects.select_for_update(of=("self",), no_key=no_key).get(
             pk=problem_id, workspace_id=actor.workspace_id
         )
     except Problem.DoesNotExist as error:

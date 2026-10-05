@@ -98,6 +98,16 @@ def describe_session(*, user: User) -> SessionView:
     return SessionView(str(user.pk), user.email, user.full_name, memberships)
 
 
+def lock_workspace(workspace_id: UUID | str) -> Workspace:
+    """Lock a workspace as a mutex for its transaction.
+
+    NO KEY, not a full row lock: member writes take KEY SHARE on the workspace through their
+    activity rows, and a full lock deadlocks against a member holding a row this transaction
+    locks next. Only a transaction that deletes the workspace needs FOR UPDATE.
+    """
+    return Workspace.objects.select_for_update(no_key=True).get(pk=workspace_id)
+
+
 def resolve_active_membership(*, user: User, workspace_id: UUID | str) -> Membership:
     try:
         return Membership.objects.select_related("workspace", "user").get(
@@ -110,7 +120,7 @@ def resolve_active_membership(*, user: User, workspace_id: UUID | str) -> Member
 def require_remaining_active_owner(*, actor: Membership, target: Membership) -> None:
     with transaction.atomic():
         # A workspace lock gives every owner change the same lock order.
-        Workspace.objects.select_for_update().get(pk=actor.workspace_id)
+        lock_workspace(actor.workspace_id)
         locked_target = Membership.objects.select_for_update().get(pk=target.pk)
         is_last_owner = (
             locked_target.role == Membership.Role.OWNER
