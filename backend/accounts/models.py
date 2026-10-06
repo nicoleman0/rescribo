@@ -60,6 +60,8 @@ class Workspace(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=100, unique=True)
+    # A demo workspace holds fictitious data and never reaches a real provider.
+    is_demo = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self) -> str:

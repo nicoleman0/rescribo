@@ -2,7 +2,7 @@
 
 ## 1. Demo flag
 
-- [ ] 1.1 Add `is_demo` to `Workspace` with a migration, default false. Verify with a model test that existing workspaces stay non-demo and `task schema-check` passes.
+- [x] 1.1 Add `is_demo` to `Workspace` with a migration, default false. Verify with a model test that existing workspaces stay non-demo and `task schema-check` passes.
 
 ## 2. Seed data and demo accounts
 
