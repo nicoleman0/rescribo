@@ -25,4 +25,4 @@
 
 ## 5. Checks
 
-- [ ] 5.1 Run `npx @fission-ai/openspec validate --all --strict`, `task check test build schema-check`, `task e2e`, and `task worker-check`. Verify all pass.
+- [x] 5.1 Run `npx @fission-ai/openspec validate --all --strict`, `task check test build schema-check`, `task e2e`, and `task worker-check`. Verify all pass.
