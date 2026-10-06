@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import httpx
 import pytest
 from builders import make_connection, make_membership, make_problem, make_user, make_workspace
+from django.utils import timezone
 
 from feedback.errors import (
     IssueCreateUnresolved,
@@ -22,6 +23,7 @@ from operations.github_issue_create import (
     request_recovery,
 )
 from operations.models import ExternalOperation
+from operations.retries import MAX_ATTEMPTS
 from operations.tasks import (
     dispatch_due_operations,
     process_github_issue_create,
@@ -304,3 +306,56 @@ def test_edited_preview_updates_draft_and_invalidates_old_approval() -> None:
             draft_version=first.draft_version,
             approved=True,
         )
+
+
+@pytest.mark.parametrize("stage", ["create_installation_token", "create_issue"])
+def test_rate_limited_create_is_queued_again_after_the_delay(stage: str) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider()
+    getattr(client, stage).side_effect = GitHubAPIError(
+        "limited", 429, retry_after_seconds=600, rate_limited=True
+    )
+    before = timezone.now()
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+        # Not yet due, so a second run does nothing.
+        process_github_issue_create(str(operation.pk))
+
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.QUEUED
+    assert operation.safe_error == "rate_limited"
+    assert operation.attempts == 1
+    assert operation.lease_token is None
+    assert (operation.due_at - before).total_seconds() >= 600
+    assert client.create_issue.call_count == (1 if stage == "create_issue" else 0)
+
+    operation.due_at = timezone.now()
+    operation.save(update_fields=["due_at"])
+    getattr(client, stage).side_effect = None
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.SUCCEEDED
+
+
+def test_rate_limited_create_fails_at_the_retry_cap() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    ExternalOperation.objects.filter(pk=operation.pk).update(attempts=MAX_ATTEMPTS - 1)
+    client = fake_provider(
+        create_error=GitHubAPIError("limited", 403, retry_after_seconds=60, rate_limited=True)
+    )
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.FAILED
+    assert operation.safe_error == "rate_limited"
+    assert operation.lease_token is None

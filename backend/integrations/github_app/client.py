@@ -22,6 +22,7 @@ class GitHubAPIError(RuntimeError):
         rate_limited: bool = False,
     ) -> None:
         super().__init__(f"GitHub {operation} failed with HTTP {status_code}.")
+        self.operation = operation
         self.status_code = status_code
         self.retry_after_seconds = retry_after_seconds
         self.rate_limited = rate_limited

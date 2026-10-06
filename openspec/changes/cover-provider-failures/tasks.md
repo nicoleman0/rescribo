@@ -12,8 +12,8 @@
 
 ## 3. Rate-limited issue creation
 
-- [ ] 3.1 Store the operation name on `GitHubAPIError`. Verify with a client test.
-- [ ] 3.2 Requeue a rate-limited creation with `due_at` from `next_retry_at`, and fail it with `rate_limited` at `MAX_ATTEMPTS`. Add `rate_limited` operation copy. Verify with tests for a 429 on token creation, a 429 on the create request, a `Retry-After` floor on `due_at`, and the cap.
+- [x] 3.1 Store the operation name on `GitHubAPIError`. Verify with a client test.
+- [x] 3.2 Requeue a rate-limited creation with `due_at` from `next_retry_at`, and fail it with `rate_limited` at `MAX_ATTEMPTS`. Add `rate_limited` operation copy. Verify with tests for a 429 on token creation, a 429 on the create request, a `Retry-After` floor on `due_at`, and the cap.
 
 ## 4. Refused GitHub installation
 

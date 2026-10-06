@@ -49,6 +49,25 @@ def _mark(operation_id: UUID, token: UUID, *, state: str, safe_error: str) -> No
     )
 
 
+def _requeue_rate_limited(
+    operation_id: UUID, token: UUID, *, attempts: int, retry_after: int | None
+) -> None:
+    if attempts >= MAX_ATTEMPTS:
+        _mark(operation_id, token, state=ExternalOperation.State.FAILED, safe_error="rate_limited")
+        return
+    ExternalOperation.objects.filter(
+        pk=operation_id,
+        state=ExternalOperation.State.RUNNING,
+        lease_token=token,
+    ).update(
+        state=ExternalOperation.State.QUEUED,
+        safe_error="rate_limited",
+        due_at=next_retry_at(now=timezone.now(), attempts=attempts, retry_after=retry_after),
+        lease_token=None,
+        lease_expires_at=None,
+    )
+
+
 @shared_task
 def process_github_issue_create(operation_id: str) -> None:
     operation_uuid = UUID(operation_id)
@@ -188,6 +207,15 @@ def process_github_issue_create(operation_id: str) -> None:
                 remote_url=snapshot.url,
             )
     except Exception as error:
+        if isinstance(error, GitHubAPIError) and error.rate_limited:
+            # GitHub refused the request, so nothing was written.
+            _requeue_rate_limited(
+                operation_uuid,
+                token,
+                attempts=operation.attempts,
+                retry_after=error.retry_after_seconds,
+            )
+            return
         ambiguous = write_started and not isinstance(
             error, (httpx.ConnectTimeout, httpx.ConnectError, httpx.PoolTimeout)
         )

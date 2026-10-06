@@ -490,6 +490,7 @@ OPERATION_ERROR_DETAILS = {
         "The issue exists, but the selected repository or problem link "
         "changed. Review the issue before stopping recovery."
     ),
+    "rate_limited": "GitHub asked us to wait. Creation retries after the delay, up to a limit.",
     "recovery_unavailable": "GitHub could not be checked. Retry after checking the connection.",
     "worker_lease_expired": (
         "The worker stopped before recording the result. Check whether GitHub created the issue."

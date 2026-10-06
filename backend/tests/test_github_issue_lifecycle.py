@@ -454,3 +454,11 @@ def test_rate_limit_metadata_is_shared_by_reads_and_listing(
             client.get_issue(installation_token="token", owner="owner", name="disposable", number=7)
     assert caught.value.rate_limited is limited
     assert caught.value.retry_after_seconds == delay
+
+
+def test_errors_name_the_failed_request(private_key: bytes) -> None:
+    client = make_client(private_key, lambda request: httpx.Response(401))
+    with pytest.raises(GitHubAPIError) as caught:
+        client.create_installation_token(installation_id=1, repository_id="999")
+    assert caught.value.operation == "installation token creation"
+    assert caught.value.status_code == 401
