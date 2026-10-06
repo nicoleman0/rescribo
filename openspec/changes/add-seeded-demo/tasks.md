@@ -6,7 +6,7 @@
 
 ## 2. Seed data and demo accounts
 
-- [ ] 2.0 Extract the ordered content deletion from `delete_workspace` into `purge_workspace_content`, with no behaviour change. Verify the existing deletion tests pass unchanged.
+- [x] 2.0 Extract the ordered content deletion from `delete_workspace` into `purge_workspace_content`, with no behaviour change. Verify the existing deletion tests pass unchanged.
 - [ ] 2.1 Add a `seed_demo` command, following `seed_test_accounts`, that creates or resets the demo workspace with fictitious companies, reports, problems, linked issues, follow-ups, mistakes, and failed and uncertain operations. Verify with a test that runs it twice, finds every main workflow state, and leaves other workspaces unchanged.
 - [ ] 2.2 Seed one member-role visitor account, whose sign-in details the command prints, and an owner account whose credentials it never prints. Both belong only to the demo workspace. Verify with API tests that the visitor gets 404 for a private workspace and is refused invitations, member changes, password resets, and workspace deletion, and that the command output contains no owner credentials or other workspace names.
 - [ ] 2.3 Add a nightly beat task that re-runs the demo seed when a demo workspace exists. Verify with a test that edits demo reports and problems, runs the task, finds the seeded state restored and other workspaces unchanged, and with `task worker-check` that the task registers.

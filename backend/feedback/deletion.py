@@ -94,13 +94,18 @@ def delete_workspace(actor: Membership, confirmation: str) -> None:
         Connection.objects.filter(workspace=workspace).update(
             credential="", external_id="", status="disconnected"
         )
-        # Explicit order handles PROTECT history references before membership removal.
-        ReportNotificationOperation.objects.filter(workspace=workspace).delete()
-        FollowUp.objects.filter(workspace=workspace).delete()
-        ExternalOperation.objects.filter(workspace=workspace).delete()
-        Activity.objects.filter(workspace=workspace).delete()
-        Report.objects.filter(workspace=workspace).delete()
-        EngineeringIssue.objects.filter(workspace=workspace).delete()
-        Problem.objects.filter(workspace=workspace).delete()
-        Invitation.objects.filter(workspace=workspace).delete()
+        purge_workspace_content(workspace)
         workspace.delete()
+
+
+def purge_workspace_content(workspace: Workspace) -> None:
+    """Delete a workspace's records, keeping the workspace, memberships, and connections."""
+    # Explicit order handles PROTECT history references before membership removal.
+    ReportNotificationOperation.objects.filter(workspace=workspace).delete()
+    FollowUp.objects.filter(workspace=workspace).delete()
+    ExternalOperation.objects.filter(workspace=workspace).delete()
+    Activity.objects.filter(workspace=workspace).delete()
+    Report.objects.filter(workspace=workspace).delete()
+    EngineeringIssue.objects.filter(workspace=workspace).delete()
+    Problem.objects.filter(workspace=workspace).delete()
+    Invitation.objects.filter(workspace=workspace).delete()
