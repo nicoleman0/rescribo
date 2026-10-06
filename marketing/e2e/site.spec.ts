@@ -1,5 +1,14 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
+
+async function waitForScene(page: Page): Promise<void> {
+  // Graphics startup has a separate budget from motion behavior checks.
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-renderer',
+    'webgl',
+    { timeout: 15000 },
+  )
+}
 
 test('public content, keyboard navigation, and optional app link', async ({
   page,
@@ -85,10 +94,7 @@ test('static fallback when WebGL cannot initialize', async ({ page }) => {
 })
 test('actual context loss restores the fallback', async ({ page }) => {
   await page.goto('/')
-  await expect(page.locator('#visual')).toHaveAttribute(
-    'data-renderer',
-    'webgl',
-  )
+  await waitForScene(page)
   await page.locator('#scene').evaluate((element) => {
     const extension = (element as HTMLCanvasElement)
       .getContext('webgl2')
@@ -108,6 +114,7 @@ test('keyboard pause freezes the rendered composition and resumes', async ({
   page,
 }) => {
   await page.goto('/')
+  await waitForScene(page)
   const visual = page.locator('#visual')
   const control = page.locator('#motion-control')
   await expect(visual).toHaveAttribute('data-motion', 'running')
@@ -128,6 +135,7 @@ test('pointer movement changes the rendered composition', async ({ page }) => {
     window.requestAnimationFrame = (callback) => request(() => callback(0))
   })
   await page.goto('/')
+  await waitForScene(page)
   await expect(page.locator('#visual')).toHaveAttribute(
     'data-motion',
     'running',
@@ -143,6 +151,7 @@ test('initial and changing reduced-motion preference stops all motion', async ({
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
+  await waitForScene(page)
   const visual = page.locator('#visual')
   await expect(visual).toHaveAttribute('data-renderer', 'webgl')
   await expect(visual).toHaveAttribute('data-motion', 'stopped')
@@ -163,6 +172,7 @@ test('offscreen visual suspends and returns without losing manual pause', async 
   page,
 }) => {
   await page.goto('/')
+  await waitForScene(page)
   const visual = page.locator('#visual')
   await expect(visual).toHaveAttribute('data-motion', 'running')
   await page.locator('footer').scrollIntoViewIfNeeded()
@@ -178,6 +188,7 @@ test('page lifecycle tears down and restores graphics for back-forward cache', a
   page,
 }) => {
   await page.goto('/')
+  await waitForScene(page)
   const visual = page.locator('#visual')
   await expect(visual).toHaveAttribute('data-renderer', 'webgl')
   await page.evaluate(() =>
@@ -197,6 +208,7 @@ test('page lifecycle tears down and restores graphics for back-forward cache', a
 
 test('hidden document suspends animation', async ({ page }) => {
   await page.goto('/')
+  await waitForScene(page)
   const visual = page.locator('#visual')
   await expect(visual).toHaveAttribute('data-motion', 'running')
   await page.evaluate(() => {
@@ -223,6 +235,7 @@ test('native scroll changes the rendered 3D pose and reverses', async ({
     window.requestAnimationFrame = (callback) => request(() => callback(0))
   })
   await page.goto('/')
+  await waitForScene(page)
   await expect(page.locator('#visual')).toHaveAttribute(
     'data-motion',
     'running',
@@ -246,10 +259,7 @@ for (const mode of ['pause', 'reduce'] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 })
     if (mode === 'reduce') await page.emulateMedia({ reducedMotion: 'reduce' })
     await page.goto('/')
-    await expect(page.locator('#visual')).toHaveAttribute(
-      'data-renderer',
-      'webgl',
-    )
+    await waitForScene(page)
     if (mode === 'pause')
       await page.getByRole('button', { name: 'Pause motion' }).click()
     await expect(page.locator('#visual')).toHaveAttribute(
@@ -281,10 +291,7 @@ test('workflow scroll animation and its cleanup preserve readable content', asyn
   page,
 }) => {
   await page.goto('/')
-  await expect(page.locator('#visual')).toHaveAttribute(
-    'data-renderer',
-    'webgl',
-  )
+  await waitForScene(page)
   const row = page.locator('.steps li').first()
   const initial = await row.evaluate(
     (element) => getComputedStyle(element).transform,
@@ -306,10 +313,7 @@ test('persistent motion control does not cover footer navigation', async ({
   page,
 }) => {
   await page.goto('/')
-  await expect(page.locator('#visual')).toHaveAttribute(
-    'data-renderer',
-    'webgl',
-  )
+  await waitForScene(page)
   await page.route(
     'https://github.com/nicoleman0/rescribo/blob/main/LICENSE',
     (route) =>
@@ -323,5 +327,33 @@ test('persistent motion control does not cover footer navigation', async ({
   await page.getByRole('link', { name: 'AGPL-3.0 license' }).click()
   await expect(page).toHaveURL(
     'https://github.com/nicoleman0/rescribo/blob/main/LICENSE',
+  )
+})
+
+test('delayed graphics startup still supports keyboard pause', async ({
+  page,
+}) => {
+  await page.route('**/assets/scene-*.js', async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 6000))
+    await route.continue()
+  })
+  await page.goto('/')
+  await waitForScene(page)
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-motion',
+    'running',
+  )
+  const control = page.locator('#motion-control')
+  await control.focus()
+  await page.keyboard.press('Space')
+  await expect(control).toHaveText('Resume motion')
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-motion',
+    'stopped',
+  )
+  await page.keyboard.press('Space')
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-motion',
+    'running',
   )
 })

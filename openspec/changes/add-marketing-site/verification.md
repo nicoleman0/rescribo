@@ -4,9 +4,10 @@ Local checks on 6 October 2026, using Node 24 and isolated real PostgreSQL 17
 and Redis 7 services. No product files or API contracts changed.
 
 - `marketing`: `npm run check`, `npm run build`, and four build/link probes pass.
-- Marketing browser suite: 20 checks pass without an app URL. The optional
-  app/canonical configuration passes 19 checks before the footer-clearance
-  regression was added. Axe passes at 320, 390, 720, 768, and 1440 CSS pixels.
+- Marketing browser suite: 21 checks pass both without an app URL and with
+  the optional app URL configured. A delayed scene-module regression verifies
+  keyboard pause after graphics startup exceeds five seconds. Axe passes at
+  320, 390, 720, 768, and 1440 CSS pixels.
   The 720px width covers the layout viewport equivalent to a 1440px display
   at 200% browser zoom.
 - Scroll coverage includes rendered 3D pose changes and reversal with animation
@@ -24,7 +25,9 @@ and Redis 7 services. No product files or API contracts changed.
 - `npx @fission-ai/openspec validate --all --strict`: 17 items pass.
 - `git diff --check`: pass.
 
-The independent GitHub workflow is added but has not run remotely. Hosting,
-marketing domain, DNS, publication, and deployed-site verification remain
-pending. The app link is optional. The change stays active until the deferred
-hosting task is resolved; issue #53 is not closed.
+The first GitHub run passed every product job but timed out during graphics
+startup in the marketing suite. Graphics readiness now has a separate 15-second
+budget; motion behavior assertions retain their five-second limit. The fix
+requires a fresh remote run. Hosting, marketing domain, DNS, publication, and
+deployed-site verification remain pending. The app link is optional. The change
+stays active until the deferred hosting task is resolved; issue #53 is not closed.
