@@ -8,6 +8,7 @@ import pytest
 from builders import make_connection, make_membership, make_problem, make_user, make_workspace
 from django.utils import timezone
 
+from connections.models import Connection
 from feedback.errors import (
     IssueCreateUnresolved,
     IssueOperationError,
@@ -28,6 +29,7 @@ from operations.tasks import (
     dispatch_due_operations,
     process_github_issue_create,
     reconcile_github_issue_create,
+    revalidate_github_connection,
 )
 
 pytestmark = pytest.mark.django_db
@@ -359,3 +361,56 @@ def test_rate_limited_create_fails_at_the_retry_cap() -> None:
     assert operation.state == ExternalOperation.State.FAILED
     assert operation.safe_error == "rate_limited"
     assert operation.lease_token is None
+
+
+@pytest.mark.parametrize(
+    "stage,status,code",
+    [
+        ("create_installation_token", 404, "access_lost"),
+        ("create_installation_token", 403, "installation_suspended"),
+        ("create_installation_token", 401, "github_credentials_invalid"),
+        ("create_issue", 401, "github_credentials_invalid"),
+    ],
+)
+def test_refused_installation_disables_its_connections_and_cancels_creation(
+    stage: str, status: int, code: str
+) -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    shared = make_connection(workspace=make_workspace(slug="other"))
+    operation = approved_operation(actor, make_problem(actor=actor))
+    waiting = approved_operation(actor, make_problem(actor=actor))
+    client = fake_provider()
+    getattr(client, stage).side_effect = GitHubAPIError(
+        "installation token creation" if stage == "create_installation_token" else "issue create",
+        status,
+    )
+
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+        process_github_issue_create(str(waiting.pk))
+
+    operation.refresh_from_db()
+    waiting.refresh_from_db()
+    assert (operation.state, operation.safe_error) == ("cancelled", "disconnected")
+    assert operation.lease_token is None
+    assert (waiting.state, waiting.safe_error) == ("cancelled", "approval_stale")
+    for row in (connection, shared):
+        row.refresh_from_db()
+        assert (row.status, row.error_code) == (Connection.Status.ERROR, code)
+    assert client.create_issue.call_count == (1 if stage == "create_issue" else 0)
+
+    # Reconnecting restores the connection without releasing the cancelled approvals.
+    with (
+        patch("operations.tasks.github_client") as factory,
+        patch("operations.tasks.dispatch_task"),
+    ):
+        factory.return_value.__enter__.return_value = fake_provider()
+        revalidate_github_connection(str(connection.pk))
+        dispatch_due_operations()
+    connection.refresh_from_db()
+    operation.refresh_from_db()
+    waiting.refresh_from_db()
+    assert connection.status == Connection.Status.ACTIVE
+    assert operation.state == waiting.state == ExternalOperation.State.CANCELLED

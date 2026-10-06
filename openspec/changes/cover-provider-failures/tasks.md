@@ -17,9 +17,9 @@
 
 ## 4. Refused GitHub installation
 
-- [ ] 4.1 Add the installation-failure classifier and the `github_credentials_invalid` connection error copy. Verify with unit tests for 401 on any request, 403 and 404 on token creation, a rate-limited 403, and 403/404/410 on an issue request.
-- [ ] 4.2 On an installation failure during creation, cancel the operation with `disconnected` and call `disable_github_installation`. Add `disconnected` operation copy. Verify that every connection on the installation is disabled, no create request is sent, and a second queued creation cancels at its prewrite check.
-- [ ] 4.3 On an installation failure during sync, call `disable_github_installation` and schedule no retry for the issue. Verify that the issue is marked, the dispatcher no longer selects it, and revalidation after reconnect restores sync without re-queuing cancelled creations.
+- [x] 4.1 Add the installation-failure classifier and the `github_credentials_invalid` connection error copy. Verify with unit tests for 401 on any request, 403 and 404 on token creation, a rate-limited 403, and 403/404/410 on an issue request.
+- [x] 4.2 On an installation failure during creation, cancel the operation with `disconnected` and call `disable_github_installation`. Add `disconnected` operation copy. Verify that every connection on the installation is disabled, no create request is sent, and a second queued creation cancels at its prewrite check.
+- [x] 4.3 On an installation failure during sync, call `disable_github_installation` and schedule no retry for the issue. Verify that the issue is marked, the dispatcher no longer selects it, and revalidation after reconnect restores sync without re-queuing cancelled creations.
 
 ## 5. Checks
 

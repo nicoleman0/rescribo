@@ -14,10 +14,11 @@ from connections.models import Connection
 from feedback.engineering_issues import (
     apply_installation_webhook,
     apply_issue_webhook,
+    disable_github_installation,
     record_created_issue,
 )
 from feedback.models import Activity, EngineeringIssue, Problem
-from integrations.github_app.client import GitHubAPIError
+from integrations.github_app.client import GitHubAPIError, installation_failure
 from integrations.github_app.issues import (
     IssueLinkError,
     parse_issue_payload,
@@ -214,6 +215,19 @@ def process_github_issue_create(operation_id: str) -> None:
                 token,
                 attempts=operation.attempts,
                 retry_after=error.retry_after_seconds,
+            )
+            return
+        installation_code = installation_failure(error)
+        if installation_code is not None:
+            # GitHub refused the installation, so nothing was written.
+            _mark(
+                operation_uuid,
+                token,
+                state=ExternalOperation.State.CANCELLED,
+                safe_error="disconnected",
+            )
+            disable_github_installation(
+                installation_id=connection.external_id, error_code=installation_code
             )
             return
         ambiguous = write_started and not isinstance(

@@ -28,6 +28,20 @@ class GitHubAPIError(RuntimeError):
         self.rate_limited = rate_limited
 
 
+INSTALLATION_TOKEN_OPERATION = "installation token creation"
+
+
+def installation_failure(error: Exception) -> str | None:
+    """The connection error code when GitHub refused the installation, not one resource."""
+    if not isinstance(error, GitHubAPIError) or error.rate_limited:
+        return None
+    if error.status_code == 401:
+        return "github_credentials_invalid"
+    if error.operation == INSTALLATION_TOKEN_OPERATION:
+        return {403: "installation_suspended", 404: "access_lost"}.get(error.status_code)
+    return None
+
+
 def _base64url(value: bytes) -> str:
     return base64.urlsafe_b64encode(value).rstrip(b"=").decode("ascii")
 
@@ -184,7 +198,7 @@ class GitHubAppClient:
         data = self._request(
             "POST",
             f"/app/installations/{installation_id}/access_tokens",
-            operation="installation token creation",
+            operation=INSTALLATION_TOKEN_OPERATION,
             json_body={
                 **selection,
                 "permissions": {"issues": "write", "metadata": "read"},

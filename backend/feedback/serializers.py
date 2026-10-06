@@ -496,6 +496,10 @@ OPERATION_ERROR_DETAILS = {
         "The worker stopped before recording the result. Check whether GitHub created the issue."
     ),
     "write_outcome_unknown": "GitHub did not confirm the result. Check whether the issue exists.",
+    "disconnected": (
+        "GitHub refused the connection before the issue was created. Reconnect GitHub, "
+        "then approve again."
+    ),
     "manually_resolved": "Recovery was stopped after a member reviewed the result.",
 }
 

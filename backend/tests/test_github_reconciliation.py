@@ -11,6 +11,7 @@ from connections.models import Connection
 from feedback.models import EngineeringIssue
 from feedback.tasks import reconcile_github_issues, sync_github_issue
 from integrations.github_app.client import GitHubAPIError
+from operations.tasks import dispatch_due_operations, revalidate_github_connection
 
 pytestmark = pytest.mark.django_db
 
@@ -29,14 +30,13 @@ ISSUE_PAYLOAD: dict[str, Any] = {
 STORED_UPDATED_AT = datetime(2026, 9, 20, 20, 0, tzinfo=UTC)
 
 
-def patched_client(*, error: Exception | None = None) -> Any:
+def patched_client(*, error: Exception | None = None, stage: str = "get_issue") -> Any:
     client = MagicMock()
     client.create_installation_token.return_value = ("installation-token", "expires")
     client.get_repository_by_id.return_value = {"id": 999, "full_name": "acme/widgets"}
+    client.get_issue.return_value = dict(ISSUE_PAYLOAD)
     if error is not None:
-        client.get_issue.side_effect = error
-    else:
-        client.get_issue.return_value = dict(ISSUE_PAYLOAD)
+        getattr(client, stage).side_effect = error
     factory = patch("feedback.engineering_issues.github_client")
     mock_factory = factory.start()
     mock_factory.return_value.__enter__.return_value = client
@@ -287,3 +287,62 @@ def test_deleted_issue_webhook_marks_the_link_deleted_without_a_retry() -> None:
     assert issue.state == "open"
     assert issue.sync_retry_at is None
     assert issue.sync_completed_generation == issue.sync_requested_generation
+
+
+@pytest.mark.parametrize(
+    "stage,status,code,access",
+    [
+        ("create_installation_token", 404, "access_lost", EngineeringIssue.Access.ACCESS_LOST),
+        (
+            "create_installation_token",
+            403,
+            "installation_suspended",
+            EngineeringIssue.Access.SUSPENDED,
+        ),
+        ("get_issue", 401, "github_credentials_invalid", EngineeringIssue.Access.ACCESS_LOST),
+    ],
+)
+def test_refused_installation_stops_sync_until_reconnect(
+    stage: str, status: int, code: str, access: str
+) -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(problem=problem, connection=connection, created_by=actor)
+    issue.sync_requested_generation = 1
+    issue.save(update_fields=["sync_requested_generation"])
+    operation = (
+        "installation token creation" if stage == "create_installation_token" else "issue lookup"
+    )
+    factory = patched_client(error=GitHubAPIError(operation, status), stage=stage)
+    try:
+        sync_github_issue(str(issue.pk))
+    finally:
+        factory.stop()
+
+    connection.refresh_from_db()
+    issue.refresh_from_db()
+    assert (connection.status, connection.error_code) == (Connection.Status.ERROR, code)
+    assert (issue.access, issue.sync_error) == (access, code)
+    assert issue.sync_retry_at is None
+    assert issue.sync_lease_token is None
+    with patch("operations.tasks.dispatch_task") as dispatch:
+        dispatch_due_operations()
+    assert ("feedback.tasks.sync_github_issue", str(issue.pk)) not in [
+        call.args for call in dispatch.call_args_list
+    ]
+
+    with (
+        patch("operations.tasks.github_client") as revalidate_factory,
+        patch("operations.tasks.dispatch_task") as dispatch,
+    ):
+        revalidate_client = revalidate_factory.return_value.__enter__.return_value
+        revalidate_client.create_installation_token.return_value = ("token", "expires")
+        revalidate_client.get_repository_by_id.return_value = {
+            "id": 999,
+            "full_name": "acme/widgets",
+        }
+        revalidate_github_connection(str(connection.pk))
+    connection.refresh_from_db()
+    assert connection.status == Connection.Status.ACTIVE
+    dispatch.assert_called_once_with("feedback.tasks.sync_github_issue", str(issue.pk))

@@ -33,7 +33,7 @@ from feedback.services import (
     write_activity,
     write_system_activity,
 )
-from integrations.github_app.client import GitHubAPIError
+from integrations.github_app.client import GitHubAPIError, installation_failure
 from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
@@ -449,6 +449,23 @@ def sync_issue(
                 stored_state=issue.state,
             )
     except (*PROVIDER_ERRORS, IssueLinkError, ValueError) as error:
+        installation_code = installation_failure(error)
+        if installation_code is not None:
+            # Retrying cannot help until the owner reconnects; revalidation resumes sync.
+            _finish_issue_sync_failure(
+                issue_id=issue.pk,
+                connection_id=connection.pk,
+                problem_id=problem.pk,
+                workspace_id=connection.workspace_id,
+                claim=claim,
+                now=current,
+                error_code=installation_code,
+                retry=False,
+            )
+            disable_github_installation(
+                installation_id=connection.external_id, error_code=installation_code
+            )
+            return
         rate_limited = isinstance(error, GitHubAPIError) and error.rate_limited
         _finish_issue_sync_failure(
             issue_id=issue.pk,
@@ -601,6 +618,7 @@ def _finish_issue_sync_failure(
     now: datetime,
     error_code: str,
     retry_after_seconds: int | None = None,
+    retry: bool = True,
 ) -> None:
     with transaction.atomic():
         lock_workspace(workspace_id)
@@ -612,8 +630,10 @@ def _finish_issue_sync_failure(
         if error_code == "inaccessible":
             issue.access = EngineeringIssue.Access.INACCESSIBLE
         issue.sync_error = error_code
-        issue.sync_retry_at = next_retry_at(
-            now=now, attempts=issue.sync_attempts, retry_after=retry_after_seconds
+        issue.sync_retry_at = (
+            next_retry_at(now=now, attempts=issue.sync_attempts, retry_after=retry_after_seconds)
+            if retry
+            else None
         )
         issue.sync_lease_token = None
         issue.sync_lease_expires_at = None
@@ -704,21 +724,18 @@ def apply_installation_webhook(
         disable_github_installation(
             installation_id=installation_id,
             error_code="access_lost",
-            issue_access=EngineeringIssue.Access.ACCESS_LOST,
         )
         return
     if event.action == "suspend":
         disable_github_installation(
             installation_id=installation_id,
             error_code="installation_suspended",
-            issue_access=EngineeringIssue.Access.SUSPENDED,
         )
         return
     if event.action == "removed":
         disable_github_installation(
             installation_id=installation_id,
             error_code="repository_removed",
-            issue_access=EngineeringIssue.Access.INACCESSIBLE,
             repository_ids=event.repositories_removed_ids,
         )
         return
@@ -734,14 +751,22 @@ def apply_installation_webhook(
             dispatch_task("operations.tasks.revalidate_github_connection", str(row["pk"]))
 
 
+INSTALLATION_ISSUE_ACCESS = {
+    "access_lost": EngineeringIssue.Access.ACCESS_LOST,
+    "github_credentials_invalid": EngineeringIssue.Access.ACCESS_LOST,
+    "installation_suspended": EngineeringIssue.Access.SUSPENDED,
+    "repository_removed": EngineeringIssue.Access.INACCESSIBLE,
+}
+
+
 def disable_github_installation(
     *,
     installation_id: str,
     error_code: str,
-    issue_access: str,
     repository_ids: Collection[str] | None = None,
 ) -> None:
     """Disable every connection bound to an installation and mark its active issues."""
+    issue_access = INSTALLATION_ISSUE_ACCESS[error_code]
     connection_ids = (
         Connection.objects.filter(provider=Connection.Provider.GITHUB, external_id=installation_id)
         .order_by("workspace_id", "id")
