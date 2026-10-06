@@ -23,8 +23,8 @@
 
 ## 5. Checks
 
-- [ ] 5.1 Run `npx @fission-ai/openspec validate --all --strict` and verify it passes.
-- [ ] 5.2 Run `task check test build schema-check` and `task worker-check` with PostgreSQL and Redis running, and verify both pass.
+- [x] 5.1 Run `npx @fission-ai/openspec validate --all --strict` and verify it passes.
+- [x] 5.2 Run `task check test build schema-check` and `task worker-check` with PostgreSQL and Redis running, and verify both pass.
 
 ## Workflow follow-up
 
