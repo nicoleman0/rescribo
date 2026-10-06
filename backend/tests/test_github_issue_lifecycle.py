@@ -8,7 +8,7 @@ import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
-from integrations.github_app.client import GitHubAPIError, GitHubAppClient
+from integrations.github_app.client import GitHubAPIError, GitHubAppClient, installation_failure
 from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
@@ -454,3 +454,37 @@ def test_rate_limit_metadata_is_shared_by_reads_and_listing(
             client.get_issue(installation_token="token", owner="owner", name="disposable", number=7)
     assert caught.value.rate_limited is limited
     assert caught.value.retry_after_seconds == delay
+
+
+def test_errors_name_the_failed_request(private_key: bytes) -> None:
+    client = make_client(private_key, lambda request: httpx.Response(401))
+    with pytest.raises(GitHubAPIError) as caught:
+        client.create_installation_token(installation_id=1, repository_id="999")
+    assert caught.value.operation == "installation token creation"
+    assert caught.value.status_code == 401
+
+
+@pytest.mark.parametrize(
+    "error,code",
+    [
+        (GitHubAPIError("installation token creation", 401), "github_credentials_invalid"),
+        (GitHubAPIError("issue lookup", 401), "github_credentials_invalid"),
+        (GitHubAPIError("installation token creation", 403), "installation_suspended"),
+        (GitHubAPIError("installation token creation", 404), "access_lost"),
+        (
+            GitHubAPIError(
+                "installation token creation", 403, retry_after_seconds=30, rate_limited=True
+            ),
+            None,
+        ),
+        (GitHubAPIError("installation token creation", 502), None),
+        (GitHubAPIError("issue lookup", 403), None),
+        (GitHubAPIError("issue lookup", 404), None),
+        (GitHubAPIError("issue lookup", 410), None),
+        (httpx.ReadTimeout("timeout"), None),
+    ],
+)
+def test_installation_failure_separates_installation_from_issue_errors(
+    error: Exception, code: str | None
+) -> None:
+    assert installation_failure(error) == code

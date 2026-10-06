@@ -64,6 +64,10 @@ ERROR_DETAILS = {
     ),
     "app_uninstalled": "The Slack App was removed from this workspace. Reconnect Slack.",
     "credentials_revoked": "Slack revoked the app's access. Reconnect Slack.",
+    "github_credentials_invalid": (
+        "GitHub rejected the app's credentials. Ask the operator to check the GitHub App "
+        "key, then reconnect."
+    ),
     "installation_suspended": (
         "The GitHub App installation is suspended. Unsuspend it in GitHub, then refresh."
     ),
