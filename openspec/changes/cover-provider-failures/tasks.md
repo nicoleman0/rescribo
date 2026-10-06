@@ -8,7 +8,7 @@
 
 ## 2. Extract the installation fan-out (refactor, own commit)
 
-- [ ] 2.1 Move the disable-and-mark loop from `apply_installation_webhook` into `disable_github_installation`, with no behaviour change. Verify the existing installation webhook and shared-binding tests pass unchanged.
+- [x] 2.1 Move the disable-and-mark loop from `apply_installation_webhook` into `disable_github_installation`, with no behaviour change. Verify the existing installation webhook and shared-binding tests pass unchanged.
 
 ## 3. Rate-limited issue creation
 

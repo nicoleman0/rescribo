@@ -1,5 +1,6 @@
 """Linking, creating, and syncing the GitHub issue for a problem."""
 
+from collections.abc import Collection
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
 
@@ -699,12 +700,53 @@ def apply_installation_webhook(
     *, installation_id: str, event: InstallationEvent, now: datetime | None = None
 ) -> None:
     """Fan out lifecycle events only to connections bound to this installation."""
+    if event.action == "deleted":
+        disable_github_installation(
+            installation_id=installation_id,
+            error_code="access_lost",
+            issue_access=EngineeringIssue.Access.ACCESS_LOST,
+        )
+        return
+    if event.action == "suspend":
+        disable_github_installation(
+            installation_id=installation_id,
+            error_code="installation_suspended",
+            issue_access=EngineeringIssue.Access.SUSPENDED,
+        )
+        return
+    if event.action == "removed":
+        disable_github_installation(
+            installation_id=installation_id,
+            error_code="repository_removed",
+            issue_access=EngineeringIssue.Access.INACCESSIBLE,
+            repository_ids=event.repositories_removed_ids,
+        )
+        return
+    rows = (
+        Connection.objects.filter(provider=Connection.Provider.GITHUB, external_id=installation_id)
+        .order_by("workspace_id", "id")
+        .values("pk", "repository_id")
+    )
+    for row in rows:
+        if event.action in {"unsuspend", "new_permissions_accepted"} or (
+            event.action == "added" and row["repository_id"] in event.repositories_added_ids
+        ):
+            dispatch_task("operations.tasks.revalidate_github_connection", str(row["pk"]))
+
+
+def disable_github_installation(
+    *,
+    installation_id: str,
+    error_code: str,
+    issue_access: str,
+    repository_ids: Collection[str] | None = None,
+) -> None:
+    """Disable every connection bound to an installation and mark its active issues."""
     connection_ids = (
         Connection.objects.filter(provider=Connection.Provider.GITHUB, external_id=installation_id)
         .order_by("workspace_id", "id")
         .values_list("pk", flat=True)
     )
-    revalidate: list[str] = []
     for connection_id in connection_ids:
         hint = Connection.objects.filter(pk=connection_id).values("workspace_id").first()
         if hint is None:
@@ -712,31 +754,10 @@ def apply_installation_webhook(
         with transaction.atomic():
             lock_workspace(hint["workspace_id"])
             connection = Connection.objects.select_for_update().get(pk=connection_id)
-            if event.action in {"unsuspend", "new_permissions_accepted"}:
-                revalidate.append(str(connection.pk))
+            if repository_ids is not None and connection.repository_id not in repository_ids:
                 continue
-            if event.action == "added":
-                if connection.repository_id in event.repositories_added_ids:
-                    revalidate.append(str(connection.pk))
-                continue
-            issue_access: str | None = None
-            if event.action == "deleted":
-                connection.status = Connection.Status.ERROR
-                connection.error_code = "access_lost"
-                issue_access = EngineeringIssue.Access.ACCESS_LOST
-            elif event.action == "suspend":
-                connection.status = Connection.Status.ERROR
-                connection.error_code = "installation_suspended"
-                issue_access = EngineeringIssue.Access.SUSPENDED
-            elif (
-                event.action == "removed"
-                and connection.repository_id in event.repositories_removed_ids
-            ):
-                connection.status = Connection.Status.ERROR
-                connection.error_code = "repository_removed"
-                issue_access = EngineeringIssue.Access.INACCESSIBLE
-            if issue_access is None:
-                continue
+            connection.status = Connection.Status.ERROR
+            connection.error_code = error_code
             connection.version += 1
             connection.save(update_fields=["status", "error_code", "version"])
             issue_hints = (
@@ -748,10 +769,8 @@ def apply_installation_webhook(
                 Problem.objects.select_for_update(no_key=True).get(pk=issue_hint["problem_id"])
                 issue = EngineeringIssue.objects.select_for_update().get(pk=issue_hint["pk"])
                 issue.access = issue_access
-                issue.sync_error = connection.error_code
+                issue.sync_error = error_code
                 issue.save(update_fields=["access", "sync_error"])
-    for revalidate_id in revalidate:
-        dispatch_task("operations.tasks.revalidate_github_connection", revalidate_id)
 
 
 def _write_consequence_activity(
