@@ -155,7 +155,7 @@ def approve_draft(
         with transaction.atomic():
             lock_workspace(actor.workspace_id)
             connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
-            problem = Problem.objects.select_for_update().get(
+            problem = Problem.objects.select_for_update(no_key=True).get(
                 pk=problem_id, workspace_id=actor.workspace_id
             )
             operation = ExternalOperation.objects.select_for_update().get(

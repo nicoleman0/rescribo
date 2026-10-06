@@ -184,7 +184,7 @@ def refresh_issue(
     with transaction.atomic():
         lock_workspace(actor.workspace_id)
         connection = Connection.objects.select_for_update().get(pk=issue.connection_id)
-        locked_problem = Problem.objects.select_for_update().get(pk=problem.pk)
+        locked_problem = Problem.objects.select_for_update(no_key=True).get(pk=problem.pk)
         locked_issue = EngineeringIssue.objects.select_for_update().get(pk=issue.pk)
         if expected_version is not None:
             require_version(row=locked_problem, expected_version=expected_version)
@@ -364,7 +364,7 @@ def sync_issue(
     with transaction.atomic():
         lock_workspace(hint["workspace_id"])
         connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
-        problem = Problem.objects.select_for_update().get(pk=hint["problem_id"])
+        problem = Problem.objects.select_for_update(no_key=True).get(pk=hint["problem_id"])
         issue = EngineeringIssue.objects.select_for_update().get(pk=hint["pk"])
         if event is not None:
             issue.sync_requested_generation += 1
@@ -604,7 +604,7 @@ def _finish_issue_sync_failure(
     with transaction.atomic():
         lock_workspace(workspace_id)
         Connection.objects.select_for_update().get(pk=connection_id)
-        Problem.objects.select_for_update().get(pk=problem_id)
+        Problem.objects.select_for_update(no_key=True).get(pk=problem_id)
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue_id)
         if issue.sync_lease_token != claim:
             return
@@ -745,7 +745,7 @@ def apply_installation_webhook(
                 .values("pk", "problem_id")
             )
             for issue_hint in issue_hints:
-                Problem.objects.select_for_update().get(pk=issue_hint["problem_id"])
+                Problem.objects.select_for_update(no_key=True).get(pk=issue_hint["problem_id"])
                 issue = EngineeringIssue.objects.select_for_update().get(pk=issue_hint["pk"])
                 issue.access = issue_access
                 issue.sync_error = connection.error_code
