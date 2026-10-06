@@ -2,7 +2,7 @@
 
 ## Why
 
-Reviewers need to see the full workflow without connecting Slack or GitHub. Delivers the demo part of #25 in milestone D. The deployment notes, walkthrough, and live evidence in #25 are documentation, not product behaviour, and are tracked in its tasks.
+Reviewers need to see the full workflow without connecting Slack or GitHub. Delivers #25 in milestone D. Deployment notes, walkthrough, timings, and live evidence are documentation, not product behaviour, and are tracked in #89.
 
 ## What Changes
 
@@ -18,4 +18,4 @@ Reviewers need to see the full workflow without connecting Slack or GitHub. Deli
 
 ## Impact
 
-A seed management command, a demo flag on the workspace, guards in Slack and GitHub operation paths, a UI label, and deployment and walkthrough docs.
+A seed management command, a demo flag on the workspace, guards in Slack and GitHub operation paths, and a UI label.
