@@ -171,3 +171,19 @@ test('linking is unavailable until Slack is connected', async () => {
     screen.queryByRole('button', { name: 'Generate linking code' }),
   ).not.toBeInTheDocument()
 })
+
+test('the demo explains that integrations are disabled', async () => {
+  testMembership.workspace.is_demo = true
+  try {
+    stubApi({
+      ...unlinked,
+      [`GET ${base}connections/`]: () => json([]),
+    })
+    render()
+    const notice = await screen.findByRole('note')
+    expect(notice).toHaveTextContent('Integrations are disabled in the demo')
+    expect(notice).toHaveTextContent('Nothing is sent to Slack or GitHub.')
+  } finally {
+    testMembership.workspace.is_demo = false
+  }
+})

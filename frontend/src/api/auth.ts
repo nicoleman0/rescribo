@@ -7,7 +7,7 @@ export type Session = {
   memberships: {
     membership_id: string
     role: 'owner' | 'member'
-    workspace: { id: string; name: string; slug: string }
+    workspace: { id: string; name: string; slug: string; is_demo: boolean }
   }[]
 }
 

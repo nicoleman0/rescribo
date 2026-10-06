@@ -195,6 +195,7 @@ def test_visitor_cannot_reach_private_workspaces_or_owner_actions() -> None:
     assert client.get(f"/api/workspaces/{private.workspace_id}/reports/").status_code == 404
     session = client.get("/api/auth/session/").json()
     assert [item["workspace"]["id"] for item in session["memberships"]] == [str(workspace.pk)]
+    assert session["memberships"][0]["workspace"]["is_demo"] is True
     assert client.get(f"{base}/reports/").status_code == 200
 
     refused = [

@@ -1,7 +1,12 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { FollowUpDetail } from '@/api/follow-ups'
-import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
+import {
+  json,
+  renderWorkspaceRoutes,
+  stubApi,
+  testMembership,
+} from '@/test/render'
 import { FollowUpDetailPanel } from './follow-up-detail'
 
 const base = '/api/workspaces/ws-1/follow-ups/fu-1'
@@ -511,4 +516,23 @@ test('renders the history feed', async () => {
     await screen.findByText('approved the message for sending'),
   ).toBeInTheDocument()
   expect(screen.getByText('recorded the send')).toBeInTheDocument()
+})
+
+test('labels a delivered message in the demo as simulated', async () => {
+  testMembership.workspace.is_demo = true
+  try {
+    stubApi({
+      [csrfPath]: () => new Response(null, { status: 204 }),
+      [`GET ${base}/`]: () =>
+        json(detail({ notification: notification('sent') })),
+    })
+    renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+    expect(
+      await screen.findByText('Message sent (simulated)'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Delivery: Sent (simulated)')).toBeInTheDocument()
+    expect(messageRegion()).toHaveTextContent('No Slack message was sent.')
+  } finally {
+    testMembership.workspace.is_demo = false
+  }
 })

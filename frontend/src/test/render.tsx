@@ -10,7 +10,7 @@ import { LocationProbe } from './location-probe'
 export const testMembership: Session['memberships'][number] = {
   membership_id: 'm-1',
   role: 'owner',
-  workspace: { id: 'ws-1', name: 'Example', slug: 'example' },
+  workspace: { id: 'ws-1', name: 'Example', slug: 'example', is_demo: false },
 }
 
 export type TestRoute = { path: string; element: ReactElement }

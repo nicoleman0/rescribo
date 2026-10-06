@@ -35,13 +35,13 @@ import { fieldError } from '@/components/forms/field-error'
 import { SelectField, TextareaField } from '@/components/forms/field'
 import { memberName, formatDate } from '@/features/inbox/report-format'
 import { useMembers } from '@/features/inbox/use-members'
-import { useWorkspace } from '@/components/auth/use-workspace'
+import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
 import { cn } from '@/lib/utils'
 import {
   contactBadgeClass,
   contactStateLabels,
   deliveryBadgeClass,
-  deliveryStateLabels,
+  deliveryLabel,
 } from './follow-ups-format'
 import { useFollowUpMutation } from './follow-ups-mutation'
 
@@ -188,6 +188,7 @@ function FollowUpSummary({
   followUp: FollowUpDetail
   notification: FollowUpNotification | null
 }) {
+  const isDemo = useIsDemo()
   return (
     <header className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
@@ -206,7 +207,7 @@ function FollowUpSummary({
               deliveryBadgeClass(notification.state),
             )}
           >
-            Delivery: {deliveryStateLabels[notification.state]}
+            Delivery: {deliveryLabel(notification.state, isDemo)}
           </span>
         ) : (
           <span className="rounded-pill bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -362,12 +363,20 @@ function QueuedSection({
 }
 
 function SentSection({ notification }: { notification: FollowUpNotification }) {
+  const isDemo = useIsDemo()
   return (
     <section
       aria-label="Message"
       className="grid gap-3 rounded-card border border-border p-4"
     >
-      <h3 className="font-medium">Message sent</h3>
+      <h3 className="font-medium">
+        {isDemo ? 'Message sent (simulated)' : 'Message sent'}
+      </h3>
+      {isDemo ? (
+        <p className="text-sm text-muted-foreground">
+          This is a demo workspace. No Slack message was sent.
+        </p>
+      ) : null}
       {notification.delivery_confirmed_by ? (
         <p className="text-sm text-muted-foreground">
           Delivery confirmed by {memberName(notification.delivery_confirmed_by)}

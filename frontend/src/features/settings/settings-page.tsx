@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getConnections, settingsKey } from '@/api/settings'
-import { useWorkspace } from '@/components/auth/use-workspace'
+import { demoDescription, useWorkspace } from '@/components/auth/use-workspace'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { ConnectionSettings } from './connection-settings'
 import { MembersSettings } from './members-settings'
@@ -29,6 +30,14 @@ function WorkspaceSettings() {
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="mt-1 text-muted-foreground">{workspace.name}</p>
       </header>
+      {workspace.is_demo ? (
+        <Alert role="note">
+          <AlertTitle>Integrations are disabled in the demo</AlertTitle>
+          <AlertDescription>
+            {demoDescription} Connecting Slack or GitHub is not available.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {role === 'owner' ? (
         <MembersSettings workspaceId={workspace.id} />
       ) : (

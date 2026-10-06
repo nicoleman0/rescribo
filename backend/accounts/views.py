@@ -124,6 +124,7 @@ def session_payload(user: Any) -> dict[str, Any]:
                     "id": item.workspace_id,
                     "name": item.workspace_name,
                     "slug": item.workspace_slug,
+                    "is_demo": item.workspace_is_demo,
                 },
             }
             for item in data.memberships

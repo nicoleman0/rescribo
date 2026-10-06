@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { expect, test } from 'vitest'
+import { WorkspaceProvider } from '@/components/auth/workspace-provider'
 import { AppShell } from './app-shell'
 
 test('exposes all primary destinations and a keyboard skip link', () => {
@@ -23,4 +24,50 @@ test('exposes all primary destinations and a keyboard skip link', () => {
     screen.getByRole('link', { name: 'Skip to main content' }),
   ).toHaveAttribute('href', '#main-content')
   expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1')
+})
+
+test('labels a demo workspace on every screen', () => {
+  const demo = {
+    membership_id: 'm-1',
+    role: 'member' as const,
+    workspace: {
+      id: 'ws-1',
+      name: 'Northwind (demo)',
+      slug: 'demo',
+      is_demo: true,
+    },
+  }
+  const view = render(
+    <QueryClientProvider client={new QueryClient()}>
+      <WorkspaceProvider membership={demo}>
+        <MemoryRouter initialEntries={['/follow-ups']}>
+          <AppShell>
+            <h1>Follow-ups</h1>
+          </AppShell>
+        </MemoryRouter>
+      </WorkspaceProvider>
+    </QueryClientProvider>,
+  )
+  expect(screen.getByLabelText('Demo workspace')).toHaveTextContent('Demo')
+  expect(
+    screen.getByText('Fictitious data. Nothing is sent to Slack or GitHub.'),
+  ).toBeInTheDocument()
+
+  view.rerender(
+    <QueryClientProvider client={new QueryClient()}>
+      <WorkspaceProvider
+        membership={{
+          ...demo,
+          workspace: { ...demo.workspace, is_demo: false },
+        }}
+      >
+        <MemoryRouter initialEntries={['/follow-ups']}>
+          <AppShell>
+            <h1>Follow-ups</h1>
+          </AppShell>
+        </MemoryRouter>
+      </WorkspaceProvider>
+    </QueryClientProvider>,
+  )
+  expect(screen.queryByLabelText('Demo workspace')).not.toBeInTheDocument()
 })

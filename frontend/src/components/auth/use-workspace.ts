@@ -10,3 +10,11 @@ export function useWorkspace() {
 export function useOptionalWorkspace() {
   return useContext(WorkspaceContext)
 }
+
+export const demoDescription =
+  'Fictitious data. Nothing is sent to Slack or GitHub.'
+
+/** Demo workspaces hold fictitious data and never reach Slack or GitHub. */
+export function useIsDemo() {
+  return useContext(WorkspaceContext)?.workspace.is_demo === true
+}

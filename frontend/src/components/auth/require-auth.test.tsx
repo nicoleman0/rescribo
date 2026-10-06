@@ -39,7 +39,12 @@ test('keeps the route and offers retry after a session transport failure', async
             {
               membership_id: 'm1',
               role: 'member',
-              workspace: { id: 'w1', name: 'Workspace', slug: 'workspace' },
+              workspace: {
+                id: 'w1',
+                name: 'Workspace',
+                slug: 'workspace',
+                is_demo: false,
+              },
             },
           ],
         }),

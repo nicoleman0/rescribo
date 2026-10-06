@@ -14,14 +14,14 @@
 ## 3. No real integrations
 
 - [x] 3.1 Add one demo guard at the provider boundary. Call it from Slack delivery, GitHub issue creation, issue link and refresh, connection setup, Slack revocation on workspace deletion, and scheduled reconciliation and sync. Verify with a test per path that the provider client is never called.
-- [ ] 3.2 Simulate Slack follow-up sends in the demo and label delivery results as simulated; refuse GitHub creation, linking, refresh, and recovery with the demo message. Verify that approving a demo follow-up ends sent with no Slack request, that the follow-up page shows the simulated label, and that each GitHub action returns the demo error.
-- [ ] 3.3 Reject integration setup in the demo with a clear message in the API and settings page. Verify with an API test and a frontend test.
+- [x] 3.2 Simulate Slack follow-up sends in the demo and label delivery results as simulated; refuse GitHub creation, linking, refresh, and recovery with the demo message. Verify that approving a demo follow-up ends sent with no Slack request, that the follow-up page shows the simulated label, and that each GitHub action returns the demo error.
+- [x] 3.3 Reject integration setup in the demo with a clear message in the API and settings page. Verify with an API test and a frontend test.
 - [x] 3.4 Keep match suggestions off in the demo. Verify the demo inbox shows none.
 
 ## 4. Demo label
 
-- [ ] 4.1 Expose `is_demo` in the session or workspace API and run `task schema`. Verify `task schema-check` passes.
-- [ ] 4.2 Show the demo label in the app shell, so every screen has it. Verify with an `app-shell` unit test and an e2e check on the inbox.
+- [x] 4.1 Expose `is_demo` in the session or workspace API and run `task schema`. Verify `task schema-check` passes.
+- [x] 4.2 Show the demo label in the app shell, so every screen has it. Verify with an `app-shell` unit test and an e2e check on the inbox.
 
 ## 5. Checks
 
