@@ -28,90 +28,111 @@ from operations.tasks import process_github_issue_create, revalidate_github_conn
 pytestmark = pytest.mark.django_db(transaction=True)
 
 
-@pytest.mark.parametrize(
-    ("path", "expected_locks"),
-    [
-        ("reconciliation", 1),
-        ("reconciliation_completion", 1),
-        ("refresh", 1),
-        ("sync_claim", 2),
-        ("sync_failure", 1),
-        ("installation_status", 1),
-        ("create_worker", 3),
-        ("revalidation", 1),
-        ("approval", 1),
-    ],
-)
-def test_worker_problem_locks_allow_references_and_serialize_writers(
-    path: str, expected_locks: int
-) -> None:
-    world = World()
-    work: Callable[[], Any]
-    match path:
-        case "reconciliation":
-            work = reconcile_github_issues
-        case "reconciliation_completion":
-            work = partial(_complete_reconciliation_target, world.issue.pk)
-        case "refresh":
-            work = partial(
-                refresh_issue,
-                actor=world.actor,
-                problem_id=world.problem.pk,
-                expected_issue_id=world.issue.pk,
-            )
-        case "sync_claim":
-            work = partial(sync_issue, issue_id=world.issue.pk)
-        case "sync_failure":
-            claim = uuid4()
-            EngineeringIssue.objects.filter(pk=world.issue.pk).update(sync_lease_token=claim)
-            work = partial(
-                _finish_issue_sync_failure,
-                issue_id=world.issue.pk,
-                connection_id=world.connection.pk,
-                problem_id=world.problem.pk,
-                workspace_id=world.actor.workspace_id,
-                claim=claim,
-                now=timezone.now(),
-                error_code="inaccessible",
-            )
-        case "installation_status":
-            work = partial(
-                apply_installation_webhook,
-                installation_id=world.connection.external_id,
-                event=InstallationEvent(
-                    event="installation",
-                    action="suspend",
-                    repositories_removed=(),
-                    access_lost=True,
-                ),
-            )
-        case "revalidation":
-            work = partial(revalidate_github_connection, str(world.connection.pk))
-        case "create_worker" | "approval":
-            world.issue.delete()
-            world.problem.refresh_from_db()
-            draft = create_draft(
-                actor=world.actor,
-                problem_id=world.problem.pk,
-                expected_version=world.problem.version,
-            )
-            if path == "create_worker":
-                ExternalOperation.objects.filter(pk=draft.pk).update(
-                    state=ExternalOperation.State.QUEUED
-                )
-                work = partial(process_github_issue_create, str(draft.pk))
-            else:
-                work = partial(
-                    approve_draft,
-                    actor=world.actor,
-                    problem_id=world.problem.pk,
-                    draft_id=draft.pk,
-                    draft_version=draft.draft_version,
-                    approved=True,
-                )
-        case _:
-            raise AssertionError(f"Unknown path: {path}")
+@pytest.fixture
+def world() -> World:
+    return World()
 
+
+@pytest.fixture
+def issue_draft(world: World) -> ExternalOperation:
+    world.issue.delete()
+    world.problem.refresh_from_db()
+    return create_draft(
+        actor=world.actor,
+        problem_id=world.problem.pk,
+        expected_version=world.problem.version,
+    )
+
+
+def test_reconciliation(world: World) -> None:
+    assert_problem_locks(world, reconcile_github_issues, expected_locks=1)
+
+
+def test_reconciliation_completion(world: World) -> None:
+    assert_problem_locks(
+        world, partial(_complete_reconciliation_target, world.issue.pk), expected_locks=1
+    )
+
+
+def test_refresh(world: World) -> None:
+    assert_problem_locks(
+        world,
+        partial(
+            refresh_issue,
+            actor=world.actor,
+            problem_id=world.problem.pk,
+            expected_issue_id=world.issue.pk,
+        ),
+        expected_locks=1,
+    )
+
+
+def test_sync_claim(world: World) -> None:
+    assert_problem_locks(world, partial(sync_issue, issue_id=world.issue.pk), expected_locks=2)
+
+
+def test_sync_failure(world: World) -> None:
+    claim = uuid4()
+    EngineeringIssue.objects.filter(pk=world.issue.pk).update(sync_lease_token=claim)
+    assert_problem_locks(
+        world,
+        partial(
+            _finish_issue_sync_failure,
+            issue_id=world.issue.pk,
+            connection_id=world.connection.pk,
+            problem_id=world.problem.pk,
+            workspace_id=world.actor.workspace_id,
+            claim=claim,
+            now=timezone.now(),
+            error_code="inaccessible",
+        ),
+        expected_locks=1,
+    )
+
+
+def test_installation_status(world: World) -> None:
+    assert_problem_locks(
+        world,
+        partial(
+            apply_installation_webhook,
+            installation_id=world.connection.external_id,
+            event=InstallationEvent(
+                event="installation", action="suspend", repositories_removed=(), access_lost=True
+            ),
+        ),
+        expected_locks=1,
+    )
+
+
+def test_create_worker(world: World, issue_draft: ExternalOperation) -> None:
+    ExternalOperation.objects.filter(pk=issue_draft.pk).update(state=ExternalOperation.State.QUEUED)
+    assert_problem_locks(
+        world, partial(process_github_issue_create, str(issue_draft.pk)), expected_locks=3
+    )
+
+
+def test_revalidation(world: World) -> None:
+    assert_problem_locks(
+        world, partial(revalidate_github_connection, str(world.connection.pk)), expected_locks=1
+    )
+
+
+def test_approval(world: World, issue_draft: ExternalOperation) -> None:
+    assert_problem_locks(
+        world,
+        partial(
+            approve_draft,
+            actor=world.actor,
+            problem_id=world.problem.pk,
+            draft_id=issue_draft.pk,
+            draft_version=issue_draft.draft_version,
+            approved=True,
+        ),
+        expected_locks=1,
+    )
+
+
+def assert_problem_locks(world: World, work: Callable[[], Any], *, expected_locks: int) -> None:
     locks_checked = 0
     reference_errors: list[DatabaseError] = []
 
