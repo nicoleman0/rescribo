@@ -3,11 +3,13 @@
 from uuid import UUID
 
 from celery import shared_task
+from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
 from accounts.services import lock_workspace
 from connections.models import Connection
+from feedback.demo import reset_demo
 from feedback.engineering_issues import sync_issue
 from feedback.models import (
     EngineeringIssue,
@@ -25,6 +27,7 @@ def reconcile_github_issues() -> None:
         Connection.objects.filter(
             provider=Connection.Provider.GITHUB, status=Connection.Status.ACTIVE
         )
+        .exclude(workspace__is_demo=True)
         .order_by("workspace_id", "id")
         .values_list("pk", flat=True)
     )
@@ -115,3 +118,8 @@ def _complete_reconciliation_target(issue_id: UUID) -> None:
         if not run.targets.filter(done=False, issue__active=True).exists():
             connection.last_reconciled_at = timezone.now()
             connection.save(update_fields=["last_reconciled_at"])
+
+
+@shared_task
+def reset_demo_workspace() -> None:
+    reset_demo(visitor_password=settings.RESCRIBO_DEMO_PASSWORD or None)

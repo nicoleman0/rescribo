@@ -58,6 +58,11 @@ tasks:
     cmds:
       - uv run python backend/manage.py bootstrap_owner {{.CLI_ARGS}}
 
+  demo-seed:
+    desc: Create or reset the fictitious demo workspace and print the visitor sign-in
+    cmds:
+      - uv run python backend/manage.py seed_demo {{.CLI_ARGS}}
+
   issue-owner-recovery:
     desc: Issue a recovery link or set an owner's password
     cmds:

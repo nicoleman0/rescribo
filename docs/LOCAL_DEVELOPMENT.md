@@ -101,6 +101,8 @@ No app account is created by setup. Create the first product owner with `task bo
 
 `task e2e` seeds synthetic accounts in the reserved `e2e-test` workspace and resets that workspace's test data. Do not use that slug for real work.
 
+`task demo-seed` creates or resets the fictitious `demo` workspace and prints the visitor sign-in. Set `RESCRIBO_DEMO_PASSWORD` to choose the published password; otherwise the first run generates one and later runs keep it. The visitor is a member, the owner has no password, and the demo never calls Slack or GitHub. Celery beat resets the demo at 03:00 UTC when it exists.
+
 Slack and GitHub credentials are not needed to start. Local matching is planned but is not implemented in this scaffold. Mocked tests do not prove the product path against GitHub; use a disposable repository and record sanitized evidence before making live-provider claims.
 
 Milestone A work is split by the issues in the [GitHub milestone](https://github.com/nicoleman0/rescribo/milestone/1). The opt-in [GitHub App installation check](GITHUB_INSTALLATION_CHECK.md) covers the first issue without adding credentials to the application or repository.

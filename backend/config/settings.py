@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -160,7 +161,14 @@ CELERY_BEAT_SCHEDULE = {
         "task": "feedback.tasks.reconcile_github_issues",
         "schedule": float(RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS),
     },
+    # A no-op unless `seed_demo` created the demo workspace.
+    "reset-demo-workspace": {
+        "task": "feedback.tasks.reset_demo_workspace",
+        "schedule": crontab(hour=3, minute=0),
+    },
 }
+# The published demo visitor password. Empty keeps the current one.
+RESCRIBO_DEMO_PASSWORD = env("RESCRIBO_DEMO_PASSWORD", default="")
 
 # Images set the path; locally `task matcher-build` produces the default.
 RESCRIBO_MATCHER_PATH = env(

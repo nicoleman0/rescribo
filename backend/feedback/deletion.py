@@ -7,6 +7,7 @@ from django.db import transaction
 from django.db.models import Q
 from rest_framework.exceptions import NotFound, ValidationError
 
+from accounts.demo import is_demo_workspace
 from accounts.models import Invitation, Membership, Workspace
 from connections.errors import PROVIDER_ERRORS
 from connections.models import Connection
@@ -66,6 +67,8 @@ def _require_workspace_confirmation(confirmation: str, workspace: Workspace) -> 
 
 def _revoke_slack_token(workspace_id: UUID) -> None:
     """Best effort: a Slack outage must not block deletion, and no lock is held here."""
+    if is_demo_workspace(workspace_id):
+        return
     credential = (
         Connection.objects.filter(workspace_id=workspace_id, provider=Connection.Provider.SLACK)
         .exclude(credential="")

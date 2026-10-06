@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('accounts', '0002_invitation_one_pending_invitation_per_email'),
+        ("accounts", "0002_invitation_one_pending_invitation_per_email"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='workspace',
-            name='is_demo',
+            model_name="workspace",
+            name="is_demo",
             field=models.BooleanField(default=False),
         ),
     ]

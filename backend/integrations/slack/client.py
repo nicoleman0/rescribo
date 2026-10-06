@@ -39,16 +39,16 @@ def message_permalink(credential: str, *, channel_id: str, message_ts: str) -> s
     return permalink
 
 
-def _delivery_client(credential: str) -> Any:
-    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+def _delivery_client(credential: str, *, simulated: bool = False) -> Any:
+    if simulated or settings.RESCRIBO_SLACK_FAKE_DELIVERY:
         from integrations.slack.fake_delivery import fake_delivery_client
 
         return fake_delivery_client()
     return bot_client(credential)
 
 
-def _message_creation_client(credential: str) -> Any:
-    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+def _message_creation_client(credential: str, *, simulated: bool = False) -> Any:
+    if simulated or settings.RESCRIBO_SLACK_FAKE_DELIVERY:
         from integrations.slack.fake_delivery import fake_delivery_client
 
         return fake_delivery_client()
@@ -57,14 +57,19 @@ def _message_creation_client(credential: str) -> Any:
     return WebClient(token=decrypt(credential), timeout=10, retry_handlers=[])
 
 
-def conversations_open(credential: str, *, users: str) -> Any:
-    return _delivery_client(credential).conversations_open(users=users)
+def conversations_open(credential: str, *, users: str, simulated: bool = False) -> Any:
+    return _delivery_client(credential, simulated=simulated).conversations_open(users=users)
 
 
 def chat_post_message(
-    credential: str, *, channel: str, text: str, blocks: list[dict[str, Any]]
+    credential: str,
+    *,
+    channel: str,
+    text: str,
+    blocks: list[dict[str, Any]],
+    simulated: bool = False,
 ) -> Any:
-    return _message_creation_client(credential).chat_postMessage(
+    return _message_creation_client(credential, simulated=simulated).chat_postMessage(
         channel=channel, text=text, blocks=blocks
     )
 

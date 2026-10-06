@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 from slack_sdk.errors import SlackApiError
 
+from accounts.demo import is_demo_workspace
 from accounts.models import Membership
 from connections.models import Connection, ExternalIdentity
 from connections.slack_inbound import active_connection, record_provider_failure
@@ -41,6 +42,8 @@ class SendContext:
     slack_user_id: str
     follow_up_id: UUID
     message: str
+    # Demo workspaces send through the fake client and never reach Slack.
+    simulated: bool
 
 
 @dataclass(frozen=True)
@@ -200,6 +203,7 @@ def _authorize(*, hint: SendHint, operation_id: UUID, token: UUID) -> SendContex
                 slack_user_id=user_id,
                 follow_up_id=follow_up.pk,
                 message=operation.message,
+                simulated=is_demo_workspace(hint.workspace_id),
             )
     if blocker is not None:
         raise SendBlocked("approval_stale")
@@ -429,7 +433,9 @@ def send_follow_up_notification(operation_id: UUID) -> None:
         )
         return
     try:
-        opened = client.conversations_open(context.credential, users=context.slack_user_id)
+        opened = client.conversations_open(
+            context.credential, users=context.slack_user_id, simulated=context.simulated
+        )
     except Exception as error:
         _record_revocation(context, error)
         _mark_failure(
@@ -475,7 +481,11 @@ def send_follow_up_notification(operation_id: UUID) -> None:
     )
     try:
         posted = client.chat_post_message(
-            context.credential, channel=conversation_id, text=context.message, blocks=blocks
+            context.credential,
+            channel=conversation_id,
+            text=context.message,
+            blocks=blocks,
+            simulated=context.simulated,
         )
     except Exception as error:
         _record_revocation(context, error)
