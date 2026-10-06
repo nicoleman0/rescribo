@@ -457,3 +457,39 @@ def test_cannot_bind_same_slack_team_twice(client: Client, actor: Membership) ->
         )
     assert response.status_code == 400 and response.json()["reason"] == "team_in_use"
     assert Connection.objects.count() == 1
+
+
+@override_settings(RESCRIBO_GITHUB_CLIENT_ID="id", RESCRIBO_GITHUB_CLIENT_SECRET="secret")
+def test_second_workspace_binds_a_shared_github_repository(
+    client: Client, actor: Membership
+) -> None:
+    other = make_membership(
+        workspace=make_workspace(slug="other"), user=make_user(email="other@test.dev")
+    )
+    connect(other, "github")
+    response = post(
+        client, actor, "connections/github/setup/", {"consent": True, "repository": "owner/repo"}
+    )
+    state = parse_qs(urlparse(response.json()["url"]).query)["state"][0]
+    with patch(
+        "connections.providers.github_setup",
+        return_value={
+            "external_id": "123",
+            "identity": "owner",
+            "scopes": ["issues:write", "metadata:read"],
+            "repository": "owner/repo",
+            "repository_id": "",
+            "visibility": "private",
+            "credential": "",
+        },
+    ):
+        response = client.get(
+            url(actor, "connections/github/callback/") + f"?state={state}&code=code"
+        )
+    assert response.status_code == 302
+
+    response = client.get(url(actor, "connections/"))
+    assert [row["provider"] for row in response.json()] == ["github"]
+    assert response.json()[0]["status"] == "active"
+    assert str(other.workspace_id).encode() not in response.content
+    assert Connection.objects.filter(provider="github", external_id="123").count() == 2

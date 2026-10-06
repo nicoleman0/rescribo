@@ -1,0 +1,75 @@
+name: UAT finding
+description: Report a bug, usability problem, or feature request from the pilot.
+title: "[UAT] "
+labels: [uat, "concern:testing"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Pilot tracker: https://github.com/nicoleman0/rescribo/issues/57
+        Search existing issues first. Use fictitious customer content. Remove
+        secrets, invitation/reset URLs, OAuth codes, and private messages from evidence.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Finding type
+      options:
+        - Bug
+        - Usability or accessibility problem
+        - Feature request
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact
+      options:
+        - Blocker (cannot continue, data loss, or access boundary failure)
+        - Major (core workflow fails or gives the wrong result)
+        - Minor (workaround exists or presentation problem)
+        - Feature request
+    validations:
+      required: true
+  - type: input
+    id: journey
+    attributes:
+      label: Screen or journey
+      placeholder: "Settings: connecting a GitHub repository"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Test environment
+      description: Commit/build, date, owner/member role, browser/device, and local or live provider.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce or user problem
+      description: For a feature request, describe the task you could not complete and a concrete example.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence and workaround
+      description: Screenshots, safe error messages, frequency, and any workaround. No credentials or private content.
+  - type: textarea
+    id: retest
+    attributes:
+      label: Triage and retest
+      description: Add fix/defer decision, linked PR, retest build and result when available.
