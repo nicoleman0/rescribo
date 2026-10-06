@@ -216,3 +216,74 @@ def test_transient_outage_does_not_change_access() -> None:
     assert issue.access == EngineeringIssue.Access.OK
     assert issue.sync_error == "provider_unavailable"
     assert issue.sync_retry_at is not None
+
+
+def test_read_timeout_keeps_access_and_schedules_a_retry() -> None:
+    import httpx
+
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(problem=problem, connection=connection, created_by=actor)
+    factory = patched_client(error=httpx.ReadTimeout("read timed out"))
+    try:
+        sync_github_issue(str(issue.pk))
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    assert issue.access == EngineeringIssue.Access.OK
+    assert issue.sync_error == "provider_unavailable"
+    assert issue.sync_retry_at is not None
+    assert issue.sync_lease_token is None
+
+
+def test_gone_issue_is_inaccessible_and_keeps_last_known_state() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(
+        problem=problem, connection=connection, created_by=actor, state="open"
+    )
+    factory = patched_client(error=GitHubAPIError("issue lookup", 410))
+    try:
+        sync_github_issue(str(issue.pk))
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    assert issue.access == EngineeringIssue.Access.INACCESSIBLE
+    assert issue.sync_error == "inaccessible"
+    assert issue.state == "open"
+    assert issue.sync_completed_generation == issue.sync_requested_generation
+
+
+def test_deleted_issue_webhook_marks_the_link_deleted_without_a_retry() -> None:
+    from django.utils import timezone
+
+    from feedback.engineering_issues import apply_issue_webhook
+    from integrations.github_app.webhooks import IssueEvent
+
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(
+        problem=problem, connection=connection, created_by=actor, state="open"
+    )
+    event = IssueEvent(
+        action="deleted",
+        number=issue.number,
+        repository=connection.repository,
+        repository_id=issue.repository_id,
+        issue_id=issue.issue_id,
+        state_reason=None,
+        updated_at=timezone.now().isoformat(),
+    )
+    factory = patched_client(error=GitHubAPIError("issue lookup", 404))
+    try:
+        apply_issue_webhook(installation_id=connection.external_id, event=event)
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    assert issue.access == EngineeringIssue.Access.DELETED
+    assert issue.state == "open"
+    assert issue.sync_retry_at is None
+    assert issue.sync_completed_generation == issue.sync_requested_generation

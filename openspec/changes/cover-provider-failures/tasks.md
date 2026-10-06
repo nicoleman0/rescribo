@@ -2,9 +2,9 @@
 
 ## 1. Retry timing and read coverage
 
-- [ ] 1.1 Add unit tests for `next_retry_at`: doubling, the one-hour cap, `Retry-After` as a floor, zero delay, and the jitter bound. Verify they pass against the current code.
-- [ ] 1.2 Add sync tests for a read timeout (issue keeps `ok` access, `provider_unavailable`, retry scheduled) and a 410 on the issue request (`inaccessible`). Verify they pass.
-- [ ] 1.3 Add a test that applies an issue `deleted` webhook to a linked issue end to end. Verify the issue ends `deleted` with no retry scheduled.
+- [x] 1.1 Add unit tests for `next_retry_at`: doubling, the cap at ten doublings, `Retry-After` as a floor, zero delay, and the jitter bound. Verify they pass against the current code.
+- [x] 1.2 Add sync tests for a read timeout (issue keeps `ok` access, `provider_unavailable`, retry scheduled) and a 410 on the issue request (`inaccessible`). Verify they pass.
+- [x] 1.3 Add a test that applies an issue `deleted` webhook to a linked issue end to end. Verify the issue ends `deleted` with no retry scheduled.
 
 ## 2. Extract the installation fan-out (refactor, own commit)
 
