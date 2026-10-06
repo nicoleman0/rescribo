@@ -9,6 +9,7 @@ from django.test import override_settings
 from connections.credentials import decrypt
 from connections.errors import SetupError
 from integrations.github_app.settings import check_github, github_setup
+from integrations.slack.client import revoke_token
 from integrations.slack.errors import ChannelRejected
 from integrations.slack.policy import REQUIRED_BOT_SCOPES
 from integrations.slack.settings import channel_details, slack_setup
@@ -102,3 +103,13 @@ def test_channel_policy_rejects_ineligible_sources(flag: str) -> None:
         }
         with pytest.raises(ChannelRejected):
             channel_details("encrypted", "C1")
+
+
+def test_revoke_token_calls_auth_revoke_with_the_decrypted_token() -> None:
+    with (
+        patch("integrations.slack.client.decrypt", return_value="secret"),
+        patch("integrations.slack.client.WebClient") as sdk,
+    ):
+        revoke_token("encrypted")
+    assert sdk.call_args.kwargs["token"] == "secret"
+    sdk.return_value.auth_revoke.assert_called_once_with()

@@ -15,6 +15,7 @@ from builders import (
 )
 from cryptography.fernet import Fernet
 from django.test import Client, override_settings
+from slack_sdk.errors import SlackApiError
 
 from accounts.models import Membership, Workspace
 from accounts.services import create_invitation
@@ -248,6 +249,62 @@ def test_workspace_delete_removes_tenant_and_preserves_other_membership(
     assert not FollowUp.objects.exists()
     assert not Activity.objects.exists()
     assert client.get(url(actor, "connections/")).status_code == 404
+
+
+REVOKE = "feedback.deletion.slack_client.revoke_token"
+
+
+@override_settings(RESCRIBO_CREDENTIAL_KEY=Fernet.generate_key().decode())
+def test_workspace_delete_revokes_the_slack_token(client: Client, actor: Membership) -> None:
+    connection = connect(actor)
+    connection.credential = cipher().encrypt(b"xoxb-secret").decode()
+    connection.save()
+    with patch(REVOKE) as revoke:
+        assert (
+            post(client, actor, "delete/", {"confirmation": actor.workspace.slug}).status_code
+            == 204
+        )
+    revoke.assert_called_once_with(connection.credential)
+    assert not Workspace.objects.filter(pk=actor.workspace_id).exists()
+    assert not Connection.objects.exists()
+
+
+def test_workspace_delete_proceeds_when_slack_revocation_fails(
+    client: Client, actor: Membership
+) -> None:
+    connect(actor)
+    error = SlackApiError("failed", {"error": "ratelimited"})
+    with patch(REVOKE, side_effect=error):
+        assert (
+            post(client, actor, "delete/", {"confirmation": actor.workspace.slug}).status_code
+            == 204
+        )
+    assert not Workspace.objects.filter(pk=actor.workspace_id).exists()
+    assert not Connection.objects.exists()
+
+
+def test_workspace_delete_with_wrong_confirmation_revokes_nothing(
+    client: Client, actor: Membership
+) -> None:
+    connect(actor)
+    with patch(REVOKE) as revoke:
+        assert post(client, actor, "delete/", {"confirmation": "wrong"}).status_code == 400
+    revoke.assert_not_called()
+    assert Workspace.objects.filter(pk=actor.workspace_id).exists()
+    assert Connection.objects.filter(credential="encrypted-secret").exists()
+
+
+def test_workspace_delete_without_slack_connection_revokes_nothing(
+    client: Client, actor: Membership
+) -> None:
+    connect(actor, "github")
+    with patch(REVOKE) as revoke:
+        assert (
+            post(client, actor, "delete/", {"confirmation": actor.workspace.slug}).status_code
+            == 204
+        )
+    revoke.assert_not_called()
+    assert not Workspace.objects.filter(pk=actor.workspace_id).exists()
 
 
 @override_settings(

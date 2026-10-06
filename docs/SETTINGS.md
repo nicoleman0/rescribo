@@ -64,10 +64,30 @@ a workspace disconnect. Disconnect does not uninstall a shared upstream App.
 Report deletion removes the report, snapshot, notification operations and
 report-related activity, leaving only a content-free deletion event. The
 problem and upstream content remain. Workspace deletion removes its primary
-records, credentials, memberships and invitations. Shared user accounts and
-other workspaces remain. Neither action deletes Slack messages or GitHub issues.
-Backups follow the operator's retention policy; deletion does not immediately
-erase backups.
+records, credentials, memberships and invitations. It first revokes the Slack bot
+token with Slack; if Slack fails, deletion still completes. The GitHub App is not
+uninstalled, because other workspaces may share the installation. Shared user
+accounts and other workspaces remain. Neither action deletes Slack messages or
+GitHub issues.
+
+Successful inbound webhook receipts keep their payload for seven days. After that
+only the provider, delivery ID, event, status, and timestamps remain, so
+redeliveries are still recognised as duplicates.
+
+## Backup and restore
+
+Keep backups for 30 days unless you set a different policy. Deleted reports and
+workspaces stay in backups until those backups expire; deletion does not erase
+them. Local dumps in `backups/` hold tenant data, so delete them on the same
+schedule.
+
+- `task backup` writes a `pg_dump` custom-format dump to `backups/`.
+- `task restore-check [DUMP]` restores the newest dump, or the one given, into a
+  throwaway database. It checks that no migration is pending, reads a restored
+  report through the API as its owner, then drops the database. It fails if the
+  dump has no report.
+
+Last run: 2026-10-05, local data, PostgreSQL 17. Backup and restore check passed.
 
 ## Integration boundaries
 
