@@ -10,7 +10,7 @@ async function waitForScene(page: Page): Promise<void> {
   )
 }
 
-test('public content, keyboard navigation, and optional app link', async ({
+test('public content, keyboard navigation, and self-hosted project link', async ({
   page,
 }) => {
   await page.goto('/')
@@ -28,10 +28,10 @@ test('public content, keyboard navigation, and optional app link', async ({
   ).toBeFocused()
   await page.keyboard.press('Enter')
   await expect(page).toHaveURL(/#main$/)
-  const link = page.getByRole('link', { name: 'Sign in' })
-  if (process.env.MARKETING_APP_URL)
-    await expect(link).toHaveAttribute('href', process.env.MARKETING_APP_URL)
-  else await expect(link).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0)
+  await expect(page.locator('#about')).toContainText(
+    'Self-host Rescribo on your own infrastructure.',
+  )
   await expect(
     page.getByRole('link', { name: 'Explore the project' }),
   ).toHaveAttribute('href', 'https://github.com/nicoleman0/rescribo')
@@ -66,11 +66,10 @@ test('content and navigation without JavaScript', async ({ browser }) => {
   await expect(page.locator('#motion-control')).toBeHidden()
   await page.getByRole('link', { name: 'The workflow', exact: true }).click()
   await expect(page).toHaveURL(/#workflow$/)
-  if (process.env.MARKETING_APP_URL)
-    await expect(page.getByRole('link', { name: 'Sign in' })).toHaveAttribute(
-      'href',
-      process.env.MARKETING_APP_URL,
-    )
+  await expect(page.getByRole('link', { name: 'Sign in' })).toHaveCount(0)
+  await expect(
+    page.getByRole('link', { name: 'Explore the project' }),
+  ).toHaveAttribute('href', 'https://github.com/nicoleman0/rescribo')
   await context.close()
 })
 test('static fallback when WebGL cannot initialize', async ({ page }) => {

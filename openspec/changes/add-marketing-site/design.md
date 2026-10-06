@@ -2,7 +2,7 @@
 
 ## Context
 
-See [proposal.md](proposal.md) for motivation. The repository has a React product frontend, shared product workflow copy in README, and no production host. The marketing build must not depend on Django, React, or the product bundle. Hosting, domain, and app URL are deferred by the maintainer until deployment readiness.
+See [proposal.md](proposal.md) for motivation. The repository has a React product frontend, shared product workflow copy in README, and no production host. The marketing build must not depend on Django, React, or the product bundle. Marketing hosting and domain are deferred by the maintainer until deployment readiness.
 
 ## Goals / Non-Goals
 
@@ -17,8 +17,8 @@ See [proposal.md](proposal.md) for motivation. The repository has a React produc
 - Use GSAP ScrollTrigger to map native scroll progress to 3D rotation, camera distance, and card separation, plus small workflow and heading translations. Do not pin the whole page or replace native scrolling. Keep orchestration in a separate scroll module; the existing scene owns rendering and motion permission. The pause control stays reachable through the page.
 - HTML owns the copy, links, static SVG fallback, and motion control. The dynamically imported Three.js scene owns graphics and motion permission; a separate GSAP module owns scroll orchestration. Render once under reduced motion, pause on request, stop when hidden/offscreen, and dispose resources on teardown. Do not hijack scroll or use custom cursors.
 - Describe the intended shipped workflow in present tense; omit development badges and status notes. Keep one copy source module with attribution to README and `openspec/config.yaml`; inject it into HTML at build time. Do not claim the current ranker meets its gate or imply automatic customer messaging.
-- The public site never requires authentication or an app destination. Optional app and canonical URLs must use HTTPS when supplied. Omit sign-in and canonical metadata when absent; do not show configuration messages to marketing visitors.
-- Browser checks run on built output and cover semantic links, mobile overflow, axe, keyboard pause, preference changes, JavaScript-disabled navigation, and graphics fallback. CI uses configured synthetic HTTPS URLs and checks their rendered values; it does not claim to verify a live app.
+- Present Rescribo as self-hosted, with the project repository as the adoption destination. The public marketing site has no application sign-in link. The optional canonical URL must use HTTPS when supplied; omit canonical metadata when absent.
+- Browser checks run on built output and cover semantic links, mobile overflow, axe, keyboard pause, preference changes, JavaScript-disabled navigation, and graphics fallback. Build probes check synthetic canonical HTTPS URLs; CI checks the public site.
 
 ## Risks / Trade-offs
 
@@ -33,4 +33,3 @@ The independent CI build checks every PR. After site review, choose hosting and 
 ## Open Questions
 
 - Static host and marketing domain, deferred by the maintainer.
-- Optional app sign-in URL, added when an app destination exists.

@@ -10,7 +10,7 @@ Issue [#53](https://github.com/nicoleman0/rescribo/issues/53) needs a public exp
 - Explain the existing Capture, Connect, Follow up workflow using README and OpenSpec context copy.
 - Add scroll-driven choreography to the Three.js composition and workflow sections.
 - Add an interactive Three.js composition, with semantic HTML, reduced motion, a pause control, and a static fallback.
-- Add optional app sign-in and canonical site URLs. The app link is omitted until a real destination is configured.
+- Present Rescribo as self-hosted and link to the project repository. Keep only optional canonical site URL configuration.
 - Add an independent CI job for build, link validation, and axe checks.
 - Leave hosting, domain selection, and publication until the site is ready, as requested on 6 October 2026.
 
@@ -18,7 +18,7 @@ Issue [#53](https://github.com/nicoleman0/rescribo/issues/53) needs a public exp
 
 ### New Capabilities
 
-- `marketing-site`: Public product explanation, visual enhancement, accessible navigation, and configurable sign-in destination.
+- `marketing-site`: Public product explanation, visual enhancement, accessible navigation, and a self-hosted adoption path.
 
 ### Modified Capabilities
 

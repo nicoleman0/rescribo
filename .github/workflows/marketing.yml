@@ -17,14 +17,9 @@ jobs:
   marketing:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      matrix:
-        app-url: ['', 'https://app.example.invalid/login']
     defaults:
       run:
         working-directory: marketing
-    env:
-      MARKETING_APP_URL: ${{ matrix.app-url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,13 +34,12 @@ jobs:
       - run: npm test
       - run: npm run check:links
       - uses: actions/upload-artifact@v4
-        if: matrix.app-url == ''
         with:
           name: marketing-site
           path: marketing/dist/
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: marketing-traces-${{ strategy.job-index }}
+          name: marketing-traces
           path: marketing/test-results/
           if-no-files-found: ignore

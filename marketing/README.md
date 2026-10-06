@@ -34,19 +34,19 @@ the site can be hosted at a domain root or under a directory. Three.js enhances
 the static illustration. Reduced motion, the pause button, offscreen suspension,
 and context-loss fallback are checked against the built site.
 
-## Optional destinations
+## Canonical URL
 
-`MARKETING_APP_URL` adds a Sign in link for existing members. Without it the
-link is omitted. `MARKETING_SITE_URL` adds canonical metadata. Both must be
-absolute HTTPS URLs without credentials when supplied. They are public build
-values, never secrets. Neither is required to build or publish the public site.
+The site directs visitors to the self-hosted project repository. It has no
+application sign-in link. `MARKETING_SITE_URL` adds canonical metadata when
+supplied. It must be an absolute HTTPS URL without credentials and is a public
+build value. It is not required to build or publish the public site.
 
 ```sh
 MARKETING_SITE_URL=https://YOUR-MARKETING-DOMAIN/ npm run build
 ```
 
-Build probes and CI use synthetic URLs to verify rendering and validation;
-they do not verify a live app. `npm run check:links` checks generated assets,
+Build probes use a synthetic canonical URL to verify rendering and validation.
+`npm run check:links` checks generated assets,
 fragments, and HTTPS URL structure. After real URLs are chosen, check external
 destinations with:
 
@@ -59,6 +59,6 @@ npm run check:links -- --live
 Hosting and domain selection are pending under issue #53. There is no deploy
 workflow or DNS change. Before publishing, choose a static host and domain,
 build with the canonical URL, check live destinations, and upload `dist/` as
-one artifact. Add the app link when there is an app destination. Verify the
-deployed page, asset loads, and navigation. Keep the prior build for rollback;
-restore that artifact without changing the product deployment.
+one artifact. Verify the deployed page, asset loads, and navigation. Keep the
+prior build for rollback; restore that artifact without changing the product
+deployment.

@@ -9,7 +9,6 @@ import { checkLinks } from './check-links.mjs'
 function build(values = {}) {
   const env = {
     ...process.env,
-    MARKETING_APP_URL: '',
     MARKETING_SITE_URL: '',
     ...values,
   }
@@ -19,21 +18,17 @@ function build(values = {}) {
   })
   return readFileSync('dist/index.html', 'utf8')
 }
-test('unconfigured build is public; configured links are static HTML', () => {
+test('self-hosted build is public; canonical metadata is optional', () => {
   assert.doesNotMatch(build(), /Sign in|rel="canonical"|not configured|\{\{/)
   const html = build({
-    MARKETING_APP_URL:
-      'https://app.example.org/login?from=marketing&next=inbox',
     MARKETING_SITE_URL: 'https://www.example.org/',
   })
-  assert.match(
-    html,
-    /href="https:\/\/app.example.org\/login\?from=marketing&amp;next=inbox"/,
-  )
+  assert.doesNotMatch(html, /Sign in/)
+  assert.match(html, /Self-host Rescribo on your own infrastructure[.]/)
   assert.match(html, /rel="canonical" href="https:\/\/www.example.org\/"/)
 })
 test('invalid supplied URLs fail clearly', () => {
-  for (const name of ['MARKETING_APP_URL', 'MARKETING_SITE_URL']) {
+  for (const name of ['MARKETING_SITE_URL']) {
     for (const value of [
       'http://example.org',
       '/login',
@@ -65,7 +60,6 @@ test('link checker detects missing fragments and assets', async () => {
 // Browser checks use the caller's configuration after the build probes.
 test('restore requested build for browser checks', () => {
   build({
-    MARKETING_APP_URL: process.env.MARKETING_APP_URL ?? '',
     MARKETING_SITE_URL: process.env.MARKETING_SITE_URL ?? '',
   })
 })

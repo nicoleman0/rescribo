@@ -2,20 +2,24 @@
 
 ## Purpose
 
-Explain Rescribo's existing customer-feedback workflow publicly and let existing members reach the application without loading its authenticated bundle.
+Explain Rescribo's customer-feedback workflow publicly and direct visitors to the self-hosted project.
 
 ## ADDED Requirements
 
 ### Requirement: Public workflow explanation
-The site SHALL explain Capture, Connect, and Follow up with copy sourced from the README and OpenSpec project context. It SHALL describe the intended shipped workflow in present tense rather than report development status. It MUST NOT offer pricing, billing, public signup, or unsupported adoption claims.
+The site SHALL explain Capture, Connect, and Follow up with copy sourced from the README and OpenSpec project context. It SHALL describe the intended shipped workflow in present tense rather than report development status. It SHALL describe Rescribo as self-hosted and link to its project repository. It MUST NOT offer a hosted service, application sign-in, pricing, billing, public signup, or unsupported adoption claims.
 
 #### Scenario: Visitor reads the page
 - **WHEN** a visitor opens the site
 - **THEN** the page describes Slack or manual capture, human-approved GitHub issue publication, and employee follow-up without implying autonomous action or customer accounts
 
+#### Scenario: Self-hosted adoption
+- **WHEN** a visitor reads the About section
+- **THEN** it describes Rescribo as self-hosted and provides a project repository link without an application Sign in link
+
 #### Scenario: JavaScript is disabled
 - **WHEN** a visitor opens the site without JavaScript
-- **THEN** the product explanation and configured sign-in link remain readable and usable
+- **THEN** the product explanation and project repository link remain readable and usable
 
 ### Requirement: Accessible visual enhancement
 The site SHALL provide an interactive 3D visual without making it necessary for reading or navigation. The site MUST retain a static visual when WebGL is unavailable, initialization fails, or the graphics context is lost.
@@ -46,19 +50,19 @@ The site SHALL support keyboard navigation, visible focus, semantic landmarks, s
 - **WHEN** the site is opened at 320px width or 200% zoom
 - **THEN** content and controls remain readable, reachable, and contained within the viewport
 
-### Requirement: Optional application destination
-The site MUST remain public without an application URL. When configured, the site SHALL provide a Sign in link to the supplied HTTPS destination. When no destination is configured, it MUST omit that link. Optional canonical metadata MUST use a supplied HTTPS URL. Invalid supplied URLs MUST fail the build with a clear configuration error.
+### Requirement: Optional canonical URL
+The site MUST build without a configured marketing URL. Optional canonical metadata MUST use a supplied HTTPS URL. Invalid supplied URLs MUST fail the build with a clear configuration error.
 
-#### Scenario: Configured destination
-- **WHEN** an existing member selects Sign in on a configured site
-- **THEN** the browser opens the supplied application sign-in URL
+#### Scenario: Configured canonical URL
+- **WHEN** the site is built with a marketing URL
+- **THEN** its static HTML contains canonical metadata for the supplied HTTPS URL
 
-#### Scenario: No application destination
-- **WHEN** the site is built without an application URL
-- **THEN** the public page builds successfully and omits the Sign in link without displaying configuration messages
+#### Scenario: No marketing URL
+- **WHEN** the site is built without a marketing URL
+- **THEN** the public page builds successfully and omits canonical metadata without displaying configuration messages
 
-#### Scenario: Invalid supplied destination
-- **WHEN** a build receives a malformed or non-HTTPS application or canonical URL
+#### Scenario: Invalid supplied canonical URL
+- **WHEN** a build receives a malformed or non-HTTPS canonical URL
 - **THEN** the build fails with a clear error identifying the invalid configuration
 
 ### Requirement: Scroll-driven narrative
