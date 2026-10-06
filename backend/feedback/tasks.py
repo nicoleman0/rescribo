@@ -52,7 +52,7 @@ def reconcile_github_issues() -> None:
                 .values("pk", "problem_id")
             )
             for issue_hint in issue_hints:
-                Problem.objects.select_for_update().get(pk=issue_hint["problem_id"])
+                Problem.objects.select_for_update(no_key=True).get(pk=issue_hint["problem_id"])
                 issue = EngineeringIssue.objects.select_for_update().get(pk=issue_hint["pk"])
                 if not issue.active:
                     continue
@@ -98,7 +98,7 @@ def _complete_reconciliation_target(issue_id: UUID) -> None:
     with transaction.atomic():
         lock_workspace(hint["workspace_id"])
         connection = Connection.objects.select_for_update().get(pk=hint["connection_id"])
-        Problem.objects.select_for_update().get(pk=hint["problem_id"])
+        Problem.objects.select_for_update(no_key=True).get(pk=hint["problem_id"])
         issue = EngineeringIssue.objects.select_for_update().get(pk=issue_id)
         run = IssueReconciliation.objects.filter(connection=connection).first()
         if (

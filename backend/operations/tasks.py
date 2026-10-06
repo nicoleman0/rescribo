@@ -70,7 +70,9 @@ def process_github_issue_create(operation_id: str) -> None:
             .filter(pk=hint["connection_id"], workspace_id=hint["workspace_id"])
             .first()
         )
-        problem = Problem.objects.select_for_update().filter(pk=hint["problem_id"]).first()
+        problem = (
+            Problem.objects.select_for_update(no_key=True).filter(pk=hint["problem_id"]).first()
+        )
         operation = ExternalOperation.objects.select_for_update().filter(pk=operation_uuid).first()
         if workspace is None or problem is None:
             return
@@ -113,7 +115,7 @@ def process_github_issue_create(operation_id: str) -> None:
             .first()
         )
         problem = (
-            Problem.objects.select_for_update()
+            Problem.objects.select_for_update(no_key=True)
             .filter(
                 pk=operation.problem_id,
                 workspace_id=operation.workspace_id,
@@ -476,7 +478,7 @@ def revalidate_github_connection(connection_id: str) -> None:
             .order_by("problem_id", "pk")
             .values("pk", "problem_id")
         ):
-            Problem.objects.select_for_update().get(pk=row["problem_id"])
+            Problem.objects.select_for_update(no_key=True).get(pk=row["problem_id"])
             issue = EngineeringIssue.objects.select_for_update().get(pk=row["pk"])
             issue.sync_requested_generation += 1
             issue.save(update_fields=["sync_requested_generation"])
