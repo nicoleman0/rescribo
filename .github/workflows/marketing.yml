@@ -1,0 +1,45 @@
+name: Marketing site
+on:
+  push:
+    branches: [main]
+    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', '.node-version']
+  pull_request:
+    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', '.node-version']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: marketing-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  marketing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: marketing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+          cache-dependency-path: marketing/package-lock.json
+      - run: npm ci
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm test
+      - run: npm run check:links
+      - uses: actions/upload-artifact@v4
+        with:
+          name: marketing-site
+          path: marketing/dist/
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: marketing-traces
+          path: marketing/test-results/
+          if-no-files-found: ignore
