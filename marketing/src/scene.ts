@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import { mountScrollMotion } from './scroll-motion'
 
 type SceneElements = {
   surface: HTMLElement
@@ -124,6 +125,11 @@ export function mountScene({
   let frame = 0
   let lastTime = 0
   let elapsed = 0
+  let scrollTarget = 0
+  let scrollProgress = 0
+  const scrollMotion = mountScrollMotion((progress) => {
+    scrollTarget = progress
+  })
   const pointer = new THREE.Vector2()
   function moving(): boolean {
     return (
@@ -156,17 +162,29 @@ export function mountScene({
     }
     elapsed += lastTime ? Math.min((time - lastTime) / 1000, 0.05) : 0
     lastTime = time
+    scrollProgress += (scrollTarget - scrollProgress) * 0.08
     sculpture.rotation.y +=
       (-0.28 +
+        scrollProgress * 1.4 +
         pointer.x * 0.16 +
         Math.sin(elapsed * 0.3) * 0.12 -
         sculpture.rotation.y) *
       0.04
     sculpture.rotation.x +=
-      (-0.2 - pointer.y * 0.12 - sculpture.rotation.x) * 0.04
-    sculpture.position.y = Math.sin(elapsed * 0.7) * 0.07
-    for (let index = 0; index < cards.length; index++)
-      cards[index].position.z = 0.9 + Math.sin(elapsed * 0.6 + index * 2) * 0.08
+      (-0.2 + scrollProgress * 0.45 - pointer.y * 0.12 - sculpture.rotation.x) *
+      0.04
+    sculpture.rotation.z = -0.3 - scrollProgress * 0.35
+    sculpture.position.y =
+      Math.sin(elapsed * 0.7) * 0.07 + scrollProgress * 0.25
+    camera.position.z = 10.8 + scrollProgress * 1.5
+    for (let index = 0; index < cards.length; index++) {
+      const angle = (index * Math.PI * 2) / 3 + 0.2
+      const radius = 1.6 + scrollProgress * 0.55
+      cards[index].position.x = radius * Math.cos(angle)
+      cards[index].position.y = radius * Math.sin(angle)
+      cards[index].position.z =
+        0.9 + scrollProgress * 0.4 + Math.sin(elapsed * 0.6 + index * 2) * 0.08
+    }
     try {
       render()
     } catch (error) {
@@ -180,6 +198,13 @@ export function mountScene({
     frame = 0
     lastTime = 0
     visual.dataset.motion = moving() ? 'running' : 'stopped'
+    scrollMotion.setEnabled(
+      !paused &&
+        !preference.matches &&
+        !document.hidden &&
+        !failed &&
+        !disposed,
+    )
     updateControl()
     if (moving()) frame = requestAnimationFrame(animate)
   }
@@ -239,6 +264,7 @@ export function mountScene({
   function dispose(): void {
     if (disposed) return
     disposed = true
+    scrollMotion.dispose()
     if (frame) cancelAnimationFrame(frame)
     frame = 0
     visual.dataset.motion = 'stopped'

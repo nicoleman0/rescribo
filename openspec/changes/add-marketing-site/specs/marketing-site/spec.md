@@ -60,3 +60,14 @@ The site MUST remain public without an application URL. When configured, the sit
 #### Scenario: Invalid supplied destination
 - **WHEN** a build receives a malformed or non-HTTPS application or canonical URL
 - **THEN** the build fails with a clear error identifying the invalid configuration
+
+### Requirement: Scroll-driven narrative
+The site SHALL animate the 3D composition and workflow presentation in response to native page scrolling. Scroll progress MUST be reversible and MUST NOT trap scrolling or conceal essential content. Pause and reduced-motion preferences MUST also stop scroll-driven visual changes. Navigation and scrolling MUST remain usable without graphics or JavaScript.
+
+#### Scenario: Scroll forward and backward
+- **WHEN** a visitor scrolls down through the hero and workflow and then returns upward
+- **THEN** the composition changes with scroll progress and returns toward its earlier pose while workflow content remains readable
+
+#### Scenario: Motion is disabled
+- **WHEN** motion is paused or reduced motion is requested and the visitor scrolls
+- **THEN** decorative scroll animation stops while the visitor can still read and navigate all sections

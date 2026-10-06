@@ -213,3 +213,115 @@ test('hidden document suspends animation', async ({ page }) => {
   })
   await expect(visual).toHaveAttribute('data-motion', 'running')
 })
+
+test('native scroll changes the rendered 3D pose and reverses', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1440, height: 1000 })
+  await page.addInitScript(() => {
+    const request = window.requestAnimationFrame.bind(window)
+    window.requestAnimationFrame = (callback) => request(() => callback(0))
+  })
+  await page.goto('/')
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-motion',
+    'running',
+  )
+  const canvas = page.locator('#scene')
+  const initial = await canvas.screenshot()
+  await page.evaluate(() => window.scrollTo({ top: 200, behavior: 'instant' }))
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(200)
+  await page.waitForTimeout(700)
+  const scrolled = await canvas.screenshot()
+  expect(scrolled).not.toEqual(initial)
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+  await page.waitForTimeout(700)
+  expect(await canvas.screenshot()).not.toEqual(scrolled)
+})
+
+for (const mode of ['pause', 'reduce'] as const) {
+  test(`scroll leaves the rendered scene unchanged under ${mode}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 1000 })
+    if (mode === 'reduce') await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.goto('/')
+    await expect(page.locator('#visual')).toHaveAttribute(
+      'data-renderer',
+      'webgl',
+    )
+    if (mode === 'pause')
+      await page.getByRole('button', { name: 'Pause motion' }).click()
+    await expect(page.locator('#visual')).toHaveAttribute(
+      'data-motion',
+      'stopped',
+    )
+    const before = await page.locator('#scene').screenshot()
+    await page.evaluate(() =>
+      window.scrollTo({ top: 200, behavior: 'instant' }),
+    )
+    await page.waitForTimeout(250)
+    expect(await page.locator('#scene').screenshot()).toEqual(before)
+    const row = page.locator('.steps li').first()
+    const transform = await row.evaluate(
+      (element) => getComputedStyle(element).transform,
+    )
+    await page.locator('footer').scrollIntoViewIfNeeded()
+    await expect(page.locator('#motion-control')).toBeInViewport()
+    await expect(
+      page.getByRole('heading', { name: 'Follow up', exact: true }),
+    ).toBeVisible()
+    expect(
+      await row.evaluate((element) => getComputedStyle(element).transform),
+    ).toBe(transform)
+  })
+}
+
+test('workflow scroll animation and its cleanup preserve readable content', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-renderer',
+    'webgl',
+  )
+  const row = page.locator('.steps li').first()
+  const initial = await row.evaluate(
+    (element) => getComputedStyle(element).transform,
+  )
+  await row.scrollIntoViewIfNeeded()
+  await expect
+    .poll(() => row.evaluate((element) => getComputedStyle(element).transform))
+    .not.toBe(initial)
+  await expect(row.getByRole('heading', { name: 'Capture' })).toBeVisible()
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new PageTransitionEvent('pagehide', { persisted: true }),
+    ),
+  )
+  await expect(row).toHaveCSS('transform', 'none')
+})
+
+test('persistent motion control does not cover footer navigation', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await expect(page.locator('#visual')).toHaveAttribute(
+    'data-renderer',
+    'webgl',
+  )
+  await page.route(
+    'https://github.com/nicoleman0/rescribo/blob/main/LICENSE',
+    (route) =>
+      route.fulfill({
+        contentType: 'text/html',
+        body: '<title>License</title>',
+      }),
+  )
+  await page.locator('footer').scrollIntoViewIfNeeded()
+  await expect(page.locator('#motion-control')).toBeInViewport()
+  await page.getByRole('link', { name: 'AGPL-3.0 license' }).click()
+  await expect(page).toHaveURL(
+    'https://github.com/nicoleman0/rescribo/blob/main/LICENSE',
+  )
+})

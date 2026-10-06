@@ -24,6 +24,11 @@ npm run check:links
 npm run preview
 ```
 
+GSAP ScrollTrigger connects native scrolling to the 3D pose and workflow
+transitions. The motion control remains reachable throughout the page and
+pauses both ambient and scroll-driven animation. Reduced motion keeps the
+scene and content static. Scrolling and links work without JavaScript.
+
 The build writes portable static files to `dist/`. Asset URLs are relative, so
 the site can be hosted at a domain root or under a directory. Three.js enhances
 the static illustration. Reduced motion, the pause button, offscreen suspension,

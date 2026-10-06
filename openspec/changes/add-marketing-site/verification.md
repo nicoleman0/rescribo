@@ -4,12 +4,15 @@ Local checks on 6 October 2026, using Node 24 and isolated real PostgreSQL 17
 and Redis 7 services. No product files or API contracts changed.
 
 - `marketing`: `npm run check`, `npm run build`, and four build/link probes pass.
-- Marketing browser suite: 14 checks pass without an app URL; 15 pass with
-  synthetic app/canonical URLs after adding the 720px reflow check. Axe passes
-  at 320, 390, 720, 768, and 1440 CSS pixels. The 720px width covers the layout
-  viewport equivalent to a 1440px display at 200% browser zoom.
-- Browser coverage includes no-JavaScript HTML, keyboard pause, frozen rendered
-  frames, pointer response with animation time held constant, initial/changed
+- Marketing browser suite: 20 checks pass without an app URL. The optional
+  app/canonical configuration passes 19 checks before the footer-clearance
+  regression was added. Axe passes at 320, 390, 720, 768, and 1440 CSS pixels.
+  The 720px width covers the layout viewport equivalent to a 1440px display
+  at 200% browser zoom.
+- Scroll coverage includes rendered 3D pose changes and reversal with animation
+  time held constant, frozen frames during pause/reduced motion, workflow
+  transitions, teardown, and a clickable footer beneath the persistent control.
+  Earlier coverage includes no-JavaScript HTML, pointer response, initial/changed
   reduced motion, offscreen suspension, and actual WebGL context loss. Hidden
   document and back-forward-cache events are simulated lifecycle checks.
 - `npm run check:links -- --live`: built assets/fragments and the public GitHub

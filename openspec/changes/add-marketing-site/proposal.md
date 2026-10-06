@@ -8,6 +8,7 @@ Issue [#53](https://github.com/nicoleman0/rescribo/issues/53) needs a public exp
 
 - Add `marketing/` with its own static build, lockfile, browser checks, and deployment documentation.
 - Explain the existing Capture, Connect, Follow up workflow using README and OpenSpec context copy.
+- Add scroll-driven choreography to the Three.js composition and workflow sections.
 - Add an interactive Three.js composition, with semantic HTML, reduced motion, a pause control, and a static fallback.
 - Add optional app sign-in and canonical site URLs. The app link is omitted until a real destination is configured.
 - Add an independent CI job for build, link validation, and axe checks.

@@ -27,6 +27,8 @@ html {
 }
 body {
   margin: 0;
+  /* Keep footer links clear of the persistent motion control. */
+  padding-bottom: 76px;
 }
 a {
   color: inherit;
@@ -193,9 +195,10 @@ h1 {
   right: 14%;
 }
 .motion-control {
-  position: absolute;
-  bottom: 0;
-  right: 8%;
+  position: fixed;
+  bottom: 24px;
+  right: 4.5vw;
+  z-index: 5;
   min-height: 44px;
   padding: 0 12px;
   border: 1px solid var(--line);
@@ -421,8 +424,8 @@ h3 {
     font-size: 8px;
   }
   .motion-control {
-    bottom: 0;
-    right: 6%;
+    bottom: 16px;
+    right: 4.5vw;
   }
   .hero-summary {
     margin: 20px 0 32px;
