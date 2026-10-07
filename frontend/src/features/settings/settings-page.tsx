@@ -9,6 +9,7 @@ import { ConnectionSettings } from './connection-settings'
 import { MembersSettings } from './members-settings'
 import { SlackAccount } from './slack-account'
 import { ConfirmAction } from './confirm-action'
+import { ThemeSettings } from './theme-settings'
 
 export function SettingsPage() {
   const membership = useWorkspace()
@@ -30,6 +31,8 @@ function WorkspaceSettings() {
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="mt-1 text-muted-foreground">{workspace.name}</p>
       </header>
+      <ThemeSettings />
+      <Separator />
       {workspace.is_demo ? (
         <Alert role="note">
           <AlertTitle>Integrations are disabled in the demo</AlertTitle>

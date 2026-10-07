@@ -187,3 +187,21 @@ test('the demo explains that integrations are disabled', async () => {
     testMembership.workspace.is_demo = false
   }
 })
+
+test('a member picks a theme that applies at once and is saved', async () => {
+  stubApi({ ...unlinked, [`GET ${base}connections/`]: () => json([]) })
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }))
+  localStorage.clear()
+  render()
+  const theme = screen.getByRole('group', { name: 'Theme' })
+  expect(within(theme).getByRole('radio', { name: 'System' })).toBeChecked()
+  await userEvent.click(within(theme).getByRole('radio', { name: 'Dark' }))
+  expect(within(theme).getByRole('radio', { name: 'Dark' })).toBeChecked()
+  expect(document.documentElement.dataset.theme).toBe('dark')
+  expect(localStorage.getItem('rescribo-theme')).toBe('dark')
+  localStorage.clear()
+})

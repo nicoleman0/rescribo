@@ -3,6 +3,8 @@
 @import 'shadcn/tailwind.css';
 @import './styles/theme.css';
 
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 * {
   box-sizing: border-box;
 }
