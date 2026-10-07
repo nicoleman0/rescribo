@@ -1,12 +1,12 @@
-name: UAT finding
-description: Report a bug, usability problem, or feature request from the pilot.
-title: "[UAT] "
-labels: [uat, "concern:testing"]
+name: Manual check finding
+description: Report a bug, usability problem, or feature request from the manual end-to-end check.
+title: "[Check] "
+labels: [manual-check, "concern:testing"]
 body:
   - type: markdown
     attributes:
       value: |
-        Pilot tracker: https://github.com/nicoleman0/rescribo/issues/57
+        Check tracker: https://github.com/nicoleman0/rescribo/issues/57
         Search existing issues first. Use fictitious customer content. Remove
         secrets, invitation/reset URLs, OAuth codes, and private messages from evidence.
   - type: dropdown
