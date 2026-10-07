@@ -5,8 +5,12 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, sessionQueryKey } from '@/api/auth'
-import { useOptionalWorkspace } from '@/components/auth/use-workspace'
+import {
+  demoDescription,
+  useOptionalWorkspace,
+} from '@/components/auth/use-workspace'
 import { Wordmark } from '@/components/brand/wordmark'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 
 type NavigationItem = {
@@ -58,6 +62,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
   const location = useLocation()
   const isGallery = location.pathname === '/dev/ui'
   const workspace = useOptionalWorkspace()
+  const isDemo = !isGallery && workspace?.workspace.is_demo === true
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const signOut = useMutation({
@@ -99,13 +104,20 @@ export function AppShell({ children }: { children?: ReactNode }) {
             Skip to main content
           </a>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium">
-              {isGallery
-                ? 'UI gallery'
-                : (workspace?.workspace.name ?? 'Workspace')}
-            </p>
+            <div className="flex min-w-0 items-center gap-2">
+              <p className="truncate text-sm font-medium">
+                {isGallery
+                  ? 'UI gallery'
+                  : (workspace?.workspace.name ?? 'Workspace')}
+              </p>
+              {isDemo ? (
+                <Badge variant="secondary" aria-label="Demo workspace">
+                  Demo
+                </Badge>
+              ) : null}
+            </div>
             <p className="hidden text-xs text-muted-foreground sm:block">
-              Quiet surfaces for focused triage
+              {isDemo ? demoDescription : 'Quiet surfaces for focused triage'}
             </p>
           </div>
           <div className="flex items-center gap-3">

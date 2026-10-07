@@ -9,6 +9,7 @@ from django.db import transaction
 from django.db.models import F
 from django.utils import timezone
 
+from accounts.demo import DEMO_DETAIL, is_demo_workspace
 from accounts.models import Membership
 from accounts.services import lock_workspace
 from connections.errors import PROVIDER_ERRORS
@@ -18,6 +19,7 @@ from feedback.errors import (
     IssueAlreadyLinked,
     IssueAlreadyLinkedElsewhere,
     IssueCreateUnresolved,
+    IssueOperationError,
     IssueProviderUnavailable,
     IssueReferenceRejected,
     NotFound,
@@ -50,6 +52,12 @@ from operations.retries import next_retry_at
 SYSTEM_ACTOR = "github_webhook"
 
 
+def refuse_demo(actor: Membership) -> None:
+    """GitHub actions are refused in the demo; its issues are seeded, never fetched."""
+    if is_demo_workspace(actor.workspace_id):
+        raise IssueOperationError("demo_workspace", detail=DEMO_DETAIL)
+
+
 def require_active_connection(connection: Connection | None) -> Connection:
     if (
         connection is None
@@ -77,6 +85,7 @@ def link_issue(
     replace: bool = False,
     now: datetime | None = None,
 ) -> EngineeringIssue:
+    refuse_demo(actor)
     current = now or timezone.now()
     problem = get_problem(actor=actor, problem_id=problem_id)
     require_version(row=problem, expected_version=expected_version)
@@ -166,6 +175,7 @@ def refresh_issue(
     expected_issue_id: UUID,
     expected_version: int | None = None,
 ) -> EngineeringIssue:
+    refuse_demo(actor)
     problem = get_problem(actor=actor, problem_id=problem_id)
     if expected_version is not None:
         require_version(row=problem, expected_version=expected_version)
@@ -358,7 +368,7 @@ def sync_issue(
         .values("pk", "problem_id", "workspace_id", "connection_id")
         .first()
     )
-    if hint is None:
+    if hint is None or is_demo_workspace(hint["workspace_id"]):
         return
     claim = uuid4()
     target_generation = 0

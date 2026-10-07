@@ -33,3 +33,14 @@ A public demonstration SHALL expose only the demo workspace. It MUST NOT expose 
 #### Scenario: Demo visitor
 - **WHEN** a demo visitor signs in
 - **THEN** they can reach only the demo workspace
+
+### Requirement: Shared demo login
+A public demonstration SHALL publish only a member-role login for the demo workspace and MUST NOT publish owner credentials. The demo workspace SHALL reset to its seeded state on a nightly schedule.
+
+#### Scenario: Visitor tries an owner action
+- **WHEN** a visitor signed in with the published demo login tries to invite someone, change members, issue a password reset, or delete the workspace
+- **THEN** the request is refused and nothing changes
+
+#### Scenario: Nightly reset
+- **WHEN** visitors have edited demo reports and problems and the nightly reset runs
+- **THEN** the demo workspace matches its seeded state and other workspaces are unchanged

@@ -69,6 +69,15 @@ export const deliveryStateLabels: Record<FollowUpNotificationState, string> = {
   cancelled: 'Cancelled',
 }
 
+// A demo send uses a fake Slack client, so its result is labelled as simulated.
+export const deliveryLabel = (
+  state: FollowUpNotificationState,
+  simulated: boolean,
+) =>
+  simulated && state === 'sent'
+    ? 'Sent (simulated)'
+    : deliveryStateLabels[state]
+
 const deliveryStateClasses: Record<FollowUpNotificationState, string> = {
   draft: 'bg-muted text-muted-foreground',
   queued: 'bg-selected text-foreground',

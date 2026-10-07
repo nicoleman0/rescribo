@@ -10,6 +10,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
+from accounts.demo import DEMO_DETAIL, is_demo_workspace
 from accounts.models import Membership, Workspace
 from accounts.tokens import digest, issue_token
 from connections import providers
@@ -18,6 +19,11 @@ from connections.models import AllowedChannel, Connection, SetupState
 from feedback.models import Report
 from feedback.notifications import invalidate_pending_notifications
 from integrations.slack.policy import REQUIRED_BOT_SCOPES
+
+
+def refuse_demo(actor: Membership) -> None:
+    if is_demo_workspace(actor.workspace_id):
+        raise providers.SetupError("demo_workspace", DEMO_DETAIL)
 
 
 def lock_owner(actor: Membership, *, deleting: bool = False) -> Workspace:
@@ -60,6 +66,7 @@ def callback_url(actor: Membership, provider: str) -> str:
 
 
 def start_setup(actor: Membership, provider: str, session_key: str, repository: str) -> str:
+    refuse_demo(actor)
     client_id = getattr(settings, f"RESCRIBO_{provider.upper()}_CLIENT_ID")
     client_secret = getattr(settings, f"RESCRIBO_{provider.upper()}_CLIENT_SECRET")
     if not client_id or not client_secret:
@@ -94,6 +101,7 @@ def start_setup(actor: Membership, provider: str, session_key: str, repository: 
 
 
 def finish_setup(actor: Membership, provider: str, session_key: str, state: str, code: str) -> None:
+    refuse_demo(actor)
     with transaction.atomic():
         lock_owner(actor)
         pending = (
@@ -181,6 +189,7 @@ def disable_slack_team(team_id: str, code: str) -> bool:
 
 
 def disconnect(actor: Membership, provider: str, version: int) -> None:
+    refuse_demo(actor)
     with transaction.atomic():
         row = lock_connection(actor, provider, version)
         cancel_notifications(actor.workspace_id)
@@ -199,6 +208,7 @@ def disconnect(actor: Membership, provider: str, version: int) -> None:
 
 
 def update_channel(actor: Membership, version: int, channel_id: str, remove: bool) -> None:
+    refuse_demo(actor)
     with transaction.atomic():
         row = lock_connection(actor, "slack", version)
         if row.status != Connection.Status.ACTIVE:
@@ -219,6 +229,7 @@ def update_channel(actor: Membership, version: int, channel_id: str, remove: boo
 
 
 def refresh_connection(actor: Membership, provider: str, version: int) -> None:
+    refuse_demo(actor)
     failure = None
     with transaction.atomic():
         row = lock_connection(actor, provider, version)

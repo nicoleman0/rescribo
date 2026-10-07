@@ -8,6 +8,7 @@ from celery import shared_task
 from django.db import models, transaction
 from django.utils import timezone
 
+from accounts.demo import is_demo_workspace
 from accounts.models import Membership, Workspace
 from accounts.services import lock_workspace
 from connections.models import Connection
@@ -97,6 +98,12 @@ def process_github_issue_create(operation_id: str) -> None:
         if workspace is None or problem is None:
             return
         if operation is None or operation.state != ExternalOperation.State.QUEUED:
+            return
+        if workspace.is_demo:
+            operation.state = ExternalOperation.State.CANCELLED
+            operation.safe_error = "demo_workspace"
+            operation.completed_at = now
+            operation.save(update_fields=["state", "safe_error", "completed_at"])
             return
         if connection is None:
             # The connection belongs to another workspace. Fail before any provider call.
@@ -358,6 +365,7 @@ def dispatch_due_operations() -> None:
             active=True,
             connection__status=Connection.Status.ACTIVE,
             connection__workspace_id=models.F("workspace_id"),
+            workspace__is_demo=False,
             sync_requested_generation__gt=models.F("sync_completed_generation"),
         )
         .filter(
@@ -483,7 +491,12 @@ def revalidate_github_connection(connection_id: str) -> None:
         .values("workspace_id", "external_id", "repository", "repository_id", "binding_revision")
         .first()
     )
-    if hint is None or not hint["external_id"] or not hint["repository"]:
+    if (
+        hint is None
+        or not hint["external_id"]
+        or not hint["repository"]
+        or is_demo_workspace(hint["workspace_id"])
+    ):
         return
     try:
         with (
@@ -586,7 +599,11 @@ def reconcile_github_issue_create(operation_id: str) -> None:
     hint = (
         ExternalOperation.objects.filter(pk=operation_id_uuid).select_related("connection").first()
     )
-    if hint is None or hint.state != ExternalOperation.State.UNCERTAIN:
+    if (
+        hint is None
+        or hint.state != ExternalOperation.State.UNCERTAIN
+        or is_demo_workspace(hint.workspace_id)
+    ):
         return
     if hint.connection.workspace_id != hint.workspace_id:
         # The connection belongs to another workspace. Never mint its installation token.

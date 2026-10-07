@@ -10,7 +10,11 @@ from rest_framework.exceptions import PermissionDenied
 from accounts.models import Membership
 from accounts.services import lock_workspace
 from connections.models import Connection
-from feedback.engineering_issues import default_issue_body, require_active_connection
+from feedback.engineering_issues import (
+    default_issue_body,
+    refuse_demo,
+    require_active_connection,
+)
 from feedback.errors import (
     IssueAlreadyLinked,
     IssueCreateUnresolved,
@@ -49,6 +53,7 @@ def create_draft(
     body: str | None = None,
     draft_id: UUID | None = None,
 ) -> ExternalOperation:
+    refuse_demo(actor)
     with transaction.atomic():
         lock_workspace(actor.workspace_id)
         connection = require_active_connection(
@@ -139,6 +144,7 @@ def approve_draft(
     draft_version: int,
     approved: bool,
 ) -> ExternalOperation:
+    refuse_demo(actor)
     if approved is not True:
         raise IssueOperationError(
             "approval_required", detail="Approve the exact preview before publishing."
@@ -241,6 +247,7 @@ def request_recovery(
     operation_id: UUID,
     reference: str = "",
 ) -> ExternalOperation:
+    refuse_demo(actor)
     with transaction.atomic():
         lock_workspace(actor.workspace_id)
         operation = _locked_uncertain_operation(

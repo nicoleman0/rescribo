@@ -8,7 +8,7 @@ import {
   type FollowUpPage,
 } from '@/api/follow-ups'
 import type { ApiError } from '@/api/request'
-import { useWorkspace } from '@/components/auth/use-workspace'
+import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
 import {
   EmptyState,
   ErrorState,
@@ -28,7 +28,7 @@ import {
   contactBadgeClass,
   contactStateLabels,
   deliveryBadgeClass,
-  deliveryStateLabels,
+  deliveryLabel,
   emptyBucketCopy,
 } from './follow-ups-format'
 import { FollowUpDetailPanel } from './follow-up-detail'
@@ -341,6 +341,7 @@ function FollowUpRow({
 }
 
 function DeliveryChip({ state }: { state: FollowUpNotificationState | null }) {
+  const isDemo = useIsDemo()
   if (!state) return null
   return (
     <span
@@ -349,7 +350,7 @@ function DeliveryChip({ state }: { state: FollowUpNotificationState | null }) {
         deliveryBadgeClass(state),
       )}
     >
-      {deliveryStateLabels[state]}
+      {deliveryLabel(state, isDemo)}
     </span>
   )
 }

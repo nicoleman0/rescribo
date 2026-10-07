@@ -14,6 +14,7 @@ from django.core.cache import cache
 from django.db import DatabaseError, transaction
 from django.utils import timezone
 
+from accounts.demo import is_demo_workspace
 from connections import services, slack_identity
 from connections.errors import PROVIDER_ERRORS
 from connections.models import AllowedChannel, Connection, SlackCaptureContext
@@ -335,7 +336,7 @@ def resolve_permalink(source_id: UUID) -> None:
     source = ReportSource.objects.filter(
         pk=source_id, kind=ReportSource.Kind.SLACK, permalink=""
     ).first()
-    if source is None:
+    if source is None or is_demo_workspace(source.workspace_id):
         return
     connection = Connection.objects.filter(
         workspace_id=source.workspace_id,

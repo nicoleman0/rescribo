@@ -29,6 +29,7 @@ class MembershipView:
     workspace_id: str
     workspace_name: str
     workspace_slug: str
+    workspace_is_demo: bool
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,7 @@ def describe_session(*, user: User) -> SessionView:
             str(item.workspace_id),
             item.workspace.name,
             item.workspace.slug,
+            item.workspace.is_demo,
         )
         for item in Membership.objects.filter(user=user, is_active=True).select_related("workspace")
     )

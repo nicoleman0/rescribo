@@ -5,6 +5,7 @@ from urllib.error import URLError
 import httpx
 from slack_sdk.errors import SlackApiError
 
+from accounts.demo import DEMO_DETAIL
 from integrations.github_app.client import GitHubAPIError
 
 
@@ -39,6 +40,7 @@ def safe_provider_error(error: Exception) -> SetupError:
 ERROR_DETAILS = {
     "binding_changed": "The selected repository changed. Relink the issue to verify access.",
     "rate_limited": "GitHub asked us to wait. The status will refresh after that delay.",
+    "demo_workspace": DEMO_DETAIL,
     "disconnected": "Reconnect GitHub in workspace settings, then refresh.",
     "issue_transferred": (
         "This issue moved to another repository. Review the link and selected repository."
