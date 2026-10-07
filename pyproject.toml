@@ -16,6 +16,7 @@ dependencies = [
   "cryptography>=46,<49",
   "jsonschema>=4.23,<5",
   "gunicorn>=26.2,<27",
+  "whitenoise>=6.12,<7",
 ]
 
 [dependency-groups]
