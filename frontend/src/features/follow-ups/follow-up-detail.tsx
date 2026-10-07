@@ -36,12 +36,13 @@ import { SelectField, TextareaField } from '@/components/forms/field'
 import { memberName, formatDate } from '@/features/inbox/report-format'
 import { useMembers } from '@/features/inbox/use-members'
 import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
+import { StatusBadge } from '@/components/status/status-badge'
 import { cn } from '@/lib/utils'
 import {
-  contactBadgeClass,
   contactStateLabels,
-  deliveryBadgeClass,
+  contactTones,
   deliveryLabel,
+  deliveryTones,
 } from './follow-ups-format'
 import { useFollowUpMutation } from './follow-ups-mutation'
 
@@ -78,7 +79,7 @@ export function FollowUpDetailPanel({
   return (
     <section
       aria-label="Follow-up detail"
-      className="grid content-start gap-4 rounded-card border border-border bg-card p-4"
+      className="grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2"
     >
       <Button
         asChild
@@ -192,27 +193,15 @@ function FollowUpSummary({
   return (
     <header className="grid gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <span
-          className={cn(
-            'rounded-pill px-2 py-0.5 text-xs font-medium',
-            contactBadgeClass(followUp.outcome.state),
-          )}
-        >
+        <StatusBadge tone={contactTones[followUp.outcome.state]}>
           Contact: {contactStateLabels[followUp.outcome.state]}
-        </span>
+        </StatusBadge>
         {notification ? (
-          <span
-            className={cn(
-              'rounded-pill px-2 py-0.5 text-xs font-medium',
-              deliveryBadgeClass(notification.state),
-            )}
-          >
+          <StatusBadge tone={deliveryTones[notification.state]}>
             Delivery: {deliveryLabel(notification.state, isDemo)}
-          </span>
+          </StatusBadge>
         ) : (
-          <span className="rounded-pill bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Not prepared
-          </span>
+          <StatusBadge tone="neutral">Not prepared</StatusBadge>
         )}
         <span className="font-mono text-[11px] text-muted-foreground">
           v{followUp.version}

@@ -22,7 +22,7 @@ export function ReportList({
     <div className="grid gap-3">
       <ul
         aria-label="Reports"
-        className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+        className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
       >
         {page.results.map((report) => (
           <li key={report.id}>

@@ -1,24 +1,23 @@
 import type { ProblemState } from '@/api/problems'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/status/status-badge'
+import type { StatusTone } from '@/components/status/status-tone'
 import { problemStateLabels } from './problem-format'
 
-const stateClasses: Record<ProblemState, string> = {
-  open: 'bg-primary text-primary-foreground',
-  in_progress: 'bg-selected text-foreground',
-  fix_available: 'bg-linked text-linked-foreground',
-  not_planned: 'bg-muted text-muted-foreground',
+const problemStateTones: Record<ProblemState, StatusTone> = {
+  open: 'info',
+  in_progress: 'progress',
+  fix_available: 'success',
+  not_planned: 'neutral',
 }
 
 export function ProblemStateBadge({ state }: { state: ProblemState }) {
   return (
-    <Badge className={stateClasses[state]}>{problemStateLabels[state]}</Badge>
+    <StatusBadge tone={problemStateTones[state]}>
+      {problemStateLabels[state]}
+    </StatusBadge>
   )
 }
 
 export function NeedsReviewBadge() {
-  return (
-    <Badge className="bg-needs-review text-needs-review-foreground">
-      Needs review
-    </Badge>
-  )
+  return <StatusBadge tone="warning">Needs review</StatusBadge>
 }

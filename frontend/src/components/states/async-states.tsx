@@ -58,7 +58,7 @@ export function EmptyState({
   action?: ReactNode
 }) {
   return (
-    <Card className="border-dashed bg-transparent shadow-none">
+    <Card className="border border-dashed border-border bg-transparent shadow-none">
       <CardContent className="grid min-h-56 place-items-center gap-3 p-8 text-center">
         <span className="grid size-10 place-items-center rounded-pill bg-selected text-muted-foreground">
           <Inbox aria-hidden="true" className="size-5" />

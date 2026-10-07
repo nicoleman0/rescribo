@@ -36,7 +36,7 @@ export function ReportDetailPanel({
   return (
     <section
       aria-label="Report detail"
-      className="grid content-start gap-4 rounded-card border border-border bg-card p-4"
+      className="grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2"
     >
       <Button
         asChild

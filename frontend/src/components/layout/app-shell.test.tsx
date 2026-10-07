@@ -1,6 +1,6 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, test } from 'vitest'
 import { WorkspaceProvider } from '@/components/auth/workspace-provider'
 import { AppShell } from './app-shell'
@@ -70,4 +70,23 @@ test('labels a demo workspace on every screen', () => {
     </QueryClientProvider>,
   )
   expect(screen.queryByLabelText('Demo workspace')).not.toBeInTheDocument()
+})
+
+test('links the sidebar wordmark to the inbox', async () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/settings']}>
+        <Routes>
+          <Route element={<AppShell />}>
+            <Route path="settings" element={<h1>Settings</h1>} />
+            <Route path="inbox" element={<h1>Inbox</h1>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  fireEvent.click(screen.getByRole('link', { name: 'rescribo, go to inbox' }))
+  expect(
+    await screen.findByRole('heading', { name: 'Inbox' }),
+  ).toBeInTheDocument()
 })

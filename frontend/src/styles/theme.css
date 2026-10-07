@@ -38,13 +38,36 @@
   --selected: #ececf3;
   --primary: #5b5bd6;
   --primary-foreground: #ffffff;
-  --linked: #e3f3ea;
-  --linked-foreground: #17613f;
-  --needs-review: #fbeedb;
-  --needs-review-foreground: #8a4b00;
   --destructive: #b42318;
   --destructive-foreground: #ffffff;
   --ring: #5b5bd6;
+
+  /* Status tones: background, text, and dot. */
+  --tone-neutral: #f0f0f4;
+  --tone-neutral-foreground: #4b4b57;
+  --tone-neutral-dot: #9a9aa6;
+  --tone-info: #ebebfd;
+  --tone-info-foreground: #3f3fb0;
+  --tone-info-dot: #5b5bd6;
+  --tone-progress: #e6f0fb;
+  --tone-progress-foreground: #1d5ca3;
+  --tone-progress-dot: #3b82d6;
+  --tone-success: #e3f3ea;
+  --tone-success-foreground: #17613f;
+  --tone-success-dot: #2f9e64;
+  --tone-warning: #fbeedb;
+  --tone-warning-foreground: #8a4b00;
+  --tone-warning-dot: #d98a1c;
+  --tone-danger: #fde8e6;
+  --tone-danger-foreground: #b42318;
+  --tone-danger-dot: #e0483a;
+
+  /* Elevation: resting surfaces, raised panels, floating overlays. Each draws its own 1px edge. */
+  --elevation-1: 0 1px 2px rgb(22 22 29 / 0.04), 0 0 0 1px var(--border);
+  --elevation-2:
+    0 2px 6px rgb(22 22 29 / 0.06), 0 8px 24px rgb(22 22 29 / 0.06),
+    0 0 0 1px var(--border);
+  --elevation-3: 0 12px 32px rgb(22 22 29 / 0.14), 0 0 0 1px var(--border);
 }
 
 @theme inline {
@@ -75,13 +98,30 @@
   --color-selected: var(--selected);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-linked: var(--linked);
-  --color-linked-foreground: var(--linked-foreground);
-  --color-needs-review: var(--needs-review);
-  --color-needs-review-foreground: var(--needs-review-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
   --color-ring: var(--ring);
+  --color-tone-neutral: var(--tone-neutral);
+  --color-tone-neutral-foreground: var(--tone-neutral-foreground);
+  --color-tone-neutral-dot: var(--tone-neutral-dot);
+  --color-tone-info: var(--tone-info);
+  --color-tone-info-foreground: var(--tone-info-foreground);
+  --color-tone-info-dot: var(--tone-info-dot);
+  --color-tone-progress: var(--tone-progress);
+  --color-tone-progress-foreground: var(--tone-progress-foreground);
+  --color-tone-progress-dot: var(--tone-progress-dot);
+  --color-tone-success: var(--tone-success);
+  --color-tone-success-foreground: var(--tone-success-foreground);
+  --color-tone-success-dot: var(--tone-success-dot);
+  --color-tone-warning: var(--tone-warning);
+  --color-tone-warning-foreground: var(--tone-warning-foreground);
+  --color-tone-warning-dot: var(--tone-warning-dot);
+  --color-tone-danger: var(--tone-danger);
+  --color-tone-danger-foreground: var(--tone-danger-foreground);
+  --color-tone-danger-dot: var(--tone-danger-dot);
+  --shadow-elevation-1: var(--elevation-1);
+  --shadow-elevation-2: var(--elevation-2);
+  --shadow-elevation-3: var(--elevation-3);
 }
 
 @media (max-width: 767px) {

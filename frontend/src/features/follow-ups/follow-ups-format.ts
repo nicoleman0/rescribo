@@ -2,6 +2,7 @@ import type {
   FollowUpContactState,
   FollowUpNotificationState,
 } from '@/api/follow-ups'
+import type { StatusTone } from '@/components/status/status-tone'
 import { BUCKETS, type Bucket } from './follow-ups-query'
 
 export const bucketLabels: Record<Bucket, string> = {
@@ -78,25 +79,19 @@ export const deliveryLabel = (
     ? 'Sent (simulated)'
     : deliveryStateLabels[state]
 
-const deliveryStateClasses: Record<FollowUpNotificationState, string> = {
-  draft: 'bg-muted text-muted-foreground',
-  queued: 'bg-selected text-foreground',
-  failed: 'bg-destructive/10 text-destructive',
-  uncertain: 'bg-needs-review text-needs-review-foreground',
-  sent: 'bg-linked text-linked-foreground',
-  cancelled: 'bg-muted text-muted-foreground',
+export const deliveryTones: Record<FollowUpNotificationState, StatusTone> = {
+  draft: 'neutral',
+  queued: 'progress',
+  failed: 'danger',
+  uncertain: 'warning',
+  sent: 'success',
+  cancelled: 'neutral',
 }
 
-const contactStateClasses: Record<FollowUpContactState, string> = {
-  pending: 'bg-selected text-foreground',
-  contacted: 'bg-selected text-foreground',
-  confirmed: 'bg-linked text-linked-foreground',
-  still_affected: 'bg-needs-review text-needs-review-foreground',
-  no_response: 'bg-muted text-muted-foreground',
+export const contactTones: Record<FollowUpContactState, StatusTone> = {
+  pending: 'neutral',
+  contacted: 'progress',
+  confirmed: 'success',
+  still_affected: 'warning',
+  no_response: 'neutral',
 }
-
-export const deliveryBadgeClass = (state: FollowUpNotificationState) =>
-  deliveryStateClasses[state]
-
-export const contactBadgeClass = (state: FollowUpContactState) =>
-  contactStateClasses[state]
