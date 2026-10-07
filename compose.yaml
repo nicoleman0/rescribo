@@ -34,7 +34,8 @@ services:
     profiles: [app]
     build:
       context: .
-      dockerfile: backend/Dockerfile.dev
+      dockerfile: backend/Dockerfile
+      target: dev
     env_file: .env
     environment:
       RESCRIBO_DATABASE_URL: postgresql://${POSTGRES_USER:-rescribo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rescribo}

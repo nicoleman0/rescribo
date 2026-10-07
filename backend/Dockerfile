@@ -8,7 +8,7 @@ COPY rust/matcher ./rust/matcher
 COPY backend/matching/configs ./backend/matching/configs
 RUN cargo build --locked --release --manifest-path rust/matcher/Cargo.toml
 
-FROM python:3.14-slim
+FROM python:3.14-slim AS dev
 COPY --from=uv /uv /uvx /bin/
 COPY --from=matcher /build/rust/matcher/target/release/matcher /usr/local/bin/rescribo-matcher
 ENV RESCRIBO_MATCHER_PATH=/usr/local/bin/rescribo-matcher
