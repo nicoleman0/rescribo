@@ -17,3 +17,21 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --locked
 COPY backend ./backend
 EXPOSE 8000
+
+FROM python:3.14-slim AS production
+COPY --from=uv /uv /bin/
+COPY --from=matcher /build/rust/matcher/target/release/matcher /usr/local/bin/rescribo-matcher
+ENV RESCRIBO_MATCHER_PATH=/usr/local/bin/rescribo-matcher \
+    UV_COMPILE_BYTECODE=1 \
+    PATH=/app/.venv/bin:$PATH
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN uv sync --locked --no-dev --no-cache
+COPY backend ./backend
+# collectstatic loads settings but never connects, so placeholders are enough.
+RUN DJANGO_SECRET_KEY=collectstatic RESCRIBO_DATABASE_URL=postgresql://unused/unused \
+    RESCRIBO_REDIS_URL=redis://unused python backend/manage.py collectstatic --noinput
+RUN useradd --system --uid 10001 rescribo
+USER rescribo
+EXPOSE 8000
+CMD ["gunicorn", "--chdir", "backend", "--bind", "0.0.0.0:8000", "--workers", "3", "config.wsgi"]
