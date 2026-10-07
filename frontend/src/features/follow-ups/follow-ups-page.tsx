@@ -9,6 +9,7 @@ import {
 } from '@/api/follow-ups'
 import type { ApiError } from '@/api/request'
 import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
+import { StatusBadge } from '@/components/status/status-badge'
 import {
   EmptyState,
   ErrorState,
@@ -25,10 +26,10 @@ import {
 import {
   bucketLabels,
   bucketOrder,
-  contactBadgeClass,
   contactStateLabels,
-  deliveryBadgeClass,
+  contactTones,
   deliveryLabel,
+  deliveryTones,
   emptyBucketCopy,
 } from './follow-ups-format'
 import { FollowUpDetailPanel } from './follow-up-detail'
@@ -255,7 +256,7 @@ function FollowUpsList({
     >
       <ul
         aria-label="Follow-ups"
-        className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+        className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
       >
         {query.data.results.map((followUp) => (
           <FollowUpRow
@@ -344,26 +345,16 @@ function DeliveryChip({ state }: { state: FollowUpNotificationState | null }) {
   const isDemo = useIsDemo()
   if (!state) return null
   return (
-    <span
-      className={cn(
-        'rounded-pill px-2 py-0.5 text-xs font-medium',
-        deliveryBadgeClass(state),
-      )}
-    >
+    <StatusBadge tone={deliveryTones[state]}>
       {deliveryLabel(state, isDemo)}
-    </span>
+    </StatusBadge>
   )
 }
 
 function ContactChip({ state }: { state: FollowUpListItem['contact_state'] }) {
   return (
-    <span
-      className={cn(
-        'rounded-pill px-2 py-0.5 text-xs font-medium',
-        contactBadgeClass(state),
-      )}
-    >
+    <StatusBadge tone={contactTones[state]}>
       {contactStateLabels[state]}
-    </span>
+    </StatusBadge>
   )
 }

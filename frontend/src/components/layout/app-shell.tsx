@@ -1,7 +1,13 @@
 import type { ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { CircleDot, Inbox, MessageSquareText, Settings } from 'lucide-react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { logout, sessionQueryKey } from '@/api/auth'
@@ -77,7 +83,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
     <div className="min-h-svh bg-background md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
       <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
         <div className="flex h-16 items-center border-b border-border px-5">
-          <Wordmark />
+          <Link
+            to="/inbox"
+            aria-label="rescribo, go to inbox"
+            className="rounded-control focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          >
+            <Wordmark />
+          </Link>
         </div>
         <div className="flex flex-1 flex-col p-3">
           <Navigation />

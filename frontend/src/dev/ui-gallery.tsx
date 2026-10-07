@@ -8,6 +8,8 @@ import {
   RetryButton,
 } from '@/components/states/async-states'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/status/status-badge'
+import { STATUS_TONES } from '@/components/status/status-tone'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
@@ -53,18 +55,14 @@ export default function UiGalleryPage() {
           </div>
           <Separator />
           <div className="flex flex-wrap gap-2">
-            <Badge>New</Badge>
-            <Badge className="bg-linked text-linked-foreground">Linked</Badge>
-            <Badge className="bg-needs-review text-needs-review-foreground">
-              Needs review
-            </Badge>
+            {STATUS_TONES.map((tone) => (
+              <StatusBadge key={tone} tone={tone}>
+                {tone}
+              </StatusBadge>
+            ))}
             <Badge variant="outline">Unassigned</Badge>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex items-center gap-2 text-sm">
-              <span className="size-2 rounded-pill bg-linked-foreground" />
-              <Badge className="bg-linked text-linked-foreground">Linked</Badge>
-            </span>
             <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
               <Avatar className="border-dashed">
                 <AvatarFallback>?</AvatarFallback>
@@ -74,6 +72,23 @@ export default function UiGalleryPage() {
           </div>
         </CardContent>
       </Card>
+
+      <section aria-labelledby="elevation-heading" className="grid gap-3">
+        <h2 id="elevation-heading" className="text-sm font-semibold">
+          Elevation
+        </h2>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="rounded-card bg-card p-4 text-sm shadow-elevation-1">
+            1: resting lists and cards
+          </div>
+          <div className="rounded-card bg-card p-4 text-sm shadow-elevation-2">
+            2: raised detail panels
+          </div>
+          <div className="rounded-card bg-card p-4 text-sm shadow-elevation-3">
+            3: floating toasts and menus
+          </div>
+        </div>
+      </section>
 
       <section aria-labelledby="loading-state-heading" className="grid gap-3">
         <h2 id="loading-state-heading" className="text-sm font-semibold">

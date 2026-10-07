@@ -201,7 +201,7 @@ function ProblemList({ page }: { page: ProblemPage }) {
   return (
     <ul
       aria-label="Problems"
-      className="divide-y divide-border overflow-hidden rounded-card border border-border bg-card"
+      className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
     >
       {page.results.map((problem) => (
         <li key={problem.id}>

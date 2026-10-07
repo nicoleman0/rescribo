@@ -233,3 +233,23 @@ test('marks the selected follow-up and renders the detail', async () => {
   expect(link).toHaveAttribute('aria-current', 'page')
   await screen.findByRole('region', { name: 'Follow-up detail' })
 })
+
+test('shows delivery and contact states in their status tones', async () => {
+  stubApi({
+    [listKey]: listHandler({
+      '': page([
+        item({ delivery_state: 'failed', contact_state: 'still_affected' }),
+      ]),
+    }),
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups')
+  const list = await screen.findByRole('list', { name: 'Follow-ups' })
+  expect(within(list).getByText('Failed')).toHaveAttribute(
+    'data-tone',
+    'danger',
+  )
+  expect(within(list).getByText('Still affected')).toHaveAttribute(
+    'data-tone',
+    'warning',
+  )
+})
