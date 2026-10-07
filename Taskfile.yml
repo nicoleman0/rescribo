@@ -4,6 +4,9 @@ env:
   UV_CACHE_DIR: '{{.UV_CACHE_DIR | default (printf "%s/.cache/uv" .ROOT_DIR)}}'
   npm_config_cache: '{{.ROOT_DIR}}/.cache/npm'
 
+vars:
+  PROD_COMPOSE: docker compose -f compose.prod.yaml --env-file .env.production
+
 tasks:
   default:
     desc: Show all available project commands
@@ -292,3 +295,28 @@ tasks:
     desc: Stop the containerized app stack
     cmds:
       - docker compose --profile app down
+
+  prod-up:
+    desc: Build, migrate, and start the production stack (docs/DEPLOYMENT.md)
+    cmds:
+      - '{{.PROD_COMPOSE}} build'
+      - '{{.PROD_COMPOSE}} run --rm backend python backend/manage.py migrate'
+      - '{{.PROD_COMPOSE}} up -d --wait'
+
+  prod-stop:
+    desc: Stop the production stack and keep its data
+    cmds:
+      - '{{.PROD_COMPOSE}} down'
+
+  prod-manage:
+    desc: Run a Django management command in the production stack
+    interactive: true
+    cmds:
+      - '{{.PROD_COMPOSE}} run --rm backend python backend/manage.py {{.CLI_ARGS}}'
+
+  prod-backup:
+    desc: Write a production PostgreSQL dump to backups/
+    cmds:
+      - task: backup
+        vars:
+          COMPOSE: '{{.PROD_COMPOSE}}'
