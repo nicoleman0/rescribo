@@ -107,7 +107,7 @@ Mutating browser calls send the CSRF token with session cookies.
 
 ## Version choices
 
-- Python 3.14, Django 5.2 LTS, Node.js 24, and Rust 1.92 (`rust/rust-toolchain.toml`, provisional until a deployment image is chosen).
+- Python 3.14, Django 5.2 LTS, Node.js 24, and Rust 1.92 (`rust/rust-toolchain.toml`, matched by the image build stage).
 - Host development workers use Celery's `solo` pool. The macOS/Python 3.14 process pool failed the task round-trip check during setup; Linux container workers are verified separately with the configured process pool.
 - React and Vite versions are resolved in the npm lockfile.
 - TypeScript 5.9 is intentional: the selected OpenAPI type generator currently declares a TypeScript 5 peer requirement. Upgrade them together after checking compatibility.
@@ -122,4 +122,4 @@ Provider tests use recorded, sanitised fixtures. Live provider runs are recorded
 
 ## Deployment
 
-Local development infrastructure only; there is no production deployment yet. The target is web, worker, scheduler, PostgreSQL, and Redis in Docker Compose behind an HTTPS proxy. External callbacks need a stable HTTPS URL; document any development tunnel and how it handles secrets. Health/readiness checks, structured logs, and trace correlation from request to outbound call are expected; report text and secrets stay out of telemetry.
+Production runs as one Compose project behind Caddy: see [DEPLOYMENT.md](DEPLOYMENT.md) and [ADR 0007](adr/0007-single-host-deployment.md). Development tunnels are in the same guide. Structured logs and trace correlation from request to outbound call are still to do; report text and secrets stay out of telemetry.
