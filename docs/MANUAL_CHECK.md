@@ -1,14 +1,15 @@
-# UAT pilot
+# Manual end-to-end check
 
-Track the pilot in [issue #57](https://github.com/nicoleman0/rescribo/issues/57).
-Start after #13 merges. Record the tested commit and each journey's
-Pass / Fail / Blocked / Not run result there. Create one issue per finding,
-label it `uat` plus `bug` or `enhancement`, and link it to the tracker.
-File findings with the "UAT finding" issue form.
+Go through the UI against real Slack and GitHub and check that the whole workflow
+works. Track it in [issue #57](https://github.com/nicoleman0/rescribo/issues/57).
+Record the tested commit and each journey's Pass / Fail / Blocked / Not run
+result there. Create one issue per finding, label it `manual-check` plus `bug`
+or `enhancement`, and link it to the tracker.
+File findings with the "Manual check finding" issue form.
 
 ## Starting from scratch
 
-The pilot starts with an empty product database, migrations applied, and no demo
+The check starts with an empty product database, migrations applied, and no demo
 or E2E seed data. The operator creates the first owner interactively. The owner
 then invites members and connects GitHub and Slack through Settings.
 There is no public signup. See [accounts setup](LOCAL_DEVELOPMENT.md) and
@@ -16,20 +17,20 @@ There is no public signup. See [accounts setup](LOCAL_DEVELOPMENT.md) and
 
 A database reset removes local users, workspaces, reports, connections, and
 history. It does not uninstall Slack/GitHub Apps or delete upstream issues/messages.
-Use a disposable GitHub repository and Slack workspace for the pilot. Use fresh
+Use a disposable GitHub repository and Slack workspace for the check. Use fresh
 provider apps/installations if the upstream registration journey is also under test.
 Keep existing operator credentials and the encryption key in private configuration.
 
-## Reset procedure, to run when the pilot is ready
+## Reset procedure
 
-Do not run this during #13 implementation or while another test/process is writing
-to the target database. This procedure is for the main checkout's Compose-backed
-development database. An isolated worktree or external database needs its own
-verified target; do not assume these commands apply.
+Do not run this while another test or process is writing to the target
+database. This procedure is for the main checkout's Compose-backed development
+database. An isolated worktree or external database needs its own verified
+target; do not assume these commands apply.
 
-1. Pull the merged #13 build and complete its automated checks before resetting.
+1. Pull `main` and complete its automated checks before resetting.
 2. Inspect Compose PostgreSQL mounts, configured database identity, and all
-   API/worker/scheduler consumers. Verify that the target is the disposable pilot
+   API/worker/scheduler consumers. Verify that the target is the disposable
    database and identify any other databases in that PostgreSQL instance.
    Do not print `.env` or a resolved Compose configuration containing secrets.
 3. Stop the target API, frontend, worker, scheduler, and E2E processes. For the
@@ -39,8 +40,8 @@ verified target; do not assume these commands apply.
 
 ```sh
 umask 077
-mkdir -p .cache/uat
-docker compose exec -T postgres sh -eu -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > .cache/uat/before-reset.sql
+mkdir -p .cache/manual-check
+docker compose exec -T postgres sh -eu -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > .cache/manual-check/before-reset.sql
 ```
 
 5. Recreate only the verified configured database. These commands use the
@@ -52,15 +53,15 @@ docker compose exec -T postgres sh -eu -c 'createdb -U "$POSTGRES_USER" "$POSTGR
 ```
 
 6. Prevent old queued tasks from reaching the fresh database. Prefer a verified
-   unused Redis database index and a pilot-specific Celery queue. Point the API,
-   worker, scheduler, Django cache, and worker check at the same pilot Redis URL
+   unused Redis database index and a check-specific Celery queue. Point the API,
+   worker, scheduler, Django cache, and worker check at the same Redis URL
    and `RESCRIBO_CELERY_DEFAULT_QUEUE`. Verify the selected index is unused by
    other worktrees. Do not use `FLUSHALL` or delete shared Redis volumes.
-   If the intended Redis DB is confirmed exclusive to this pilot, clearing that
+   If the intended Redis DB is confirmed exclusive to this check, clearing that
    DB while all its consumers are stopped is an alternative. Record the choice.
 7. Verify `RESCRIBO_DATABASE_URL` targets the recreated database, including any
    inherited environment overrides. Apply migrations using the same runtime as
-   the pilot. For host development, run `task migrate`. For the container app:
+   the check. For host development, run `task migrate`. For the container app:
 
 ```sh
 docker compose --profile app run --rm backend uv run --no-sync python backend/manage.py migrate
@@ -69,10 +70,10 @@ docker compose --profile app run --rm backend uv run --no-sync python backend/ma
 8. Before creating the owner, verify zero product users, workspaces, reports,
    problems, connections, follow-ups, and external operations through a read-only
    ORM check in that runtime. Record counts, not sensitive row contents.
-9. Bootstrap your real pilot owner interactively. Replace the example values:
+9. Bootstrap your real owner interactively. Replace the example values:
 
 ```sh
-task bootstrap-owner -- --email owner@example.test --full-name 'Pilot Owner' --workspace-name 'UAT Pilot' --workspace-slug uat-pilot
+task bootstrap-owner -- --email owner@example.test --full-name 'Check Owner' --workspace-name 'Manual Check' --workspace-slug manual-check
 ```
 
 For the container app, use the equivalent management command in `backend` with
@@ -80,9 +81,9 @@ an interactive terminal. Enter the password at the prompt. Do not put it in
 arguments, tracker comments, or committed configuration. Do not use `e2e-test`
 as the workspace slug and do not run a seed command.
 
-10. Start the API, frontend, worker, and scheduler with consistent pilot settings.
+10. Start the API, frontend, worker, and scheduler with consistent settings.
     Confirm `RESCRIBO_SLACK_FAKE_DELIVERY=False`, readiness, and a real worker
-    round trip. Do not run `task e2e` against the pilot during manual testing;
+    round trip. Do not run `task e2e` against this database during the check;
     it creates synthetic accounts and may use fake delivery.
 11. Open a fresh browser profile so old cookies and session-stored report drafts
     do not carry over. Record the commit, app origin, and environment in #57.
@@ -115,7 +116,6 @@ break a core workflow. Minor findings have a workaround or affect presentation.
 Feature requests describe the unmet task and example, then receive a fix/defer
 decision. Link already planned work instead of creating duplicates.
 
-Fix and retest blockers and major workflow bugs before pilot acceptance. Record
-decisions for remaining findings and acceptance in #57, then proceed to milestone
-C and D. UAT does not replace their automated failure/isolation checks or matching
-evaluation.
+Fix and retest blockers and major workflow bugs before acceptance. Record
+decisions for remaining findings and acceptance in #57. This check does not replace
+automated failure and isolation tests or the matching evaluation.

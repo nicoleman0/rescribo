@@ -14,7 +14,13 @@ export default defineConfig({
   server: {
     port: 5173,
     strictPort: true,
-    allowedHosts: ['frontend'],
+    // A tunnel host must be named; Vite refuses unknown hosts against DNS rebinding.
+    allowedHosts: [
+      'frontend',
+      ...(process.env.RESCRIBO_TUNNEL_HOST
+        ? [process.env.RESCRIBO_TUNNEL_HOST]
+        : []),
+    ],
     proxy: Object.fromEntries(
       ['/api', '/admin', '/static'].map((path) => [
         path,

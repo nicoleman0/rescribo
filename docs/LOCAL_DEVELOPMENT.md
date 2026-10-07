@@ -78,7 +78,7 @@ task app
 task app-stop
 ```
 
-`task app` builds images, applies migrations, and starts the API, frontend, worker, and scheduler. The Dockerfiles and development servers are for local development only. Rebuild after changing dependencies or frontend configuration; backend source and frontend `src`/`public` are mounted for editing.
+`task app` builds images, applies migrations, and starts the API, frontend, worker, and scheduler. The `dev` images and development servers are for local development only. For production, see [DEPLOYMENT.md](DEPLOYMENT.md). Rebuild after changing dependencies or frontend configuration; backend source and frontend `src`/`public` are mounted for editing.
 
 ## Configuration and data
 

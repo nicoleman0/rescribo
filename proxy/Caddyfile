@@ -1,0 +1,16 @@
+# RESCRIBO_SITE_ADDRESS is a domain (automatic HTTPS) or localhost (local CA).
+# No access log: provider callbacks carry OAuth codes in query strings.
+{$RESCRIBO_SITE_ADDRESS} {
+	encode zstd gzip
+
+	@backend path /api/* /admin /admin/* /static/*
+	handle @backend {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		root * /srv/app
+		try_files {path} /index.html
+		file_server
+	}
+}

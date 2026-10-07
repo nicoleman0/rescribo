@@ -1,0 +1,87 @@
+# Production stack. Caddy is the only service with published ports.
+# Run through the prod-* tasks, which pass --env-file .env.production.
+name: rescribo-prod
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-rescribo}
+      POSTGRES_USER: ${POSTGRES_USER:-rescribo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  backend: &python-service
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    image: rescribo-backend:prod
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: ${RESCRIBO_DOMAIN:?Set RESCRIBO_DOMAIN in .env.production}
+      DJANGO_CSRF_TRUSTED_ORIGINS: https://${RESCRIBO_DOMAIN}
+      RESCRIBO_PUBLIC_BASE_URL: https://${RESCRIBO_DOMAIN}
+      # Caddy is the one proxy in front.
+      RESCRIBO_NUM_PROXIES: "1"
+      RESCRIBO_DATABASE_URL: postgresql://${POSTGRES_USER:-rescribo}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-rescribo}
+      RESCRIBO_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    <<: *python-service
+    command: [celery, --workdir=backend, -A, config, worker, --loglevel=INFO, --concurrency=2]
+
+  scheduler:
+    <<: *python-service
+    command: [celery, --workdir=backend, -A, config, beat, --loglevel=INFO, --schedule=/tmp/celerybeat-schedule]
+
+  proxy:
+    build:
+      context: .
+      dockerfile: proxy/Dockerfile
+    image: rescribo-proxy:prod
+    restart: unless-stopped
+    environment:
+      RESCRIBO_SITE_ADDRESS: ${RESCRIBO_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      # Certificates and ACME account; losing them forces reissue and rate limits.
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - backend
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:
