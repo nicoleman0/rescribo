@@ -14,6 +14,6 @@
 - Regenerate OpenAPI and TypeScript contracts with `task schema` when the API changes.
 - Database changes require migrations. Cross-workspace access checks belong in both application code and tests.
 - Use real services for integration checks. Distinguish mocked tests from live provider verification.
-- This scaffold is local development infrastructure, not a production deployment.
+- Production is `compose.prod.yaml` behind Caddy ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). The `dev` images and development servers are for local use only.
 - Frontend visual rules and shared component ownership are documented in [frontend/DESIGN.md](frontend/DESIGN.md).
 - Tune the matcher on `practice` batches in `eval/matching/` only. Do not read or score `exam` batches while choosing features, weights, or thresholds.
