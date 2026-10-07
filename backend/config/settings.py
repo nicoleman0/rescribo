@@ -105,6 +105,9 @@ REST_FRAMEWORK = {
         "invitation_creation": "30/hour",
     },
 }
+# Only a proxy we sit behind may tell Django the original request was HTTPS.
+if REST_FRAMEWORK["NUM_PROXIES"]:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 RESCRIBO_PUBLIC_BASE_URL = env("RESCRIBO_PUBLIC_BASE_URL", default="http://127.0.0.1:5173")
 CACHES = {
     "default": {"BACKEND": "django.core.cache.backends.redis.RedisCache", "LOCATION": REDIS_URL}
