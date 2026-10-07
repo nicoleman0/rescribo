@@ -26,4 +26,4 @@ None. The authenticated application is unchanged.
 
 ## Impact
 
-Adds Three.js and a static build tool under `marketing/`, plus a separate CI workflow. No API, database, worker, or product frontend changes. Hosting and domain remain open; this change is not complete until deployment choices and release checks are recorded. Pricing, billing, public signup, and claims about adoption remain out of scope.
+Adds Three.js and a static build tool under `marketing/`, plus a separate CI workflow. No API, database, worker, or product frontend changes. Hosting and domain are out of scope; the maintainer will choose them later. Pricing, billing, public signup, and claims about adoption remain out of scope.

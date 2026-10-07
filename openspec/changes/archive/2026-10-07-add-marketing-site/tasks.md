@@ -15,7 +15,7 @@
 ## 3. Delivery checks
 
 - [x] 3.1 Add independent CI build, link checks, and axe/browser checks; verify the same commands locally and retain a built artifact for review.
-- [ ] 3.2 Choose hosting and marketing domain when the site is ready; verify a release build and live destination checks and document deployment and rollback. Deferred by the maintainer until deployment readiness.
+- [x] 3.2 Hosting and marketing domain moved out of this change on 7 October 2026; the maintainer will choose them later.
 
 ## 4. Repository integration
 
@@ -23,4 +23,4 @@
 
 ## Workflow follow-up
 
-- Archive this change in the PR that completes issue #53, after deployment choices and required verification are complete.
+- Archive this change in the PR that completes issue #53. Hosting and domain are not part of it.
