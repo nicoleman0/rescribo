@@ -2,9 +2,9 @@ name: Marketing site
 on:
   push:
     branches: [main]
-    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', '.node-version']
+    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', 'scripts/ci_playwright_install.sh', '.node-version']
   pull_request:
-    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', '.node-version']
+    paths: ['marketing/**', 'README.md', 'openspec/config.yaml', '.github/workflows/marketing.yml', 'scripts/ci_playwright_install.sh', '.node-version']
 
 permissions:
   contents: read
@@ -29,7 +29,7 @@ jobs:
           cache-dependency-path: marketing/package-lock.json
       - run: npm ci
       - run: npm run check
-      - run: npx playwright install --with-deps chromium
+      - run: ../scripts/ci_playwright_install.sh
       - run: npm run build
       - run: npm test
       - run: npm run check:links
