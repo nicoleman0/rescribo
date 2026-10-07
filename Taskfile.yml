@@ -41,11 +41,13 @@ tasks:
 
   backup:
     desc: Write a PostgreSQL dump to backups/
+    vars:
+      COMPOSE: '{{.COMPOSE | default "docker compose"}}'
     cmds:
       - mkdir -p backups
       - |
         out="backups/rescribo-$(date -u +%Y%m%dT%H%M%SZ).dump"
-        docker compose exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$out" || { rm -f "$out"; exit 1; }
+        {{.COMPOSE}} exec -T postgres sh -c 'pg_dump -Fc -U "$POSTGRES_USER" "$POSTGRES_DB"' > "$out" || { rm -f "$out"; exit 1; }
         echo "Wrote $out"
 
   restore-check:
