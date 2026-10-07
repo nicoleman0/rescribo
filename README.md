@@ -24,6 +24,7 @@ Rescribo is in development. The Slack-to-GitHub-to-follow-up workflow is impleme
 
 - [Product specs](openspec/specs/)
 - [Local development guide](docs/LOCAL_DEVELOPMENT.md)
+- [Deployment](docs/DEPLOYMENT.md)
 - [Workspace settings and provider setup](docs/SETTINGS.md)
 - [Architecture and development conventions](docs/DEVELOPMENT.md)
 
