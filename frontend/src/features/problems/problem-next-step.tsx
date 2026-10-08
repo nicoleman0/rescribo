@@ -7,7 +7,10 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { ProblemDetail } from '@/api/problems'
-import type { StatusTone } from '@/components/status/status-tone'
+import {
+  toneSurfaceClasses,
+  type StatusTone,
+} from '@/components/status/status-tone'
 import { touchTarget } from '@/components/layout/touch-target'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -19,16 +22,6 @@ type Step = {
   body: string
   followUps?: boolean
   issue?: boolean
-}
-
-// Literal class strings so Tailwind can find them.
-const toneClasses: Record<StatusTone, string> = {
-  neutral: 'bg-tone-neutral text-tone-neutral-foreground',
-  info: 'bg-tone-info text-tone-info-foreground',
-  progress: 'bg-tone-progress text-tone-progress-foreground',
-  success: 'bg-tone-success text-tone-success-foreground',
-  warning: 'bg-tone-warning text-tone-warning-foreground',
-  danger: 'bg-tone-danger text-tone-danger-foreground',
 }
 
 const toneIcons: Record<StatusTone, LucideIcon> = {
@@ -86,7 +79,10 @@ export function ProblemNextStep({ problem }: { problem: ProblemDetail }) {
   return (
     <div
       data-tone={step.tone}
-      className={cn('flex gap-3 rounded-card p-4', toneClasses[step.tone])}
+      className={cn(
+        'flex gap-3 rounded-card p-4',
+        toneSurfaceClasses[step.tone],
+      )}
     >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <div className="grid min-w-0 gap-1">

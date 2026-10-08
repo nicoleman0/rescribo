@@ -126,7 +126,7 @@ that owns the draft when a recoverable request fails.
 
 - A next-step banner sits under the header. `ProblemNextStep` picks its tone,
   heading, and links from the problem state and the needs-review flag. It
-  uses the tone surface and text tokens, like `StatusBadge`.
+  and `StatusBadge` share `toneSurfaceClasses` for each tone's surface.
 - Values a member changes now and then (owner, report assignee) show as text
   with a Change button. The button toggles the form and stays in place, so
   focus is not lost. A failed save never closes the form, so its input and
