@@ -13,12 +13,17 @@ import {
   getProblem,
   listProblemReports,
   problemKeys,
+  unlinkFixRelease,
   type ProblemDetail,
 } from '@/api/problems'
 import { confirmFixApplies, type ReportDetail } from '@/api/reports'
 import type { ApiError } from '@/api/request'
 import { useReportMutation } from '@/features/inbox/use-report-mutation'
-import { useWorkspace } from '@/components/auth/use-workspace'
+import {
+  demoDescription,
+  useIsDemo,
+  useWorkspace,
+} from '@/components/auth/use-workspace'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
 import { touchTarget } from '@/components/layout/touch-target'
@@ -46,6 +51,7 @@ import { ProblemNextStep } from './problem-next-step'
 import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
 import { GitHubIssueSection } from './github-issue-section'
 import { ReportAssigneeEditor } from './report-assignee-editor'
+import { ReleasePicker } from './release-picker'
 import { useProblemMutation } from './use-problem-mutation'
 
 const PROBLEM_REFRESH_MS = 30_000
@@ -261,13 +267,20 @@ function ProblemBody({
   )
 }
 
-function FixCard({
+export function FixCard({
   workspaceId,
   problem,
 }: {
   workspaceId: string
   problem: ProblemDetail
 }) {
+  const [choosingRelease, setChoosingRelease] = useState(false)
+  const isDemo = useIsDemo()
+  const unlink = useProblemMutation(workspaceId, () =>
+    unlinkFixRelease(workspaceId, problem.id, {
+      expected_version: problem.version,
+    }),
+  )
   if (problem.state === 'open' || problem.state === 'in_progress')
     return <ConfirmFixForm workspaceId={workspaceId} problem={problem} />
   if (problem.state !== 'fix_available') return null
@@ -297,6 +310,65 @@ function FixCard({
           Fix evidence
           <span className="sr-only"> (opens in a new tab)</span>
         </a>
+      ) : null}
+      {problem.fix_release ? (
+        <div className="grid gap-2">
+          <a
+            className="w-fit text-primary underline-offset-4 hover:underline"
+            href={problem.fix_release.url}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {problem.fix_release.tag_name}
+            <span className="sr-only"> (opens in a new tab)</span>
+          </a>
+          {problem.fix_release.name !== problem.fix_release.tag_name ? (
+            <p>{problem.fix_release.name}</p>
+          ) : null}
+          <time
+            className="text-muted-foreground"
+            dateTime={problem.fix_release.published_at}
+          >
+            {formatDate(problem.fix_release.published_at)}
+          </time>
+        </div>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant="outline"
+          className={touchTarget}
+          disabled={isDemo || unlink.isPending}
+          onClick={() => setChoosingRelease(!choosingRelease)}
+        >
+          {problem.fix_release ? 'Change release' : 'Link a release'}
+        </Button>
+        {problem.fix_release ? (
+          <Button
+            variant="outline"
+            className={touchTarget}
+            disabled={isDemo || unlink.isPending}
+            onClick={() => unlink.mutate(undefined)}
+          >
+            {unlink.isPending ? 'Removing…' : 'Remove release'}
+          </Button>
+        ) : null}
+      </div>
+      {unlink.error ? (
+        <ActionError
+          error={unlink.error}
+          title="The release was not removed"
+          record="problem"
+        />
+      ) : null}
+      {isDemo ? (
+        <p className="text-xs text-muted-foreground">{demoDescription}</p>
+      ) : null}
+      {choosingRelease ? (
+        <ReleasePicker
+          workspaceId={workspaceId}
+          problem={problem}
+          onCancel={() => setChoosingRelease(false)}
+        />
       ) : null}
     </section>
   )

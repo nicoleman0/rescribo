@@ -50,3 +50,7 @@ The check consumes state before exchanging the code. It derives the installation
 The sanitised result is written to `.cache/github-installation-result.json`. Review it before using it as evidence. Live results and app settings belong in the Milestone A evidence PR for issue #8, separate from mocked test results.
 
 To test access loss, suspend or uninstall the disposable app and rerun the completion step with a new authorisation session. The result must report `suspended` or `revoked_or_unavailable` rather than `active`.
+
+## Releases
+
+Release listing and lookup require the GitHub App's **Contents: Read-only** repository permission. Issue operations continue to use tokens without Contents access. Installations must accept the new permission before release links can be created.

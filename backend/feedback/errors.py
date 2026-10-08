@@ -123,3 +123,19 @@ class IssueOperationError(FeedbackError):
     def __init__(self, reason: str, *, detail: str) -> None:
         self.detail = detail
         super().__init__(reason)
+
+
+class ReleaseAccessMissing(FeedbackError):
+    reason = "release_access_missing"
+
+
+class ReleaseConnectionNotReady(FeedbackError):
+    reason = "connection_not_ready"
+
+
+class ReleaseNotFound(FeedbackError):
+    reason = "release_not_found"
+
+
+class ReleaseProviderUnavailable(FeedbackError):
+    reason = "release_provider_unavailable"

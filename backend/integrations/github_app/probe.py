@@ -1,7 +1,8 @@
 from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient
+from integrations.github_app.permissions import check_installation_permissions
 
 
 class InvalidInstallation(ValueError):
@@ -24,8 +25,6 @@ class ProbeResult:
 
 
 class InstallationProbe:
-    REQUIRED_PERMISSIONS = {"issues": "write", "metadata": "read"}
-
     def __init__(self, client: GitHubAppClient) -> None:
         self._client = client
 
@@ -60,9 +59,10 @@ class InstallationProbe:
             raise InvalidInstallation("GitHub did not return a valid installation ID.")
 
         permissions = installation.get("permissions")
-        if not isinstance(permissions, dict) or permissions != self.REQUIRED_PERMISSIONS:
+        if not isinstance(permissions, dict) or not check_installation_permissions(permissions):
             raise InvalidInstallation(
-                "The GitHub App installation must grant only Issues write and Metadata read."
+                "The GitHub App installation must grant Issues write and Metadata read; "
+                "Contents read is optional for releases."
             )
         selection = installation.get("repository_selection")
         if selection != "selected":
@@ -74,7 +74,7 @@ class InstallationProbe:
                 repository=expected_repository,
                 visibility=None,
                 repository_selection=selection,
-                permissions=permissions,
+                permissions=cast(dict[str, str], permissions),
                 token_expires_at=None,
                 user_access_verified=False,
             )
@@ -125,7 +125,7 @@ class InstallationProbe:
             repository=expected_repository,
             visibility=visibility,
             repository_selection=selection,
-            permissions=permissions,
+            permissions=cast(dict[str, str], permissions),
             token_expires_at=expires_at,
             user_access_verified=True,
         )

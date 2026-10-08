@@ -15,7 +15,7 @@ from connections.models import Connection, ExternalIdentity
 from connections.slack_delivery import send_follow_up_notification
 from feedback.deletion import purge_workspace_content
 from feedback.follow_ups import approve_notification, draft_notification, record_outcome
-from feedback.models import Activity, EngineeringIssue, FollowUp, Problem, Report
+from feedback.models import Activity, EngineeringIssue, FixRelease, FollowUp, Problem, Report
 from feedback.models import ReportNotificationOperation as Notification
 from feedback.problems import change_problem_state, confirm_fix, create_problem
 from feedback.reports import assign_report, dismiss_report, link_report, submit_report
@@ -385,13 +385,29 @@ def _seed_records(team: Team, *, now: datetime) -> None:
         at=ago(3),
     )
     resets.refresh_from_db()
-    confirm_fix(
+    confirmed = confirm_fix(
         actor=jordan,
         problem_id=resets.pk,
         expected_version=resets.version,
         fix_note="Reset emails now go out within a minute. Released in 4.13.",
         fix_version="4.13",
         now=ago(2),
+    )
+    github_connection = Connection.objects.get(
+        workspace_id=team.owner.workspace_id, provider=Connection.Provider.GITHUB
+    )
+    FixRelease.objects.create(
+        problem=confirmed,
+        workspace_id=team.owner.workspace_id,
+        provider="github",
+        external_id="413",
+        repository_id=github_connection.repository_id,
+        tag_name="v4.13",
+        name="4.13",
+        url=f"https://github.com/{GITHUB_REPOSITORY}/releases/tag/v4.13",
+        published_at=ago(2) - timedelta(hours=1),
+        linked_by=jordan,
+        linked_at=ago(2),
     )
     _follow_ups(team, reset_reports)
 

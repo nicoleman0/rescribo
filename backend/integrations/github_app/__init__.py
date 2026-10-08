@@ -9,6 +9,7 @@ from integrations.github_app.issues import (
     resolve_issue_link,
 )
 from integrations.github_app.probe import InstallationProbe, ProbeResult
+from integrations.github_app.releases import ReleaseAccessMissing, ReleaseNotFound, ReleaseSnapshot
 from integrations.github_app.state import OAuthStateStore
 from integrations.github_app.webhooks import (
     InstallationEvent,
@@ -32,6 +33,9 @@ __all__ = [
     "IssueStateOutcome",
     "OAuthStateStore",
     "ProbeResult",
+    "ReleaseAccessMissing",
+    "ReleaseNotFound",
+    "ReleaseSnapshot",
     "apply_issue_event",
     "parse_installation_event",
     "parse_issue_event",

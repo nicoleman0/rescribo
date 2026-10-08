@@ -702,6 +702,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/fix-release/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one problem use case and return the updated problem. */
+        post: operations["workspaces_problems_fix_release_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/fix-release/unlink/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one problem use case and return the updated problem. */
+        post: operations["workspaces_problems_fix_release_unlink_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/problems/{problem_id}/issue/approve/": {
         parameters: {
             query?: never;
@@ -823,6 +857,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["workspaces_problems_reports_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/releases/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_releases_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1133,6 +1183,8 @@ export interface components {
          *     * `problem.updated` - Problem updated
          *     * `problem.state_changed` - Problem state changed
          *     * `problem.fix_confirmed` - Problem fix confirmed
+         *     * `problem.fix_release_linked` - Problem release linked
+         *     * `problem.fix_release_unlinked` - Problem release unlinked
          *     * `engineering_issue.linked` - Engineering issue linked
          *     * `engineering_issue.created` - Engineering issue created
          *     * `engineering_issue.unlinked` - Engineering issue unlinked
@@ -1145,7 +1197,7 @@ export interface components {
          *     * `follow_up.recipient_changed` - Recipient changed
          * @enum {string}
          */
-        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked" | "follow_up.notification_approved" | "follow_up.notification_sent" | "follow_up.notification_failed" | "follow_up.notification_cancelled" | "follow_up.outcome_recorded" | "follow_up.outcome_corrected" | "follow_up.recipient_changed";
+        ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "problem.fix_release_linked" | "problem.fix_release_unlinked" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked" | "follow_up.notification_approved" | "follow_up.notification_sent" | "follow_up.notification_failed" | "follow_up.notification_cancelled" | "follow_up.outcome_recorded" | "follow_up.outcome_corrected" | "follow_up.recipient_changed";
         AssignReport: {
             expected_version: number;
             /** Format: uuid */
@@ -1174,7 +1226,7 @@ export interface components {
          */
         ConfirmationEnum: "DISCONNECT";
         Connection: {
-            provider: components["schemas"]["ProviderEnum"];
+            provider: components["schemas"]["ConnectionProviderEnum"];
             identity: string;
             external_id: string;
             status: components["schemas"]["ConnectionStatusEnum"];
@@ -1191,6 +1243,12 @@ export interface components {
             channels: components["schemas"]["Channel"][];
             operations: components["schemas"]["OperationCounts"];
         };
+        /**
+         * @description * `slack` - Slack
+         *     * `github` - GitHub
+         * @enum {string}
+         */
+        ConnectionProviderEnum: "slack" | "github";
         /**
          * @description * `active` - Active
          *     * `error` - Needs attention
@@ -1317,6 +1375,23 @@ export interface components {
             fix_version: string;
             evidence_url?: string;
         };
+        FixRelease: {
+            provider: components["schemas"]["FixReleaseProviderEnum"];
+            tag_name: string;
+            name: string;
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            published_at: string;
+            linked_by: components["schemas"]["MemberSummary"];
+            /** Format: date-time */
+            linked_at: string;
+        };
+        /**
+         * @description * `github` - GitHub
+         * @enum {string}
+         */
+        FixReleaseProviderEnum: "github";
         /**
          * @description * `pending` - Pending
          *     * `contacted` - Contacted
@@ -1532,6 +1607,10 @@ export interface components {
          * @enum {string}
          */
         IssueRefreshStatusStatusEnum: "pending" | "running" | "idle";
+        LinkFixRelease: {
+            expected_version: number;
+            external_id: string;
+        };
         LinkIssue: {
             expected_version: number;
             reference: string;
@@ -1733,6 +1812,9 @@ export interface components {
             readonly to_assignee: components["schemas"]["MemberSummary"] | null;
             readonly changed_fields: string[];
             readonly state: (components["schemas"]["ProblemStateEnum"] | components["schemas"]["NullEnum"]) | null;
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         ProblemConflict: {
             detail: string;
@@ -1765,6 +1847,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             readonly current_create_operation: components["schemas"]["ExternalOperation"] | null;
+            fix_release?: components["schemas"]["FixRelease"] | null;
         };
         ProblemEdit: {
             expected_version: number;
@@ -1804,12 +1887,6 @@ export interface components {
             state: components["schemas"]["ProblemStateEnum"];
         };
         /**
-         * @description * `slack` - Slack
-         *     * `github` - GitHub
-         * @enum {string}
-         */
-        ProviderEnum: "slack" | "github";
-        /**
          * @description * `problem` - problem
          *     * `linked_report` - linked_report
          * @enum {string}
@@ -1819,6 +1896,20 @@ export interface components {
             /** Format: uuid */
             id: string;
             title: string;
+        };
+        ReleaseOption: {
+            external_id: string;
+            tag_name: string;
+            name: string;
+            /** Format: uri */
+            url: string;
+            /** Format: date-time */
+            published_at: string;
+            prerelease: boolean;
+        };
+        ReleasePage: {
+            results: components["schemas"]["ReleaseOption"][];
+            has_next: boolean;
         };
         ReportConflict: {
             detail: string;
@@ -1950,6 +2041,9 @@ export interface components {
         URL: {
             /** Format: uri */
             url: string;
+        };
+        UnlinkFixRelease: {
+            expected_version: number;
         };
         Version: {
             version: number;
@@ -4076,6 +4170,174 @@ export interface operations {
             };
         };
     };
+    workspaces_problems_fix_release_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LinkFixRelease"];
+                "application/x-www-form-urlencoded": components["schemas"]["LinkFixRelease"];
+                "multipart/form-data": components["schemas"]["LinkFixRelease"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemConflict"];
+                };
+            };
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_problems_fix_release_unlink_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UnlinkFixRelease"];
+                "application/x-www-form-urlencoded": components["schemas"]["UnlinkFixRelease"];
+                "multipart/form-data": components["schemas"]["UnlinkFixRelease"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemConflict"];
+                };
+            };
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     workspaces_problems_issue_approve_create: {
         parameters: {
             query?: never;
@@ -4555,6 +4817,86 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_releases_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Release page from 1 to 100. */
+                page?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleasePage"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

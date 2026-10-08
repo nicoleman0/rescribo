@@ -95,6 +95,35 @@ def test_probe_verifies_user_access_and_restricts_installation_token(private_key
     assert len(requests) == 4
 
 
+def test_probe_accepts_optional_contents_read(private_key: bytes) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/installation"):
+            return httpx.Response(
+                200,
+                json={
+                    "id": 42,
+                    "permissions": {"issues": "write", "metadata": "read", "contents": "read"},
+                    "repository_selection": "selected",
+                    "suspended_at": None,
+                },
+            )
+        if request.url.path.startswith("/user/installations/"):
+            return httpx.Response(
+                200, json={"total_count": 1, "repositories": [{"full_name": "owner/repo"}]}
+            )
+        if request.url.path.endswith("access_tokens"):
+            return httpx.Response(201, json={"token": "token", "expires_at": "later"})
+        return httpx.Response(200, json={"full_name": "owner/repo", "visibility": "private"})
+
+    with httpx.Client(
+        base_url="https://api.github.com", transport=httpx.MockTransport(handler)
+    ) as http:
+        result = InstallationProbe(
+            GitHubAppClient(http, app_id="123", private_key=private_key)
+        ).run(user_token="user", expected_repository="owner/repo")
+    assert result.connection_status == "active"
+
+
 def test_probe_rejects_unexpected_selected_repository(private_key: bytes) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/repos/owner/one/installation":
@@ -182,7 +211,7 @@ def test_probe_rejects_extra_app_permissions(private_key: bytes) -> None:
             200,
             json={
                 "id": 42,
-                "permissions": {"contents": "read", "issues": "write", "metadata": "read"},
+                "permissions": {"contents": "write", "issues": "write", "metadata": "read"},
                 "repository_selection": "selected",
                 "suspended_at": None,
             },
@@ -192,7 +221,7 @@ def test_probe_rejects_extra_app_permissions(private_key: bytes) -> None:
         base_url="https://api.github.com", transport=httpx.MockTransport(handler)
     ) as http:
         probe = InstallationProbe(GitHubAppClient(http, app_id="123", private_key=private_key))
-        with pytest.raises(InvalidInstallation, match="only Issues write"):
+        with pytest.raises(InvalidInstallation, match="Contents read"):
             probe.run(user_token="user-token", expected_repository="owner/disposable")
 
 

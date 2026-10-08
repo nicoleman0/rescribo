@@ -161,6 +161,10 @@ function describe(entry: ProblemActivity): ReactNode {
         : 'changed the status'
     case 'problem.fix_confirmed':
       return 'confirmed a fix'
+    case 'problem.fix_release_linked':
+      return `linked release ${entry.metadata?.tag_name ?? ''}`
+    case 'problem.fix_release_unlinked':
+      return 'removed the linked release'
     case 'report.linked':
       return entry.from_problem ? (
         <>

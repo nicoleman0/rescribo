@@ -68,7 +68,7 @@ def require_active_connection(connection: Connection | None) -> Connection:
     return connection
 
 
-def _active_github_connection(actor: Membership) -> Connection:
+def active_github_connection(actor: Membership) -> Connection:
     return require_active_connection(
         Connection.objects.filter(
             workspace_id=actor.workspace_id, provider=Connection.Provider.GITHUB
@@ -89,7 +89,7 @@ def link_issue(
     current = now or timezone.now()
     problem = get_problem(actor=actor, problem_id=problem_id)
     require_version(row=problem, expected_version=expected_version)
-    connection = _active_github_connection(actor)
+    connection = active_github_connection(actor)
     selected_binding = (
         connection.pk,
         connection.binding_revision,

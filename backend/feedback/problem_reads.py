@@ -39,7 +39,11 @@ def search_problems(*, actor: Membership, text: str = "") -> QuerySet[Problem]:
 
 def get_problem(*, actor: Membership, problem_id: UUID) -> Problem:
     try:
-        return _workspace_problems(actor=actor).get(pk=problem_id)
+        return (
+            _workspace_problems(actor=actor)
+            .select_related("fix_release__linked_by__user")
+            .get(pk=problem_id)
+        )
     except Problem.DoesNotExist as error:
         raise NotFound(record="problem") from error
 
