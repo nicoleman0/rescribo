@@ -8,7 +8,11 @@ import {
 } from '@/api/settings'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
-import { ErrorState, LoadingState } from '@/components/states/async-states'
+import {
+  ErrorState,
+  LoadingState,
+  ReadyState,
+} from '@/components/states/async-states'
 import { ConfirmAction } from './confirm-action'
 import { useSettingsAction } from './use-settings-action'
 
@@ -38,15 +42,19 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
           isRetrying={members.isFetching}
         />
       ) : null}
-      <ul className="divide-y divide-border">
-        {members.data?.map((member) => (
-          <MemberRow
-            key={member.id}
-            workspaceId={workspaceId}
-            member={member}
-          />
-        ))}
-      </ul>
+      {members.data ? (
+        <ReadyState>
+          <ul className="divide-y divide-border">
+            {members.data?.map((member) => (
+              <MemberRow
+                key={member.id}
+                workspaceId={workspaceId}
+                member={member}
+              />
+            ))}
+          </ul>
+        </ReadyState>
+      ) : null}
       <form
         className="grid max-w-lg gap-3"
         onSubmit={(event) => {
@@ -95,39 +103,43 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
           isRetrying={invites.isFetching}
         />
       ) : null}
-      {invites.data?.length === 0 ? (
-        <p className="text-muted-foreground">No pending invitations.</p>
+      {invites.data ? (
+        <ReadyState className="grid gap-3">
+          {invites.data?.length === 0 ? (
+            <p className="text-muted-foreground">No pending invitations.</p>
+          ) : null}
+          <ul className="grid gap-3">
+            {invites.data?.map((invite) => (
+              <li
+                key={invite.id}
+                className="flex flex-wrap items-center justify-between gap-3"
+              >
+                <span className="min-w-0 break-all">
+                  {invite.email}{' '}
+                  <span className="text-muted-foreground">
+                    {Date.parse(invite.expires_at) < now
+                      ? 'Expired'
+                      : `Expires ${new Date(invite.expires_at).toLocaleString()}`}
+                  </span>
+                </span>
+                <Button
+                  className="min-h-11"
+                  variant="outline"
+                  disabled={revoke.isPending}
+                  onClick={() =>
+                    revoke.mutate({
+                      path: `invitations/${invite.id}/revoke/`,
+                      body: {},
+                    })
+                  }
+                >
+                  Revoke invitation
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </ReadyState>
       ) : null}
-      <ul className="grid gap-3">
-        {invites.data?.map((invite) => (
-          <li
-            key={invite.id}
-            className="flex flex-wrap items-center justify-between gap-3"
-          >
-            <span className="min-w-0 break-all">
-              {invite.email}{' '}
-              <span className="text-muted-foreground">
-                {Date.parse(invite.expires_at) < now
-                  ? 'Expired'
-                  : `Expires ${new Date(invite.expires_at).toLocaleString()}`}
-              </span>
-            </span>
-            <Button
-              className="min-h-11"
-              variant="outline"
-              disabled={revoke.isPending}
-              onClick={() =>
-                revoke.mutate({
-                  path: `invitations/${invite.id}/revoke/`,
-                  body: {},
-                })
-              }
-            >
-              Revoke invitation
-            </Button>
-          </li>
-        ))}
-      </ul>
       {revoke.error ? (
         <ErrorState
           title="Could not revoke invitation"

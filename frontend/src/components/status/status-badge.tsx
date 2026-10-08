@@ -26,14 +26,17 @@ export function StatusBadge({
       data-slot="status-badge"
       data-tone={tone}
       className={cn(
-        'inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-pill px-2 text-xs font-medium whitespace-nowrap',
+        'transition-status inline-flex h-5 w-fit shrink-0 items-center gap-1.5 rounded-pill px-2 text-xs font-medium whitespace-nowrap',
         toneSurfaceClasses[tone],
         className,
       )}
     >
       <span
         aria-hidden="true"
-        className={cn('size-1.5 rounded-pill', dotClasses[tone])}
+        className={cn(
+          'transition-status size-1.5 rounded-pill',
+          dotClasses[tone],
+        )}
       />
       {children}
     </span>

@@ -27,6 +27,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
 import {
@@ -79,7 +80,7 @@ export function ProblemDetailPage() {
     [client, problemId, workspace.id],
   )
   return (
-    <div className="grid max-w-5xl gap-6">
+    <div className="animate-page-enter grid max-w-5xl gap-6">
       <Button
         asChild
         variant="ghost"
@@ -128,7 +129,9 @@ export function ProblemDetailPage() {
         problem.isError &&
         [403, 404].includes((problem.error as ApiError).status ?? 0)
       ) ? (
-        <ProblemBody workspaceId={workspace.id} problem={problem.data} />
+        <ReadyState>
+          <ProblemBody workspaceId={workspace.id} problem={problem.data} />
+        </ReadyState>
       ) : null}
     </div>
   )
@@ -610,7 +613,7 @@ function LinkedReports({
         </p>
       ) : null}
       {reports.isSuccess && reports.data.count > 0 ? (
-        <div
+        <ReadyState
           aria-busy={reports.isPlaceholderData}
           className={cn(
             'grid gap-3',
@@ -664,7 +667,7 @@ function LinkedReports({
             pageNumber={page}
             onPage={(next) => setPage(next ?? 1)}
           />
-        </div>
+        </ReadyState>
       ) : null}
     </section>
   )

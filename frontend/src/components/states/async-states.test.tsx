@@ -5,6 +5,7 @@ import {
   ErrorState,
   LoadingState,
   QueryState,
+  ReadyState,
 } from './async-states'
 
 test('renders the shared loading state accessibly', () => {
@@ -44,5 +45,18 @@ test('uses the same state pattern for query screens', () => {
       <p>Loaded result</p>
     </QueryState>,
   )
-  expect(screen.getByText('Loaded result')).toBeInTheDocument()
+  expect(screen.getByText('Loaded result').parentElement).toHaveClass(
+    'animate-content-enter',
+  )
+})
+
+test('ready content forwards div props and shares the content fade', () => {
+  render(
+    <ReadyState className="grid gap-3" aria-busy="true">
+      <p>Ready reports</p>
+    </ReadyState>,
+  )
+  const ready = screen.getByText('Ready reports').parentElement
+  expect(ready).toHaveClass('animate-content-enter', 'grid', 'gap-3')
+  expect(ready).toHaveAttribute('aria-busy', 'true')
 })

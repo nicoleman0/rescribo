@@ -2,7 +2,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { getConnections, settingsKey } from '@/api/settings'
 import { demoDescription, useWorkspace } from '@/components/auth/use-workspace'
-import { ErrorState, LoadingState } from '@/components/states/async-states'
+import {
+  ErrorState,
+  LoadingState,
+  ReadyState,
+} from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { ConnectionSettings } from './connection-settings'
@@ -26,7 +30,7 @@ function WorkspaceSettings() {
     refetchInterval: 30000,
   })
   return (
-    <div className="mx-auto grid w-full max-w-3xl gap-6">
+    <div className="animate-page-enter mx-auto grid w-full max-w-3xl gap-6">
       <header>
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="mt-1 text-muted-foreground">{workspace.name}</p>
@@ -68,7 +72,7 @@ function WorkspaceSettings() {
         />
       ) : null}
       {connections.data ? (
-        <>
+        <ReadyState className="grid gap-6">
           {(['slack', 'github'] as const).map((provider) => (
             <ConnectionSettings
               key={provider}
@@ -89,7 +93,7 @@ function WorkspaceSettings() {
             )}
           />
           <Separator />
-        </>
+        </ReadyState>
       ) : null}
       {role === 'owner' ? (
         <section className="grid gap-3" aria-labelledby="delete-heading">

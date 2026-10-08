@@ -12,6 +12,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { touchTarget } from '@/components/layout/touch-target'
 import { Button } from '@/components/ui/button'
@@ -37,7 +38,7 @@ export function FollowUpsPage() {
   const pageValue = Number(params.get('page') ?? '1')
   const page = Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1
   return (
-    <div className="grid gap-6">
+    <div className="animate-page-enter grid gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Follow-ups</h1>
@@ -73,11 +74,13 @@ export function FollowUpsPage() {
           />
         </div>
         {followUpId ? (
-          <FollowUpDetailPanel
-            key={followUpId}
-            workspaceId={workspace.id}
-            followUpId={followUpId}
-          />
+          <div className="animate-panel-enter">
+            <FollowUpDetailPanel
+              key={followUpId}
+              workspaceId={workspace.id}
+              followUpId={followUpId}
+            />
+          </div>
         ) : null}
       </div>
     </div>
@@ -245,13 +248,13 @@ function FollowUpsList({
     )
   }
   return (
-    <div
+    <ReadyState
       aria-busy={query.isPlaceholderData}
       className={cn('grid gap-3', query.isPlaceholderData && 'opacity-60')}
     >
       <ul
         aria-label="Follow-ups"
-        className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
+        className="stagger-rows divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
       >
         {query.data.results.map((followUp) => (
           <FollowUpRow
@@ -298,7 +301,7 @@ function FollowUpsList({
           </Button>
         </nav>
       ) : null}
-    </div>
+    </ReadyState>
   )
 }
 

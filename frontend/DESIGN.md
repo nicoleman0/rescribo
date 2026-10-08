@@ -56,7 +56,8 @@ Three levels, as `shadow-elevation-1` to `-3`. Each draws its own 1px edge, so
 a surface with elevation needs no border.
 
 1. Resting: lists and cards.
-2. Raised: the detail panel beside a list, and the sign-in card.
+2. Raised: the report and follow-up detail panels and the sign-in card use
+   `surface-raised` with `shadow-elevation-2`.
 3. Floating: toasts and menus.
 
 Boxes nested inside an elevated surface use a plain border.
@@ -134,3 +135,28 @@ that owns the draft when a recoverable request fails.
   wraps the inbox assignee form, which has no save callback, so it closes
   only on Done.
 - Side-column cards use `problemCard`: elevation level 1 and the card radius.
+
+## Motion
+
+Motion values live in `theme.css`: `--duration-fast` (100ms),
+`--duration-base` (160ms), `--duration-slow` (220ms), `--ease-out-soft`,
+and `--stagger-step` (22ms). All six motion utilities apply only under
+`prefers-reduced-motion: no-preference`:
+
+- `animate-page-enter`: fade and 4px rise on each feature page root.
+- `animate-content-enter`: content fade, owned by `ReadyState` in the shared
+  async states. Use it for ready content after `LoadingState`.
+- `stagger-rows`: fade and 4px rise for mounted rows in the inbox, problems,
+  and follow-ups lists. Delay is the zero-based row index times the stagger
+  step, capped at index 10. Existing rows stay still on refetch.
+- `animate-panel-enter`: fade and 12px slide on the unkeyed panel slot.
+  Switching items fades the ready body and keeps the slot and list state.
+- `transition-status`: badge and dot colour transitions.
+- `press`: 0.97 button scale on press, except popup triggers. Colour, border,
+  shadow, and scale transitions use the fast duration.
+
+`surface-raised` uses `--raised` (white in light, lighter than cards in dark)
+and scopes `--muted` to `--raised-muted` for fills and hover states inside it.
+Outline and secondary buttons use `shadow-hairline`: a 3% black shadow in
+light and a 50% black shadow in dark. Reduced motion keeps the resulting
+colours and shadows and applies no animated transition.

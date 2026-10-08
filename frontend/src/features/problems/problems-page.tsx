@@ -16,6 +16,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
 import { memberName } from '@/features/inbox/report-format'
@@ -48,7 +49,7 @@ export function ProblemsPage() {
   const [params, setParams] = useSearchParams()
   const query = queryFromParams(params)
   return (
-    <div className="grid gap-6">
+    <div className="animate-page-enter grid gap-6">
       <header>
         <h1 className="text-xl font-semibold">Problems</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -181,7 +182,7 @@ function ProblemResults({
     )
   }
   return (
-    <div
+    <ReadyState
       aria-busy={problems.isPlaceholderData}
       className={cn('grid gap-3', problems.isPlaceholderData && 'opacity-60')}
     >
@@ -193,7 +194,7 @@ function ProblemResults({
         pageNumber={query.page ?? 1}
         onPage={(page) => setParams(withQuery(params, { page }))}
       />
-    </div>
+    </ReadyState>
   )
 }
 
@@ -201,7 +202,7 @@ function ProblemList({ page }: { page: ProblemPage }) {
   return (
     <ul
       aria-label="Problems"
-      className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
+      className="stagger-rows divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
     >
       {page.results.map((problem) => (
         <li key={problem.id}>

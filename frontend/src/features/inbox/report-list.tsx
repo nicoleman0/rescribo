@@ -28,7 +28,10 @@ export function ReportList({
     <div className="grid gap-3">
       {/* Rows follow the list's width, which shrinks when a report is open. */}
       <div className="@container overflow-hidden rounded-card bg-card shadow-elevation-1">
-        <ul aria-label="Reports" className="divide-y divide-border">
+        <ul
+          aria-label="Reports"
+          className="stagger-rows divide-y divide-border"
+        >
           {page.results.map((report) => {
             const customer = report.customer_label || 'No customer'
             const date = (

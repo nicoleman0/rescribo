@@ -9,6 +9,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -32,7 +33,7 @@ export function InboxPage() {
   const [filtersOpen, setFiltersOpen] = useState(false)
 
   return (
-    <div className="grid gap-6">
+    <div className="animate-page-enter grid gap-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Inbox</h1>
@@ -66,11 +67,13 @@ export function InboxPage() {
           <InboxResults workspaceId={workspace.id} selectedId={reportId} />
         </div>
         {reportId ? (
-          <ReportDetailPanel
-            key={reportId}
-            workspaceId={workspace.id}
-            reportId={reportId}
-          />
+          <div className="animate-panel-enter lg:sticky lg:top-6">
+            <ReportDetailPanel
+              key={reportId}
+              workspaceId={workspace.id}
+              reportId={reportId}
+            />
+          </div>
         ) : null}
       </div>
     </div>
@@ -151,7 +154,7 @@ function InboxResults({
     )
   }
   return (
-    <div
+    <ReadyState
       aria-busy={reports.isPlaceholderData}
       className={cn(reports.isPlaceholderData && 'opacity-60')}
     >
@@ -160,6 +163,6 @@ function InboxResults({
         pageNumber={query.page ?? 1}
         selectedId={selectedId}
       />
-    </div>
+    </ReadyState>
   )
 }
