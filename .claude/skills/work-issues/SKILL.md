@@ -1,6 +1,6 @@
 ---
 name: work-issues
-description: How the coordinator session delivers GitHub issues in this repo. Each issue gets its own Herdr worktree, a Claude planner that proposes the change and stops, and an implementer on Claude, Codex, or opencode that applies the reviewed change and opens the PR. Use whenever the user asks to work on, implement, or run one or more issues, or a milestone's next steps.
+description: How the coordinator session delivers GitHub issues in this repo. Each issue gets its own Herdr worktree, a Claude planner that proposes the change and stops, and an implementer on Claude, Codex, or opencode that applies the reviewed change and commits it. Use whenever the user asks to work on, implement, or run one or more issues, or a milestone's next steps.
 ---
 
 # Work issues
@@ -42,7 +42,9 @@ Codex may open on an update prompt. Dismiss it with `herdr agent send-keys <name
 
 Each phase starts a fresh session. The implementer reads the plan from disk, not from the planner's context, so the expensive context is not carried into the cheap phase.
 
-Non-Claude implementers cannot publish artifacts. When the PR is open, publish `<path>/.claude/shots/compare.html` with the Artifact tool and put the link in the PR's Screenshots section.
+Implementers commit and write `.claude/pr-body.md`, then stop. They do not push, because Codex's approval reviewer refuses `git push`. The coordinator pushes, opens the PR, and publishes the screenshots.
+
+Codex asks questions in a picker. Open it with `herdr agent send-keys <name> shift+left`, move to "Other" with `down`, type a one-line pointer to the answers file with `herdr pane send-text <pane> "..."`, and submit with `enter`.
 
 Escalate a single issue only when the plan review shows judgment the plan cannot capture. To escalate, run that issue's implementer on Claude with `--agent issue-implementer --model opus --effort high`, and tell the maintainer you did it.
 
@@ -68,6 +70,10 @@ Escalate a single issue only when the plan review shows judgment the plan cannot
    - Write the answers to `<path>/.claude/answers/plan.md`.
 5. **Implement.** Send `/exit` to the planner. Pick the implementer backend from the routing table and start it in the same pane. Then prompt it: `herdr agent prompt <name>-build "Read .claude/skills/work-issues/roles/implementer.md, then .claude/brief.md and .claude/answers/, and implement the change for issue #<issue>."`. The role path is in the prompt because only Claude loads it from a profile.
 6. **Watch.** Run a Monitor that prints agent states only when one becomes `idle`, `done`, `blocked`, or `unknown`. For a headless opencode turn, watch for its marker instead. When an agent stops, read its pane (`herdr agent read <name> --source recent-unwrapped --lines 80`). Answer it with a file in `.claude/answers/` and a one-line prompt that points to the file. Multi-line prompt text does not submit reliably.
+
+## Open the PR
+
+When the implementer reports its commit, check the scope and code below first. Then push with `git push -u origin <branch>` from its worktree, publish `<path>/.claude/shots/compare.html` with the Artifact tool, put the link in the Screenshots section of `.claude/pr-body.md`, and run `gh pr create --milestone <milestone> --body-file <path>/.claude/pr-body.md`.
 
 ## PR review
 

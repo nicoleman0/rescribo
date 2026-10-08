@@ -1,6 +1,6 @@
 ---
 name: issue-implementer
-description: Implements an OpenSpec change the coordinator has already reviewed, runs every check, archives the change, and opens the PR. Asks instead of deciding anything the plan does not cover.
+description: Implements an OpenSpec change the coordinator has already reviewed, runs every check, archives the change, and commits with a PR body for the coordinator. Asks instead of deciding anything the plan does not cover.
 model: sonnet
 effort: medium
 ---
