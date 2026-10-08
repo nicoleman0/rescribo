@@ -121,3 +121,16 @@ that owns the draft when a recoverable request fails.
   desktop. Triage comes before the report details.
 - On phones only the report search and a Filters button show; the button
   opens the other filters and shows how many are active.
+
+## Problem detail
+
+- A next-step banner sits under the header. `ProblemNextStep` picks its tone,
+  heading, and links from the problem state and the needs-review flag. It
+  uses the tone surface and text tokens, like `StatusBadge`.
+- Values a member changes now and then (owner, report assignee) show as text
+  with a Change button. The button toggles the form and stays in place, so
+  focus is not lost. A failed save never closes the form, so its input and
+  error stay. The owner form closes after a save; `ReportAssigneeEditor`
+  wraps the inbox assignee form, which has no save callback, so it closes
+  only on Done.
+- Side-column cards use `problemCard`: elevation level 1 and the card radius.

@@ -11,6 +11,7 @@ import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { GitHubIssueCreate } from './github-issue-create'
 import { GitHubIssueStatus } from './github-issue-status'
+import { problemCard, problemCardHeading } from './problem-card'
 
 export function GitHubIssueSection({
   workspaceId,
@@ -68,12 +69,12 @@ export function GitHubIssueSection({
   }
 
   return (
-    <section aria-labelledby={`${id}-heading`} className="grid gap-4">
-      <div>
-        <h2 id={`${id}-heading`} className="text-lg font-semibold">
+    <section aria-labelledby={`${id}-heading`} className={problemCard}>
+      <div className="grid gap-1">
+        <h2 id={`${id}-heading`} className={problemCardHeading}>
           GitHub issue
         </h2>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-muted-foreground">
           GitHub tracks the engineering work. A closed issue still needs a
           person to review the fix.
         </p>
@@ -157,7 +158,7 @@ function LinkIssueForm({
   error: ApiError | null
 }) {
   return (
-    <form className="grid max-w-xl gap-3" onSubmit={onSubmit}>
+    <form className="grid gap-3" onSubmit={onSubmit}>
       <Field
         id={`${id}-reference`}
         label={

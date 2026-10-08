@@ -75,8 +75,7 @@ test.describe('Themes', () => {
     await expect(
       page.getByRole('heading', { name: 'Linked reports' }),
     ).toBeVisible()
-    // Contrast only: repeated "Provenance" landmarks are a known issue (GitHub issue 108).
-    expect(await axeViolations(page, ['color-contrast'])).toEqual([])
+    expect(await axeViolations(page)).toEqual([])
 
     await page.goto('/follow-ups')
     await expect(

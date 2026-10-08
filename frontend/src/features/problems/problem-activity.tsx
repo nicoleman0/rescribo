@@ -9,8 +9,17 @@ import {
 import { ErrorState, LoadingState } from '@/components/states/async-states'
 import { formatDate, memberName } from '@/features/inbox/report-format'
 import { cn } from '@/lib/utils'
+import {
+  describeUpdate,
+  groupActivity,
+  type ActivityItem,
+} from './activity-format'
 import { PageNav } from './page-nav'
-import { countLabel, problemStateLabels } from './problem-format'
+import {
+  countLabel,
+  problemStateLabels,
+  reportCountLabel,
+} from './problem-format'
 
 export function ProblemActivityList({
   workspaceId,
@@ -58,19 +67,8 @@ export function ProblemActivityList({
             aria-label="Problem activity"
             className="grid gap-3 border-l border-border pl-4"
           >
-            {activity.data.results.map((entry) => (
-              <li key={entry.id} className="grid gap-0.5 text-sm">
-                <span className="break-words">
-                  <span className="font-medium">{actorName(entry)}</span>{' '}
-                  {describe(entry)}
-                </span>
-                <time
-                  dateTime={entry.created_at}
-                  className="font-mono text-xs text-muted-foreground"
-                >
-                  {formatDate(entry.created_at)}
-                </time>
-              </li>
+            {groupActivity(activity.data.results).map((item) => (
+              <ActivityRow key={itemKey(item)} item={item} />
             ))}
           </ol>
           <PageNav
@@ -83,6 +81,41 @@ export function ProblemActivityList({
         </div>
       ) : null}
     </section>
+  )
+}
+
+const itemKey = (item: ActivityItem) =>
+  item.kind === 'entry' ? item.entry.id : item.entries[0].id
+
+function ActivityRow({ item }: { item: ActivityItem }) {
+  const newest = item.kind === 'entry' ? item.entry : item.entries[0]
+  return (
+    <li className="grid gap-0.5 text-sm">
+      {item.kind === 'entry' ? (
+        <span className="break-words">
+          <span className="font-medium">{actorName(newest)}</span>{' '}
+          {describe(newest)}
+        </span>
+      ) : (
+        <details className="break-words">
+          <summary className="w-fit cursor-pointer">
+            <span className="font-medium">{actorName(newest)}</span> linked{' '}
+            {reportCountLabel(item.entries.length)}
+          </summary>
+          <ul className="mt-1 grid gap-1 pl-4">
+            {item.entries.map((entry) => (
+              <li key={entry.id}>{reportLink(entry)}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <time
+        dateTime={newest.created_at}
+        className="font-mono text-xs text-muted-foreground"
+      >
+        {formatDate(newest.created_at)}
+      </time>
+    </li>
   )
 }
 
@@ -112,18 +145,12 @@ function problemLink(problem: { id: string; title: string }) {
   )
 }
 
-const fieldNames: Record<string, string> = {
-  title: 'title',
-  summary: 'summary',
-  owner: 'owner',
-}
-
 function describe(entry: ProblemActivity): ReactNode {
   switch (entry.action) {
     case 'problem.created':
       return 'created the problem'
     case 'problem.updated':
-      return `changed the ${entry.changed_fields.map((name) => fieldNames[name] ?? name).join(' and ')}`
+      return describeUpdate(entry.changed_fields)
     case 'problem.state_changed':
       return entry.state
         ? `changed the status to ${problemStateLabels[entry.state]}`
@@ -154,6 +181,12 @@ function describe(entry: ProblemActivity): ReactNode {
       ) : (
         <>cleared the assignee of {reportLink(entry)}</>
       )
+    case 'engineering_issue.linked':
+      return 'linked a GitHub issue'
+    case 'engineering_issue.created':
+      return 'created a GitHub issue'
+    case 'engineering_issue.unlinked':
+      return 'unlinked the GitHub issue'
     default:
       return 'updated the problem'
   }

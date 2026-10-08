@@ -1,14 +1,6 @@
 import type { ProblemState } from '@/api/problems'
 import { StatusBadge } from '@/components/status/status-badge'
-import type { StatusTone } from '@/components/status/status-tone'
-import { problemStateLabels } from './problem-format'
-
-const problemStateTones: Record<ProblemState, StatusTone> = {
-  open: 'info',
-  in_progress: 'progress',
-  fix_available: 'success',
-  not_planned: 'neutral',
-}
+import { problemStateLabels, problemStateTones } from './problem-format'
 
 export function ProblemStateBadge({ state }: { state: ProblemState }) {
   return (
