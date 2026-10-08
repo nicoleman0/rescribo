@@ -21,6 +21,8 @@ export const sourceKinds = (Object.keys(sourceLabels) as SourceKind[]).map(
 
 export const UNASSIGNED = 'unassigned'
 
+export const INBOX_REFRESH_MS = 30_000
+
 const filterKeys = [
   'q',
   'customer',
@@ -47,6 +49,11 @@ export function queryFromParams(params: URLSearchParams): InboxQuery {
 
 export function hasActiveFilters(query: InboxQuery): boolean {
   return filterKeys.some((key) => Boolean(query[key]))
+}
+
+/** Filters behind the phone Filters button; report search stays visible. */
+export function hiddenFilterCount(query: InboxQuery): number {
+  return filterKeys.filter((key) => key !== 'q' && Boolean(query[key])).length
 }
 
 /** Apply filter changes and return to the first page of results. */

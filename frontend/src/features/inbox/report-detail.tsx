@@ -1,7 +1,7 @@
 import { DeleteReport } from '@/features/settings/delete-report'
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { getReport, reportKeys, type ReportDetail } from '@/api/reports'
 import type { ApiError } from '@/api/request'
@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { touchTarget } from '@/components/layout/touch-target'
 import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 import { Provenance } from './provenance'
 import { ReportTriage } from './report-actions'
 import { formatDate, memberName } from './report-format'
@@ -36,17 +37,22 @@ export function ReportDetailPanel({
   return (
     <section
       aria-label="Report detail"
-      className="grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2"
+      className="relative grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2 lg:sticky lg:top-6 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto"
     >
+      {/* A back link on phones, a close icon beside the list on desktop. */}
       <Button
         asChild
         variant="ghost"
         size="sm"
-        className={`w-fit ${touchTarget}`}
+        className={cn(
+          'w-fit lg:absolute lg:top-3 lg:right-3 lg:size-8 lg:p-0',
+          touchTarget,
+        )}
       >
         <Link to={backTo}>
-          <ArrowLeft aria-hidden="true" />
-          Back to reports
+          <ArrowLeft aria-hidden="true" className="lg:hidden" />
+          <span className="lg:sr-only">Back to reports</span>
+          <X aria-hidden="true" className="size-4 max-lg:hidden" />
         </Link>
       </Button>
       {report.isPending ? <LoadingState label="Loading report" /> : null}
@@ -108,7 +114,9 @@ function ReportDetailBody({
             v{report.version}
           </span>
         </div>
-        <h2 className="text-base font-semibold break-words">{report.title}</h2>
+        <h2 className="text-base font-semibold break-words lg:pr-8">
+          {report.title}
+        </h2>
         {report.description ? (
           <p className="min-w-0 break-words text-sm whitespace-pre-wrap">
             {report.description}
@@ -117,6 +125,8 @@ function ReportDetailBody({
           <p className="text-sm text-muted-foreground">No description.</p>
         )}
       </header>
+      <Separator />
+      <ReportTriage workspaceId={workspaceId} report={report} />
       <Separator />
       <dl className="grid grid-cols-[8rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
         <Detail label="Customer">{report.customer_label || '—'}</Detail>
@@ -149,15 +159,16 @@ function ReportDetailBody({
         </Detail>
       </dl>
       <Separator />
-      <ReportTriage workspaceId={workspaceId} report={report} />
-      <Separator />
-      <DeleteReport report={report} />
       <Provenance
         workspaceId={workspaceId}
         reportId={report.id}
         provenance={report.provenance}
         submittedBy={report.submitted_by}
       />
+      {/* Owners only; the wrapper collapses when there is nothing to show. */}
+      <div className="border-t border-border pt-4 empty:hidden">
+        <DeleteReport report={report} />
+      </div>
     </article>
   )
 }

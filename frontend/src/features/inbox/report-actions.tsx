@@ -63,12 +63,13 @@ export function ReportTriage({
           </AlertDescription>
         </Alert>
       ) : null}
-      <AssignReportForm workspaceId={workspaceId} report={report} />
+      {/* Grouping is the usual next step, so it comes before assignment. */}
       <GroupingActions
         workspaceId={workspaceId}
         report={report}
         onDone={() => heading.current?.focus()}
       />
+      <AssignReportForm workspaceId={workspaceId} report={report} />
     </section>
   )
 }

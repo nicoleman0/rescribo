@@ -108,3 +108,16 @@ that owns the draft when a recoverable request fails.
 - Each integration is a `Card` with its name and `ConnectionStatusBadge` in
   the header. Job counts are four labelled numbers in Geist Mono, in the
   foreground colour, because counts are not statuses.
+
+## Inbox
+
+- Rows are one line: status badge first, then title, customer, assignee
+  avatar, and a short date. The list is a container; when it is narrow (a
+  report is open, or phone width) a row shows the badge, the title, and a
+  customer and date line.
+- Status filters are chips with counts. Each count is the list query for that
+  chip with the other active filters.
+- The report panel sits beside the list at elevation 2 and stays in view on
+  desktop. Triage comes before the report details.
+- On phones only the report search and a Filters button show; the button
+  opens the other filters and shows how many are active.

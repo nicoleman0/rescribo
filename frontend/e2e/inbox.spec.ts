@@ -27,6 +27,11 @@ async function signIn(page: Page) {
 
 const reportList = (page: Page) => page.getByRole('list', { name: 'Reports' })
 
+const statusChip = (page: Page, label: string) =>
+  page
+    .getByRole('group', { name: 'Status' })
+    .getByRole('button', { name: new RegExp(`^${label}\\b`) })
+
 // The router commits URL changes in a transition. Wait for each filter change
 // to land before the next one, or the next handler can reuse stale filters.
 const expectSearch = (page: Page, search: string) =>
@@ -100,10 +105,14 @@ test.describe('Inbox', () => {
       .getByLabel('Assignee')
       .selectOption('unassigned')
     await expectSearch(page, '?assignee=unassigned')
-    await page.getByLabel('Status').selectOption('new')
+    await statusChip(page, 'New').click()
     await expectSearch(page, '?assignee=unassigned&triage_state=new')
     await expect(reportList(page)).toContainText(marker)
-    await page.getByLabel('Status').selectOption('dismissed')
+    await expect(statusChip(page, 'New')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await statusChip(page, 'Dismissed').click()
     await expect(page.getByText('No reports match these filters')).toBeVisible()
 
     await page.getByRole('button', { name: 'Clear filters' }).first().click()
@@ -270,7 +279,22 @@ test.describe('Inbox', () => {
 
   test('stacks the list and detail at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
+    await page.goto('/inbox')
+    const filters = page.getByRole('button', { name: 'Filters' })
+    await expect(
+      page.getByRole('searchbox', { name: 'Search reports' }),
+    ).toBeInViewport()
+    await expect(filters).toBeInViewport()
+    await expect(reportList(page).getByRole('link').first()).toBeInViewport()
+    await expect(page.getByRole('group', { name: 'Status' })).toBeHidden()
+    await filters.click()
+    await expect(filters).toHaveAttribute('aria-expanded', 'true')
+    await expect(page.getByRole('group', { name: 'Status' })).toBeVisible()
+
     await page.goto('/inbox?customer=seeded')
+    await expect(
+      page.getByRole('button', { name: /^Filters\W+1 active$/ }),
+    ).toBeVisible()
     await reportList(page).getByRole('link', { name: seededTitle }).click()
     const detail = page.getByRole('region', { name: 'Report detail' })
     await expect(detail).toBeVisible()
