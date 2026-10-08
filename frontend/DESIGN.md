@@ -160,3 +160,9 @@ and scopes `--muted` to `--raised-muted` for fills and hover states inside it.
 Outline and secondary buttons use `shadow-hairline`: a 3% black shadow in
 light and a 50% black shadow in dark. Reduced motion keeps the resulting
 colours and shadows and applies no animated transition.
+
+## Problems list
+
+- A row's title keeps at least 12rem. When the badges do not fit beside
+  it, they move under the title, left-aligned, and wrap. No breakpoint is
+  involved, so the rule holds beside the sidebar and on phones.

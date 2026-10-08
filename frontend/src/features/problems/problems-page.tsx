@@ -210,11 +210,11 @@ function ProblemList({ page }: { page: ProblemPage }) {
             to={`/problems/${problem.id}`}
             className="grid gap-1.5 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
           >
-            <span className="flex items-start justify-between gap-3">
-              <span className="min-w-0 font-medium break-words">
+            <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+              <span className="min-w-0 grow basis-48 font-medium break-words">
                 {problem.title}
               </span>
-              <span className="flex shrink-0 flex-wrap justify-end gap-1">
+              <span className="flex min-w-0 flex-wrap gap-1">
                 {problem.needs_review ? <NeedsReviewBadge /> : null}
                 <ProblemStateBadge state={problem.state} />
                 {problem.engineering_issue ? (
