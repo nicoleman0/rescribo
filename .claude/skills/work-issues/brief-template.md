@@ -14,7 +14,7 @@ You work on one issue in your own git worktree. A coordinator session reviews yo
 
 ## Isolation (required)
 
-Postgres and Redis run in Docker from the main checkout. Your `.env` already points at your own database and Redis index.
+Postgres and Redis run in Docker from the main checkout and are already up. Your `.env` already points at your own database and Redis index. They listen on the host ports in `RESCRIBO_DATABASE_URL` and `RESCRIBO_REDIS_URL`, not the defaults 5432 and 6379. Check those before reporting them down.
 - Never run `task services`, `task stop`, or `docker compose`. Never touch ports 8000 or 5173, the main checkout, or another worktree.
 - Dev servers: `RESCRIBO_SLACK_FAKE_DELIVERY=true uv run python backend/manage.py runserver 127.0.0.1:{api} --noreload`, and from `frontend`, `API_PROXY_TARGET=http://127.0.0.1:{api} npm run dev -- --host 127.0.0.1 --port {web} --strictPort`. Stop them when you finish.
 - Checks: `npx @fission-ai/openspec validate --all --strict`, `task check test build schema-check`, and `RESCRIBO_E2E_API_PORT={api} RESCRIBO_E2E_FRONTEND_PORT={web} task e2e`. Without those two variables Playwright reuses another checkout's server and tests the wrong code. Run `task worker-check` too if you change worker wiring.
