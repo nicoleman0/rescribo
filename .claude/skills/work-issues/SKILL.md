@@ -22,7 +22,7 @@ The coordinator is always Claude Opus 5.5 at high effort, this session. Workers 
 |---|---|---|
 | Planner | Claude, `issue-planner` profile | kind `claude`: `--agent issue-planner --permission-mode auto` |
 | Implementer | Claude, `issue-implementer` profile | kind `claude`: `--agent issue-implementer --permission-mode auto` |
-| Implementer | Codex, `gpt-6.1-sol`, medium | kind `codex`: `-m gpt-6.1-sol -c model_reasoning_effort=medium --approve-for-me` |
+| Implementer | Codex, `gpt-6-luna`, medium | kind `codex`: `-m gpt-6-luna -c model_reasoning_effort=medium --approve-for-me` |
 | Implementer | opencode, Kimi K3 | headless, not an agent session: see opencode below |
 
 Planners always run on Claude, because plans need the most judgment. Spread implementers across the three providers to share the usage:
