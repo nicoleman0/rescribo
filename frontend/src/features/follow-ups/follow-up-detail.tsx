@@ -1164,9 +1164,7 @@ function FollowUpHistory({ followUp }: { followUp: FollowUpDetail }) {
   if (!history.length) return null
   return (
     <section aria-labelledby={headingId} className={sectionClass}>
-      <SectionHeading id={headingId}>
-        History
-      </SectionHeading>
+      <SectionHeading id={headingId}>History</SectionHeading>
       <ol className="grid gap-2 border-l border-border pl-4">
         {history.map((entry) => (
           <li key={entry.id} className="grid gap-0.5 text-sm">
