@@ -9,6 +9,9 @@ test.each(STATUS_TONES)(
     render(<StatusBadge tone={tone}>Label {tone}</StatusBadge>)
     const badge = screen.getByText(`Label ${tone}`)
     expect(badge).toHaveAttribute('data-tone', tone)
-    expect(badge.querySelector('[aria-hidden="true"]')).not.toBeNull()
+    expect(badge).toHaveClass('transition-status')
+    expect(badge.querySelector('[aria-hidden="true"]')).toHaveClass(
+      'transition-status',
+    )
   },
 )

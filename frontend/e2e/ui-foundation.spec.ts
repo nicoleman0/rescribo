@@ -10,6 +10,9 @@ const seedPath = path.join(
 )
 type Seed = { users: { email: string; password: string }[] }
 
+// Axe needs settled colours rather than a frame from the page fade.
+test.use({ reducedMotion: 'reduce' })
+
 test.describe('UI foundation', () => {
   test.beforeEach(async ({ page }) => {
     const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed

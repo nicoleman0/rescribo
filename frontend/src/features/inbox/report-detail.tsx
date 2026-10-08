@@ -9,6 +9,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
 import { touchTarget } from '@/components/layout/touch-target'
@@ -37,7 +38,7 @@ export function ReportDetailPanel({
   return (
     <section
       aria-label="Report detail"
-      className="relative grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2 lg:sticky lg:top-6 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto"
+      className="relative grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2 lg:max-h-[calc(100svh-3rem)] lg:overflow-y-auto"
     >
       {/* A back link on phones, a close icon beside the list on desktop. */}
       <Button
@@ -92,7 +93,9 @@ export function ReportDetailPanel({
         report.isError &&
         [403, 404].includes((report.error as ApiError).status ?? 0)
       ) ? (
-        <ReportDetailBody workspaceId={workspaceId} report={report.data} />
+        <ReadyState>
+          <ReportDetailBody workspaceId={workspaceId} report={report.data} />
+        </ReadyState>
       ) : null}
     </section>
   )

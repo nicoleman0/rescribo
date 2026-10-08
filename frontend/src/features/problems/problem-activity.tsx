@@ -6,7 +6,11 @@ import {
   problemKeys,
   type ProblemActivity,
 } from '@/api/problems'
-import { ErrorState, LoadingState } from '@/components/states/async-states'
+import {
+  ErrorState,
+  LoadingState,
+  ReadyState,
+} from '@/components/states/async-states'
 import { formatDate, memberName } from '@/features/inbox/report-format'
 import { cn } from '@/lib/utils'
 import {
@@ -56,7 +60,7 @@ export function ProblemActivityList({
         />
       ) : null}
       {activity.data ? (
-        <div
+        <ReadyState
           aria-busy={activity.isPlaceholderData}
           className={cn(
             'grid gap-3',
@@ -78,7 +82,7 @@ export function ProblemActivityList({
             pageNumber={page}
             onPage={(next) => setPage(next ?? 1)}
           />
-        </div>
+        </ReadyState>
       ) : null}
     </section>
   )

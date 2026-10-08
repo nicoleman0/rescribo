@@ -11,6 +11,9 @@ const seedPath = path.join(
 )
 type Seed = { users: { email: string; password: string }[] }
 
+// Axe needs settled colours rather than a frame from the content fade.
+test.use({ reducedMotion: 'reduce' })
+
 // The seed command creates this synthetic Slack report in the e2e workspace.
 const seededTitle = 'Synthetic Slack report'
 

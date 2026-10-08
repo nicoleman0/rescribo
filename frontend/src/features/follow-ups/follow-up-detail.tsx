@@ -28,6 +28,7 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
+  ReadyState,
 } from '@/components/states/async-states'
 import { ActionError } from '@/components/states/action-error'
 import { fieldError } from '@/components/forms/field-error'
@@ -73,7 +74,7 @@ export function FollowUpDetailPanel({
   return (
     <section
       aria-label="Follow-up detail"
-      className="grid content-start gap-4 rounded-card bg-card p-4 shadow-elevation-2"
+      className="grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2"
     >
       <Button
         asChild
@@ -123,11 +124,13 @@ export function FollowUpDetailPanel({
         detail.isError &&
         [403, 404].includes((detail.error as ApiError).status ?? 0)
       ) ? (
-        <FollowUpBody
-          workspaceId={workspaceId}
-          followUp={detail.data}
-          isOwner={membership.role === 'owner'}
-        />
+        <ReadyState>
+          <FollowUpBody
+            workspaceId={workspaceId}
+            followUp={detail.data}
+            isOwner={membership.role === 'owner'}
+          />
+        </ReadyState>
       ) : null}
     </section>
   )

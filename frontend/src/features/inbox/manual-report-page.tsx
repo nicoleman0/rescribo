@@ -70,7 +70,7 @@ function ManualReportForm({
   })
 
   return (
-    <div className="grid max-w-2xl gap-6">
+    <div className="animate-page-enter grid max-w-2xl gap-6">
       <header>
         <h1 className="text-xl font-semibold">New report</h1>
         <p className="mt-1 text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { Inbox, RefreshCw, TriangleAlert } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -21,6 +21,10 @@ export function LoadingState({ label = 'Loading' }: { label?: string }) {
       <Skeleton className="h-11 w-4/5" />
     </div>
   )
+}
+
+export function ReadyState({ className, ...props }: ComponentProps<'div'>) {
+  return <div className={cn('animate-content-enter', className)} {...props} />
 }
 
 export function RetryButton({
@@ -121,5 +125,5 @@ export function QueryState({
   if (status === 'error') {
     return <ErrorState onRetry={onRetry} isRetrying={isRetrying} />
   }
-  return <>{children}</>
+  return <ReadyState>{children}</ReadyState>
 }

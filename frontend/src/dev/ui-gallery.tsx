@@ -5,6 +5,7 @@ import {
   ErrorState,
   LoadingState,
   QueryState,
+  ReadyState,
   RetryButton,
 } from '@/components/states/async-states'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 
 export default function UiGalleryPage() {
+  const [motionReplay, setMotionReplay] = useState(0)
   const [isRetrying, setIsRetrying] = useState(false)
   const retry = () => {
     setIsRetrying(true)
@@ -81,11 +83,49 @@ export default function UiGalleryPage() {
           <div className="rounded-card bg-card p-4 text-sm shadow-elevation-1">
             1: resting lists and cards
           </div>
-          <div className="rounded-card bg-card p-4 text-sm shadow-elevation-2">
+          <div className="rounded-card surface-raised p-4 text-sm shadow-elevation-2">
             2: raised detail panels
           </div>
           <div className="rounded-card bg-card p-4 text-sm shadow-elevation-3">
             3: floating toasts and menus
+          </div>
+        </div>
+      </section>
+
+      <section aria-labelledby="motion-heading" className="grid gap-3">
+        <h2 id="motion-heading" className="text-sm font-semibold">
+          Motion
+        </h2>
+        <Button
+          variant="outline"
+          className="w-fit"
+          onClick={() => setMotionReplay((value) => value + 1)}
+        >
+          Replay motion
+        </Button>
+        <div
+          key={motionReplay}
+          className="animate-page-enter grid gap-4 sm:grid-cols-2"
+        >
+          <ReadyState>
+            <ul className="stagger-rows divide-y divide-border rounded-card bg-card shadow-elevation-1">
+              {['First row', 'Second row', 'Third row'].map((label) => (
+                <li key={label} className="p-3">
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </ReadyState>
+          <div className="animate-panel-enter surface-raised rounded-card p-4 shadow-elevation-2">
+            <ReadyState className="grid gap-3">
+              <p>Raised panel</p>
+              <StatusBadge tone={motionReplay % 2 ? 'success' : 'info'}>
+                Status change
+              </StatusBadge>
+              <Button variant="secondary" className="w-fit">
+                Secondary action
+              </Button>
+            </ReadyState>
           </div>
         </div>
       </section>
