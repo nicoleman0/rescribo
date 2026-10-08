@@ -1164,7 +1164,7 @@ function FollowUpHistory({ followUp }: { followUp: FollowUpDetail }) {
   if (!history.length) return null
   return (
     <section aria-labelledby={headingId} className={sectionClass}>
-      <SectionHeading id={headingId} className="text-base font-semibold">
+      <SectionHeading id={headingId}>
         History
       </SectionHeading>
       <ol className="grid gap-2 border-l border-border pl-4">
