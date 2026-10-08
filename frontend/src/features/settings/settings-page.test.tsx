@@ -205,3 +205,57 @@ test('a member picks a theme that applies at once and is saved', async () => {
   expect(localStorage.getItem('rescribo-theme')).toBe('dark')
   localStorage.clear()
 })
+
+test('each integration is a card with its status, repository, and job counts', async () => {
+  stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () =>
+      json([
+        {
+          ...slackConnection,
+          status: 'error',
+          error_code: 'token_revoked',
+          error_detail: 'Reconnect Slack.',
+        },
+        {
+          ...slackConnection,
+          provider: 'github',
+          identity: 'acme-app',
+          external_id: '42',
+          repository: 'acme/web',
+          visibility: 'private',
+          operations: { queued: 2, running: 1, failed: 3, uncertain: 4 },
+        },
+      ]),
+  })
+  render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  expect(within(slack).getByText('Needs attention')).toHaveAttribute(
+    'data-tone',
+    'danger',
+  )
+  expect(within(slack).getByText('Reconnect Slack.')).toBeVisible()
+  const github = screen.getByRole('region', { name: 'GitHub' })
+  expect(within(github).getByText('Connected')).toHaveAttribute(
+    'data-tone',
+    'success',
+  )
+  expect(within(github).getByText('acme/web')).toBeVisible()
+  const jobs = within(github).getByRole('group', { name: 'Jobs' })
+  const count = (label: string) =>
+    within(jobs).getByText(label).nextElementSibling
+  expect(count('Queued')).toHaveTextContent('2')
+  expect(count('Running')).toHaveTextContent('1')
+  expect(count('Failed')).toHaveTextContent('3')
+  expect(count('Uncertain')).toHaveTextContent('4')
+})
+
+test('a provider that was never connected reads not connected', async () => {
+  stubApi({ ...unlinked, [`GET ${base}connections/`]: () => json([]) })
+  render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  expect(within(slack).getByText('Not connected')).toHaveAttribute(
+    'data-tone',
+    'neutral',
+  )
+})

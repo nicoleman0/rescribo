@@ -18,7 +18,6 @@ import {
   type FollowUpDetail,
   type FollowUpHistoryItem,
   type FollowUpNotification,
-  type FollowUpRecipient,
 } from '@/api/follow-ups'
 import type { ApiError } from '@/api/request'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -36,14 +35,9 @@ import { SelectField, TextareaField } from '@/components/forms/field'
 import { memberName, formatDate } from '@/features/inbox/report-format'
 import { useMembers } from '@/features/inbox/use-members'
 import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
-import { StatusBadge } from '@/components/status/status-badge'
 import { cn } from '@/lib/utils'
-import {
-  contactStateLabels,
-  contactTones,
-  deliveryLabel,
-  deliveryTones,
-} from './follow-ups-format'
+import { contactStateLabels } from './follow-ups-format'
+import { FollowUpStatuses } from './follow-up-statuses'
 import { useFollowUpMutation } from './follow-ups-mutation'
 
 const QUEUED_POLL_MS = 5_000
@@ -153,8 +147,6 @@ function FollowUpBody({
     <article className="grid gap-4">
       <FollowUpSummary followUp={followUp} notification={notification} />
       <Separator />
-      <Destination recipient={followUp.recipient} />
-      <Separator />
       <MessageSection
         workspaceId={workspaceId}
         followUp={followUp}
@@ -189,56 +181,46 @@ function FollowUpSummary({
   followUp: FollowUpDetail
   notification: FollowUpNotification | null
 }) {
-  const isDemo = useIsDemo()
+  const { recipient } = followUp
   return (
-    <header className="grid gap-2">
-      <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge tone={contactTones[followUp.outcome.state]}>
-          Contact: {contactStateLabels[followUp.outcome.state]}
-        </StatusBadge>
-        {notification ? (
-          <StatusBadge tone={deliveryTones[notification.state]}>
-            Delivery: {deliveryLabel(notification.state, isDemo)}
-          </StatusBadge>
-        ) : (
-          <StatusBadge tone="neutral">Not prepared</StatusBadge>
-        )}
+    <header className="grid gap-3">
+      <FollowUpStatuses
+        delivery={notification?.state ?? null}
+        outcome={followUp.outcome.state}
+      />
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="min-w-0 text-base font-semibold break-words">
+          {followUp.report.title}
+        </h2>
         <span className="font-mono text-[11px] text-muted-foreground">
           v{followUp.version}
         </span>
       </div>
-      <h2 className="text-base font-semibold break-words">
-        {followUp.report.title}
-      </h2>
-      <p className="text-sm text-muted-foreground">
-        Customer: {followUp.report.customer_label || '—'}
-      </p>
-      <p className="text-sm text-muted-foreground">
-        Fix: {followUp.problem.fix_note || '—'}
-      </p>
-      {followUp.problem.fix_version ? (
-        <p className="text-sm text-muted-foreground">
-          Available in {followUp.problem.fix_version}
-        </p>
-      ) : null}
-      {followUp.outcome.note ? (
-        <p className="text-sm">
-          <span className="text-muted-foreground">Outcome note: </span>
-          {followUp.outcome.note}
-        </p>
-      ) : null}
+      <dl className="grid grid-cols-[6rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
+        <dt className="text-muted-foreground">Customer</dt>
+        <dd className="break-words">{followUp.report.customer_label || '—'}</dd>
+        <dt className="text-muted-foreground">Fix</dt>
+        <dd className="break-words">{followUp.problem.fix_note || '—'}</dd>
+        {followUp.problem.fix_version ? (
+          <>
+            <dt className="text-muted-foreground">Available in</dt>
+            <dd className="break-words">{followUp.problem.fix_version}</dd>
+          </>
+        ) : null}
+        <dt className="text-muted-foreground">Destination</dt>
+        <dd className="break-words">
+          {recipient.has_slack_link
+            ? `Slack DM to ${memberName(recipient.member)}`
+            : `Copy to send to ${memberName(recipient.member)}`}
+        </dd>
+        {followUp.outcome.note ? (
+          <>
+            <dt className="text-muted-foreground">Outcome note</dt>
+            <dd className="break-words">{followUp.outcome.note}</dd>
+          </>
+        ) : null}
+      </dl>
     </header>
-  )
-}
-
-function Destination({ recipient }: { recipient: FollowUpRecipient }) {
-  const text = recipient.has_slack_link
-    ? `Slack DM to ${memberName(recipient.member)}`
-    : `Copy to send to ${memberName(recipient.member)}`
-  return (
-    <p className="text-sm text-muted-foreground">
-      <span className="font-medium text-foreground">Destination:</span> {text}
-    </p>
   )
 }
 

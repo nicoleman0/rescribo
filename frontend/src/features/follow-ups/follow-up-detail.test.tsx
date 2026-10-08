@@ -87,7 +87,40 @@ function stubDetail(overrides: Partial<FollowUpDetail> = {}) {
 
 const messageRegion = () => screen.getByRole('region', { name: 'Message' })
 
-void stubDetail
+const definitionOf = (term: string) =>
+  screen.getAllByRole('term').find((dt) => dt.textContent === term)
+    ?.nextElementSibling
+
+test('labels delivery and outcome and lists the follow-up details', async () => {
+  stubDetail({
+    notification: notification('failed'),
+    outcome: {
+      state: 'still_affected',
+      note: 'Still slow',
+      at: null,
+      by: null,
+    },
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('heading', { name: 'CSV export fails' })
+  expect(definitionOf('Delivery')).toHaveTextContent('Failed')
+  expect(screen.getByText('Failed')).toHaveAttribute('data-tone', 'danger')
+  expect(definitionOf('Outcome')).toHaveTextContent('Still affected')
+  expect(definitionOf('Customer')).toHaveTextContent('Acme')
+  expect(definitionOf('Fix')).toHaveTextContent('Fix the parser')
+  expect(definitionOf('Available in')).toHaveTextContent('1.0')
+  expect(definitionOf('Destination')).toHaveTextContent(
+    'Slack DM to Ada Lovelace',
+  )
+  expect(definitionOf('Outcome note')).toHaveTextContent('Still slow')
+})
+
+test('shows delivery as not prepared before a message exists', async () => {
+  stubDetail()
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('heading', { name: 'CSV export fails' })
+  expect(definitionOf('Delivery')).toHaveTextContent('Not prepared')
+})
 
 test('drafts the default message then edits it before approving', async () => {
   document.cookie = 'csrftoken=csrf-token'
@@ -530,7 +563,7 @@ test('labels a delivered message in the demo as simulated', async () => {
     expect(
       await screen.findByText('Message sent (simulated)'),
     ).toBeInTheDocument()
-    expect(screen.getByText('Delivery: Sent (simulated)')).toBeInTheDocument()
+    expect(definitionOf('Delivery')).toHaveTextContent('Sent (simulated)')
     expect(messageRegion()).toHaveTextContent('No Slack message was sent.')
   } finally {
     testMembership.workspace.is_demo = false
