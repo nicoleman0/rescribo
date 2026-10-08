@@ -70,19 +70,18 @@ function WorkspaceSettings() {
       {connections.data ? (
         <>
           {(['slack', 'github'] as const).map((provider) => (
-            <div className="grid gap-6" key={provider}>
-              <ConnectionSettings
-                workspaceId={workspace.id}
-                workspaceName={workspace.name}
-                owner={role === 'owner'}
-                provider={provider}
-                connection={connections.data.find(
-                  (item) => item.provider === provider,
-                )}
-              />
-              <Separator />
-            </div>
+            <ConnectionSettings
+              key={provider}
+              workspaceId={workspace.id}
+              workspaceName={workspace.name}
+              owner={role === 'owner'}
+              provider={provider}
+              connection={connections.data.find(
+                (item) => item.provider === provider,
+              )}
+            />
           ))}
+          <Separator />
           <SlackAccount
             workspaceId={workspace.id}
             connected={connections.data.some(

@@ -4,17 +4,17 @@ import {
   followUpKeys,
   listFollowUps,
   type FollowUpListItem,
-  type FollowUpNotificationState,
   type FollowUpPage,
 } from '@/api/follow-ups'
 import type { ApiError } from '@/api/request'
-import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
-import { StatusBadge } from '@/components/status/status-badge'
+import { useWorkspace } from '@/components/auth/use-workspace'
 import {
   EmptyState,
   ErrorState,
   LoadingState,
 } from '@/components/states/async-states'
+import { touchTarget } from '@/components/layout/touch-target'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { memberName } from '@/features/inbox/report-format'
 import {
@@ -23,16 +23,9 @@ import {
   withBucket,
   type Bucket,
 } from './follow-ups-query'
-import {
-  bucketLabels,
-  bucketOrder,
-  contactStateLabels,
-  contactTones,
-  deliveryLabel,
-  deliveryTones,
-  emptyBucketCopy,
-} from './follow-ups-format'
+import { bucketLabels, bucketOrder, emptyBucketCopy } from './follow-ups-format'
 import { FollowUpDetailPanel } from './follow-up-detail'
+import { FollowUpStatuses } from './follow-up-statuses'
 
 const FOLLOW_UPS_REFRESH_MS = 30_000
 
@@ -115,8 +108,9 @@ function BucketTabs({
     refetchInterval: FOLLOW_UPS_REFRESH_MS,
   })
   return (
-    <nav aria-label="Follow-up buckets">
-      <ul className="flex flex-wrap gap-2">
+    <nav aria-label="Follow-up buckets" className="grid gap-3">
+      {/* One row that scrolls sideways, so the list starts near the top on a phone. */}
+      <ul className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-control bg-muted p-1">
         <TabButton
           label="All"
           count={all.data?.count}
@@ -176,8 +170,9 @@ function TabButton({
         aria-pressed={active}
         onClick={onClick}
         className={cn(
-          'inline-flex max-md:min-h-[44px] items-center gap-2 rounded-pill border border-border px-3 py-1 text-sm transition-colors hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50',
-          active && 'bg-selected font-medium text-foreground',
+          'inline-flex min-h-8 items-center gap-2 rounded-control px-3 text-sm whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+          touchTarget,
+          active && 'bg-card font-medium text-foreground shadow-elevation-1',
         )}
       >
         <span>{label}</span>
@@ -272,8 +267,10 @@ function FollowUpsList({
       </p>
       {query.data.count > 25 ? (
         <nav aria-label="Follow-up pages" className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="outline"
+            className={touchTarget}
             disabled={page <= 1}
             onClick={() => {
               const next = new URLSearchParams(params)
@@ -282,12 +279,14 @@ function FollowUpsList({
             }}
           >
             Previous page
-          </button>
-          <span aria-live="polite">
+          </Button>
+          <span aria-live="polite" className="text-sm text-muted-foreground">
             Page {page} of {Math.ceil(query.data.count / 25)}
           </span>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            className={touchTarget}
             disabled={page >= Math.ceil(query.data.count / 25)}
             onClick={() => {
               const next = new URLSearchParams(params)
@@ -296,7 +295,7 @@ function FollowUpsList({
             }}
           >
             Next page
-          </button>
+          </Button>
         </nav>
       ) : null}
     </div>
@@ -318,43 +317,26 @@ function FollowUpRow({
         to={`/follow-ups/${followUp.id}${search}`}
         aria-current={followUp.id === selectedId ? 'page' : undefined}
         className={cn(
-          'grid gap-1.5 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset',
+          'grid gap-2 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset md:grid-cols-[minmax(0,1fr)_13rem] md:items-center md:gap-4',
           followUp.id === selectedId && 'bg-selected',
         )}
       >
-        <span className="flex items-start justify-between gap-3">
-          <span className="min-w-0 font-medium break-words">
+        <span className="grid min-w-0 gap-1">
+          <span className="font-medium break-words">
             {followUp.report_title}
           </span>
-          <span className="flex shrink-0 flex-wrap justify-end gap-1">
-            <DeliveryChip state={followUp.delivery_state} />
-            <ContactChip state={followUp.contact_state} />
+          <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <span>{followUp.customer_label || 'No customer'}</span>
+            <span>For: {memberName(followUp.recipient)}</span>
+            <span className="font-mono">v{followUp.resolution_revision}</span>
           </span>
         </span>
-        <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <span>{followUp.customer_label || 'No customer'}</span>
-          <span>For: {memberName(followUp.recipient)}</span>
-          <span className="font-mono">v{followUp.resolution_revision}</span>
-        </span>
+        <FollowUpStatuses
+          delivery={followUp.delivery_state}
+          outcome={followUp.contact_state}
+          layout="row"
+        />
       </Link>
     </li>
-  )
-}
-
-function DeliveryChip({ state }: { state: FollowUpNotificationState | null }) {
-  const isDemo = useIsDemo()
-  if (!state) return null
-  return (
-    <StatusBadge tone={deliveryTones[state]}>
-      {deliveryLabel(state, isDemo)}
-    </StatusBadge>
-  )
-}
-
-function ContactChip({ state }: { state: FollowUpListItem['contact_state'] }) {
-  return (
-    <StatusBadge tone={contactTones[state]}>
-      {contactStateLabels[state]}
-    </StatusBadge>
   )
 }

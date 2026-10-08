@@ -253,3 +253,29 @@ test('shows delivery and contact states in their status tones', async () => {
     'warning',
   )
 })
+
+test('labels delivery and outcome in each row', async () => {
+  stubApi({
+    [listKey]: listHandler({
+      '': page([
+        item({ id: 'fu-1', delivery_state: 'sent', contact_state: 'pending' }),
+        item({ id: 'fu-2', report_title: 'Unprepared', delivery_state: null }),
+      ]),
+    }),
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups')
+  const [sent, unprepared] = within(
+    await screen.findByRole('list', { name: 'Follow-ups' }),
+  ).getAllByRole('link')
+  const status = (row: HTMLElement, term: string) =>
+    within(row)
+      .getAllByRole('term')
+      .find((dt) => dt.textContent === term)?.nextElementSibling
+  expect(status(sent, 'Delivery')).toHaveTextContent('Sent')
+  expect(status(sent, 'Outcome')).toHaveTextContent('Pending')
+  expect(status(unprepared, 'Delivery')).toHaveTextContent('Not prepared')
+  expect(within(unprepared).getByText('Not prepared')).toHaveAttribute(
+    'data-tone',
+    'neutral',
+  )
+})

@@ -128,7 +128,12 @@ test.describe('Follow-ups', () => {
     await expect(detail(page).getByText('Message sent')).toBeVisible({
       timeout: 15_000,
     })
-    await expect(detail(page)).toContainText('Delivery: Sent')
+    await expect(
+      detail(page).getByRole('term').filter({ hasText: 'Delivery' }),
+    ).toBeVisible()
+    await expect(
+      detail(page).getByRole('definition').filter({ hasText: /^Sent/ }),
+    ).toBeVisible()
 
     const contact = page.getByRole('region', { name: 'Customer contact' })
     await detail(page)

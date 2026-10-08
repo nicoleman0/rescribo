@@ -51,16 +51,6 @@ export const contactStateLabels: Record<FollowUpContactState, string> = {
   no_response: 'No response',
 }
 
-export const contactStateOrder: readonly FollowUpContactState[] = [
-  'pending',
-  'contacted',
-  'confirmed',
-  'still_affected',
-  'no_response',
-]
-
-void contactStateOrder
-
 export const deliveryStateLabels: Record<FollowUpNotificationState, string> = {
   draft: 'Draft',
   queued: 'Queued',
@@ -78,6 +68,10 @@ export const deliveryLabel = (
   simulated && state === 'sent'
     ? 'Sent (simulated)'
     : deliveryStateLabels[state]
+
+// A follow-up has no notification until someone prepares the message.
+export const notPreparedLabel = 'Not prepared'
+export const notPreparedTone: StatusTone = 'neutral'
 
 export const deliveryTones: Record<FollowUpNotificationState, StatusTone> = {
   draft: 'neutral',

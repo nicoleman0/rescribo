@@ -98,3 +98,13 @@ that owns the draft when a recoverable request fails.
 - Do keep primary actions short and name the result of the action.
 - Do not add a second palette, inline colour, or per-screen loading pattern.
 - Do not build product workflow UI in the shell or gallery.
+
+## Follow-ups and settings
+
+- A follow-up has two statuses. Show each with a muted term before its badge,
+  "Delivery" and "Outcome", through `FollowUpStatuses`. The badge text stays
+  the plain state, and a follow-up with no message reads "Not prepared".
+- Detail facts use a `dl` with a fixed term column, not "Label: value" lines.
+- Each integration is a `Card` with its name and `ConnectionStatusBadge` in
+  the header. Job counts are four labelled numbers in Geist Mono, in the
+  foreground colour, because counts are not statuses.
