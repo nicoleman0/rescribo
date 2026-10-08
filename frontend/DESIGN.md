@@ -17,6 +17,22 @@ The base type size is 13px on desktop and 15px on phone.
 The shadcn `--primary` token owns the brand accent. `--accent` is a muted
 interaction surface.
 
+## Themes
+
+Light, dark, and system. `data-theme` on `<html>` always holds a concrete
+theme; `src/lib/theme.ts` resolves system and saves the choice in this
+browser, and an inline script in `index.html` applies it before first paint.
+Members pick a theme under Settings, Appearance.
+
+`:root` holds the light values. Each other theme is one
+`:root[data-theme='…']` block that redefines every colour, tone, and
+elevation token; a unit test fails if one is missing. Tailwind's `dark:`
+variant follows `data-theme`, not the media query. Dark surfaces get lighter
+as they rise, and dark shadows are stronger because they read less.
+
+To add a theme, add its token block and its name to `THEMES` in
+`src/lib/theme.ts`, then give it a picker option in `theme-settings.tsx`.
+
 ## Status tones
 
 Every status uses `StatusBadge` with one of six tones: a tinted pill, a dot,

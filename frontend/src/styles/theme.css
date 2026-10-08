@@ -22,6 +22,7 @@
   --radius-card: 8px;
   --radius-pill: 9999px;
 
+  color-scheme: light;
   --background: #fbfbfc;
   --sidebar: #f4f4f7;
   --card: #ffffff;
@@ -68,6 +69,55 @@
     0 2px 6px rgb(22 22 29 / 0.06), 0 8px 24px rgb(22 22 29 / 0.06),
     0 0 0 1px var(--border);
   --elevation-3: 0 12px 32px rgb(22 22 29 / 0.14), 0 0 0 1px var(--border);
+}
+
+/* Each theme is one block that redefines every colour token. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --background: #0f0f14;
+  --sidebar: #131319;
+  --card: #17171f;
+  --card-foreground: #ececf1;
+  --border: #26262f;
+  --foreground: #ececf1;
+  --muted-foreground: #a0a0ae;
+  --muted: #1d1d26;
+  --secondary: #1d1d26;
+  --secondary-foreground: #ececf1;
+  --accent: #1d1d26;
+  --accent-foreground: #ececf1;
+  --input: #34343f;
+  --selected: #23233a;
+  --primary: #8b8cf5;
+  --primary-foreground: #101018;
+  --destructive: #ffa399;
+  --destructive-foreground: #101018;
+  --ring: #8b8cf5;
+
+  --tone-neutral: #24242d;
+  --tone-neutral-foreground: #b8b8c5;
+  --tone-neutral-dot: #7a7a88;
+  --tone-info: #24244a;
+  --tone-info-foreground: #b2b2ff;
+  --tone-info-dot: #8b8cf5;
+  --tone-progress: #142a42;
+  --tone-progress-foreground: #92c2f5;
+  --tone-progress-dot: #5aa2ec;
+  --tone-success: #12301f;
+  --tone-success-foreground: #84d8a8;
+  --tone-success-dot: #3fbf7a;
+  --tone-warning: #3a2a11;
+  --tone-warning-foreground: #f2bd66;
+  --tone-warning-dot: #e6a23c;
+  --tone-danger: #3f1915;
+  --tone-danger-foreground: #ffa399;
+  --tone-danger-dot: #f0675a;
+
+  --elevation-1: 0 1px 2px rgb(0 0 0 / 0.4), 0 0 0 1px var(--border);
+  --elevation-2:
+    0 4px 16px rgb(0 0 0 / 0.45), 0 0 0 1px var(--border),
+    inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --elevation-3: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px var(--input);
 }
 
 @theme inline {
