@@ -1,10 +1,16 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import type { ReportPage } from '@/api/reports'
+import type { MemberSummary, ReportPage } from '@/api/reports'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { withPage } from './inbox-query'
-import { formatDate, memberName, sourceLabel } from './report-format'
+import {
+  formatDate,
+  formatShortDate,
+  memberInitials,
+  memberName,
+} from './report-format'
 import { TriageBadge } from './triage-badge'
 
 export function ReportList({
@@ -20,45 +26,85 @@ export function ReportList({
   const search = params.toString() ? `?${params.toString()}` : ''
   return (
     <div className="grid gap-3">
-      <ul
-        aria-label="Reports"
-        className="divide-y divide-border overflow-hidden rounded-card bg-card shadow-elevation-1"
-      >
-        {page.results.map((report) => (
-          <li key={report.id}>
-            <Link
-              to={`/inbox/${report.id}${search}`}
-              aria-current={report.id === selectedId ? 'page' : undefined}
-              className={cn(
-                'grid gap-1.5 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset',
-                report.id === selectedId && 'bg-selected',
-              )}
-            >
-              <span className="flex items-start justify-between gap-3">
-                <span className="min-w-0 font-medium break-words">
-                  {report.title}
-                </span>
-                <TriageBadge state={report.triage_state} />
-              </span>
-              <span className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                <span>{report.customer_label || 'No customer'}</span>
-                <span>{sourceLabel(report.source_kind)}</span>
-                <span>
-                  {report.assignee ? memberName(report.assignee) : 'Unassigned'}
-                </span>
-                {report.problem ? (
-                  <span>Problem: {report.problem.title}</span>
-                ) : null}
-                <time className="font-mono" dateTime={report.created_at}>
-                  {formatDate(report.created_at)}
-                </time>
-              </span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {/* Rows follow the list's width, which shrinks when a report is open. */}
+      <div className="@container overflow-hidden rounded-card bg-card shadow-elevation-1">
+        <ul aria-label="Reports" className="divide-y divide-border">
+          {page.results.map((report) => {
+            const customer = report.customer_label || 'No customer'
+            const date = (
+              <time
+                dateTime={report.created_at}
+                title={formatDate(report.created_at)}
+              >
+                {formatShortDate(report.created_at)}
+              </time>
+            )
+            return (
+              <li key={report.id}>
+                <Link
+                  to={`/inbox/${report.id}${search}`}
+                  aria-current={report.id === selectedId ? 'page' : undefined}
+                  className={cn(
+                    'relative grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset @2xl:grid-cols-[5.5rem_minmax(0,1fr)_10rem_auto_7rem] @2xl:py-0',
+                    report.id === selectedId &&
+                      'bg-selected before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-pill before:bg-primary',
+                  )}
+                >
+                  <span className="self-start pt-px @2xl:self-center @2xl:pt-0">
+                    <TriageBadge state={report.triage_state} />
+                  </span>
+                  <span className="grid min-w-0 gap-0.5">
+                    <span className="break-words @2xl:truncate">
+                      <span className="font-medium">{report.title}</span>
+                      {report.problem ? (
+                        <span className="ml-2 hidden text-muted-foreground @2xl:inline">
+                          <span className="sr-only">Problem: </span>
+                          {report.problem.title}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground @2xl:hidden">
+                      {customer} · {date}
+                    </span>
+                  </span>
+                  <span className="hidden truncate text-muted-foreground @2xl:block">
+                    {customer}
+                  </span>
+                  <AssigneeAvatar member={report.assignee} />
+                  <span className="hidden text-right font-mono text-xs text-muted-foreground @2xl:block">
+                    {date}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      </div>
       <Pagination page={page} pageNumber={pageNumber} />
     </div>
+  )
+}
+
+function AssigneeAvatar({ member }: { member: MemberSummary | null }) {
+  const name = member ? memberName(member) : 'Unassigned'
+  return (
+    <span className="flex justify-end" title={name}>
+      {member ? (
+        <Avatar size="sm" aria-hidden="true">
+          <AvatarFallback className="font-medium">
+            {memberInitials(member)}
+          </AvatarFallback>
+        </Avatar>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="size-6 rounded-pill border border-dashed border-input"
+        />
+      )}
+      <span className="sr-only">
+        {member ? `Assigned to ${name}` : 'Unassigned'}
+      </span>
+    </span>
   )
 }
 

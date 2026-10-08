@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import {
   hasActiveFilters,
+  INBOX_REFRESH_MS,
   queryFromParams,
   withoutFilters,
   withPage,
@@ -21,13 +23,13 @@ import { ReportDetailPanel } from './report-detail'
 import { ReportFilterBar } from './report-filter-bar'
 import { ReportList } from './report-list'
 
-const INBOX_REFRESH_MS = 30_000
-
 export function InboxPage() {
   const { workspace } = useWorkspace()
   const { reportId } = useParams()
   const [params] = useSearchParams()
   const query = queryFromParams(params)
+  // Lives here so a search, which remounts the bar, keeps the filters open.
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   return (
     <div className="grid gap-6">
@@ -45,23 +47,22 @@ export function InboxPage() {
           </Link>
         </Button>
       </header>
+      <div className={cn(reportId && 'max-lg:hidden')}>
+        <ReportFilterBar
+          key={`${query.q ?? ''}\n${query.customer ?? ''}`}
+          workspaceId={workspace.id}
+          query={query}
+          open={filtersOpen}
+          onOpenChange={setFiltersOpen}
+        />
+      </div>
       <div
         className={cn(
-          'grid gap-6',
-          reportId && 'lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]',
+          'grid items-start gap-4',
+          reportId && 'lg:grid-cols-[minmax(0,1fr)_26rem]',
         )}
       >
-        <div
-          className={cn(
-            'grid content-start gap-4',
-            reportId && 'max-lg:hidden',
-          )}
-        >
-          <ReportFilterBar
-            key={`${query.q ?? ''}\n${query.customer ?? ''}`}
-            workspaceId={workspace.id}
-            query={query}
-          />
+        <div className={cn('min-w-0', reportId && 'max-lg:hidden')}>
           <InboxResults workspaceId={workspace.id} selectedId={reportId} />
         </div>
         {reportId ? (

@@ -32,6 +32,14 @@ const routes = [
 const reportsPath = 'GET /api/workspaces/ws-1/reports/'
 const membersPath = 'GET /api/workspaces/ws-1/members/'
 
+// The list and each status chip share the reports endpoint; the visible list
+// is the request without a chip-only triage state.
+const listQueries = (queries: string[], triageState = '') =>
+  queries.filter(
+    (query) =>
+      new URLSearchParams(query).get('triage_state') === (triageState || null),
+  )
+
 test('lists reports and sends search and filter changes to the API', async () => {
   const queries: string[] = []
   stubApi({
@@ -43,10 +51,10 @@ test('lists reports and sends search and filter changes to the API', async () =>
   })
   renderWorkspaceRoutes(routes, '/inbox')
   const list = await screen.findByRole('list', { name: 'Reports' })
-  expect(
-    within(list).getByRole('link', { name: /CSV export fails/ }),
-  ).toHaveAttribute('href', '/inbox/rep-1')
-  expect(within(list).getByText('Ada Lovelace')).toBeInTheDocument()
+  const row = within(list).getByRole('link', { name: /CSV export fails/ })
+  expect(row).toHaveAttribute('href', '/inbox/rep-1')
+  expect(row).toHaveTextContent(/^New.*CSV export fails/)
+  expect(within(row).getByText('Assigned to Ada Lovelace')).toBeInTheDocument()
   expect(screen.getByText('1 report')).toBeInTheDocument()
 
   fireEvent.change(screen.getByRole('searchbox', { name: 'Search reports' }), {
@@ -56,30 +64,99 @@ test('lists reports and sends search and filter changes to the API', async () =>
     target: { value: 'acme' },
   })
   fireEvent.click(screen.getByRole('button', { name: 'Search' }))
-  await waitFor(() => expect(queries.at(-1)).toBe('?q=export&customer=acme'))
+  await waitFor(() =>
+    expect(listQueries(queries).at(-1)).toBe('?q=export&customer=acme'),
+  )
 
-  fireEvent.change(screen.getByRole('combobox', { name: 'Status' }), {
-    target: { value: 'linked' },
-  })
-  await waitFor(() => expect(queries.at(-1)).toContain('triage_state=linked'))
+  const status = screen.getByRole('group', { name: 'Status' })
+  fireEvent.click(within(status).getByRole('button', { name: /^Linked/ }))
+  await waitFor(() =>
+    expect(screen.getByTestId('location')).toHaveTextContent(
+      'triage_state=linked',
+    ),
+  )
+  expect(
+    within(status).getByRole('button', { name: /^Linked/ }),
+  ).toHaveAttribute('aria-pressed', 'true')
   await screen.findByRole('option', { name: 'Ada Lovelace' })
   fireEvent.change(screen.getByRole('combobox', { name: 'Assignee' }), {
     target: { value: 'mem-2' },
   })
-  await waitFor(() => expect(queries.at(-1)).toContain('assignee=mem-2'))
+  await waitFor(() =>
+    expect(listQueries(queries, 'linked').at(-1)).toContain('assignee=mem-2'),
+  )
   fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
     target: { value: 'manual' },
   })
-  await waitFor(() => expect(queries.at(-1)).toContain('source_kind=manual'))
+  await waitFor(() =>
+    expect(listQueries(queries, 'linked').at(-1)).toContain(
+      'source_kind=manual',
+    ),
+  )
   expect(screen.getByTestId('location')).toHaveTextContent(
     '/inbox?q=export&customer=acme&triage_state=linked&assignee=mem-2&source_kind=manual',
   )
 
   fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
-  await waitFor(() => expect(queries.at(-1)).toBe(''))
+  await waitFor(() => expect(listQueries(queries).at(-1)).toBe(''))
   expect(screen.getByRole('searchbox', { name: 'Search reports' })).toHaveValue(
     '',
   )
+})
+
+test('status chips count reports that match the other filters', async () => {
+  const counts: Record<string, number> = { new: 2, linked: 5, dismissed: 1 }
+  const queries: string[] = []
+  stubApi({
+    [reportsPath]: (url) => {
+      queries.push(url.search)
+      const state = url.searchParams.get('triage_state')
+      if (state === 'dismissed') {
+        return json({ detail: 'Server error', reason: 'error' }, 500)
+      }
+      return page([listItem], { count: state ? counts[state] : 8 })
+    },
+    [membersPath]: () => json([]),
+  })
+  renderWorkspaceRoutes(routes, '/inbox?customer=acme')
+  const status = await screen.findByRole('group', { name: 'Status' })
+  expect(
+    await within(status).findByRole('button', { name: 'All, 8' }),
+  ).toHaveAttribute('aria-pressed', 'true')
+  expect(
+    await within(status).findByRole('button', { name: 'New, 2' }),
+  ).toBeInTheDocument()
+  expect(
+    await within(status).findByRole('button', {
+      name: 'Dismissed, count unavailable',
+    }),
+  ).toBeInTheDocument()
+  expect(queries).toContain('?customer=acme&triage_state=new')
+  expect(queries).toContain('?customer=acme&triage_state=linked')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  await waitFor(() =>
+    expect(
+      queries.filter((query) => query.includes('dismissed')).length,
+    ).toBeGreaterThan(1),
+  )
+})
+
+test('the Filters button shows hidden filters and how many are active', async () => {
+  stubApi({
+    [reportsPath]: () => page([listItem]),
+    [membersPath]: () => json([]),
+  })
+  renderWorkspaceRoutes(routes, '/inbox?customer=acme&source_kind=slack')
+  const toggle = await screen.findByRole('button', {
+    name: 'Filters, 2 active',
+  })
+  expect(toggle).toHaveAttribute('aria-expanded', 'false')
+  const filters = document.getElementById(toggle.getAttribute('aria-controls')!)
+  expect(filters).toHaveClass('max-md:hidden')
+  fireEvent.click(toggle)
+  expect(toggle).toHaveAttribute('aria-expanded', 'true')
+  expect(filters).not.toHaveClass('max-md:hidden')
 })
 
 test('pages through results and keeps the filters', async () => {
@@ -123,7 +200,8 @@ test('distinguishes an empty inbox from an empty filtered result', async () => {
 test('shows an error with retry that keeps the filters', async () => {
   let calls = 0
   stubApi({
-    [reportsPath]: () => {
+    [reportsPath]: (url) => {
+      if (url.searchParams.has('triage_state')) return page([listItem])
       calls += 1
       return calls === 1
         ? json({ detail: 'Server error', reason: 'error' }, 500)
@@ -221,6 +299,12 @@ test('shows report detail with provenance, people, and problem', async () => {
   expect(
     screen.getByRole('link', { name: /CSV export fails/ }),
   ).toHaveAttribute('aria-current', 'page')
+  // Triage comes before the report details.
+  const triage = within(panel).getByRole('region', { name: 'Triage' })
+  expect(
+    triage.compareDocumentPosition(within(panel).getByText('CRM-42')) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
 })
 
 test('a failed Slack permalink can be retried', async () => {
