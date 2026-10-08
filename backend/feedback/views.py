@@ -7,7 +7,7 @@ from uuid import UUID
 from django.db.models import QuerySet
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema, extend_schema_view
 from rest_framework import exceptions
 from rest_framework.generics import GenericAPIView
 from rest_framework.mixins import ListModelMixin
@@ -49,6 +49,7 @@ from feedback.problems import (
     confirm_linked_report_fix,
     update_problem,
 )
+from feedback.releases import link_fix_release, list_repository_releases, unlink_fix_release
 from feedback.reports import (
     assign_report,
     create_problem_and_link_report,
@@ -85,6 +86,7 @@ from feedback.serializers import (
     IssueRecoverySerializer,
     IssueRefreshSerializer,
     IssueRefreshStatusSerializer,
+    LinkFixReleaseSerializer,
     LinkIssueSerializer,
     LinkReportSerializer,
     ManualReportSerializer,
@@ -96,9 +98,11 @@ from feedback.serializers import (
     ProblemFilterSerializer,
     ProblemListItemSerializer,
     ProblemOwnerSerializer,
+    ReleasePageSerializer,
     ReportConflictSerializer,
     ReportDetailSerializer,
     ReportListItemSerializer,
+    UnlinkFixReleaseSerializer,
     VersionedSerializer,
 )
 from matching.decisions import with_match_state
@@ -237,6 +241,47 @@ class ProblemDetailView(WorkspaceView):
         except NotFound:
             raise exceptions.NotFound() from None
         return Response(ProblemDetailSerializer(problem).data)
+
+
+class WorkspaceReleaseListView(WorkspaceView):
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                "page", OpenApiTypes.INT, required=False, description="Release page from 1 to 100."
+            )
+        ],
+        responses={
+            200: ReleasePageSerializer,
+            409: ErrorSerializer,
+            422: ErrorSerializer,
+            503: ErrorSerializer,
+            **READ_ERRORS,
+            **WRITE_ERRORS,
+        },
+    )
+    def get(self, request: Request, workspace_id: UUID) -> Response:
+        raw_page = request.query_params.get("page", "1")
+        if not raw_page.isdigit() or not 1 <= int(raw_page) <= 100:
+            return Response({"detail": "Page must be an integer from 1 to 100."}, status=400)
+        try:
+            rows, has_next = list_repository_releases(actor=self.membership, page=int(raw_page))
+        except FeedbackError as error:
+            return feedback_error_response(error, current=lambda: {})
+        data = {
+            "results": [
+                {
+                    "external_id": row.external_id,
+                    "tag_name": row.tag_name,
+                    "name": row.name,
+                    "url": row.url,
+                    "published_at": row.published_at,
+                    "prerelease": row.prerelease,
+                }
+                for row in rows
+            ],
+            "has_next": has_next,
+        }
+        return Response(ReleasePageSerializer(data).data)
 
 
 class ProblemReportListView(ListModelMixin, WorkspaceView, GenericAPIView):
@@ -474,6 +519,51 @@ class ProblemIssueLinkView(ProblemActionView):
             replace=data["replace"],
         )
         return issue.problem
+
+
+@extend_schema_view(
+    post=extend_schema(
+        request=LinkFixReleaseSerializer,
+        responses={
+            200: ProblemDetailSerializer,
+            409: ProblemConflictSerializer,
+            422: ErrorSerializer,
+            503: ErrorSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+)
+class ProblemFixReleaseLinkView(ProblemActionView):
+    input_serializer = LinkFixReleaseSerializer
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        return link_fix_release(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
+            external_id=data["external_id"],
+        )
+
+
+@extend_schema_view(
+    post=extend_schema(
+        request=UnlinkFixReleaseSerializer,
+        responses={
+            200: ProblemDetailSerializer,
+            409: ProblemConflictSerializer,
+            422: ErrorSerializer,
+            503: ErrorSerializer,
+            **WRITE_ERRORS,
+        },
+    )
+)
+class ProblemFixReleaseUnlinkView(ProblemActionView):
+    input_serializer = UnlinkFixReleaseSerializer
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        return unlink_fix_release(
+            actor=self.membership, problem_id=problem_id, expected_version=data["expected_version"]
+        )
 
 
 class IssueOperationView(WorkspaceView):

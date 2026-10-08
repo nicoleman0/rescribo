@@ -9,6 +9,7 @@ from django.conf import settings
 
 from connections.errors import SetupError
 from integrations.github_app.client import GitHubAppClient
+from integrations.github_app.permissions import check_installation_permissions
 
 
 @contextmanager
@@ -34,13 +35,11 @@ def github_setup(code: str, redirect_uri: str, repository: str) -> dict[str, Any
         )
         installation = client.get_repository_installation(owner=owner, name=name)
         permissions = installation.get("permissions", {})
-        if installation.get("suspended_at") or permissions != {
-            "issues": "write",
-            "metadata": "read",
-        }:
+        if installation.get("suspended_at") or not check_installation_permissions(permissions):
             raise SetupError(
                 "missing_scopes",
-                "Unsuspend the installation and grant only Issues write and Metadata read, "
+                "Unsuspend the installation and grant Issues write and Metadata read. "
+                "Contents read is optional for releases. "
                 "then reconnect.",
             )
         # Check this user's repository access, including installations with multiple pages.

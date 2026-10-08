@@ -2176,6 +2176,170 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/fix-release/:
+    post:
+      operationId: workspaces_problems_fix_release_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LinkFixRelease'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LinkFixRelease'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LinkFixRelease'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemConflict'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/problems/{problem_id}/fix-release/unlink/:
+    post:
+      operationId: workspaces_problems_fix_release_unlink_create
+      description: Run one problem use case and return the updated problem.
+      parameters:
+      - in: path
+        name: problem_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnlinkFixRelease'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UnlinkFixRelease'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UnlinkFixRelease'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemConflict'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
   /api/workspaces/{workspace_id}/problems/{problem_id}/issue/approve/:
     post:
       operationId: workspaces_problems_issue_approve_create
@@ -2695,6 +2859,74 @@ paths:
                 $ref: '#/components/schemas/Error'
           description: ''
         '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/releases/:
+    get:
+      operationId: workspaces_releases_retrieve
+      parameters:
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: Release page from 1 to 100.
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleasePage'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+        '403':
           content:
             application/json:
               schema:
@@ -3651,6 +3883,8 @@ components:
       - problem.updated
       - problem.state_changed
       - problem.fix_confirmed
+      - problem.fix_release_linked
+      - problem.fix_release_unlinked
       - engineering_issue.linked
       - engineering_issue.created
       - engineering_issue.unlinked
@@ -3675,6 +3909,8 @@ components:
         * `problem.updated` - Problem updated
         * `problem.state_changed` - Problem state changed
         * `problem.fix_confirmed` - Problem fix confirmed
+        * `problem.fix_release_linked` - Problem release linked
+        * `problem.fix_release_unlinked` - Problem release unlinked
         * `engineering_issue.linked` - Engineering issue linked
         * `engineering_issue.created` - Engineering issue created
         * `engineering_issue.unlinked` - Engineering issue unlinked
@@ -3746,7 +3982,7 @@ components:
       type: object
       properties:
         provider:
-          $ref: '#/components/schemas/ProviderEnum'
+          $ref: '#/components/schemas/ConnectionProviderEnum'
         identity:
           type: string
         external_id:
@@ -3796,6 +4032,14 @@ components:
       - status
       - version
       - visibility
+    ConnectionProviderEnum:
+      enum:
+      - slack
+      - github
+      type: string
+      description: |-
+        * `slack` - Slack
+        * `github` - GitHub
     ConnectionStatusEnum:
       enum:
       - active
@@ -4089,6 +4333,42 @@ components:
       - expected_version
       - fix_note
       - fix_version
+    FixRelease:
+      type: object
+      properties:
+        provider:
+          $ref: '#/components/schemas/FixReleaseProviderEnum'
+        tag_name:
+          type: string
+          maxLength: 255
+        name:
+          type: string
+          maxLength: 255
+        url:
+          type: string
+          format: uri
+          maxLength: 500
+        published_at:
+          type: string
+          format: date-time
+        linked_by:
+          $ref: '#/components/schemas/MemberSummary'
+        linked_at:
+          type: string
+          format: date-time
+      required:
+      - linked_at
+      - linked_by
+      - name
+      - provider
+      - published_at
+      - tag_name
+      - url
+    FixReleaseProviderEnum:
+      enum:
+      - github
+      type: string
+      description: '* `github` - GitHub'
     FollowUpContactStateEnum:
       enum:
       - pending
@@ -4576,6 +4856,18 @@ components:
         * `pending` - pending
         * `running` - running
         * `idle` - idle
+    LinkFixRelease:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+        external_id:
+          type: string
+          pattern: ^[0-9]{1,32}$
+      required:
+      - expected_version
+      - external_id
     LinkIssue:
       type: object
       properties:
@@ -5000,6 +5292,9 @@ components:
           oneOf:
           - $ref: '#/components/schemas/ProblemStateEnum'
           - $ref: '#/components/schemas/NullEnum'
+        metadata:
+          type: object
+          additionalProperties: {}
       required:
       - action
       - actor
@@ -5087,6 +5382,10 @@ components:
           - $ref: '#/components/schemas/ExternalOperation'
           nullable: true
           readOnly: true
+        fix_release:
+          allOf:
+          - $ref: '#/components/schemas/FixRelease'
+          nullable: true
       required:
       - created_at
       - current_create_operation
@@ -5198,14 +5497,6 @@ components:
       - id
       - state
       - title
-    ProviderEnum:
-      enum:
-      - slack
-      - github
-      type: string
-      description: |-
-        * `slack` - Slack
-        * `github` - GitHub
     RecordEnum:
       enum:
       - problem
@@ -5225,6 +5516,42 @@ components:
       required:
       - id
       - title
+    ReleaseOption:
+      type: object
+      properties:
+        external_id:
+          type: string
+        tag_name:
+          type: string
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        published_at:
+          type: string
+          format: date-time
+        prerelease:
+          type: boolean
+      required:
+      - external_id
+      - name
+      - prerelease
+      - published_at
+      - tag_name
+      - url
+    ReleasePage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseOption'
+        has_next:
+          type: boolean
+      required:
+      - has_next
+      - results
     ReportConflict:
       type: object
       properties:
@@ -5520,6 +5847,14 @@ components:
           format: uri
       required:
       - url
+    UnlinkFixRelease:
+      type: object
+      properties:
+        expected_version:
+          type: integer
+          minimum: 1
+      required:
+      - expected_version
     Version:
       type: object
       properties:

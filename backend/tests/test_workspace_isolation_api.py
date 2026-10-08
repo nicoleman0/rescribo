@@ -131,6 +131,7 @@ def suggestions_on(settings: Any, monkeypatch: pytest.MonkeyPatch) -> None:
     # Enabled so the matching routes are refused for isolation, not because the flag is off.
     settings.RESCRIBO_MATCH_SUGGESTIONS_ENABLED = True
     monkeypatch.setattr(runs, "dispatch_task", lambda name, ref: None)
+    monkeypatch.setattr("feedback.views.list_repository_releases", lambda **kwargs: ([], False))
 
 
 @pytest.fixture
@@ -240,10 +241,15 @@ ROUTES: dict[str, list[tuple[str, Body]]] = {
         ("post", lambda ids: {"new_recipient_id": str(uuid4())})
     ],
     "problems/": [("get", lambda ids: None)],
+    "releases/": [("get", lambda ids: None)],
     "problems/<uuid:problem_id>/": [("get", lambda ids: None)],
     "problems/<uuid:problem_id>/confirm-fix/": [
         ("post", lambda ids: {**VERSION, "fix_note": "Fixed", "fix_version": "2.0"})
     ],
+    "problems/<uuid:problem_id>/fix-release/": [
+        ("post", lambda ids: {**VERSION, "external_id": "77"})
+    ],
+    "problems/<uuid:problem_id>/fix-release/unlink/": [("post", lambda ids: VERSION)],
     "problems/<uuid:problem_id>/reports/": [("get", lambda ids: None)],
     "problems/<uuid:problem_id>/activity/": [("get", lambda ids: None)],
     "problems/<uuid:problem_id>/edit/": [("post", lambda ids: {**VERSION, "title": "Renamed"})],
@@ -301,6 +307,7 @@ LISTS = {
     "reports/",
     "follow-ups/",
     "problems/",
+    "releases/",
 }
 
 

@@ -25,6 +25,10 @@ from feedback.errors import (
     NoChanges,
     NotFound,
     ReasonRequired,
+    ReleaseAccessMissing,
+    ReleaseConnectionNotReady,
+    ReleaseNotFound,
+    ReleaseProviderUnavailable,
     TitleRequired,
     VersionConflict,
 )
@@ -58,6 +62,44 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
     """Map a domain error to a response. Every 409 carries the current authorised record."""
     if isinstance(error, NotFound):
         raise exceptions.NotFound()
+    if isinstance(error, ReleaseAccessMissing):
+        return Response(
+            {
+                "detail": "The GitHub App installation needs Contents read access.",
+                "reason": error.reason,
+                "field_errors": {},
+                "current": current(),
+            },
+            status=409,
+        )
+    if isinstance(error, ReleaseConnectionNotReady):
+        return Response(
+            {
+                "detail": "Connect an active GitHub repository before listing releases.",
+                "reason": error.reason,
+                "field_errors": {},
+                "current": current(),
+            },
+            status=409,
+        )
+    if isinstance(error, ReleaseNotFound):
+        return Response(
+            {
+                "detail": "The selected release is no longer available.",
+                "reason": error.reason,
+                "field_errors": {},
+            },
+            status=422,
+        )
+    if isinstance(error, ReleaseProviderUnavailable):
+        return Response(
+            {
+                "detail": "GitHub releases are temporarily unavailable. Try again.",
+                "reason": error.reason,
+                "field_errors": {},
+            },
+            status=503,
+        )
     if isinstance(error, InvalidReference):
         return Response(
             {

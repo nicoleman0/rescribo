@@ -72,8 +72,8 @@ def test_github_denies_unverified_user_and_extra_permissions() -> None:
         with pytest.raises(SetupError, match="Authorise"):
             github_setup("code", "callback", "org/repo")
         client.create_installation_token.assert_not_called()
-        client.get_repository_installation.return_value["permissions"]["contents"] = "read"
-        with pytest.raises(SetupError, match="only Issues"):
+        client.get_repository_installation.return_value["permissions"]["contents"] = "write"
+        with pytest.raises(SetupError, match="Contents read is optional"):
             github_setup("code", "callback", "org/repo")
 
 

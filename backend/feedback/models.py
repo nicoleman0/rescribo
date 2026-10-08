@@ -180,6 +180,8 @@ class Activity(models.Model):
         PROBLEM_UPDATED = "problem.updated", "Problem updated"
         PROBLEM_STATE_CHANGED = "problem.state_changed", "Problem state changed"
         PROBLEM_FIX_CONFIRMED = "problem.fix_confirmed", "Problem fix confirmed"
+        PROBLEM_FIX_RELEASE_LINKED = "problem.fix_release_linked", "Problem release linked"
+        PROBLEM_FIX_RELEASE_UNLINKED = "problem.fix_release_unlinked", "Problem release unlinked"
         ENGINEERING_ISSUE_LINKED = "engineering_issue.linked", "Engineering issue linked"
         ENGINEERING_ISSUE_CREATED = "engineering_issue.created", "Engineering issue created"
         ENGINEERING_ISSUE_UNLINKED = "engineering_issue.unlinked", "Engineering issue unlinked"
@@ -516,3 +518,34 @@ class IssueReconciliationTarget(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["run", "issue"], name="unique_issue_reconcile_target")
         ]
+
+
+class FixRelease(models.Model):
+    problem = models.OneToOneField(
+        Problem, on_delete=models.CASCADE, primary_key=True, related_name="fix_release"
+    )
+    workspace = models.ForeignKey(Workspace, on_delete=models.CASCADE)
+    provider = models.CharField(max_length=16, choices=[("github", "GitHub")])
+    external_id = models.CharField(max_length=64)
+    repository_id = models.CharField(max_length=64)
+    tag_name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255)
+    url = models.URLField(max_length=500)
+    published_at = models.DateTimeField()
+    linked_by = models.ForeignKey(Membership, on_delete=models.PROTECT, related_name="+")
+    linked_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=~Q(tag_name="") & ~Q(url=""), name="fix_release_tag_url_nonempty"
+            )
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if (
+            self.workspace_id != self.problem.workspace_id
+            or self.workspace_id != self.linked_by.workspace_id
+        ):
+            raise ValueError("A fix release must share its problem and member workspace.")
+        super().save(*args, **kwargs)

@@ -9,6 +9,8 @@ import httpx
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
+from integrations.github_app.permissions import ISSUE_PERMISSIONS
+
 
 class GitHubAPIError(RuntimeError):
     """A safe GitHub API error which does not include response content."""
@@ -185,6 +187,7 @@ class GitHubAppClient:
         installation_id: int,
         repository: str | None = None,
         repository_id: str | None = None,
+        permissions: Mapping[str, str] = ISSUE_PERMISSIONS,
     ) -> tuple[str, str]:
         if (repository is None) == (repository_id is None):
             raise ValueError("Supply exactly one selected repository name or ID.")
@@ -201,7 +204,7 @@ class GitHubAppClient:
             operation=INSTALLATION_TOKEN_OPERATION,
             json_body={
                 **selection,
-                "permissions": {"issues": "write", "metadata": "read"},
+                "permissions": dict(permissions),
             },
         )
         token = data.get("token")
@@ -274,6 +277,32 @@ class GitHubAppClient:
         link = response.headers.get("Link", "")
         has_next = any('rel="next"' in part for part in link.split(","))
         return data, has_next
+
+    def list_releases(
+        self, *, installation_token: str, owner: str, name: str, page: int
+    ) -> tuple[list[dict[str, Any]], bool]:
+        response = self._request_response(
+            "GET",
+            f"/repos/{owner}/{name}/releases",
+            token=installation_token,
+            operation="release listing",
+            params={"per_page": 20, "page": page},
+        )
+        data = response.json()
+        if not isinstance(data, list) or any(not isinstance(item, dict) for item in data):
+            raise RuntimeError("GitHub returned an invalid release list.")
+        has_next = any('rel="next"' in part for part in response.headers.get("Link", "").split(","))
+        return data, has_next
+
+    def get_release(
+        self, *, installation_token: str, owner: str, name: str, release_id: int
+    ) -> dict[str, Any]:
+        return self._request(
+            "GET",
+            f"/repos/{owner}/{name}/releases/{release_id}",
+            token=installation_token,
+            operation="release lookup",
+        )
 
     def update_issue_state(
         self, *, installation_token: str, owner: str, name: str, number: int, state: str

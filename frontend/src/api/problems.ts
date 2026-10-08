@@ -10,6 +10,9 @@ export type ProblemPage = Schemas['PaginatedProblemListItemList']
 export type ProblemState = Schemas['ProblemStateEnum']
 export type ProblemActivity = Schemas['ProblemActivity']
 export type ProblemActivityPage = Schemas['PaginatedProblemActivityList']
+export type FixRelease = Schemas['FixRelease']
+export type ReleaseOption = Schemas['ReleaseOption']
+export type ReleasePage = Schemas['ReleasePage']
 export type ProblemReportPage = Schemas['PaginatedReportDetailList']
 export type ProblemQuery = NonNullable<
   operations['workspaces_problems_list']['parameters']['query']
@@ -28,6 +31,8 @@ export const problemKeys = {
     ] as const,
   all: (workspaceId: string) =>
     ['workspaces', workspaceId, 'problems'] as const,
+  releases: (workspaceId: string) =>
+    ['workspaces', workspaceId, 'releases'] as const,
   list: (workspaceId: string, query: ProblemQuery) =>
     [...problemKeys.all(workspaceId), 'list', query] as const,
   detail: (workspaceId: string, problemId: string) =>
@@ -48,6 +53,35 @@ export const listProblems = (workspaceId: string, query: ProblemQuery) =>
 
 export const getProblem = (workspaceId: string, problemId: string) =>
   apiRequest<ProblemDetail>(problemPath(workspaceId, problemId))
+
+export const listReleases = (workspaceId: string, page: number) =>
+  apiRequest<ReleasePage>(
+    `workspaces/${workspaceId}/releases/${queryString({ page })}`,
+  )
+
+export async function linkFixRelease(
+  workspaceId: string,
+  problemId: string,
+  input: { expected_version: number; external_id: string },
+) {
+  await csrf()
+  return apiRequest<ProblemDetail>(
+    `${problemPath(workspaceId, problemId)}fix-release/`,
+    input,
+  )
+}
+
+export async function unlinkFixRelease(
+  workspaceId: string,
+  problemId: string,
+  input: { expected_version: number },
+) {
+  await csrf()
+  return apiRequest<ProblemDetail>(
+    `${problemPath(workspaceId, problemId)}fix-release/unlink/`,
+    input,
+  )
+}
 
 export const listProblemReports = (
   workspaceId: string,

@@ -53,6 +53,8 @@ from feedback.views import (
     ProblemEditView,
     ProblemExternalOperationView,
     ProblemFixConfirmationView,
+    ProblemFixReleaseLinkView,
+    ProblemFixReleaseUnlinkView,
     ProblemIssueAbandonView,
     ProblemIssueApproveView,
     ProblemIssueLinkView,
@@ -71,6 +73,7 @@ from feedback.views import (
     ReportListView,
     ReportRestoreView,
     ReportUnlinkView,
+    WorkspaceReleaseListView,
 )
 from health.views import LiveView, ReadyView
 from matching.views import (
@@ -81,6 +84,21 @@ from matching.views import (
 )
 
 urlpatterns = [
+    path(
+        "api/workspaces/<uuid:workspace_id>/releases/",
+        WorkspaceReleaseListView.as_view(),
+        name="workspace-releases",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/fix-release/",
+        ProblemFixReleaseLinkView.as_view(),
+        name="problem-fix-release-link",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/fix-release/unlink/",
+        ProblemFixReleaseUnlinkView.as_view(),
+        name="problem-fix-release-unlink",
+    ),
     path("api/workspaces/<uuid:workspace_id>/connections/", ConnectionListView.as_view()),
     path(
         "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/setup/", SetupView.as_view()

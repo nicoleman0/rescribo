@@ -17,6 +17,7 @@ from feedback.inbox import InboxFilters
 from feedback.models import (
     Activity,
     EngineeringIssue,
+    FixRelease,
     FollowUp,
     Problem,
     Report,
@@ -266,6 +267,14 @@ class ProblemListItemSerializer(ProblemIssueSerializer):
         return summary[: SUMMARY_EXCERPT_LENGTH - 1].rstrip() + "…"
 
 
+class FixReleaseSerializer(serializers.ModelSerializer):
+    linked_by = MemberSummarySerializer()
+
+    class Meta:
+        model = FixRelease
+        fields = ("provider", "tag_name", "name", "url", "published_at", "linked_by", "linked_at")
+
+
 class ProblemDetailSerializer(ProblemIssueSerializer):
     id = serializers.UUIDField()
     title = serializers.CharField()
@@ -284,6 +293,18 @@ class ProblemDetailSerializer(ProblemIssueSerializer):
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     current_create_operation = serializers.SerializerMethodField()
+    fix_release = serializers.SerializerMethodField(required=False)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["fix_release"].read_only = False
+
+    @extend_schema_field(FixReleaseSerializer(allow_null=True))
+    def get_fix_release(self, problem: Problem) -> Any:
+        release = getattr(problem, "fix_release", None)
+        if release is None:
+            return None
+        return FixReleaseSerializer(release).data
 
     @extend_schema_field(ExternalOperationSerializer(allow_null=True))
     def get_current_create_operation(self, problem: Problem) -> Any:
@@ -298,6 +319,20 @@ class ProblemDetailSerializer(ProblemIssueSerializer):
             .first()
         )
         return ExternalOperationSerializer(operation).data if operation is not None else None
+
+
+class ReleaseOptionSerializer(serializers.Serializer):
+    external_id = serializers.CharField()
+    tag_name = serializers.CharField()
+    name = serializers.CharField()
+    url = serializers.URLField()
+    published_at = serializers.DateTimeField()
+    prerelease = serializers.BooleanField()
+
+
+class ReleasePageSerializer(serializers.Serializer):
+    results = ReleaseOptionSerializer(many=True)
+    has_next = serializers.BooleanField()
 
 
 class RecordReferenceSerializer(serializers.Serializer):
@@ -320,6 +355,11 @@ class ProblemActivitySerializer(serializers.Serializer):
     to_assignee = serializers.SerializerMethodField()
     changed_fields = serializers.SerializerMethodField()
     state = serializers.SerializerMethodField()
+    metadata = serializers.SerializerMethodField()
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["metadata"].read_only = False
 
     @property
     def references(self) -> ActivityReferences:
@@ -362,9 +402,23 @@ class ProblemActivitySerializer(serializers.Serializer):
     def get_state(self, activity: Activity) -> str | None:
         return activity.metadata.get("state")
 
+    @extend_schema_field(serializers.DictField())
+    def get_metadata(self, activity: Activity) -> dict[str, Any]:
+        if activity.action == Activity.Action.PROBLEM_FIX_RELEASE_LINKED:
+            return {"tag_name": str(activity.metadata.get("tag_name", ""))}
+        return {}
+
 
 class VersionedSerializer(serializers.Serializer):
     expected_version = serializers.IntegerField(min_value=1)
+
+
+class LinkFixReleaseSerializer(VersionedSerializer):
+    external_id = serializers.RegexField(regex=r"^[0-9]{1,32}$")
+
+
+class UnlinkFixReleaseSerializer(VersionedSerializer):
+    pass
 
 
 class LinkReportSerializer(VersionedSerializer):
