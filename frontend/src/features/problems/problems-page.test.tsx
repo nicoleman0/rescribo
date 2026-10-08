@@ -203,25 +203,30 @@ function stubDetail(problem: ProblemDetail = detail) {
   return { sent }
 }
 
-test('shows linked reports with provenance and a readable activity history', async () => {
+test('shows compact linked reports and a readable activity history', async () => {
   stubDetail()
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
   expect(
     await screen.findByRole('heading', { level: 1, name: 'Exports fail' }),
   ).toBeInTheDocument()
   expect(screen.getByText('1 report · v2')).toBeInTheDocument()
+  expect(
+    screen.getByRole('heading', { name: 'Confirm the fix when it ships' }),
+  ).toBeInTheDocument()
   const reports = await screen.findByRole('list', { name: 'Linked reports' })
   expect(
     within(reports).getByRole('link', { name: 'Acme cannot export' }),
   ).toHaveAttribute('href', '/inbox/rep-1')
-  // Captured text stays text, and an unsafe permalink is not rendered.
-  expect(
-    within(reports).getByText('<b>Export is broken</b>'),
-  ).toBeInTheDocument()
-  expect(
-    within(reports).getByText('The message link is not available yet.'),
-  ).toBeInTheDocument()
-  expect(within(reports).getByLabelText('Assignee')).toBeInTheDocument()
+  const row = within(reports).getByRole('listitem')
+  expect(row).toHaveTextContent('Linked')
+  expect(row).toHaveTextContent('Acme')
+  expect(row).toHaveTextContent('Slack message by Sam')
+  expect(row).toHaveTextContent('Assignee: Unassigned')
+  // The captured message and its link stay on the report page.
+  expect(row).not.toHaveTextContent('Export is broken')
+  expect(within(row).getAllByRole('link')).toHaveLength(1)
+  expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull()
+  expect(within(row).queryByLabelText('Assignee')).toBeNull()
 
   const history = await screen.findByRole('list', { name: 'Problem activity' })
   const entries = within(history).getAllByRole('listitem')
@@ -435,4 +440,136 @@ test('shows only the refresh alert when an activity refetch fails with data', as
   })
   expect(await screen.findByText('Could not refresh activity')).toBeVisible()
   expect(screen.queryByText('Could not load activity')).not.toBeInTheDocument()
+})
+
+test('groups a batch of links into one entry that lists each report', async () => {
+  const linked = (minute: number) =>
+    activity({
+      action: 'report.linked',
+      created_at: `2026-09-19T12:${minute}:00Z`,
+      report: { id: `rep-${minute}`, title: `Report ${minute}` },
+    })
+  stubApi({
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json(detail),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () =>
+      page([
+        activity({
+          action: 'problem.updated',
+          changed_fields: ['needs_review'],
+        }),
+        activity({ action: 'engineering_issue.linked' }),
+        linked(30),
+        linked(25),
+        linked(20),
+      ]),
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  const history = await screen.findByRole('list', { name: 'Problem activity' })
+  expect(history).toHaveTextContent(
+    'Ada Lovelace flagged the problem for review',
+  )
+  expect(history).toHaveTextContent('Ada Lovelace linked a GitHub issue')
+  const group = within(history).getByText('linked 3 reports', { exact: false })
+  expect(
+    within(history).getByRole('link', { name: 'Report 30' }),
+  ).not.toBeVisible()
+  fireEvent.click(group)
+  for (const title of ['Report 30', 'Report 25', 'Report 20']) {
+    expect(within(history).getByRole('link', { name: title })).toBeVisible()
+  }
+})
+
+test('changes the owner on demand and keeps the form open after a failed save', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  const server = { problem: detail, saves: 0 }
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json(server.problem),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+    [`POST ${base}/problems/prob-1/assign-owner/`]: () => {
+      server.saves += 1
+      if (server.saves === 1) return json({ detail: 'Unavailable' }, 503)
+      server.problem = { ...detail, owner: ada, version: 3 }
+      return json(server.problem)
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  expect(await screen.findByText('No owner')).toBeInTheDocument()
+  const change = screen.getByRole('button', { name: 'Change owner' })
+  fireEvent.click(change)
+  expect(change).toHaveAttribute('aria-expanded', 'true')
+  const select = screen.getByLabelText('Owner')
+  await within(select).findByRole('option', { name: 'Ada Lovelace' })
+  fireEvent.change(select, { target: { value: 'mem-2' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save owner' }))
+  expect(
+    await screen.findByText('The owner was not changed'),
+  ).toBeInTheDocument()
+  expect(screen.getByLabelText('Owner')).toHaveValue('mem-2')
+
+  fireEvent.click(screen.getByRole('button', { name: 'Save owner' }))
+  await waitFor(() =>
+    expect(screen.queryByLabelText('Owner')).not.toBeInTheDocument(),
+  )
+  expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Change owner' })).toHaveAttribute(
+    'aria-expanded',
+    'false',
+  )
+})
+
+test('reassigns a linked report from its row and keeps a failed save open until Done', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  const server = { report: linkedReport, saves: 0 }
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json(detail),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([server.report]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+    [`POST ${base}/reports/rep-1/assign/`]: () => {
+      server.saves += 1
+      if (server.saves === 1) return json({ detail: 'Unavailable' }, 503)
+      server.report = { ...linkedReport, assignee: ada, version: 3 }
+      return json(server.report)
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  const reports = await screen.findByRole('list', { name: 'Linked reports' })
+  const change = within(reports).getByRole('button', {
+    name: 'Change the assignee for Acme cannot export',
+  })
+  fireEvent.click(change)
+  const select = within(reports).getByLabelText('Assignee')
+  await within(select).findByRole('option', { name: 'Ada Lovelace' })
+  fireEvent.change(select, { target: { value: 'mem-2' } })
+  fireEvent.click(
+    within(reports).getByRole('button', { name: 'Save assignee' }),
+  )
+  expect(
+    await within(reports).findByText('The assignee was not changed'),
+  ).toBeInTheDocument()
+  expect(within(reports).getByLabelText('Assignee')).toHaveValue('mem-2')
+
+  fireEvent.click(
+    within(reports).getByRole('button', { name: 'Save assignee' }),
+  )
+  expect(
+    await within(reports).findByText('Ada Lovelace', { selector: 'span' }),
+  ).toBeInTheDocument()
+  // Closing is the member's choice, so the form stays until Done.
+  expect(within(reports).getByLabelText('Assignee')).toHaveValue('mem-2')
+  fireEvent.click(
+    within(reports).getByRole('button', {
+      name: 'Done changing the assignee for Acme cannot export',
+    }),
+  )
+  expect(within(reports).queryByLabelText('Assignee')).toBeNull()
+  expect(within(reports).getByRole('listitem')).toHaveTextContent(
+    'Assignee: Ada Lovelace',
+  )
 })

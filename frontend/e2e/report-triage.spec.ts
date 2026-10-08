@@ -165,7 +165,7 @@ test.describe('Report triage', () => {
 
     await expect(page.getByText('2 reports · v1')).toBeVisible()
     await expect(page.getByText('Open', { exact: true })).toBeVisible()
-    await expect(page.getByLabel('Owner')).toHaveValue('')
+    await expect(page.getByText('No owner')).toBeVisible()
     const reports = linkedReports(page)
     await expect(reports.getByRole('listitem')).toHaveCount(2)
     const slackItem = reports
@@ -175,13 +175,17 @@ test.describe('Report triage', () => {
       .getByRole('listitem')
       .filter({ hasText: manualTitle })
     await expect(slackItem).toContainText('Slack message by Synthetic Author')
-    await expect(slackItem).toContainText('Synthetic captured message.')
     await expect(manualItem).toContainText('Manual entry by Owner')
-    await expect(activity(page)).toContainText(`linked ${slackTitle}`)
-    await expect(activity(page)).toContainText(`linked ${manualTitle}`)
+    // Both links may fold into one "linked 2 reports" entry.
+    await expect(activity(page)).toContainText('linked')
+    await expect(activity(page)).toContainText(slackTitle)
+    await expect(activity(page)).toContainText(manualTitle)
 
     // Assign, then reassign, from problem detail; both survive a reload.
-    const assignee = manualItem.getByLabel('Assignee')
+    await manualItem
+      .getByRole('button', { name: `Change the assignee for ${manualTitle}` })
+      .click()
+    const assignee = manualItem.getByLabel('Assignee', { exact: true })
     await assignee.selectOption({ label: 'Member' })
     await manualItem.getByRole('button', { name: 'Save assignee' }).click()
     await expect(
@@ -196,23 +200,16 @@ test.describe('Report triage', () => {
     await expect(activity(page)).toContainText(
       `assigned ${manualTitle} to Owner`,
     )
-    const reassignedTo = await assignee.inputValue()
     await page.reload()
     await expect(linkedReports(page).getByRole('listitem')).toHaveCount(2)
     await expect(
       linkedReports(page)
         .getByRole('listitem')
-        .filter({ hasText: manualTitle })
-        .getByLabel('Assignee'),
-    ).toHaveValue(reassignedTo)
-    await expect(
-      linkedReports(page)
-        .getByRole('listitem')
         .filter({ hasText: manualTitle }),
-    ).toContainText('Submitted by Owner')
+    ).toContainText('Assignee: Owner')
     await expect(
       linkedReports(page).getByRole('listitem').filter({ hasText: slackTitle }),
-    ).toContainText('Synthetic captured message.')
+    ).toContainText('Slack message by Synthetic Author')
 
     // Move the manual report to a new problem; both counts and histories change.
     await openReport(page, manualTitle)
@@ -378,14 +375,21 @@ test.describe('Report triage', () => {
         'document.documentElement.scrollWidth > window.innerWidth',
       )
     expect(await overflow()).toBe(false)
+    await page.getByRole('button', { name: 'Change owner' }).click()
+    await page
+      .getByRole('button', { name: `Change the assignee for ${title}` })
+      .click()
     for (const name of [
       'Edit title and summary',
+      'Cancel changing the owner',
       'Save owner',
+      `Done changing the assignee for ${title}`,
       'Save assignee',
     ]) {
       const box = await page.getByRole('button', { name }).first().boundingBox()
       expect(box?.height).toBeGreaterThanOrEqual(44)
     }
+    expect(await overflow()).toBe(false)
     await page.getByRole('link', { name: title }).last().click()
     await expect(triage(page)).toBeVisible()
     expect(await overflow()).toBe(false)

@@ -29,18 +29,22 @@ import {
   LoadingState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Provenance } from '@/features/inbox/provenance'
-import { AssignReportForm } from '@/features/inbox/report-actions'
-import { memberName } from '@/features/inbox/report-format'
+import {
+  formatDate,
+  memberName,
+  sourceLabel,
+} from '@/features/inbox/report-format'
 import { TriageBadge } from '@/features/inbox/triage-badge'
 import { useMembers } from '@/features/inbox/use-members'
 import { cn } from '@/lib/utils'
 import { PageNav } from './page-nav'
+import { problemCard, problemCardHeading } from './problem-card'
 import { reportCountLabel } from './problem-format'
 import { ProblemActivityList } from './problem-activity'
+import { ProblemNextStep } from './problem-next-step'
 import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
 import { GitHubIssueSection } from './github-issue-section'
+import { ReportAssigneeEditor } from './report-assignee-editor'
 import { useProblemMutation } from './use-problem-mutation'
 
 const PROBLEM_REFRESH_MS = 30_000
@@ -75,7 +79,7 @@ export function ProblemDetailPage() {
     [client, problemId, workspace.id],
   )
   return (
-    <div className="grid max-w-4xl gap-6">
+    <div className="grid max-w-5xl gap-6">
       <Button
         asChild
         variant="ghost"
@@ -156,12 +160,12 @@ function ConfirmFixForm({
   return (
     <form
       aria-label="Confirm fix"
-      className="grid max-w-lg gap-3 rounded-card border border-border p-4"
+      className={problemCard}
       onSubmit={submit}
       noValidate
     >
-      <h2 className="font-semibold">Review and confirm fix</h2>
-      <p className="text-sm text-muted-foreground">
+      <h2 className={problemCardHeading}>Fix</h2>
+      <p className="text-muted-foreground">
         Confirm only after verifying that this fix is available to affected
         customers. This does not contact customers.
       </p>
@@ -233,38 +237,65 @@ function ProblemBody({
   return (
     <article className="grid gap-6">
       <ProblemHeader workspaceId={workspaceId} problem={problem} />
-      {problem.state === 'open' || problem.state === 'in_progress' ? (
-        <ConfirmFixForm workspaceId={workspaceId} problem={problem} />
-      ) : problem.state === 'fix_available' ? (
-        <section
-          aria-label="Confirmed fix"
-          className="grid gap-2 rounded-card border border-border p-4"
-        >
-          <h2 className="font-semibold">Confirmed fix</h2>
-          <p className="text-sm">{problem.fix_note}</p>
-          <p className="text-sm text-muted-foreground">
-            Available in {problem.fix_version}
-          </p>
-          {problem.fix_evidence_url ? (
-            <a
-              className="text-sm underline"
-              href={problem.fix_evidence_url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Fix evidence
-            </a>
-          ) : null}
-        </section>
-      ) : null}
-      <OwnerForm workspaceId={workspaceId} problem={problem} />
-      <Separator />
-      <GitHubIssueSection workspaceId={workspaceId} problem={problem} />
-      <Separator />
-      <LinkedReports workspaceId={workspaceId} problem={problem} />
-      <Separator />
-      <ProblemActivityList workspaceId={workspaceId} problemId={problem.id} />
+      <ProblemNextStep problem={problem} />
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        {/* First in the DOM so phones show the fix and owner before the
+            report list; wide screens move it to the side column. */}
+        <div className="grid min-w-0 gap-4 lg:col-start-2 lg:row-start-1">
+          <FixCard workspaceId={workspaceId} problem={problem} />
+          <GitHubIssueSection workspaceId={workspaceId} problem={problem} />
+          <OwnerCard workspaceId={workspaceId} problem={problem} />
+        </div>
+        <div className="grid min-w-0 gap-8 lg:col-start-1 lg:row-start-1">
+          <LinkedReports workspaceId={workspaceId} problem={problem} />
+          <ProblemActivityList
+            workspaceId={workspaceId}
+            problemId={problem.id}
+          />
+        </div>
+      </div>
     </article>
+  )
+}
+
+function FixCard({
+  workspaceId,
+  problem,
+}: {
+  workspaceId: string
+  problem: ProblemDetail
+}) {
+  if (problem.state === 'open' || problem.state === 'in_progress')
+    return <ConfirmFixForm workspaceId={workspaceId} problem={problem} />
+  if (problem.state !== 'fix_available') return null
+  return (
+    <section aria-label="Confirmed fix" className={problemCard}>
+      <h2 className={problemCardHeading}>Confirmed fix</h2>
+      <p className="break-words whitespace-pre-wrap">{problem.fix_note}</p>
+      <p className="text-muted-foreground">
+        Available in {problem.fix_version}
+        {problem.fix_confirmed_by && problem.fix_confirmed_at ? (
+          <>
+            {'. Confirmed by '}
+            {memberName(problem.fix_confirmed_by)} on{' '}
+            <time dateTime={problem.fix_confirmed_at}>
+              {formatDate(problem.fix_confirmed_at)}
+            </time>
+          </>
+        ) : null}
+      </p>
+      {problem.fix_evidence_url ? (
+        <a
+          className="w-fit text-primary underline-offset-4 hover:underline"
+          href={problem.fix_evidence_url}
+          target="_blank"
+          rel="noreferrer"
+        >
+          Fix evidence
+          <span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      ) : null}
+    </section>
   )
 }
 
@@ -423,12 +454,57 @@ function EditProblemForm({
   )
 }
 
-function OwnerForm({
+function OwnerCard({
   workspaceId,
   problem,
 }: {
   workspaceId: string
   problem: ProblemDetail
+}) {
+  const id = useId()
+  const [editing, setEditing] = useState(false)
+  return (
+    <div className={problemCard}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className={problemCardHeading}>Owner</h2>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={touchTarget}
+          aria-expanded={editing}
+          aria-controls={editing ? id : undefined}
+          aria-label={editing ? 'Cancel changing the owner' : 'Change owner'}
+          onClick={() => setEditing(!editing)}
+        >
+          {editing ? 'Cancel' : 'Change'}
+        </Button>
+      </div>
+      {editing ? (
+        <div id={id}>
+          <OwnerForm
+            workspaceId={workspaceId}
+            problem={problem}
+            onSaved={() => setEditing(false)}
+          />
+        </div>
+      ) : (
+        <p className={cn(!problem.owner && 'text-muted-foreground')}>
+          {problem.owner ? memberName(problem.owner) : 'No owner'}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function OwnerForm({
+  workspaceId,
+  problem,
+  onSaved,
+}: {
+  workspaceId: string
+  problem: ProblemDetail
+  onSaved: () => void
 }) {
   const id = useId()
   const members = useMembers(workspaceId)
@@ -444,7 +520,10 @@ function OwnerForm({
         expected_version: problem.version,
         owner_id: ownerId || null,
       }),
-    () => setChoice(null),
+    () => {
+      setChoice(null)
+      onSaved()
+    },
   )
   const current = problem.owner
   const currentIsListed =
@@ -456,9 +535,9 @@ function OwnerForm({
   }
 
   return (
-    <form className="grid max-w-lg gap-2" onSubmit={submit} noValidate>
+    <form className="grid gap-2" onSubmit={submit} noValidate>
       <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-48 flex-1">
+        <div className="min-w-40 flex-1">
           <SelectField
             id={`${id}-owner`}
             label="Owner"
@@ -513,7 +592,7 @@ function LinkedReports({
   })
   return (
     <section aria-labelledby="linked-reports" className="grid gap-3">
-      <h2 id="linked-reports" className="text-base font-semibold">
+      <h2 id="linked-reports" className="text-sm font-semibold">
         Linked reports
       </h2>
       {reports.isPending ? <LoadingState label="Loading reports" /> : null}
@@ -538,32 +617,35 @@ function LinkedReports({
             reports.isPlaceholderData && 'opacity-60',
           )}
         >
-          <ul aria-label="Linked reports" className="grid gap-3">
+          <ul
+            aria-label="Linked reports"
+            className="divide-y divide-border rounded-card bg-card shadow-elevation-1"
+          >
             {reports.data.results.map((report) => (
               <li
                 key={report.id}
-                className="grid gap-3 rounded-card border border-border bg-card p-4"
+                className="grid gap-x-4 gap-y-1 px-4 py-3 md:grid-cols-[minmax(0,1fr)_minmax(0,12rem)] md:items-center"
               >
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <Link
-                    to={`/inbox/${report.id}`}
-                    className="min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline"
-                  >
-                    {report.title}
-                  </Link>
-                  <TriageBadge state={report.triage_state} />
+                <div className="grid min-w-0 gap-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <Link
+                      to={`/inbox/${report.id}`}
+                      className="min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline"
+                    >
+                      {report.title}
+                    </Link>
+                    <TriageBadge state={report.triage_state} />
+                  </div>
+                  <p className="flex flex-wrap gap-x-2 text-xs text-muted-foreground">
+                    <span>{report.customer_label || 'No customer'}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>{sourceLine(report)}</span>
+                  </p>
                 </div>
-                <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                  <span>{report.customer_label || 'No customer'}</span>
-                  <span>Submitted by {memberName(report.submitted_by)}</span>
-                </p>
-                <Provenance
+                <ReportAssigneeEditor
                   workspaceId={workspaceId}
-                  reportId={report.id}
-                  provenance={report.provenance}
-                  submittedBy={report.submitted_by}
+                  report={report}
                 />
-                <AssignReportForm workspaceId={workspaceId} report={report} />
                 {problem.state === 'fix_available' &&
                 report.follow_up_revision !== problem.resolution_revision ? (
                   <ConfirmFixAppliesButton
@@ -588,6 +670,16 @@ function LinkedReports({
   )
 }
 
+/** One line on where a report came from. The captured message, its link,
+ * and link retry stay on the report page. */
+function sourceLine(report: ReportDetail) {
+  const source = report.provenance
+  if (source.kind === 'manual')
+    return `Manual entry by ${memberName(report.submitted_by)}`
+  const author = source.author_display_name
+  return `${sourceLabel(source.kind)} message${author ? ` by ${author}` : ''}`
+}
+
 function ConfirmFixAppliesButton({
   workspaceId,
   report,
@@ -604,7 +696,7 @@ function ConfirmFixAppliesButton({
     }),
   )
   return (
-    <div className="grid justify-items-start gap-2">
+    <div className="grid justify-items-start gap-2 pt-2 md:col-span-2">
       <p className="text-sm">
         Verify this existing fix applies to this report.
       </p>
