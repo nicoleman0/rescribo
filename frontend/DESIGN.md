@@ -166,3 +166,15 @@ colours and shadows and applies no animated transition.
 - A row's title keeps at least 12rem. When the badges do not fit beside
   it, they move under the title, left-aligned, and wrap. No breakpoint is
   involved, so the rule holds beside the sidebar and on phones.
+
+## Follow-up page
+
+- `FollowUpDetailContent` owns the shared detail query, async states, and
+  actions. `FollowUpDetailPanel` and `FollowUpDetailPage` choose its layout.
+- The page puts its summary across the top. At `lg`, Message and Customer
+  contact sit left; Recipient and History sit in a 20rem right column. Phones
+  keep that order in one column.
+- Panel sections stay bordered inside `surface-raised`. Page sections use
+  `problemCard` as resting cards.
+- The panel title is `h2` and its section headings are `h3`. The page title is
+  `h1` and its section headings are `h2`.

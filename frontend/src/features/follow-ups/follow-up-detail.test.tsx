@@ -7,7 +7,7 @@ import {
   stubApi,
   testMembership,
 } from '@/test/render'
-import { FollowUpDetailPanel } from './follow-up-detail'
+import { FollowUpDetailContent, FollowUpDetailPanel } from './follow-up-detail'
 
 const base = '/api/workspaces/ws-1/follow-ups/fu-1'
 const csrfPath = 'GET /api/auth/csrf/'
@@ -19,6 +19,16 @@ const routes = [
   {
     path: 'follow-ups/:followUpId',
     element: <FollowUpDetailPanel workspaceId="ws-1" followUpId="fu-1" />,
+  },
+  {
+    path: 'follow-ups/:followUpId/page',
+    element: (
+      <FollowUpDetailContent
+        workspaceId="ws-1"
+        followUpId="fu-1"
+        layout="page"
+      />
+    ),
   },
 ]
 
@@ -549,6 +559,61 @@ test('renders the history feed', async () => {
     await screen.findByText('approved the message for sending'),
   ).toBeInTheDocument()
   expect(screen.getByText('recorded the send')).toBeInTheDocument()
+})
+
+test('uses section-level headings for panel history', async () => {
+  stubDetail({
+    history: [
+      {
+        id: 'act-1',
+        action: 'follow_up.notification_sent',
+        actor: null,
+        actor_system: 'celery',
+        created_at: '2026-09-20T10:00:02Z',
+      },
+    ],
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  expect(
+    await screen.findByRole('heading', { name: 'History', level: 3 }),
+  ).toBeInTheDocument()
+})
+
+test('uses page heading levels and page section layout', async () => {
+  stubDetail({
+    notification: notification('sent'),
+    history: [
+      {
+        id: 'act-1',
+        action: 'follow_up.notification_sent',
+        actor: null,
+        actor_system: 'celery',
+        created_at: '2026-09-20T10:00:02Z',
+      },
+    ],
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1/page')
+  expect(
+    await screen.findByRole('heading', { name: 'CSV export fails', level: 1 }),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByRole('heading', { name: 'Message sent', level: 2 }),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByRole('heading', { name: 'History', level: 2 }),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('region', { name: 'Message' })).toHaveClass('bg-card')
+})
+
+test('links from the panel to the full page with the current query', async () => {
+  stubDetail()
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1?bucket=needs_approval&page=2')
+  expect(
+    await screen.findByRole('link', { name: 'Open full page' }),
+  ).toHaveAttribute(
+    'href',
+    '/follow-ups/fu-1/page?bucket=needs_approval&page=2',
+  )
 })
 
 test('labels a delivered message in the demo as simulated', async () => {

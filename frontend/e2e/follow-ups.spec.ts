@@ -211,6 +211,51 @@ test.describe('Follow-ups', () => {
     await memberPage.close()
   })
 
+  test('opens a follow-up as a full page and returns to its bucket', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const marker = `Full page ${Date.now()}`
+    const title = await confirmFix(page, marker)
+    await openFollowUp(page, title)
+    const followUpId = new URL(page.url()).pathname.split('/').at(-1)
+    await detail(page).getByRole('button', { name: 'Prepare message' }).click()
+    await expect(
+      detail(page).getByRole('textbox', { name: 'Message' }),
+    ).toBeVisible()
+
+    await detail(page).getByRole('link', { name: 'Open full page' }).click()
+    await expect(page).toHaveURL(
+      new RegExp(`/follow-ups/${followUpId}/page\\?bucket=needs_approval$`),
+    )
+    await expect(
+      page.getByRole('heading', { level: 1, name: title }),
+    ).toBeVisible()
+    await expect(list(page)).toHaveCount(0)
+
+    const contact = page.getByRole('region', { name: 'Customer contact' })
+    await contact.getByLabel('Record outcome').selectOption({
+      label: 'Customer contacted',
+    })
+    await contact.getByRole('button', { name: 'Record outcome' }).click()
+    await expect(contact).toContainText('Outcome: Contacted.')
+    await expect(page.getByRole('region', { name: 'History' })).toContainText(
+      'recorded the outcome',
+    )
+    expect(await axeViolations(page)).toEqual([])
+
+    await page.setViewportSize({ width: 375, height: 812 })
+    expect(await overflow(page)).toBe(false)
+    await page.getByRole('link', { name: 'Back to follow-ups' }).click()
+    await expect(page).toHaveURL(/\/follow-ups\?bucket=needs_approval$/)
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Follow-ups' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('navigation', { name: 'Follow-up buckets' }),
+    ).toBeVisible()
+  })
+
   test('is keyboard operable, accessible, and fits a phone', async ({
     page,
   }) => {
