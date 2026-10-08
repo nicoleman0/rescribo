@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import httpx
@@ -6,12 +7,15 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 
 from integrations.github_app.client import GitHubAPIError, GitHubAppClient, installation_failure
+from integrations.github_app.permissions import RELEASE_PERMISSIONS
 from integrations.github_app.releases import (
+    ReleaseAccessMissing,
     ReleaseNotFound,
     get_release,
     list_releases,
     parse_release_payload,
 )
+from integrations.github_app.repository import selected_repository
 
 
 @pytest.fixture
@@ -103,3 +107,31 @@ def test_get_release_maps_404_and_installation_failure_ignores_422(client: bytes
                 release_id=9,
             )
     assert installation_failure(GitHubAPIError("installation token creation", 422)) is None
+
+
+def test_release_repository_maps_missing_permission_on_token_creation(client: bytes) -> None:
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(422, json={"message": "Resource not accessible by integration"})
+
+    with httpx.Client(
+        base_url="https://api.github.com", transport=httpx.MockTransport(handler)
+    ) as http:
+        api = GitHubAppClient(http, app_id="1", private_key=client)
+        with pytest.raises(ReleaseAccessMissing):
+            with selected_repository(
+                api,
+                installation_id="12",
+                repository_id="34",
+                permissions=RELEASE_PERMISSIONS,
+            ):
+                pytest.fail("A release-scoped token must be available before repository access.")
+
+    assert len(requests) == 1
+    assert requests[0].url.path == "/app/installations/12/access_tokens"
+    assert json.loads(requests[0].read()) == {
+        "repository_ids": [34],
+        "permissions": RELEASE_PERMISSIONS,
+    }

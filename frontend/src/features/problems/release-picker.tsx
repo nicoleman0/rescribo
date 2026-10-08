@@ -59,7 +59,7 @@ export function ReleasePicker({
   return (
     <section
       aria-label="Link a release"
-      className="animate-panel-enter surface-raised grid gap-3 rounded-card p-4"
+      className="animate-panel-enter grid gap-3 rounded-card border border-border p-4"
     >
       <h3 className="text-sm font-semibold">Choose a release</h3>
       {query.isPending ? <LoadingState label="Loading releases" /> : null}

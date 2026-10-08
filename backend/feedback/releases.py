@@ -9,7 +9,7 @@ from django.utils.dateparse import parse_datetime
 from accounts.models import Membership
 from accounts.services import lock_workspace
 from connections.models import Connection
-from feedback.engineering_issues import _active_github_connection, refuse_demo
+from feedback.engineering_issues import active_github_connection, refuse_demo
 from feedback.errors import (
     ConnectionNotReady,
     InvalidTransition,
@@ -21,7 +21,7 @@ from feedback.errors import (
 from feedback.models import Activity, FixRelease, Problem
 from feedback.problem_reads import get_problem
 from feedback.services import finish_mutation, locked_problem, require_version, write_activity
-from integrations.github_app.client import INSTALLATION_TOKEN_OPERATION, GitHubAPIError
+from integrations.github_app.client import GitHubAPIError
 from integrations.github_app.permissions import RELEASE_PERMISSIONS
 from integrations.github_app.releases import (
     ReleaseAccessMissing as ProviderAccessMissing,
@@ -43,19 +43,13 @@ def _provider_error(error: Exception) -> Exception:
         return ReleaseAccessMissing()
     if isinstance(error, ProviderReleaseNotFound):
         return ReleaseNotFound()
-    if (
-        isinstance(error, GitHubAPIError)
-        and error.operation == INSTALLATION_TOKEN_OPERATION
-        and error.status_code == 422
-    ):
-        return ReleaseAccessMissing()
     return ReleaseProviderUnavailable()
 
 
 def _read_context(actor: Membership) -> tuple[Connection, UUID, int, str, str]:
     refuse_demo(actor)
     try:
-        connection = _active_github_connection(actor)
+        connection = active_github_connection(actor)
     except ConnectionNotReady as error:
         raise ReleaseConnectionNotReady() from error
     return (
