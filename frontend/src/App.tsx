@@ -13,6 +13,7 @@ import { ManualReportPage } from '@/features/inbox/manual-report-page'
 import { ProblemDetailPage } from '@/features/problems/problem-detail-page'
 import { ProblemsPage } from '@/features/problems/problems-page'
 import { FollowUpsPage } from '@/features/follow-ups/follow-ups-page'
+import { FollowUpDetailPage } from '@/features/follow-ups/follow-up-detail-page'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
@@ -48,6 +49,10 @@ export default function App() {
           <Route path="problems/:problemId" element={<ProblemDetailPage />} />
           <Route path="follow-ups" element={<FollowUpsPage />} />
           <Route path="follow-ups/:followUpId" element={<FollowUpsPage />} />
+          <Route
+            path="follow-ups/:followUpId/page"
+            element={<FollowUpDetailPage />}
+          />
         </Route>
       </Route>
       <Route

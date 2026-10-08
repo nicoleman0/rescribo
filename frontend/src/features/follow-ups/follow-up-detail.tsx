@@ -1,6 +1,15 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Copy, Send } from 'lucide-react'
+import { ArrowLeft, Copy, Maximize2, Send } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   approveFollowUpNotification,
@@ -38,10 +47,38 @@ import { useMembers } from '@/features/inbox/use-members'
 import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
 import { cn } from '@/lib/utils'
 import { contactStateLabels } from './follow-ups-format'
+import { problemCard } from '@/features/problems/problem-card'
 import { FollowUpStatuses } from './follow-up-statuses'
 import { useFollowUpMutation } from './follow-ups-mutation'
 
 const QUEUED_POLL_MS = 5_000
+type FollowUpLayout = 'panel' | 'page'
+const FollowUpLayoutContext = createContext<FollowUpLayout>('panel')
+
+function useSectionClass(gap = 'gap-3') {
+  const layout = useContext(FollowUpLayoutContext)
+  return layout === 'panel'
+    ? `grid ${gap} rounded-card border border-border p-4`
+    : cn(problemCard, gap)
+}
+
+function SectionHeading({
+  children,
+  id,
+  className,
+}: {
+  children: ReactNode
+  id?: string
+  className?: string
+}) {
+  const layout = useContext(FollowUpLayoutContext)
+  const Heading = layout === 'panel' ? 'h3' : 'h2'
+  return (
+    <Heading id={id} className={cn('font-medium', className)}>
+      {children}
+    </Heading>
+  )
+}
 
 export function FollowUpDetailPanel({
   workspaceId,
@@ -50,9 +87,53 @@ export function FollowUpDetailPanel({
   workspaceId: string
   followUpId: string
 }) {
-  const membership = useWorkspace()
   const [params] = useSearchParams()
-  const backTo = `/follow-ups${params.toString() ? `?${params.toString()}` : ''}`
+  const search = params.toString()
+  const backTo = `/follow-ups${search ? `?${search}` : ''}`
+  const fullPage = `/follow-ups/${followUpId}/page${search ? `?${search}` : ''}`
+  return (
+    <section
+      aria-label="Follow-up detail"
+      className="grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2"
+    >
+      <div className="flex items-center justify-between gap-2">
+        <Button
+          asChild
+          variant="ghost"
+          size="sm"
+          className={cn('w-fit', touchTarget)}
+        >
+          <Link to={backTo}>
+            <ArrowLeft aria-hidden="true" />
+            Back to follow-ups
+          </Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm" className={touchTarget}>
+          <Link to={fullPage}>
+            <Maximize2 aria-hidden="true" />
+            Open full page
+          </Link>
+        </Button>
+      </div>
+      <FollowUpDetailContent
+        workspaceId={workspaceId}
+        followUpId={followUpId}
+        layout="panel"
+      />
+    </section>
+  )
+}
+
+export function FollowUpDetailContent({
+  workspaceId,
+  followUpId,
+  layout,
+}: {
+  workspaceId: string
+  followUpId: string
+  layout: FollowUpLayout
+}) {
+  const membership = useWorkspace()
   const detail = useQuery({
     queryKey: followUpKeys.detail(workspaceId, followUpId),
     queryFn: () => getFollowUp(workspaceId, followUpId),
@@ -72,21 +153,7 @@ export function FollowUpDetailPanel({
     refetchIntervalInBackground: false,
   })
   return (
-    <section
-      aria-label="Follow-up detail"
-      className="grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2"
-    >
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className={cn('w-fit', touchTarget)}
-      >
-        <Link to={backTo}>
-          <ArrowLeft aria-hidden="true" />
-          Back to follow-ups
-        </Link>
-      </Button>
+    <FollowUpLayoutContext.Provider value={layout}>
       {detail.isPending ? <LoadingState label="Loading follow-up" /> : null}
       {detail.isError && (detail.error as ApiError).status === 404 ? (
         <EmptyState
@@ -129,10 +196,11 @@ export function FollowUpDetailPanel({
             workspaceId={workspaceId}
             followUp={detail.data}
             isOwner={membership.role === 'owner'}
+            layout={layout}
           />
         </ReadyState>
       ) : null}
-    </section>
+    </FollowUpLayoutContext.Provider>
   )
 }
 
@@ -140,39 +208,66 @@ function FollowUpBody({
   workspaceId,
   followUp,
   isOwner,
+  layout,
 }: {
   workspaceId: string
   followUp: FollowUpDetail
   isOwner: boolean
+  layout: FollowUpLayout
 }) {
   const notification = followUp.notification as FollowUpNotification | null
-  return (
+  const message = (
+    <MessageSection
+      workspaceId={workspaceId}
+      followUp={followUp}
+      notification={notification}
+    />
+  )
+  const contact =
+    notification && notification.state !== 'cancelled' ? (
+      <ContactSection
+        workspaceId={workspaceId}
+        followUp={followUp}
+        isOwner={isOwner}
+      />
+    ) : null
+  const recipient = isOwner ? (
+    <RecipientForm workspaceId={workspaceId} followUp={followUp} />
+  ) : null
+  const history = <FollowUpHistory followUp={followUp} />
+  return layout === 'panel' ? (
     <article className="grid gap-4">
       <FollowUpSummary followUp={followUp} notification={notification} />
       <Separator />
-      <MessageSection
-        workspaceId={workspaceId}
-        followUp={followUp}
-        notification={notification}
-      />
-      {notification && notification.state !== 'cancelled' ? (
+      {message}
+      {contact ? (
         <>
           <Separator />
-          <ContactSection
-            workspaceId={workspaceId}
-            followUp={followUp}
-            isOwner={isOwner}
-          />
+          {contact}
         </>
       ) : null}
-      {isOwner ? (
+      {recipient ? (
         <>
           <Separator />
-          <RecipientForm workspaceId={workspaceId} followUp={followUp} />
+          {recipient}
         </>
       ) : null}
       <Separator />
-      <FollowUpHistory followUp={followUp} />
+      {history}
+    </article>
+  ) : (
+    <article className="grid gap-4">
+      <FollowUpSummary followUp={followUp} notification={notification} />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="grid content-start gap-4">
+          {message}
+          {contact}
+        </div>
+        <div className="grid content-start gap-4">
+          {recipient}
+          {history}
+        </div>
+      </div>
     </article>
   )
 }
@@ -185,6 +280,8 @@ function FollowUpSummary({
   notification: FollowUpNotification | null
 }) {
   const { recipient } = followUp
+  const layout = useContext(FollowUpLayoutContext)
+  const Title = layout === 'panel' ? 'h2' : 'h1'
   return (
     <header className="grid gap-3">
       <FollowUpStatuses
@@ -192,9 +289,14 @@ function FollowUpSummary({
         outcome={followUp.outcome.state}
       />
       <div className="flex items-baseline justify-between gap-3">
-        <h2 className="min-w-0 text-base font-semibold break-words">
+        <Title
+          className={cn(
+            'min-w-0 font-semibold break-words',
+            layout === 'page' ? 'text-xl' : 'text-base',
+          )}
+        >
           {followUp.report.title}
-        </h2>
+        </Title>
         <span className="font-mono text-[11px] text-muted-foreground">
           v{followUp.version}
         </span>
@@ -236,6 +338,7 @@ function MessageSection({
   followUp: FollowUpDetail
   notification: FollowUpNotification | null
 }) {
+  const sectionClass = useSectionClass()
   if (!notification) {
     return <DraftSection workspaceId={workspaceId} followUp={followUp} />
   }
@@ -264,10 +367,7 @@ function MessageSection({
     )
   }
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
+    <section aria-label="Message" className={sectionClass}>
       <MessageEditor
         workspaceId={workspaceId}
         followUp={followUp}
@@ -288,11 +388,8 @@ function DraftSection({
     draftFollowUpNotification(workspaceId, followUp.id),
   )
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">Customer message</h3>
+    <section aria-label="Message" className={useSectionClass()}>
+      <SectionHeading>Customer message</SectionHeading>
       <p className="text-sm text-muted-foreground">
         The default message uses the report title, the approved fix, the
         version, and a link to the report in Rescribo. Nothing from other
@@ -323,11 +420,8 @@ function QueuedSection({
   notification: FollowUpNotification
 }) {
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">Send in progress</h3>
+    <section aria-label="Message" className={useSectionClass()}>
+      <SectionHeading>Send in progress</SectionHeading>
       <p className="text-sm text-muted-foreground">
         The message is queued. This page will refresh when the result is ready.
       </p>
@@ -339,13 +433,10 @@ function QueuedSection({
 function SentSection({ notification }: { notification: FollowUpNotification }) {
   const isDemo = useIsDemo()
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">
+    <section aria-label="Message" className={useSectionClass()}>
+      <SectionHeading>
         {isDemo ? 'Message sent (simulated)' : 'Message sent'}
-      </h3>
+      </SectionHeading>
       {isDemo ? (
         <p className="text-sm text-muted-foreground">
           This is a demo workspace. No Slack message was sent.
@@ -379,11 +470,8 @@ function FailedSection({
     }),
   )
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">Delivery failed</h3>
+    <section aria-label="Message" className={useSectionClass()}>
+      <SectionHeading>Delivery failed</SectionHeading>
       {notification.safe_error ? (
         <p role="status" className="text-sm text-muted-foreground">
           {notification.safe_error}
@@ -448,11 +536,8 @@ function UncertainSection({
     }),
   )
   return (
-    <section
-      aria-label="Message"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">Send uncertain</h3>
+    <section aria-label="Message" className={useSectionClass()}>
+      <SectionHeading>Send uncertain</SectionHeading>
       <p className="text-sm text-muted-foreground">
         Slack may or may not have received the message. Check Slack before
         choosing what to do.
@@ -762,11 +847,8 @@ function ContactSection({
   isOwner: boolean
 }) {
   return (
-    <section
-      aria-label="Customer contact"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h3 className="font-medium">Customer contact</h3>
+    <section aria-label="Customer contact" className={useSectionClass()}>
+      <SectionHeading>Customer contact</SectionHeading>
       <p className="text-sm text-muted-foreground">
         Outcome: {contactStateLabels[followUp.outcome.state]}.
       </p>
@@ -801,6 +883,7 @@ function RecordOutcomeForm({
   isOwner: boolean
 }) {
   const id = useId()
+  const layout = useContext(FollowUpLayoutContext)
   const choices = choicesFor(followUp.outcome.state)
   const [state, setState] = useState<FollowUpContactState>(
     choices[0]?.value ?? 'pending',
@@ -872,7 +955,7 @@ function RecordOutcomeForm({
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
-          className={touchTarget}
+          className={cn(touchTarget, layout === 'page' && 'hover:bg-primary')}
           disabled={
             record.isPending || (state === 'no_response' && !note.trim())
           }
@@ -1022,11 +1105,11 @@ function RecipientForm({
   return (
     <form
       aria-label="Change recipient"
-      className="grid gap-2 rounded-card border border-border p-4"
+      className={useSectionClass('gap-2')}
       onSubmit={submit}
       noValidate
     >
-      <h3 className="font-medium">Recipient</h3>
+      <SectionHeading>Recipient</SectionHeading>
       <p className="text-xs text-muted-foreground">
         Owner-only. Cancels any unsent notification and logs the change. New
         recipients must be active members with a Slack link in this workspace.
@@ -1075,16 +1158,15 @@ function RecipientForm({
 }
 
 function FollowUpHistory({ followUp }: { followUp: FollowUpDetail }) {
+  const headingId = useId()
+  const sectionClass = useSectionClass()
   const history = (followUp.history ?? []) as FollowUpHistoryItem[]
   if (!history.length) return null
   return (
-    <section
-      aria-labelledby="follow-up-history"
-      className="grid gap-3 rounded-card border border-border p-4"
-    >
-      <h2 id="follow-up-history" className="text-base font-semibold">
+    <section aria-labelledby={headingId} className={sectionClass}>
+      <SectionHeading id={headingId} className="text-base font-semibold">
         History
-      </h2>
+      </SectionHeading>
       <ol className="grid gap-2 border-l border-border pl-4">
         {history.map((entry) => (
           <li key={entry.id} className="grid gap-0.5 text-sm">
