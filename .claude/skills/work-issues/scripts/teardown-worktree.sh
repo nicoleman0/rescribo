@@ -14,4 +14,5 @@ docker compose exec -T postgres sh -c \
   "dropdb -U \"\$POSTGRES_USER\" --if-exists rescribo_wt$issue"
 docker compose exec -T redis redis-cli -n $((issue % 15 + 1)) flushdb >/dev/null
 git branch -D "$branch"
-echo "Removed worktree, database rescribo_wt$issue, and branch $branch."
+git push origin --delete "$branch"
+echo "Removed worktree, database rescribo_wt$issue, and branch $branch (local and remote)."

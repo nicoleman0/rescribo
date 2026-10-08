@@ -81,7 +81,7 @@ Send fixes back to the implementer as an answers file. With several PRs in fligh
 
 ## Merge and clean up
 
-Merge only when the maintainer approves. Squash-merge one PR. Then send `/exit` to its agent and run `scripts/teardown-worktree.sh <issue> <branch> <workspace>`.
+Merge only when the maintainer approves. Squash-merge one PR with `gh pr merge <pr> --squash`, without `--delete-branch`. Then send `/exit` to its agent and run `scripts/teardown-worktree.sh <issue> <branch> <workspace>`. It deletes the local and remote branch only after it removes the worktree.
 
 For each PR still open:
 1. Rebase its branch in its worktree onto `origin/main`.
