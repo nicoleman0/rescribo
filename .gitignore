@@ -24,6 +24,7 @@ backend/staticfiles/
 .claude/*
 !.claude/skills/
 !.claude/commands/
+!.claude/agents/
 .worktrees/
 rust/matcher/target/
 .task/
