@@ -1,28 +1,20 @@
-import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { expect, test } from '@playwright/test'
 import { axeViolations } from './axe.js'
+import {
+  demoSessionPath,
+  openDemoInbox,
+  saveDemoSession,
+} from './demo-session.js'
 
-const demoPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/demo.json',
+const sessionPath = demoSessionPath('demo')
+
+test.beforeAll(async ({ browser }, info) =>
+  saveDemoSession(browser, info.project.use.baseURL, sessionPath),
 )
-
-async function signInAsVisitor(page: Page) {
-  const demo = JSON.parse(await readFile(demoPath, 'utf8')) as {
-    email: string
-    password: string
-  }
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demo.email)
-  await page.getByLabel('Password').fill(demo.password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-}
+test.use({ storageState: sessionPath })
 
 test('the demo visitor sees labelled, simulated data', async ({ page }) => {
-  await signInAsVisitor(page)
+  await openDemoInbox(page)
   await expect(page.getByLabel('Demo workspace')).toHaveText('Demo')
   await expect(
     page

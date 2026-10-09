@@ -1,22 +1,26 @@
 /// <reference lib="dom" />
 /// <reference lib="dom.iterable" />
 import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
 import { axeViolations } from './axe.js'
+import {
+  demoSessionPath,
+  openDemoInbox,
+  saveDemoSession,
+} from './demo-session.js'
 
 const reports = (page: Page) => page.getByRole('list', { name: 'Reports' })
 const panel = (page: Page) =>
   page.getByRole('region', { name: 'Report detail' })
 
-async function signIn(page: Page) {
-  const demo = JSON.parse(
-    await readFile(new URL('./.auth/demo.json', import.meta.url), 'utf8'),
-  ) as { email: string; password: string }
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demo.email)
-  await page.getByLabel('Password').fill(demo.password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+const sessionPath = demoSessionPath('motion')
+
+test.beforeAll(async ({ browser }, info) =>
+  saveDemoSession(browser, info.project.use.baseURL, sessionPath),
+)
+test.use({ storageState: sessionPath })
+
+async function openInbox(page: Page) {
+  await openDemoInbox(page)
   await expect(reports(page).getByRole('link').first()).toBeVisible()
 }
 
@@ -29,7 +33,7 @@ test.describe('Motion', () => {
   test('report selection keeps the page, panel slot, and filters', async ({
     page,
   }) => {
-    await signIn(page)
+    await openInbox(page)
     const root = page.locator('.animate-page-enter')
     await root.evaluate((element) =>
       element.setAttribute('data-original-page', 'true'),
@@ -91,7 +95,7 @@ test.describe('Motion', () => {
     page,
   }) => {
     await page.clock.install()
-    await signIn(page)
+    await openInbox(page)
     const rows = reports(page).getByRole('listitem')
     const starts = await rows.evaluateAll((elements) =>
       elements.map((element) => {
@@ -132,7 +136,7 @@ test.describe('Motion', () => {
   })
 
   test('follow-up switches reuse the panel slot', async ({ page }) => {
-    await signIn(page)
+    await openInbox(page)
     await page.getByRole('link', { name: 'Follow-ups', exact: true }).click()
     const list = page.getByRole('list', { name: 'Follow-ups' })
     await list.getByRole('link').first().click()
@@ -164,7 +168,7 @@ test.describe('Motion', () => {
       data.count = data.results.length
       await route.fulfill({ response, json: data })
     })
-    await signIn(page)
+    await openInbox(page)
     await reports(page).getByRole('link').first().click()
     await expect(panel(page).getByRole('heading', { level: 2 })).toBeVisible()
     const slot = page.locator('.animate-panel-enter')
@@ -200,7 +204,7 @@ test.describe('Motion', () => {
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme })
-      await signIn(page)
+      await openInbox(page)
       await page.goto('/dev/ui')
       await expect(
         page.getByRole('heading', { name: 'Motion', exact: true }),
@@ -236,7 +240,7 @@ test.describe('Motion', () => {
 
   test('dark raised surfaces keep contrast', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' })
-    await signIn(page)
+    await openInbox(page)
     await reports(page).getByRole('link').first().click()
     await expect(panel(page).getByRole('heading', { level: 2 })).toBeVisible()
     const surfaces = await page.evaluate(() => {
@@ -265,7 +269,7 @@ test.describe('Reduced motion', () => {
   test('page, content, rows, panels, badges, and buttons stay still', async ({
     page,
   }) => {
-    await signIn(page)
+    await openInbox(page)
     await expect(page.locator('.animate-page-enter')).toHaveCSS(
       'animation-name',
       'none',

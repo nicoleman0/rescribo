@@ -1,34 +1,16 @@
 import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
-
-const demoPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/demo.json',
-)
-
-async function signInAsVisitor(page: Page) {
-  const demo = JSON.parse(await readFile(demoPath, 'utf8')) as {
-    email: string
-    password: string
-  }
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(demo.email)
-  await page.getByLabel('Password').fill(demo.password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-}
+import { signInAsDemo } from './demo-session.js'
 
 const html = (page: Page) => page.locator('html')
 
 test.describe('Themes', () => {
+  // No saved session here: the sign-out test would end it for the next test.
   test('a dark choice persists across reload and sign-out', async ({
     page,
   }) => {
     await page.emulateMedia({ colorScheme: 'light' })
-    await signInAsVisitor(page)
+    await signInAsDemo(page)
     await page.goto('/settings')
     const theme = page.getByRole('group', { name: 'Theme' })
     await expect(theme.getByRole('radio', { name: 'System' })).toBeChecked()
@@ -60,7 +42,7 @@ test.describe('Themes', () => {
 
   test('dark screens have no axe violations', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' })
-    await signInAsVisitor(page)
+    await signInAsDemo(page)
     await expect(html(page)).toHaveAttribute('data-theme', 'dark')
     await expect(
       page.getByRole('list', { name: 'Reports' }).getByRole('link').first(),
