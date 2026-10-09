@@ -99,3 +99,32 @@ test('tells marking reviewed from flagging, including older entries', async () =
   expect(await screen.findByText('marked the problem reviewed')).toBeVisible()
   expect(screen.getAllByText('flagged the problem for review')).toHaveLength(2)
 })
+
+test('names a system actor instead of its code', async () => {
+  stubApi({
+    'GET /api/workspaces/ws-1/problems/prob-1/activity/': () =>
+      json({
+        count: 1,
+        next: null,
+        previous: null,
+        results: [
+          {
+            ...entry('act-1', { reason: 'issue_closed' }),
+            actor: null,
+            actor_system: 'github_webhook',
+          },
+        ],
+      }),
+  })
+  renderWorkspaceRoutes(
+    [
+      {
+        path: '/problems/prob-1',
+        element: <ProblemActivityList workspaceId="ws-1" problemId="prob-1" />,
+      },
+    ],
+    '/problems/prob-1',
+  )
+  expect(await screen.findByText('GitHub')).toBeVisible()
+  expect(screen.queryByText('github_webhook')).not.toBeInTheDocument()
+})

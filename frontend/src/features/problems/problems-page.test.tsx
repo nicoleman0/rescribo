@@ -179,7 +179,7 @@ function stubDetail(problem: ProblemDetail = detail) {
         }),
         activity({ action: 'report.linked', report: null }),
         activity({ action: 'problem.updated', changed_fields: ['owner'] }),
-        activity({ actor: null, actor_system: 'github' }),
+        activity({ actor: null, actor_system: 'github_webhook' }),
       ]),
     [`POST ${base}/problems/prob-1/edit/`]: (_url, init) => {
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>
@@ -237,7 +237,7 @@ test('shows compact linked reports and a readable activity history', async () =>
     ),
     expect.stringContaining('Ada Lovelace linked a report'),
     expect.stringContaining('Ada Lovelace changed the owner'),
-    expect.stringContaining('github created the problem'),
+    expect.stringContaining('GitHub created the problem'),
   ])
   expect(
     within(history).getByRole('link', { name: 'Billing' }),
