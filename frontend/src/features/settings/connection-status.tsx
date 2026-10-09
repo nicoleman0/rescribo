@@ -18,9 +18,12 @@ const notConnected = { label: 'Not connected', tone: 'neutral' } as const
 /** A provider that was never connected has no connection record. */
 export function ConnectionStatusBadge({
   status,
+  demo = false,
 }: {
   status: ConnectionStatus | undefined
+  demo?: boolean
 }) {
+  if (demo) return <StatusBadge tone="neutral">Disabled in demo</StatusBadge>
   const { label, tone } = status ? connectionStatus[status] : notConnected
   return <StatusBadge tone={tone}>{label}</StatusBadge>
 }

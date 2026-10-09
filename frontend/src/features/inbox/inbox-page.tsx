@@ -23,6 +23,7 @@ import {
 import { ReportDetailPanel } from './report-detail'
 import { ReportFilterBar } from './report-filter-bar'
 import { ReportList } from './report-list'
+import { PageTitle } from '@/components/layout/page-title'
 
 export function InboxPage() {
   const { workspace } = useWorkspace()
@@ -34,6 +35,7 @@ export function InboxPage() {
 
   return (
     <div className="animate-page-enter grid gap-6">
+      <PageTitle title="Inbox" />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Inbox</h1>

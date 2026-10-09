@@ -26,6 +26,7 @@ async function signIn(page: Page) {
   await page.getByLabel('Password').fill(seed.users[2].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
+  await expect(page).toHaveTitle('Inbox · Rescribo')
 }
 
 const reportList = (page: Page) => page.getByRole('list', { name: 'Reports' })
@@ -58,6 +59,7 @@ test.describe('Inbox', () => {
     const marker = `Manual e2e ${Date.now()}`
     await page.getByRole('link', { name: 'New report' }).click()
     await expect(page).toHaveURL(/\/inbox\/new$/)
+    await expect(page).toHaveTitle('New report · Rescribo')
     await page.getByLabel('Title').fill(marker)
     await page.getByLabel('Description').fill('Export stops at 50%.')
     await page.getByLabel('Customer organisation').fill(`Customer ${marker}`)

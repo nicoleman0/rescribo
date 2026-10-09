@@ -6,6 +6,8 @@ const dateFormat = new Intl.DateTimeFormat(undefined, {
   timeStyle: 'short',
 })
 
+const timeFormat = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' })
+
 const thisYearFormat = new Intl.DateTimeFormat(undefined, {
   day: 'numeric',
   month: 'short',
@@ -21,6 +23,8 @@ const otherYearFormat = new Intl.DateTimeFormat(undefined, {
 
 export const formatDate = (value: string) => dateFormat.format(new Date(value))
 
+export const formatTime = (value: string) => timeFormat.format(new Date(value))
+
 /** Fits a list column: the time this year, the year otherwise. */
 export function formatShortDate(value: string, now = new Date()) {
   const date = new Date(value)
@@ -30,6 +34,23 @@ export function formatShortDate(value: string, now = new Date()) {
 }
 
 export const memberName = (member: MemberSummary) => member.display_name
+
+export function actorName({
+  actor,
+  actor_system,
+}: {
+  actor: MemberSummary | null
+  actor_system: string
+}) {
+  if (actor) return memberName(actor)
+  return (
+    {
+      slack_delivery: 'Slack delivery',
+      github_webhook: 'GitHub',
+      github_reconciliation: 'GitHub sync',
+    }[actor_system] ?? 'System'
+  )
+}
 
 export function memberInitials(member: MemberSummary) {
   const words = member.display_name.trim().split(/\s+/).filter(Boolean)

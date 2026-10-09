@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { formatDate } from '@/features/inbox/report-format'
 import { useQuery } from '@tanstack/react-query'
 import {
   getInvitations,
@@ -119,7 +120,7 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
                   <span className="text-muted-foreground">
                     {Date.parse(invite.expires_at) < now
                       ? 'Expired'
-                      : `Expires ${new Date(invite.expires_at).toLocaleString()}`}
+                      : `Expires ${formatDate(invite.expires_at)}`}
                   </span>
                 </span>
                 <Button

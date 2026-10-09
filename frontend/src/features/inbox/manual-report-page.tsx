@@ -12,6 +12,7 @@ import { Field, TextareaField } from '@/components/forms/field'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useReportDraft, type ReportDraft } from './use-report-draft'
+import { PageTitle } from '@/components/layout/page-title'
 
 function failureMessage(error: ApiError) {
   if (error.status === undefined) {
@@ -71,6 +72,7 @@ function ManualReportForm({
 
   return (
     <div className="animate-page-enter grid max-w-2xl gap-6">
+      <PageTitle title="New report" />
       <header>
         <h1 className="text-xl font-semibold">New report</h1>
         <p className="mt-1 text-sm text-muted-foreground">

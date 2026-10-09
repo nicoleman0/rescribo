@@ -4,6 +4,7 @@ import { getReadiness } from '@/api/health'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageTitle } from '@/components/layout/page-title'
 
 export function DevelopmentStatusPage() {
   const health = useQuery({
@@ -14,6 +15,7 @@ export function DevelopmentStatusPage() {
 
   return (
     <main className="mx-auto grid min-h-svh w-full max-w-2xl content-center gap-6 px-6 py-12">
+      <PageTitle title="Development status" />
       <div>
         <p className="font-mono text-xs text-muted-foreground">
           Development workspace

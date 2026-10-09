@@ -42,9 +42,14 @@ import {
 import { ActionError } from '@/components/states/action-error'
 import { fieldError } from '@/components/forms/field-error'
 import { SelectField, TextareaField } from '@/components/forms/field'
-import { memberName, formatDate } from '@/features/inbox/report-format'
+import {
+  actorName,
+  memberName,
+  formatDate,
+} from '@/features/inbox/report-format'
 import { useMembers } from '@/features/inbox/use-members'
 import { useIsDemo, useWorkspace } from '@/components/auth/use-workspace'
+import { PageTitle } from '@/components/layout/page-title'
 import { cn } from '@/lib/utils'
 import { contactStateLabels } from './follow-ups-format'
 import { problemCard } from '@/features/problems/problem-card'
@@ -154,6 +159,9 @@ export function FollowUpDetailContent({
   })
   return (
     <FollowUpLayoutContext.Provider value={layout}>
+      {layout === 'page' ? (
+        <PageTitle title={detail.data?.report.title ?? 'Follow-ups'} />
+      ) : null}
       {detail.isPending ? <LoadingState label="Loading follow-up" /> : null}
       {detail.isError && (detail.error as ApiError).status === 404 ? (
         <EmptyState
@@ -1169,9 +1177,7 @@ function FollowUpHistory({ followUp }: { followUp: FollowUpDetail }) {
         {history.map((entry) => (
           <li key={entry.id} className="grid gap-0.5 text-sm">
             <span className="break-words">
-              <span className="font-medium">
-                {entry.actor ? memberName(entry.actor) : entry.actor_system}
-              </span>{' '}
+              <span className="font-medium">{actorName(entry)}</span>{' '}
               {describeHistory(entry)}
             </span>
             <time

@@ -14,3 +14,11 @@ test.each([
     expect(screen.getByText(label)).toHaveAttribute('data-tone', tone)
   },
 )
+
+test('marks integrations disabled in the demo with a neutral status', () => {
+  render(<ConnectionStatusBadge status="active" demo />)
+  expect(screen.getByText('Disabled in demo')).toHaveAttribute(
+    'data-tone',
+    'neutral',
+  )
+})

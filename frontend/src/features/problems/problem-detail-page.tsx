@@ -27,6 +27,7 @@ import {
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
 import { touchTarget } from '@/components/layout/touch-target'
+import { PageTitle } from '@/components/layout/page-title'
 import { ActionError } from '@/components/states/action-error'
 import {
   EmptyState,
@@ -87,6 +88,7 @@ export function ProblemDetailPage() {
   )
   return (
     <div className="animate-page-enter grid max-w-5xl gap-6">
+      <PageTitle title={problem.data?.title ?? 'Problem'} />
       <Button
         asChild
         variant="ghost"

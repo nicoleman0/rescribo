@@ -93,6 +93,11 @@ that owns the draft when a recoverable request fails.
 - Controls use the smaller control radius. Cards use the larger card radius. Status badges are pills.
 - Use left alignment, short text measure, visible focus, and no decorative colour outside the token system.
 
+## Page frame
+
+- AppShell owns the shared content column width. Feature pages use the full column and constrain forms or prose locally.
+- Pages set the document title with `PageTitle`, which appends the Rescribo name.
+
 ## Do and do not
 
 - Do use semantic token classes and shared state components.

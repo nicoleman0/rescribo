@@ -1,4 +1,6 @@
 import type { EngineeringIssue } from '@/api/github-issues'
+import { formatDate } from '@/features/inbox/report-format'
+import { issueStateLabel } from './problem-format'
 
 const accessLabels: Record<EngineeringIssue['access'], string> = {
   ok: 'Access verified',
@@ -11,7 +13,7 @@ const accessLabels: Record<EngineeringIssue['access'], string> = {
 
 export function GitHubIssueStatus({ issue }: { issue: EngineeringIssue }) {
   const lastSync = issue.last_synced_at
-    ? new Date(issue.last_synced_at).toLocaleString()
+    ? formatDate(issue.last_synced_at)
     : 'Not synced yet'
   return (
     <div className="grid gap-2 rounded-card border border-border p-4">
@@ -29,10 +31,7 @@ export function GitHubIssueStatus({ issue }: { issue: EngineeringIssue }) {
           <p className="text-xs text-muted-foreground">{issue.repository}</p>
         </div>
         <span className="rounded-full bg-muted px-2.5 py-1 text-xs">
-          {issue.state === 'open' ? 'Open' : 'Closed'}
-          {issue.state_reason
-            ? ` · ${issue.state_reason.replaceAll('_', ' ')}`
-            : ''}
+          {issueStateLabel(issue)}
         </span>
       </div>
       <p className="text-xs text-muted-foreground">
