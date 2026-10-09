@@ -27,6 +27,7 @@ import {
 import { bucketLabels, bucketOrder, emptyBucketCopy } from './follow-ups-format'
 import { FollowUpDetailPanel } from './follow-up-detail'
 import { FollowUpStatuses } from './follow-up-statuses'
+import { PageTitle } from '@/components/layout/page-title'
 
 const FOLLOW_UPS_REFRESH_MS = 30_000
 
@@ -39,6 +40,7 @@ export function FollowUpsPage() {
   const page = Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1
   return (
     <div className="animate-page-enter grid gap-6">
+      <PageTitle title="Follow-ups" />
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Follow-ups</h1>
@@ -180,7 +182,7 @@ function TabButton({
       >
         <span>{label}</span>
         <span
-          className="font-mono text-xs text-muted-foreground"
+          className="min-w-[2ch] text-center font-mono text-xs tabular-nums text-muted-foreground"
           aria-label={
             unavailable
               ? 'count unavailable'

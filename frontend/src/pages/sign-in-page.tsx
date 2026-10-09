@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { PageTitle } from '@/components/layout/page-title'
 
 export function SignInPage() {
   const [email, setEmail] = useState('')
@@ -33,6 +34,7 @@ export function SignInPage() {
   const apiError = mutation.error as ApiError | null
   return (
     <AuthLayout>
+      <PageTitle title="Sign in" />
       <h1 className="text-xl font-semibold">Sign in</h1>
       <p className="mt-1 mb-6 text-sm text-muted-foreground">
         Use your workspace account.

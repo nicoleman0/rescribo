@@ -176,13 +176,31 @@ test('the demo explains that integrations are disabled', async () => {
   testMembership.workspace.is_demo = true
   try {
     stubApi({
-      ...unlinked,
-      [`GET ${base}connections/`]: () => json([]),
+      [`GET ${base}slack/identity/`]: () =>
+        json({
+          linked: true,
+          team_id: 'TDEMO',
+          user_id: 'UDEMO',
+          linked_at: null,
+        }),
+      [`GET ${base}connections/`]: () =>
+        json([
+          slackConnection,
+          { ...slackConnection, provider: 'github', identity: 'demo' },
+        ]),
     })
     render()
     const notice = await screen.findByRole('note')
     expect(notice).toHaveTextContent('Integrations are disabled in the demo')
     expect(notice).toHaveTextContent('Nothing is sent to Slack or GitHub.')
+    expect(await screen.findAllByText('Disabled in demo')).toHaveLength(2)
+    expect(await screen.findByText('UDEMO')).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Unlink Slack account' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Generate linking code' }),
+    ).not.toBeInTheDocument()
   } finally {
     testMembership.workspace.is_demo = false
   }

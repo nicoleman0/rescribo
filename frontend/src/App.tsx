@@ -14,6 +14,7 @@ import { ProblemDetailPage } from '@/features/problems/problem-detail-page'
 import { ProblemsPage } from '@/features/problems/problems-page'
 import { FollowUpsPage } from '@/features/follow-ups/follow-ups-page'
 import { FollowUpDetailPage } from '@/features/follow-ups/follow-up-detail-page'
+import { PageTitle } from '@/components/layout/page-title'
 
 const UiGalleryPage = import.meta.env.DEV
   ? lazy(() => import('@/dev/ui-gallery'))
@@ -59,6 +60,7 @@ export default function App() {
         path="*"
         element={
           <main className="grid min-h-svh place-items-center p-6">
+            <PageTitle title="Page not found" />
             <EmptyState
               title="Page not found"
               description="The page you requested does not exist."

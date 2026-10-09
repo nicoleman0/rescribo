@@ -12,14 +12,17 @@ import {
   ReadyState,
 } from '@/components/states/async-states'
 import { useSettingsAction } from './use-settings-action'
+import { formatTime } from '@/features/inbox/report-format'
 
 /** The signed-in member's own Slack link. Slack redeems the code, never this page. */
 export function SlackAccount({
   workspaceId,
   connected,
+  demo,
 }: {
   workspaceId: string
   connected: boolean
+  demo: boolean
 }) {
   const issue = useSettingsAction<SlackLinkCode>(workspaceId)
   const identity = useQuery({
@@ -53,26 +56,30 @@ export function SlackAccount({
                 <span className="font-mono">{identity.data.user_id}</span> in
                 team <span className="font-mono">{identity.data.team_id}</span>.
               </p>
-              <Button
-                variant="outline"
-                className="min-h-11 w-fit"
-                disabled={unlink.isPending}
-                onClick={() =>
-                  unlink.mutate({ path: 'slack/identity/unlink/', body: {} })
-                }
-              >
-                Unlink Slack account
-              </Button>
+              {demo ? null : (
+                <Button
+                  variant="outline"
+                  className="min-h-11 w-fit"
+                  disabled={unlink.isPending}
+                  onClick={() =>
+                    unlink.mutate({ path: 'slack/identity/unlink/', body: {} })
+                  }
+                >
+                  Unlink Slack account
+                </Button>
+              )}
             </>
           ) : null}
           {identity.data && !identity.data.linked ? (
             <>
               <p className="text-sm text-muted-foreground">
-                {connected
-                  ? 'Link your Slack account to capture reports from Slack. Generate a code, run "Submit customer feedback" on a message in Slack, and paste the code when asked.'
-                  : 'Slack is not connected to this workspace. You can link your account once an owner connects it.'}
+                {demo
+                  ? 'Linking is disabled in the demo.'
+                  : connected
+                    ? 'Link your Slack account to capture reports from Slack. Generate a code, run "Submit customer feedback" on a message in Slack, and paste the code when asked.'
+                    : 'Slack is not connected to this workspace. You can link your account once an owner connects it.'}
               </p>
-              {connected ? (
+              {connected && !demo ? (
                 <Button
                   className="min-h-11 w-fit"
                   disabled={issue.isPending}
@@ -91,7 +98,7 @@ export function SlackAccount({
                   className="font-mono"
                   value={issue.data.code}
                   onFocus={(event) => event.target.select()}
-                  hint={`Single use. Expires at ${new Date(issue.data.expires_at).toLocaleTimeString()}.`}
+                  hint={`Single use. Expires at ${formatTime(issue.data.expires_at)}.`}
                 />
               ) : null}
             </>

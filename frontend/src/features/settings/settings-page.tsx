@@ -14,6 +14,7 @@ import { MembersSettings } from './members-settings'
 import { SlackAccount } from './slack-account'
 import { ConfirmAction } from './confirm-action'
 import { ThemeSettings } from './theme-settings'
+import { PageTitle } from '@/components/layout/page-title'
 
 export function SettingsPage() {
   const membership = useWorkspace()
@@ -30,7 +31,8 @@ function WorkspaceSettings() {
     refetchInterval: 30000,
   })
   return (
-    <div className="animate-page-enter mx-auto grid w-full max-w-3xl gap-6">
+    <div className="animate-page-enter grid w-full gap-6">
+      <PageTitle title="Settings" />
       <header>
         <h1 className="text-xl font-semibold">Settings</h1>
         <p className="mt-1 text-muted-foreground">{workspace.name}</p>
@@ -79,6 +81,7 @@ function WorkspaceSettings() {
               workspaceId={workspace.id}
               workspaceName={workspace.name}
               owner={role === 'owner'}
+              demo={workspace.is_demo}
               provider={provider}
               connection={connections.data.find(
                 (item) => item.provider === provider,
@@ -91,6 +94,7 @@ function WorkspaceSettings() {
             connected={connections.data.some(
               (item) => item.provider === 'slack' && item.status === 'active',
             )}
+            demo={workspace.is_demo}
           />
           <Separator />
         </ReadyState>

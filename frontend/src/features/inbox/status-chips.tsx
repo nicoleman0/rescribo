@@ -94,7 +94,7 @@ function ChipCount({
       ? ['…', 'count loading']
       : [String(count), String(count)]
   return (
-    <span className="font-mono text-xs text-muted-foreground">
+    <span className="min-w-[2ch] text-center font-mono text-xs tabular-nums text-muted-foreground">
       <span aria-hidden="true">{shown}</span>
       <span className="sr-only">, {spoken}</span>
     </span>

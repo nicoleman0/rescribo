@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
+import { PageTitle } from '@/components/layout/page-title'
 
 export function ResetPasswordPage() {
   const { token = '' } = useParams()
@@ -47,6 +48,7 @@ export function ResetPasswordPage() {
   }
   return (
     <AuthLayout>
+      <PageTitle title="Reset password" />
       <h1 className="mb-5 text-xl font-semibold">Reset password</h1>
       {preview.isPending ? (
         <LoadingState label="Checking reset link" />

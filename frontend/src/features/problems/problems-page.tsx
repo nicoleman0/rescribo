@@ -22,8 +22,10 @@ import { Button } from '@/components/ui/button'
 import { memberName } from '@/features/inbox/report-format'
 import { cn } from '@/lib/utils'
 import { PageNav } from './page-nav'
-import { countLabel, reportCountLabel } from './problem-format'
+import { countLabel, issueStateLabel, reportCountLabel } from './problem-format'
 import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
+import { Badge } from '@/components/ui/badge'
+import { PageTitle } from '@/components/layout/page-title'
 
 const PROBLEMS_REFRESH_MS = 30_000
 
@@ -50,6 +52,7 @@ export function ProblemsPage() {
   const query = queryFromParams(params)
   return (
     <div className="animate-page-enter grid gap-6">
+      <PageTitle title="Problems" />
       <header>
         <h1 className="text-xl font-semibold">Problems</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -214,18 +217,18 @@ function ProblemList({ page }: { page: ProblemPage }) {
               <span className="min-w-0 grow basis-48 font-medium break-words">
                 {problem.title}
               </span>
-              <span className="flex min-w-0 flex-wrap gap-1">
+              <span className="flex min-w-0 flex-wrap items-center gap-1">
                 {problem.needs_review ? <NeedsReviewBadge /> : null}
                 <ProblemStateBadge state={problem.state} />
                 {problem.engineering_issue ? (
-                  <span className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground">
+                  <Badge variant="outline">
                     GitHub #{problem.engineering_issue.number} ·{' '}
-                    {problem.engineering_issue.state}
+                    {issueStateLabel(problem.engineering_issue)}
                     {problem.engineering_issue.stale ? ' · Stale' : ''}
                     {problem.engineering_issue.access !== 'ok'
                       ? ' · Access issue'
                       : ''}
-                  </span>
+                  </Badge>
                 ) : null}
               </span>
             </span>

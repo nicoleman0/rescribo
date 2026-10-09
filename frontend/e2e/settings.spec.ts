@@ -21,6 +21,7 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
   await page.goto('/settings')
+  await expect(page).toHaveTitle('Settings · Rescribo')
   await expect(
     page.getByRole('heading', { name: 'Members and invitations' }),
   ).toBeVisible()

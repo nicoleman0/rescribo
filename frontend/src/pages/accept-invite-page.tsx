@@ -8,6 +8,7 @@ import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
+import { PageTitle } from '@/components/layout/page-title'
 
 type Preview = { status: string; workspace_name?: string }
 
@@ -60,6 +61,7 @@ export function AcceptInvitePage() {
   }
   return (
     <AuthLayout>
+      <PageTitle title="Accept invitation" />
       <h1 className="text-xl font-semibold">Accept invitation</h1>
       {preview.isPending ? (
         <LoadingState label="Checking invitation" />

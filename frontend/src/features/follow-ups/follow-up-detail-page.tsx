@@ -14,7 +14,7 @@ export function FollowUpDetailPage() {
   const backTo = `/follow-ups${search ? `?${search}` : ''}`
 
   return (
-    <div className="animate-page-enter grid max-w-5xl gap-6">
+    <div className="animate-page-enter grid gap-6">
       <Button
         asChild
         variant="ghost"

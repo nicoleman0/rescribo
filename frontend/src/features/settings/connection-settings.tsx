@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Connection } from '@/api/settings'
+import { formatDate } from '@/features/inbox/report-format'
 import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
@@ -14,12 +15,14 @@ export function ConnectionSettings({
   provider,
   connection,
   owner,
+  demo,
 }: {
   workspaceId: string
   workspaceName: string
   provider: 'slack' | 'github'
   connection?: Connection
   owner: boolean
+  demo: boolean
 }) {
   const [repository, setRepository] = useState(connection?.repository ?? '')
   const [channel, setChannel] = useState('')
@@ -36,7 +39,7 @@ export function ConnectionSettings({
             {name}
           </h2>
           <CardAction>
-            <ConnectionStatusBadge status={connection?.status} />
+            <ConnectionStatusBadge status={connection?.status} demo={demo} />
           </CardAction>
         </CardHeader>
         <CardContent className="grid gap-4">
@@ -78,7 +81,7 @@ export function ConnectionSettings({
                 <dt className="text-muted-foreground">Last API success</dt>
                 <dd>
                   {connection.last_success_at
-                    ? new Date(connection.last_success_at).toLocaleString()
+                    ? formatDate(connection.last_success_at)
                     : 'Never'}
                 </dd>
                 {provider === 'github' ? (
@@ -86,9 +89,7 @@ export function ConnectionSettings({
                     <dt className="text-muted-foreground">Last issue sync</dt>
                     <dd>
                       {connection.last_reconciled_at
-                        ? new Date(
-                            connection.last_reconciled_at,
-                          ).toLocaleString()
+                        ? formatDate(connection.last_reconciled_at)
                         : 'Never'}
                     </dd>
                   </>

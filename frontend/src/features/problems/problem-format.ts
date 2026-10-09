@@ -1,5 +1,15 @@
 import type { ProblemState } from '@/api/problems'
+import type { EngineeringIssue } from '@/api/github-issues'
 import type { StatusTone } from '@/components/status/status-tone'
+
+export function issueStateLabel(
+  issue: Pick<EngineeringIssue, 'state' | 'state_reason'>,
+) {
+  const reason = issue.state_reason
+    ?.replaceAll('_', ' ')
+    .replace(/^./, (letter) => letter.toUpperCase())
+  return `${issue.state === 'open' ? 'Open' : 'Closed'}${reason ? ` · ${reason}` : ''}`
+}
 
 export const problemStateLabels: Record<ProblemState, string> = {
   open: 'Open',
