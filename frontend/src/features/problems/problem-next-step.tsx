@@ -5,16 +5,19 @@ import {
   TriangleAlert,
   type LucideIcon,
 } from 'lucide-react'
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
-import type { ProblemDetail } from '@/api/problems'
+import { markProblemReviewed, type ProblemDetail } from '@/api/problems'
 import {
   toneSurfaceClasses,
   type StatusTone,
 } from '@/components/status/status-tone'
 import { touchTarget } from '@/components/layout/touch-target'
+import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { problemStateTones } from './problem-format'
+import { useProblemMutation } from './use-problem-mutation'
 
 type Step = {
   tone: StatusTone
@@ -22,6 +25,7 @@ type Step = {
   body: string
   followUps?: boolean
   issue?: boolean
+  review?: boolean
 }
 
 const toneIcons: Record<StatusTone, LucideIcon> = {
@@ -40,6 +44,7 @@ function nextStep(problem: ProblemDetail): Step {
       tone: 'neutral',
       heading: 'Not planned',
       body: 'No fix is planned, so no follow-ups are prepared.',
+      review: problem.needs_review,
     }
   }
   // The API does not say why the flag was set, so name every cause.
@@ -49,11 +54,12 @@ function nextStep(problem: ProblemDetail): Step {
       heading: 'Review the fix',
       body: `The GitHub issue closed or reopened, or a customer said they are still affected, after the last review. ${
         fixed
-          ? 'Check the follow-up outcomes and the GitHub issue.'
-          : 'Check the GitHub issue, then confirm the fix under Fix.'
+          ? 'Check the follow-up outcomes and the GitHub issue, then mark the problem reviewed.'
+          : 'Check the GitHub issue, then confirm the fix under Fix or mark the problem reviewed.'
       }`,
       followUps: true,
       issue: true,
+      review: true,
     }
   }
   if (fixed) {
@@ -72,10 +78,26 @@ function nextStep(problem: ProblemDetail): Step {
 }
 
 /** What a member does next on this problem, from its state and review flag. */
-export function ProblemNextStep({ problem }: { problem: ProblemDetail }) {
+export function ProblemNextStep({
+  workspaceId,
+  problem,
+}: {
+  workspaceId: string
+  problem: ProblemDetail
+}) {
   const step = nextStep(problem)
   const Icon = toneIcons[step.tone]
   const issue = step.issue ? problem.engineering_issue : null
+  const heading = useRef<HTMLHeadingElement>(null)
+  // The button that had focus is gone once the flag clears.
+  const review = useProblemMutation(
+    workspaceId,
+    () =>
+      markProblemReviewed(workspaceId, problem.id, {
+        expected_version: problem.version,
+      }),
+    () => heading.current?.focus(),
+  )
   return (
     <div
       data-tone={step.tone}
@@ -86,9 +108,15 @@ export function ProblemNextStep({ problem }: { problem: ProblemDetail }) {
     >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       <div className="grid min-w-0 gap-1">
-        <h2 className="font-semibold">{step.heading}</h2>
+        <h2
+          ref={heading}
+          tabIndex={-1}
+          className="font-semibold focus-visible:outline-2 focus-visible:outline-ring"
+        >
+          {step.heading}
+        </h2>
         <p className="text-sm text-foreground">{step.body}</p>
-        {step.followUps || issue ? (
+        {step.followUps || issue || step.review ? (
           <div className="mt-2 flex flex-wrap gap-2">
             {step.followUps ? (
               <Button
@@ -113,7 +141,25 @@ export function ProblemNextStep({ problem }: { problem: ProblemDetail }) {
                 </a>
               </Button>
             ) : null}
+            {step.review ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn('text-foreground', touchTarget)}
+                disabled={review.isPending}
+                onClick={() => review.mutate(undefined)}
+              >
+                {review.isPending ? 'Marking reviewed…' : 'Mark reviewed'}
+              </Button>
+            ) : null}
           </div>
+        ) : null}
+        {review.error ? (
+          <ActionError
+            error={review.error}
+            title="The problem was not marked reviewed"
+            record="problem"
+          />
         ) : null}
       </div>
     </div>

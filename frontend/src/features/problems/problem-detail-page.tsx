@@ -248,7 +248,7 @@ function ProblemBody({
   return (
     <article className="grid gap-6">
       <ProblemHeader workspaceId={workspaceId} problem={problem} />
-      <ProblemNextStep problem={problem} />
+      <ProblemNextStep workspaceId={workspaceId} problem={problem} />
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         {/* First in the DOM so phones show the fix and owner before the
             report list; wide screens move it to the side column. */}

@@ -379,6 +379,70 @@ def test_problem_edit_and_owner(client: Client, actor: Membership) -> None:
     assert Problem.objects.get(pk=problem.pk).version == 4
 
 
+def flag(problem: Problem) -> int:
+    Problem.objects.filter(pk=problem.pk).update(needs_review=True, version=problem.version + 1)
+    return problem.version + 1
+
+
+def test_mark_reviewed_clears_flag_and_shows_reason_in_activity(
+    client: Client, actor: Membership
+) -> None:
+    problem = make_problem(actor=actor)
+    version = flag(problem)
+    url = api(actor, f"problems/{problem.pk}/mark-reviewed/")
+    response = post(client, url, {"expected_version": version})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["needs_review"] is False and body["version"] == version + 1
+    rows = client.get(api(actor, f"problems/{problem.pk}/activity/")).json()["results"]
+    assert rows[0]["action"] == "problem.updated"
+    assert rows[0]["changed_fields"] == ["needs_review"]
+    assert rows[0]["metadata"] == {"reason": "reviewed"}
+    assert rows[0]["actor"] == {"id": str(actor.pk), "display_name": "Test Member"}
+    again = post(client, url, {"expected_version": version + 1})
+    assert again.status_code == 409 and again.json()["reason"] == "invalid_transition"
+    assert again.json()["current"]["needs_review"] is False
+
+
+def test_mark_reviewed_conflicts_and_validation(client: Client, actor: Membership) -> None:
+    problem = make_problem(actor=actor)
+    version = flag(problem)
+    url = api(actor, f"problems/{problem.pk}/mark-reviewed/")
+    stale = post(client, url, {"expected_version": version - 1})
+    assert stale.status_code == 409 and stale.json()["reason"] == "version_conflict"
+    assert stale.json()["current"]["needs_review"] is True
+    missing = post(client, url, {})
+    assert missing.status_code == 400 and "expected_version" in missing.json()["field_errors"]
+    assert Problem.objects.get(pk=problem.pk).needs_review is True
+
+
+def test_mark_reviewed_works_in_a_demo_workspace(client: Client) -> None:
+    member = make_membership(workspace=make_workspace(is_demo=True))
+    sign_in(client, member)
+    problem = make_problem(actor=member)
+    version = flag(problem)
+    response = post(
+        client,
+        api(member, f"problems/{problem.pk}/mark-reviewed/"),
+        {"expected_version": version},
+    )
+    assert response.status_code == 200 and response.json()["needs_review"] is False
+
+
+def test_mark_reviewed_on_a_foreign_problem_is_404_and_keeps_flag(
+    client: Client, actor: Membership
+) -> None:
+    foreign = make_problem(actor=foreign_member())
+    version = flag(foreign)
+    response = post(
+        client,
+        api(actor, f"problems/{foreign.pk}/mark-reviewed/"),
+        {"expected_version": version},
+    )
+    assert response.status_code == 404 and "current" not in response.json()
+    assert Problem.objects.get(pk=foreign.pk).needs_review is True
+
+
 def test_problem_writes_require_csrf(actor: Membership) -> None:
     problem = make_problem(actor=actor)
     strict = Client(enforce_csrf_checks=True)

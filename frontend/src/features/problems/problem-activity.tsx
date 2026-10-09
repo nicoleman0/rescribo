@@ -154,7 +154,12 @@ function describe(entry: ProblemActivity): ReactNode {
     case 'problem.created':
       return 'created the problem'
     case 'problem.updated':
-      return describeUpdate(entry.changed_fields)
+      return describeUpdate(
+        entry.changed_fields,
+        typeof entry.metadata?.reason === 'string'
+          ? entry.metadata.reason
+          : undefined,
+      )
     case 'problem.state_changed':
       return entry.state
         ? `changed the status to ${problemStateLabels[entry.state]}`

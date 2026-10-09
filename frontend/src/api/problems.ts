@@ -136,6 +136,18 @@ export async function assignProblemOwner(
   )
 }
 
+export async function markProblemReviewed(
+  workspaceId: string,
+  problemId: string,
+  input: Schemas['MarkReviewed'],
+) {
+  await csrf()
+  return apiRequest<ProblemDetail>(
+    `${problemPath(workspaceId, problemId)}mark-reviewed/`,
+    input,
+  )
+}
+
 /** The current problem sent with a 409, or undefined for other errors. */
 export const conflictingProblem = (error: ApiError) =>
   error.status === 409

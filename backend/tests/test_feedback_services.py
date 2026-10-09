@@ -33,6 +33,7 @@ from feedback.problems import (
     confirm_fix,
     confirm_linked_report_fix,
     create_problem,
+    mark_problem_reviewed,
     update_problem,
 )
 from feedback.reports import (
@@ -220,6 +221,51 @@ def test_problem_updates_state_and_fix_revision() -> None:
     )
     assert problem.resolution_revision == 2
     assert FollowUp.objects.filter(problem=problem).count() == 4
+
+
+@pytest.mark.parametrize("state", ["fix_available", "in_progress"])
+def test_mark_reviewed_clears_flag_and_keeps_fix_details(state: str) -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    problem = confirm_fix(
+        actor=actor,
+        problem_id=problem.pk,
+        expected_version=problem.version,
+        fix_note="Fixed",
+        fix_version="1.0",
+    )
+    Problem.objects.filter(pk=problem.pk).update(
+        state=state, needs_review=True, version=problem.version + 1
+    )
+    before = Problem.objects.get(pk=problem.pk)
+    problem = mark_problem_reviewed(
+        actor=actor, problem_id=problem.pk, expected_version=before.version
+    )
+    assert problem.needs_review is False
+    assert problem.version == before.version + 1
+    assert problem.state == state
+    assert problem.resolution_revision == before.resolution_revision
+    assert (problem.fix_note, problem.fix_version) == (before.fix_note, before.fix_version)
+    entries = Activity.objects.filter(record_id=problem.pk, action=Activity.Action.PROBLEM_UPDATED)
+    assert entries.count() == 1
+    entry = entries.get()
+    assert entry.actor_membership_id == actor.pk
+    assert entry.metadata == {"fields": ["needs_review"], "reason": "reviewed"}
+
+
+def test_mark_reviewed_refuses_unflagged_and_stale_without_activity() -> None:
+    actor = make_membership()
+    problem = create_problem(actor=actor, title="Problem")
+    with pytest.raises(InvalidTransition) as invalid:
+        mark_problem_reviewed(actor=actor, problem_id=problem.pk, expected_version=1)
+    assert invalid.value.reason == "invalid_transition"
+    Problem.objects.filter(pk=problem.pk).update(needs_review=True)
+    with pytest.raises(VersionConflict):
+        mark_problem_reviewed(actor=actor, problem_id=problem.pk, expected_version=2)
+    assert Problem.objects.get(pk=problem.pk).needs_review is True
+    assert not Activity.objects.filter(
+        record_id=problem.pk, action=Activity.Action.PROBLEM_UPDATED
+    ).exists()
 
 
 def test_linking_fixed_problem_requires_explicit_applicability_confirmation() -> None:

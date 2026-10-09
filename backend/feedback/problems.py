@@ -29,6 +29,9 @@ from feedback.services import (
 )
 from feedback.transitions import check_fix_confirmation_transition, check_problem_transition
 
+# Marks the clearing entry, so activity can tell it from the flagging ones.
+REVIEWED_REASON = "reviewed"
+
 
 @dataclass(frozen=True)
 class ProblemChanges:
@@ -132,6 +135,32 @@ def assign_problem_owner(
             record_type=Activity.RecordType.PROBLEM,
             record_id=problem.pk,
             metadata={"fields": ["owner"]},
+            now=current,
+        )
+        return problem
+
+
+def mark_problem_reviewed(
+    *,
+    actor: Membership,
+    problem_id: UUID,
+    expected_version: int,
+    now: datetime | None = None,
+) -> Problem:
+    current = now or timezone.now()
+    with transaction.atomic():
+        problem = locked_problem(actor=actor, problem_id=problem_id)
+        require_version(row=problem, expected_version=expected_version)
+        if not problem.needs_review:
+            raise InvalidTransition(action="mark_reviewed", from_state=problem.state)
+        problem.needs_review = False
+        finish_mutation(row=problem, now=current, update_fields=["needs_review"])
+        write_activity(
+            actor=actor,
+            action=Activity.Action.PROBLEM_UPDATED,
+            record_type=Activity.RecordType.PROBLEM,
+            record_id=problem.pk,
+            metadata={"fields": ["needs_review"], "reason": REVIEWED_REASON},
             now=current,
         )
         return problem
