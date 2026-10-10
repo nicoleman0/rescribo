@@ -20,7 +20,7 @@ export async function expectTouchTarget(locator: Locator) {
 export async function expectVisibleControlTouchTargets(page: Page) {
   for (const control of await page
     .locator(
-      'button:visible, input:not([type="checkbox"]):visible, select:visible',
+      'button:visible, input:not([type="checkbox"]):visible, select:visible, label:has(input[type="checkbox"]):visible',
     )
     .all()) {
     await expectTouchTarget(control)

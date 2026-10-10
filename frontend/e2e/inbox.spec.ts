@@ -326,6 +326,10 @@ test.describe('Inbox', () => {
 
     await page.getByRole('button', { name: 'Filters' }).click()
     await expectVisibleControlTouchTargets(page)
+    await page.getByLabel('Source').selectOption('manual')
+    await expectVisibleControlTouchTargets(page)
+    await page.getByRole('button', { name: 'Clear filters' }).click()
+    await expectSearch(page, '')
 
     await page.goto('/inbox/new')
     await expectVisibleControlTouchTargets(page)
