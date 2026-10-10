@@ -12,9 +12,8 @@ import {
   ReadyState,
 } from '@/components/states/async-states'
 import { Button } from '@/components/ui/button'
-import { touchTarget } from '@/components/layout/touch-target'
 import { Separator } from '@/components/ui/separator'
-import { cn } from '@/lib/utils'
+
 import { Provenance } from './provenance'
 import { ReportTriage } from './report-actions'
 import { formatDate, memberName } from './report-format'
@@ -45,10 +44,7 @@ export function ReportDetailPanel({
         asChild
         variant="ghost"
         size="sm"
-        className={cn(
-          'w-fit lg:absolute lg:top-3 lg:right-3 lg:size-8 lg:p-0',
-          touchTarget,
-        )}
+        className="w-fit lg:absolute lg:top-3 lg:right-3 lg:size-8 lg:p-0"
       >
         <Link to={backTo}>
           <ArrowLeft aria-hidden="true" className="lg:hidden" />

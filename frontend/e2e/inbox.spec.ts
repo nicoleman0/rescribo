@@ -4,6 +4,10 @@ import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  expectTouchTarget,
+  expectVisibleControlTouchTargets,
+} from './touch-target.js'
 
 const seedPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -311,5 +315,52 @@ test.describe('Inbox', () => {
     await detail.getByRole('link', { name: 'Back to reports' }).click()
     await expect(page).toHaveURL(/\/inbox\?customer=seeded$/)
     await expect(reportList(page)).toBeVisible()
+  })
+
+  test('phone controls meet the touch target minimum', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/inbox')
+    await expectVisibleControlTouchTargets(page)
+    await expectTouchTarget(page.getByRole('link', { name: 'New report' }))
+    await expectTouchTarget(reportList(page).getByRole('link').first())
+
+    await page.getByRole('button', { name: 'Filters' }).click()
+    await expectVisibleControlTouchTargets(page)
+    await page.getByLabel('Source').selectOption('manual')
+    await expectVisibleControlTouchTargets(page)
+    await page
+      .getByRole('region', { name: 'Search and filter reports' })
+      .getByRole('button', { name: 'Clear filters' })
+      .click()
+    await expectSearch(page, '')
+
+    await page.goto('/inbox/new')
+    await expectVisibleControlTouchTargets(page)
+
+    await page.route('**/api/workspaces/*/reports/**', async (route) => {
+      const requestUrl = new URL(route.request().url())
+      if (requestUrl.searchParams.get('page') === '2') {
+        await route.fulfill({ status: 404, json: { detail: 'Not found' } })
+        return
+      }
+      const response = await route.fetch()
+      const body = (await response.json()) as Record<string, unknown>
+      body.next = `${requestUrl.origin}${requestUrl.pathname}?page=2`
+      await route.fulfill({ response, json: body })
+    })
+    await page.goto('/inbox')
+    await expectVisibleControlTouchTargets(page)
+    const pageTwoResponse = page.waitForResponse(
+      (response) => new URL(response.url()).searchParams.get('page') === '2',
+    )
+    await page.getByRole('button', { name: 'Next' }).click()
+    expect((await pageTwoResponse).status()).toBe(404)
+    await expect(page.getByText('This page has no reports')).toBeVisible({
+      timeout: 20_000,
+    })
+    await expectVisibleControlTouchTargets(page)
+    await expectTouchTarget(
+      page.getByRole('button', { name: 'Go to the first page' }),
+    )
   })
 })

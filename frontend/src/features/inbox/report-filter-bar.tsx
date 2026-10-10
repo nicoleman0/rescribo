@@ -2,7 +2,6 @@ import { useState, type FormEvent, type ReactNode } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import type { InboxQuery } from '@/api/reports'
-import { touchTarget } from '@/components/layout/touch-target'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -100,14 +99,14 @@ export function ReportFilterBar({
             onChange={(event) => setCustomer(event.target.value)}
           />
         </div>
-        <Button type="submit" className={cn('h-10', touchTarget)}>
+        <Button type="submit" className="h-10">
           <Search aria-hidden="true" />
           <span className="max-md:sr-only">Search</span>
         </Button>
         <Button
           type="button"
           variant="outline"
-          className={cn('h-10 md:hidden', touchTarget)}
+          className="h-10 md:hidden"
           aria-expanded={open}
           aria-controls={FILTERS_ID}
           onClick={() => onOpenChange(!open)}
@@ -166,7 +165,6 @@ export function ReportFilterBar({
         {hasActiveFilters(query) ? (
           <Button
             variant="ghost"
-            className={touchTarget}
             onClick={() => setParams(withoutFilters(params))}
           >
             <X aria-hidden="true" />
@@ -211,7 +209,6 @@ function CompactSelect({
       <NativeSelect
         id={id}
         value={value}
-        className={touchTarget}
         onChange={(event) => onChange(event.target.value)}
       >
         {children}

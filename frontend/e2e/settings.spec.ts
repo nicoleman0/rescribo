@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
+import { expectVisibleControlTouchTargets } from './touch-target.js'
 
 const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 test('owner manages invitations, members and confirmed deletion on desktop and mobile', async ({
@@ -62,6 +63,7 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
     fullPage: true,
   })
   await page.setViewportSize({ width: 390, height: 844 })
+  await expectVisibleControlTouchTargets(page)
   await expect(await axeViolations(page)).toEqual([])
   expect(
     await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),

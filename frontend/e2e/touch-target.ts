@@ -1,4 +1,4 @@
-import { expect, type Locator } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 // Wait for motion to stop before measuring transformed fractional bounds.
 export async function expectTouchTarget(locator: Locator) {
@@ -15,4 +15,14 @@ export async function expectTouchTarget(locator: Locator) {
   })
   const box = await locator.boundingBox()
   expect(box?.height).toBeGreaterThanOrEqual(44)
+}
+
+export async function expectVisibleControlTouchTargets(page: Page) {
+  for (const control of await page
+    .locator(
+      'button:visible, input[data-slot="input"]:visible, select:visible, textarea:visible, label:has(input[type="checkbox"]):visible',
+    )
+    .all()) {
+    await expectTouchTarget(control)
+  }
 }

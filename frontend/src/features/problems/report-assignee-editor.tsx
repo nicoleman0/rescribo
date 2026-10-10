@@ -1,10 +1,8 @@
 import { useId, useState } from 'react'
 import type { ReportDetail } from '@/api/reports'
-import { touchTarget } from '@/components/layout/touch-target'
 import { Button } from '@/components/ui/button'
 import { AssignReportForm } from '@/features/inbox/report-actions'
 import { memberName } from '@/features/inbox/report-format'
-import { cn } from '@/lib/utils'
 
 /** A linked report's assignee as text. Change opens the inbox assignee form;
  * only Done closes it, so a failed save keeps the pick and the error. Renders
@@ -29,7 +27,7 @@ export function ReportAssigneeEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={cn('shrink-0', touchTarget)}
+          className="shrink-0"
           aria-expanded={editing}
           aria-controls={editing ? id : undefined}
           aria-label={`${editing ? 'Done changing' : 'Change'} the assignee for ${report.title}`}

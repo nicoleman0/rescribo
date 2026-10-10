@@ -57,7 +57,7 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
           }
         >
           <Icon aria-hidden="true" className="size-4 shrink-0" />
-          <span className={cn(mobile && 'truncate')}>{label}</span>
+          <span className={mobile ? 'truncate' : ''}>{label}</span>
         </NavLink>
       ))}
     </nav>
@@ -130,7 +130,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
             ) : null}
             {!isGallery ? (
               <Button
-                className="max-md:min-h-[44px]"
                 size="sm"
                 variant="outline"
                 onClick={() => signOut.mutate()}

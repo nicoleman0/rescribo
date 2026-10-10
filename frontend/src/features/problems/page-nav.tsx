@@ -1,5 +1,4 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { touchTarget } from '@/components/layout/touch-target'
 import { Button } from '@/components/ui/button'
 
 /** Previous/next paging for a DRF page. `onPage(undefined)` means page 1. */
@@ -28,7 +27,6 @@ export function PageNav({
           <Button
             variant="outline"
             size="sm"
-            className={touchTarget}
             disabled={!page.previous}
             onClick={() => onPage(pageNumber > 2 ? pageNumber - 1 : undefined)}
           >
@@ -38,7 +36,6 @@ export function PageNav({
           <Button
             variant="outline"
             size="sm"
-            className={touchTarget}
             disabled={!page.next}
             onClick={() => onPage(pageNumber + 1)}
           >

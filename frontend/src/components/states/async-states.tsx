@@ -39,7 +39,7 @@ export function RetryButton({
   return (
     <Button
       variant="outline"
-      className={cn('max-md:min-h-[44px]', className)}
+      className={className}
       onClick={onRetry}
       disabled={isRetrying}
     >

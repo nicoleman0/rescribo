@@ -11,7 +11,6 @@ import {
 } from '@/api/github-issues'
 import type { ApiError } from '@/api/request'
 import { Field, TextareaField } from '@/components/forms/field'
-import { touchTarget } from '@/components/layout/touch-target'
 import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { applyProblem } from '@/api/cache'
@@ -195,7 +194,6 @@ export function GitHubIssueCreate({
           />
           <div className="flex flex-wrap gap-2">
             <Button
-              className={touchTarget}
               disabled={busy}
               onClick={() => void checkResult(recoveryReference || undefined)}
             >
@@ -220,7 +218,6 @@ export function GitHubIssueCreate({
           <Button
             type="button"
             variant="outline"
-            className={touchTarget}
             disabled={busy || !resolutionReason.trim()}
             onClick={() => void stopRecovery()}
           >
@@ -249,7 +246,6 @@ export function GitHubIssueCreate({
           </p>
           <Button
             variant="outline"
-            className={touchTarget}
             onClick={() => {
               setOperationId('')
               setEditing(false)
@@ -283,11 +279,7 @@ export function GitHubIssueCreate({
         <p role="alert" className="text-sm text-destructive">
           Could not load the saved issue creation status.
         </p>
-        <Button
-          variant="outline"
-          className={touchTarget}
-          onClick={() => void operation.refetch()}
-        >
+        <Button variant="outline" onClick={() => void operation.refetch()}>
           Retry status check
         </Button>
       </div>
@@ -300,11 +292,7 @@ export function GitHubIssueCreate({
         <p className="text-sm text-muted-foreground">
           Create an issue in the repository selected in workspace settings.
         </p>
-        <Button
-          className={touchTarget}
-          disabled={busy}
-          onClick={() => void begin()}
-        >
+        <Button disabled={busy} onClick={() => void begin()}>
           {busy ? 'Loading preview…' : 'Create GitHub issue'}
         </Button>
         {error ? (
@@ -386,17 +374,12 @@ export function GitHubIssueCreate({
       ) : null}
       <div className="flex flex-wrap gap-2">
         {!previewed ? (
-          <Button
-            type="submit"
-            className={touchTarget}
-            disabled={busy || !title.trim()}
-          >
+          <Button type="submit" disabled={busy || !title.trim()}>
             Preview issue
           </Button>
         ) : (
           <Button
             type="button"
-            className={touchTarget}
             disabled={busy || !draft}
             onClick={() => void publish()}
           >
@@ -406,7 +389,6 @@ export function GitHubIssueCreate({
         <Button
           type="button"
           variant="outline"
-          className={touchTarget}
           disabled={busy}
           onClick={() => setEditing(false)}
         >

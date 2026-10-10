@@ -7,7 +7,6 @@ import {
   transitionReport,
   type ReportDetail,
 } from '@/api/reports'
-import { touchTarget } from '@/components/layout/touch-target'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
 import { ActionError } from '@/components/states/action-error'
@@ -15,7 +14,7 @@ import { ErrorState } from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ProblemPicker } from '@/features/problems/problem-picker'
-import { cn } from '@/lib/utils'
+
 import { memberName } from './report-format'
 import { useMembers } from './use-members'
 import { useReportMutation } from './use-report-mutation'
@@ -133,7 +132,7 @@ export function AssignReportForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9', touchTarget)}
+          className="h-9"
           disabled={mutation.isPending || assignee === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Save assignee'}
@@ -203,7 +202,7 @@ function GroupingActions({
         </p>
         <Button
           variant="outline"
-          className={cn('w-fit', touchTarget)}
+          className="w-fit"
           disabled={transition.isPending}
           onClick={() => transition.mutate('restore')}
         >
@@ -227,7 +226,6 @@ function GroupingActions({
           <Button
             ref={linkButton}
             variant="outline"
-            className={touchTarget}
             disabled={transition.isPending}
             onClick={() => setPanel('link')}
           >
@@ -236,7 +234,6 @@ function GroupingActions({
           <Button
             ref={createButton}
             variant="outline"
-            className={touchTarget}
             disabled={transition.isPending}
             onClick={() => setPanel('create')}
           >
@@ -244,7 +241,6 @@ function GroupingActions({
           </Button>
           <Button
             variant={linked ? 'outline' : 'destructive'}
-            className={touchTarget}
             disabled={transition.isPending}
             onClick={() => transition.mutate(linked ? 'unlink' : 'dismiss')}
           >
@@ -335,17 +331,12 @@ function LinkPanel({
         />
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="submit"
-          className={touchTarget}
-          disabled={!choice || mutation.isPending}
-        >
+        <Button type="submit" disabled={!choice || mutation.isPending}>
           {mutation.isPending ? 'Saving…' : `${verb} report`}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className={touchTarget}
           disabled={mutation.isPending}
           onClick={onCancel}
         >
@@ -451,17 +442,12 @@ function CreateProblemPanel({
         />
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="submit"
-          className={touchTarget}
-          disabled={mutation.isPending}
-        >
+        <Button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? 'Creating…' : `Create and ${verb}`}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className={touchTarget}
           disabled={mutation.isPending}
           onClick={onCancel}
         >

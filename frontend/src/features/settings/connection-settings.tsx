@@ -5,6 +5,8 @@ import { Field } from '@/components/forms/field'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
 import { ErrorState } from '@/components/states/async-states'
+import { touchTarget } from '@/components/layout/touch-target'
+import { cn } from '@/lib/utils'
 import { ConfirmAction } from './confirm-action'
 import { ConnectionStatusBadge } from './connection-status'
 import { useSettingsAction } from './use-settings-action'
@@ -148,7 +150,12 @@ export function ConnectionSettings({
                     error={setup.error?.fieldErrors?.repository?.join(' ')}
                   />
                 ) : null}
-                <label className="flex min-h-11 items-start gap-3 text-sm">
+                <label
+                  className={cn(
+                    'flex min-h-11 items-start gap-3 text-sm',
+                    touchTarget,
+                  )}
+                >
                   <input
                     type="checkbox"
                     className="mt-1 size-4"

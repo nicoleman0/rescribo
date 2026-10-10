@@ -11,7 +11,6 @@ import {
 import type { ApiError } from '@/api/request'
 import { useWorkspace } from '@/components/auth/use-workspace'
 import { Field } from '@/components/forms/field'
-import { touchTarget } from '@/components/layout/touch-target'
 import {
   EmptyState,
   ErrorState,
@@ -97,7 +96,7 @@ function ProblemSearch({
         maxLength={200}
         onChange={(event) => setText(event.target.value)}
       />
-      <Button type="submit" size="lg" className={cn('h-10', touchTarget)}>
+      <Button type="submit" size="lg" className="h-10">
         <Search aria-hidden="true" />
         Search
       </Button>
@@ -122,7 +121,6 @@ function ProblemResults({
   const clearSearch = (
     <Button
       variant="outline"
-      className={touchTarget}
       onClick={() =>
         setParams(withQuery(params, { q: undefined, page: undefined }))
       }
@@ -143,7 +141,6 @@ function ProblemResults({
           action={
             <Button
               variant="outline"
-              className={touchTarget}
               onClick={() => setParams(withQuery(params, { page: undefined }))}
             >
               Go to the first page
