@@ -634,3 +634,145 @@ test('labels a delivered message in the demo as simulated', async () => {
     testMembership.workspace.is_demo = false
   }
 })
+
+type OutcomeState = FollowUpDetail['outcome']['state']
+
+function outcomeDetail(state: OutcomeState, version: number) {
+  return detail({
+    notification: notification('sent'),
+    outcome:
+      state === 'pending'
+        ? { state, note: '', at: null, by: null }
+        : { state, note: '', at: '2026-09-20T10:00:01Z', by: ada },
+    version,
+  })
+}
+
+// A follow-up the stubbed API keeps between requests: each outcome request
+// moves it to the requested state and the next version. Returns the bodies.
+function stubOutcomes(state: OutcomeState, version: number) {
+  document.cookie = 'csrftoken=csrf-token'
+  let current = outcomeDetail(state, version)
+  const bodies: Record<string, unknown>[] = []
+  const reply = (_url: URL, init?: RequestInit) => {
+    const body = JSON.parse(String(init?.body)) as {
+      state: OutcomeState
+      expected_version: number
+    }
+    bodies.push(body)
+    current = outcomeDetail(body.state, body.expected_version + 1)
+    return json(current)
+  }
+  stubApi({
+    [csrfPath]: () => new Response(null, { status: 204 }),
+    [`GET ${base}/`]: () => json(current),
+    [`POST ${base}/outcome/`]: reply,
+    [`POST ${base}/outcome/correct/`]: reply,
+    'GET /api/workspaces/ws-1/members/': () => json([ada, grace]),
+  })
+  return bodies
+}
+
+const outcomeSelect = () =>
+  screen.getByRole('combobox', { name: 'Record outcome' })
+const noteBox = () => screen.getByRole('textbox', { name: 'Note' })
+const reasonBox = () => screen.getByRole('textbox', { name: 'Reason' })
+
+test('records contact and then confirmation without a reload', async () => {
+  const bodies = stubOutcomes('pending', 1)
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('combobox', { name: 'Record outcome' })
+  fireEvent.change(noteBox(), { target: { value: 'Called Acme' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  expect(await screen.findByText('Outcome: Contacted.')).toBeVisible()
+  expect(outcomeSelect()).toHaveValue('confirmed')
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies).toEqual([
+    { state: 'contacted', note: 'Called Acme', expected_version: 1 },
+    { state: 'confirmed', note: '', expected_version: 2 },
+  ])
+})
+
+test('records an outcome after a correction back to pending', async () => {
+  const bodies = stubOutcomes('confirmed', 2)
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('form', { name: 'Correct outcome' })
+  fireEvent.change(reasonBox(), { target: { value: 'Recorded by mistake' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Correct outcome' }))
+  expect(await screen.findByText('Outcome: Pending.')).toBeVisible()
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies[1]).toEqual({
+    state: 'contacted',
+    note: '',
+    expected_version: 3,
+  })
+})
+
+test('corrects an outcome twice without a reload', async () => {
+  const bodies = stubOutcomes('confirmed', 2)
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('form', { name: 'Correct outcome' })
+  const correctTo = () => screen.getByRole('combobox', { name: 'Correct to' })
+  fireEvent.change(correctTo(), { target: { value: 'still_affected' } })
+  fireEvent.change(noteBox(), { target: { value: 'Export still fails' } })
+  fireEvent.change(reasonBox(), { target: { value: 'First reason' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Correct outcome' }))
+  expect(await screen.findByText('Outcome: Still affected.')).toBeVisible()
+  expect(correctTo()).toHaveValue('pending')
+  expect(reasonBox()).toHaveValue('')
+  fireEvent.change(reasonBox(), { target: { value: 'Second reason' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Correct outcome' }))
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies[1]).toEqual({
+    state: 'pending',
+    note: '',
+    reason: 'Second reason',
+    expected_version: 3,
+  })
+})
+
+test('keeps the note when another member changed the outcome first', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  let current = outcomeDetail('pending', 1)
+  const bodies: Record<string, unknown>[] = []
+  stubApi({
+    [csrfPath]: () => new Response(null, { status: 204 }),
+    [`GET ${base}/`]: () => json(current),
+    [`POST ${base}/outcome/`]: (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+      if (bodies.length === 1) {
+        // Another member recorded contact first.
+        current = outcomeDetail('contacted', 2)
+        return json(
+          {
+            detail: 'The follow-up changed.',
+            reason: 'version_conflict',
+            current,
+          },
+          409,
+        )
+      }
+      current = outcomeDetail('confirmed', 3)
+      return json(current)
+    },
+    'GET /api/workspaces/ws-1/members/': () => json([ada, grace]),
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('combobox', { name: 'Record outcome' })
+  fireEvent.change(outcomeSelect(), { target: { value: 'contacted' } })
+  fireEvent.change(noteBox(), { target: { value: 'Left a voicemail' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  expect(await screen.findByText('Outcome: Contacted.')).toBeVisible()
+  expect(screen.getByText('The outcome was not recorded')).toBeVisible()
+  expect(outcomeSelect()).toHaveValue('confirmed')
+  expect(noteBox()).toHaveValue('Left a voicemail')
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  await waitFor(() => expect(bodies).toHaveLength(2))
+  expect(bodies[1]).toEqual({
+    state: 'confirmed',
+    note: 'Left a voicemail',
+    expected_version: 2,
+  })
+})

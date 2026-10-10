@@ -257,6 +257,38 @@ test.describe('Follow-ups', () => {
     ).toBeVisible()
   })
 
+  test('records contact and then confirmation without touching the form again', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const marker = `Second outcome ${Date.now()}`
+    const title = await confirmFix(page, marker)
+    await openFollowUp(page, title)
+    // The contact section appears once the message is prepared. Nothing is sent.
+    await detail(page).getByRole('button', { name: 'Prepare message' }).click()
+    await expect(
+      detail(page).getByRole('textbox', { name: 'Message' }),
+    ).toBeVisible()
+    const contact = page.getByRole('region', { name: 'Customer contact' })
+    const record = contact.getByRole('button', { name: 'Record outcome' })
+    await contact.getByLabel('Note').fill('Called the customer')
+    await record.click()
+    await expect(contact).toContainText('Outcome: Contacted.')
+    await expect(contact.getByLabel('Record outcome')).toHaveValue('confirmed')
+    // No selectOption: the form must send the option the dropdown shows.
+    const [request] = await Promise.all([
+      page.waitForRequest(
+        (sent) => sent.method() === 'POST' && sent.url().endsWith('/outcome/'),
+      ),
+      record.click(),
+    ])
+    expect(request.postDataJSON()).toMatchObject({
+      state: 'confirmed',
+      note: '',
+    })
+    await expect(contact).toContainText('Outcome: Confirmed.')
+  })
+
   test('marks a problem reviewed after a customer is still affected', async ({
     page,
   }) => {
