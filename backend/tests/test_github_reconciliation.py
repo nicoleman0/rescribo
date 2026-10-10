@@ -1,5 +1,6 @@
 """Tests for durable 15-minute issue sync requests and worker application."""
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -215,6 +216,25 @@ def test_transient_outage_does_not_change_access() -> None:
     assert issue.access == EngineeringIssue.Access.OK
     assert issue.sync_error == "provider_unavailable"
     assert issue.sync_retry_at is not None
+
+
+def test_failed_sync_logs_exception_type_and_code_without_provider_text(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(problem=problem, connection=connection, created_by=actor)
+    factory = patched_client(error=GitHubAPIError("secret provider text", 502))
+    try:
+        with caplog.at_level(logging.WARNING, logger="feedback.engineering_issues"):
+            sync_github_issue(str(issue.pk))
+    finally:
+        factory.stop()
+    messages = [r.getMessage() for r in caplog.records if r.name == "feedback.engineering_issues"]
+    assert messages == [
+        "GitHub issue sync failed: GitHubAPIError (provider_unavailable), retry scheduled"
+    ]
 
 
 def test_read_timeout_keeps_access_and_schedules_a_retry() -> None:

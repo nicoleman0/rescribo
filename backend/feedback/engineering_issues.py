@@ -1,5 +1,6 @@
 """Linking, creating, and syncing the GitHub issue for a problem."""
 
+import logging
 from collections.abc import Collection
 from datetime import datetime, timedelta
 from uuid import UUID, uuid4
@@ -48,6 +49,8 @@ from integrations.github_app.webhooks import InstallationEvent, IssueEvent, fetc
 from operations.dispatch import dispatch_task
 from operations.models import ExternalOperation
 from operations.retries import next_retry_at
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_ACTOR = "github_webhook"
 
@@ -469,6 +472,7 @@ def sync_issue(
                 workspace_id=connection.workspace_id,
                 claim=claim,
                 now=current,
+                error=error,
                 error_code=installation_code,
                 retry=False,
             )
@@ -484,6 +488,7 @@ def sync_issue(
             workspace_id=connection.workspace_id,
             claim=claim,
             now=current,
+            error=error,
             error_code="rate_limited"
             if rate_limited
             else "inaccessible"
@@ -626,6 +631,7 @@ def _finish_issue_sync_failure(
     workspace_id: UUID,
     claim: UUID,
     now: datetime,
+    error: Exception,
     error_code: str,
     retry_after_seconds: int | None = None,
     retry: bool = True,
@@ -656,6 +662,15 @@ def _finish_issue_sync_failure(
                 "sync_lease_expires_at",
             ]
         )
+        retry_scheduled = issue.sync_retry_at is not None
+    # Later successes clear sync_error, so the log is the only lasting trace.
+    # Codes are a fixed list; provider text stays out of the log.
+    logger.warning(
+        "GitHub issue sync failed: %s (%s), %s",
+        type(error).__name__,
+        error_code,
+        "retry scheduled" if retry_scheduled else "no retry",
+    )
 
 
 def apply_problem_consequences(

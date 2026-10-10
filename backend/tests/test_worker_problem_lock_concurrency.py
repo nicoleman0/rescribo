@@ -20,6 +20,7 @@ from feedback.engineering_issues import (
 )
 from feedback.models import EngineeringIssue, Problem
 from feedback.tasks import _complete_reconciliation_target, reconcile_github_issues
+from integrations.github_app.client import GitHubAPIError
 from integrations.github_app.webhooks import InstallationEvent
 from operations.github_issue_create import approve_draft, create_draft
 from operations.models import ExternalOperation
@@ -84,6 +85,7 @@ def test_sync_failure(world: World) -> None:
             workspace_id=world.actor.workspace_id,
             claim=claim,
             now=timezone.now(),
+            error=GitHubAPIError("lookup", 404),
             error_code="inaccessible",
         ),
         expected_locks=1,

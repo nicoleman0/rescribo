@@ -1,5 +1,6 @@
 """Durable receipt recovery, routing and retry boundaries."""
 
+import logging
 from datetime import timedelta
 from unittest.mock import patch
 from uuid import uuid4
@@ -66,3 +67,16 @@ def test_active_lease_and_terminal_failure_are_not_reprocessed() -> None:
     process_inbound_receipt(str(receipt.pk))
     receipt.refresh_from_db()
     assert receipt.attempts == 0
+
+
+def test_failed_receipt_logs_the_exception_type(caplog: pytest.LogCaptureFixture) -> None:
+    receipt = InboundReceipt.objects.create(
+        provider="github",
+        delivery_id="boom",
+        event="issues",
+        installation_id="42",
+        normalized={"unexpected": "shape"},
+    )
+    with caplog.at_level(logging.WARNING, logger="operations.tasks"):
+        process_inbound_receipt(str(receipt.pk))
+    assert "Inbound GitHub receipt processing failed: TypeError" in caplog.text
