@@ -328,7 +328,10 @@ test.describe('Inbox', () => {
     await expectVisibleControlTouchTargets(page)
     await page.getByLabel('Source').selectOption('manual')
     await expectVisibleControlTouchTargets(page)
-    await page.getByRole('button', { name: 'Clear filters' }).click()
+    await page
+      .getByRole('region', { name: 'Search and filter reports' })
+      .getByRole('button', { name: 'Clear filters' })
+      .click()
     await expectSearch(page, '')
 
     await page.goto('/inbox/new')
@@ -347,8 +350,14 @@ test.describe('Inbox', () => {
     })
     await page.goto('/inbox')
     await expectVisibleControlTouchTargets(page)
+    const pageTwoResponse = page.waitForResponse(
+      (response) => new URL(response.url()).searchParams.get('page') === '2',
+    )
     await page.getByRole('button', { name: 'Next' }).click()
-    await expect(page.getByText('This page has no reports')).toBeVisible()
+    expect((await pageTwoResponse).status()).toBe(404)
+    await expect(page.getByText('This page has no reports')).toBeVisible({
+      timeout: 20_000,
+    })
     await expectVisibleControlTouchTargets(page)
     await expectTouchTarget(
       page.getByRole('button', { name: 'Go to the first page' }),
