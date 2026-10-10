@@ -57,6 +57,7 @@ import { FollowUpStatuses } from './follow-up-statuses'
 import { useFollowUpMutation } from './follow-ups-mutation'
 
 const QUEUED_POLL_MS = 5_000
+const wrapLongText = 'min-w-0 [overflow-wrap:anywhere]'
 type FollowUpLayout = 'panel' | 'page'
 const FollowUpLayoutContext = createContext<FollowUpLayout>('panel')
 
@@ -329,7 +330,7 @@ function FollowUpSummary({
         {followUp.outcome.note ? (
           <>
             <dt className="text-muted-foreground">Outcome note</dt>
-            <dd className="break-words">{followUp.outcome.note}</dd>
+            <dd className={wrapLongText}>{followUp.outcome.note}</dd>
           </>
         ) : null}
       </dl>
@@ -397,7 +398,7 @@ function DraftSection({
   )
   return (
     <section aria-label="Message" className={useSectionClass()}>
-      <SectionHeading>Customer message</SectionHeading>
+      <SectionHeading>Message to the employee</SectionHeading>
       <p className="text-sm text-muted-foreground">
         The default message uses the report title, the approved fix, the
         version, and a link to the report in Rescribo. Nothing from other
@@ -481,7 +482,10 @@ function FailedSection({
     <section aria-label="Message" className={useSectionClass()}>
       <SectionHeading>Delivery failed</SectionHeading>
       {notification.safe_error ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p
+          role="status"
+          className={cn(wrapLongText, 'text-sm text-muted-foreground')}
+        >
           {notification.safe_error}
         </p>
       ) : null}
@@ -551,7 +555,10 @@ function UncertainSection({
         choosing what to do.
       </p>
       {notification.safe_error ? (
-        <p role="status" className="text-sm text-muted-foreground">
+        <p
+          role="status"
+          className={cn(wrapLongText, 'text-sm text-muted-foreground')}
+        >
           {notification.safe_error}
         </p>
       ) : null}
@@ -567,7 +574,7 @@ function UncertainSection({
           <AlertDescription className="grid gap-2">
             <span>
               Confirm Slack does not show this message before sending again, so
-              the customer does not get a duplicate.
+              the employee does not get a duplicate.
             </span>
             <div className="flex flex-wrap gap-2">
               <Button
@@ -694,7 +701,7 @@ function MessageEditor({
       <TextareaField
         id="follow-up-message"
         label="Message"
-        hint="Edited on a server too. Edits stay here when a save fails."
+        hint="Edits are saved when you select Save edits. If a save fails, your text stays here."
         maxLength={10000}
         rows={8}
         value={message}
@@ -822,7 +829,9 @@ function MessagePreview({ message }: { message: string }) {
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
         Exact message
       </p>
-      <p className="whitespace-pre-wrap break-words text-sm">{message}</p>
+      <p className={cn(wrapLongText, 'whitespace-pre-wrap text-sm')}>
+        {message}
+      </p>
     </div>
   )
 }
@@ -861,7 +870,7 @@ function ContactSection({
         Outcome: {contactStateLabels[followUp.outcome.state]}.
       </p>
       {followUp.outcome.note ? (
-        <p className="text-sm">
+        <p className={cn(wrapLongText, 'text-sm')}>
           <span className="text-muted-foreground">Note: </span>
           {followUp.outcome.note}
         </p>
