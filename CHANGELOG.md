@@ -36,6 +36,7 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ### Fixed
 
+- Stabilized E2E touch-target measurements while preserving the 44px minimum (#137).
 - Retrying a manual report after a lost response returns the original report. Draft submission keys survive same-tab reloads and reset after success or discard (#41).
 - CI logs in to Docker Hub before it starts PostgreSQL and Redis, so the anonymous pull limit no longer fails it (#136).
 

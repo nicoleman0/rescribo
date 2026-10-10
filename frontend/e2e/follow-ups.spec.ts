@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
+import { expectTouchTarget } from './touch-target.js'
 
 const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 const seedPath = path.join(authDir, 'seed.json')
@@ -336,7 +337,7 @@ test.describe('Follow-ups', () => {
     await expect(list(page)).toBeVisible()
     expect(await overflow(page)).toBe(false)
     const tab = page.getByRole('button', { name: /Needs approval/ })
-    expect((await tab.boundingBox())?.height).toBeGreaterThanOrEqual(44)
+    await expectTouchTarget(tab)
     await list(page)
       .getByRole('link', { name: new RegExp(title) })
       .click()
