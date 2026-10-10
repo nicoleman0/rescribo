@@ -29,6 +29,9 @@ export function ConnectionSettings({
   const [consent, setConsent] = useState(false)
   const setup = useSettingsAction<{ url: string }>(workspaceId)
   const action = useSettingsAction(workspaceId)
+  // Its own mutation, so a channel save is never read as a passed check.
+  const check = useSettingsAction(workspaceId)
+  const busy = check.isPending || action.isPending
   const name = provider === 'slack' ? 'Slack' : 'GitHub'
   const active = connection && connection.status !== 'disconnected'
   return (
@@ -171,19 +174,26 @@ export function ConnectionSettings({
               ) : null}
               {active ? (
                 <>
-                  <Button
-                    variant="outline"
-                    className="min-h-11 w-fit"
-                    disabled={action.isPending}
-                    onClick={() =>
-                      action.mutate({
-                        path: `connections/${provider}/refresh/`,
-                        body: { version: connection.version },
-                      })
-                    }
-                  >
-                    Check {name} status
-                  </Button>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <Button
+                      variant="outline"
+                      className="min-h-11 w-fit"
+                      disabled={busy}
+                      onClick={() =>
+                        check.mutate({
+                          path: `connections/${provider}/refresh/`,
+                          body: { version: connection.version },
+                        })
+                      }
+                    >
+                      Check {name} status
+                    </Button>
+                    <CheckResult
+                      name={name}
+                      check={check}
+                      working={connection.status === 'active'}
+                    />
+                  </div>
                   <ConfirmAction
                     workspaceId={workspaceId}
                     path={`connections/${provider}/disconnect/`}
@@ -218,7 +228,7 @@ export function ConnectionSettings({
                         <Button
                           variant="outline"
                           className="h-auto min-h-11 max-w-full py-2 text-left break-words whitespace-normal"
-                          disabled={action.isPending}
+                          disabled={busy}
                           onClick={() =>
                             action.mutate({
                               path: 'channels/',
@@ -263,7 +273,7 @@ export function ConnectionSettings({
                     />
                     <Button
                       className="min-h-11 w-fit"
-                      disabled={!consent || action.isPending}
+                      disabled={!consent || busy}
                     >
                       Validate and allow channel
                     </Button>
@@ -281,6 +291,45 @@ export function ConnectionSettings({
         </CardContent>
       </Card>
     </section>
+  )
+}
+
+// Seconds, so two checks in the same minute differ.
+const checkTime = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
+
+function CheckResult({
+  name,
+  check,
+  working,
+}: {
+  name: string
+  check: ReturnType<typeof useSettingsAction>
+  working: boolean
+}) {
+  // The server answers a pass with no body, so the press time stands in.
+  const at = new Date(check.submittedAt)
+  const time = (
+    <time dateTime={at.toISOString()} className="text-muted-foreground">
+      {checkTime.format(at)}
+    </time>
+  )
+  return (
+    <>
+      {/* Stays mounted so a screen reader announces the text change. */}
+      <p role="status" className="text-sm empty:hidden">
+        {check.isPending ? `Checking ${name}…` : null}
+        {check.isSuccess && working ? (
+          <>
+            {name} connection is working. Checked at {time}.
+          </>
+        ) : null}
+      </p>
+      {check.isError ? (
+        <p role="alert" className="text-sm text-destructive">
+          {name} check failed at {time}. {check.error.message}
+        </p>
+      ) : null}
+    </>
   )
 }
 
