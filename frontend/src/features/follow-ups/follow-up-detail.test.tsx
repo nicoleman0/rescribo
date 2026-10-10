@@ -123,6 +123,9 @@ test('labels delivery and outcome and lists the follow-up details', async () => 
     'Slack DM to Ada Lovelace',
   )
   expect(definitionOf('Outcome note')).toHaveTextContent('Still slow')
+  for (const note of screen.getAllByText('Still slow')) {
+    expect(note).toHaveClass('min-w-0', '[overflow-wrap:anywhere]')
+  }
 })
 
 test('shows delivery as not prepared before a message exists', async () => {
@@ -130,6 +133,9 @@ test('shows delivery as not prepared before a message exists', async () => {
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
   await screen.findByRole('heading', { name: 'CSV export fails' })
   expect(definitionOf('Delivery')).toHaveTextContent('Not prepared')
+  expect(
+    screen.getByRole('heading', { name: 'Message to the employee' }),
+  ).toBeInTheDocument()
 })
 
 test('drafts the default message then edits it before approving', async () => {
@@ -147,9 +153,13 @@ test('drafts the default message then edits it before approving', async () => {
       json(detail({ notification: notification('queued', 2) }), 202),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  const textbox = await screen.findByRole('textbox', { name: 'Message' })
   expect(
-    (await screen.findAllByDisplayValue(/CSV export fails/)).length,
-  ).toBeGreaterThan(0)
+    screen.queryByRole('heading', { name: 'Message to the employee' }),
+  ).not.toBeInTheDocument()
+  expect(textbox).toHaveAccessibleDescription(
+    'Edits are saved when you select Save edits. If a save fails, your text stays here.',
+  )
   fireEvent.change(screen.getByRole('textbox', { name: 'Message' }), {
     target: { value: 'Edited message' },
   })
@@ -274,6 +284,9 @@ test('shows a delivered message with a confirmation when the recipient confirmed
   expect(messageRegion()).toHaveTextContent(
     'Delivery confirmed by Ada Lovelace',
   )
+  expect(
+    screen.getByText('The fix for "CSV export fails" is available.'),
+  ).toHaveClass('min-w-0', '[overflow-wrap:anywhere]')
 })
 
 test('shows Retry when the send failed', async () => {
@@ -293,7 +306,10 @@ test('shows Retry when the send failed', async () => {
     },
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  expect(await screen.findByText('No token')).toBeInTheDocument()
+  expect(await screen.findByText('No token')).toHaveClass(
+    'min-w-0',
+    '[overflow-wrap:anywhere]',
+  )
   await waitFor(() =>
     expect(screen.getByRole('button', { name: 'Retry sending' })).toBeEnabled(),
   )
@@ -309,7 +325,13 @@ test('offers mark delivered, send again with confirmation, and cancel for uncert
   stubApi({
     [csrfPath]: () => new Response(null, { status: 204 }),
     [`GET ${base}/`]: () =>
-      json(detail({ notification: notification('uncertain') })),
+      json(
+        detail({
+          notification: notification('uncertain', 1, {
+            safe_error: 'Check the delivery log',
+          }),
+        }),
+      ),
     [`POST ${base}/notification/mark-delivered/`]: (_url, init) => {
       sent.push({
         path: 'mark',
@@ -340,10 +362,17 @@ test('offers mark delivered, send again with confirmation, and cancel for uncert
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
   expect(await screen.findByText('Send uncertain')).toBeInTheDocument()
+  expect(await screen.findByText('Check the delivery log')).toHaveClass(
+    'min-w-0',
+    '[overflow-wrap:anywhere]',
+  )
   fireEvent.click(screen.getByRole('button', { name: 'Mark as delivered' }))
   await waitFor(() => expect(sent.at(0)?.path).toBe('mark'))
   fireEvent.click(screen.getByRole('button', { name: 'Send again' }))
   expect(await screen.findByText('I checked Slack')).toBeInTheDocument()
+  expect(
+    screen.getByText(/the employee does not get a duplicate/),
+  ).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
   expect(screen.queryByText('I checked Slack')).not.toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: 'Send again' }))

@@ -1,4 +1,10 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
+import {
+  expect,
+  test,
+  type Browser,
+  type Locator,
+  type Page,
+} from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -89,6 +95,12 @@ async function openFollowUp(page: Page, title: string) {
 async function overflow(page: Page) {
   return page.evaluate<boolean>(
     'document.documentElement.scrollWidth > window.innerWidth',
+  )
+}
+
+async function textOverflowsHorizontally(locator: Locator) {
+  return locator.evaluate(
+    (element) => element.scrollWidth > element.clientWidth,
   )
 }
 
@@ -255,6 +267,56 @@ test.describe('Follow-ups', () => {
     await expect(
       page.getByRole('navigation', { name: 'Follow-up buckets' }),
     ).toBeVisible()
+  })
+
+  test('wraps a long message link on the panel and full page', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const marker = `Long link ${Date.now()}`
+    const title = await confirmFix(page, marker)
+    await openFollowUp(page, title)
+    await page.setViewportSize({ width: 320, height: 812 })
+
+    const messageText = `Please review https://${'a'.repeat(96)}.example`
+    const panelMessage = message(page)
+    await panelMessage.getByRole('button', { name: 'Prepare message' }).click()
+    const editor = panelMessage.getByRole('textbox', { name: 'Message' })
+    await editor.fill(messageText)
+    expect(await overflow(page)).toBe(false)
+    const [saveResponse] = await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/notification/edit/') && response.ok(),
+      ),
+      panelMessage.getByRole('button', { name: 'Save edits' }).click(),
+    ])
+    const saved = (await saveResponse.json()) as {
+      notification: { message: string }
+    }
+    expect(saved.notification.message).toBe(messageText)
+    await expect(
+      panelMessage.getByRole('button', { name: 'Save edits' }),
+    ).toBeDisabled()
+    const preview = panelMessage.locator('p').filter({ hasText: messageText })
+    await expect(preview).toBeVisible()
+    expect(await overflow(page)).toBe(false)
+    expect(await textOverflowsHorizontally(preview)).toBe(false)
+
+    await page.setViewportSize({ width: 1280, height: 900 })
+    expect(await overflow(page)).toBe(false)
+    const followUpId = new URL(page.url()).pathname.split('/').at(-1)
+    await detail(page).getByRole('link', { name: 'Open full page' }).click()
+    await expect(page).toHaveURL(new RegExp(`/follow-ups/${followUpId}/page`))
+
+    await page.setViewportSize({ width: 320, height: 812 })
+    const fullPageMessage = page.getByRole('region', { name: 'Message' })
+    const pagePreview = fullPageMessage
+      .locator('p')
+      .filter({ hasText: messageText })
+    await expect(pagePreview).toBeVisible()
+    expect(await overflow(page)).toBe(false)
+    expect(await textOverflowsHorizontally(pagePreview)).toBe(false)
   })
 
   test('records contact and then confirmation without touching the form again', async ({
