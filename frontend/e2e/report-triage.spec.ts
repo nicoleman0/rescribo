@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
+import { expectTouchTarget } from './touch-target.js'
 
 const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 const seedPath = path.join(authDir, 'seed.json')
@@ -386,16 +387,14 @@ test.describe('Report triage', () => {
       `Done changing the assignee for ${title}`,
       'Save assignee',
     ]) {
-      const box = await page.getByRole('button', { name }).first().boundingBox()
-      expect(box?.height).toBeGreaterThanOrEqual(44)
+      await expectTouchTarget(page.getByRole('button', { name }).first())
     }
     expect(await overflow()).toBe(false)
     await page.getByRole('link', { name: title }).last().click()
     await expect(triage(page)).toBeVisible()
     expect(await overflow()).toBe(false)
     for (const name of ['Move to problem', 'Move to new problem', 'Ungroup']) {
-      const box = await triage(page).getByRole('button', { name }).boundingBox()
-      expect(box?.height).toBeGreaterThanOrEqual(44)
+      await expectTouchTarget(triage(page).getByRole('button', { name }))
     }
   })
 })
