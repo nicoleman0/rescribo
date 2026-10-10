@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { expect, test } from 'vitest'
@@ -24,6 +24,57 @@ test('exposes all primary destinations and a keyboard skip link', () => {
     screen.getByRole('link', { name: 'Skip to main content' }),
   ).toHaveAttribute('href', '#main-content')
   expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1')
+})
+
+test('renders the skip link as the first tab stop', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/inbox']}>
+        <AppShell>
+          <h1>Inbox</h1>
+        </AppShell>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+
+  const skip = screen.getByRole('link', { name: 'Skip to main content' })
+  const focusable = document.body.querySelectorAll('a[href], button')
+  expect(focusable[0]).toBe(skip)
+})
+
+test('keeps a single sign out button in the header', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/inbox']}>
+        <AppShell>
+          <h1>Inbox</h1>
+        </AppShell>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+
+  expect(
+    within(screen.getByRole('banner')).getByRole('button', {
+      name: 'Sign out',
+    }),
+  ).toBeInTheDocument()
+  expect(screen.getAllByRole('button', { name: 'Sign out' })).toHaveLength(1)
+})
+
+test('shows no sign out button on the UI gallery', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/dev/ui']}>
+        <AppShell>
+          <h1>UI gallery</h1>
+        </AppShell>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+
+  expect(
+    screen.queryByRole('button', { name: 'Sign out' }),
+  ).not.toBeInTheDocument()
 })
 
 test('labels a demo workspace on every screen', () => {
