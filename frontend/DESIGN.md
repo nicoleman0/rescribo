@@ -114,6 +114,8 @@ that owns the draft when a recoverable request fails.
 - Each integration is a `Card` with its name and `ConnectionStatusBadge` in
   the header. Job counts are four labelled numbers in Geist Mono, in the
   foreground colour, because counts are not statuses.
+- The result of a connection check shows beside its button as one status
+  line with the time to the second. A failure replaces it in the same place.
 
 ## Inbox
 

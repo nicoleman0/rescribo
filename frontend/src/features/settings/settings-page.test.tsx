@@ -336,3 +336,153 @@ test('Connect GitHub sends the repository with consent', async () => {
     { repository: 'acme/web', consent: true },
   ])
 })
+
+// Connection check result
+const githubConnection = {
+  ...slackConnection,
+  provider: 'github',
+  repository: 'acme/app',
+}
+const pass = () => new Response(null, { status: 204 })
+const missingScopes = () =>
+  json(
+    {
+      detail: 'Grant the required Slack scopes and reconnect.',
+      reason: 'missing_scopes',
+      field_errors: {},
+    },
+    400,
+  )
+function ownerWithConnection(
+  connection: () => unknown,
+  extra: Record<string, () => Response>,
+) {
+  testMembership.role = 'owner'
+  return stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json([connection()]),
+    [`GET ${base}memberships/`]: () => json([]),
+    [`GET ${base}invitations/`]: () => json([]),
+    ...extra,
+  })
+}
+
+test('a passing GitHub check says the connection works, with the time', async () => {
+  const fetch = ownerWithConnection(() => githubConnection, {
+    [`POST ${base}connections/github/refresh/`]: pass,
+  })
+  render()
+  const github = await screen.findByRole('region', { name: 'GitHub' })
+  await userEvent.click(
+    within(github).getByRole('button', { name: 'Check GitHub status' }),
+  )
+  const status = within(github).getByRole('status')
+  expect(
+    await within(status).findByText(/GitHub connection is working/),
+  ).toBeVisible()
+  expect(status.querySelector('time')).not.toBeNull()
+  const post = fetch.mock.calls.find(([, init]) => init?.method === 'POST')
+  expect(JSON.parse(String(post?.[1]?.body))).toEqual({ version: 1 })
+})
+
+test('a repeated check shows a different time', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(new Date('2026-01-01T10:00:00Z'))
+    ownerWithConnection(() => githubConnection, {
+      [`POST ${base}connections/github/refresh/`]: pass,
+    })
+    render()
+    const github = await screen.findByRole('region', { name: 'GitHub' })
+    const user = userEvent.setup({ advanceTimers: () => {} })
+    const press = () =>
+      user.click(
+        within(github).getByRole('button', { name: 'Check GitHub status' }),
+      )
+    const stamp = async () => {
+      const status = within(github).getByRole('status')
+      const time = await within(status).findByText(/./, {
+        selector: 'time',
+      })
+      return time.getAttribute('datetime')
+    }
+    await press()
+    const first = await stamp()
+    vi.setSystemTime(new Date('2026-01-01T10:00:20Z'))
+    await press()
+    await vi.waitFor(async () => {
+      expect(await stamp()).not.toBe(first)
+    })
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('a failed check shows its reason, then a pass replaces it', async () => {
+  const replies = [missingScopes, pass]
+  ownerWithConnection(() => slackConnection, {
+    [`POST ${base}connections/slack/refresh/`]: () => replies.shift()!(),
+  })
+  render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  const user = userEvent.setup()
+  const press = () =>
+    user.click(
+      within(slack).getByRole('button', { name: 'Check Slack status' }),
+    )
+  await press()
+  const alert = await within(slack).findByRole('alert')
+  expect(alert).toHaveTextContent('Slack check failed')
+  expect(alert).toHaveTextContent('Grant the required Slack scopes')
+  expect(within(slack).queryByText(/connection is working/)).toBeNull()
+  expect(within(slack).queryByText('Connection update failed')).toBeNull()
+  await press()
+  expect(
+    await within(slack).findByText(/Slack connection is working/),
+  ).toBeVisible()
+  expect(within(slack).queryByRole('alert')).toBeNull()
+})
+
+test('channel actions never read as a check result', async () => {
+  const connection = {
+    ...slackConnection,
+    channels: [{ channel_id: 'C1', name: 'support', is_private: false }],
+  }
+  const replies = [pass, missingScopes]
+  ownerWithConnection(() => connection, {
+    [`POST ${base}channels/`]: () => replies.shift()!(),
+  })
+  render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  const user = userEvent.setup()
+  const remove = () =>
+    user.click(
+      within(slack).getByRole('button', { name: 'Remove channel support' }),
+    )
+  await remove()
+  await vi.waitFor(() => expect(replies).toHaveLength(1))
+  expect(within(slack).queryByText(/connection is working/)).toBeNull()
+  await remove()
+  expect(
+    await within(slack).findByText('Connection update failed'),
+  ).toBeVisible()
+  expect(within(slack).queryByText(/check failed/)).toBeNull()
+})
+
+test('a passed result is hidden when the connection is no longer active', async () => {
+  let current: unknown = githubConnection
+  ownerWithConnection(() => current, {
+    [`POST ${base}connections/github/refresh/`]: () => {
+      current = { ...githubConnection, status: 'error' }
+      return pass()
+    },
+  })
+  render()
+  const github = await screen.findByRole('region', { name: 'GitHub' })
+  await userEvent.click(
+    within(github).getByRole('button', { name: 'Check GitHub status' }),
+  )
+  await vi.waitFor(() => expect(current).toHaveProperty('status', 'error'))
+  await within(github).findByText('Needs attention')
+  expect(within(github).queryByText(/connection is working/)).toBeNull()
+})

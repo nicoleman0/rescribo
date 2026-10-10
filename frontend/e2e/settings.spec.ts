@@ -168,3 +168,33 @@ test('the Slack connect form passes API validation', async ({ page }) => {
   expect(reply.reason).not.toBe('invalid_request')
   expect([200, 400]).toContain(response.status())
 })
+
+// Mocked: a real check with the seeded fake credential would put the
+// connection in `error` and cancel notifications other specs rely on.
+test('a passing Slack check shows its result beside the button (mocked)', async ({
+  page,
+}) => {
+  const seed = JSON.parse(
+    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
+  ) as { users: { email: string; password: string }[] }
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(seed.users[1].email)
+  await page.getByLabel('Password').fill(seed.users[0].password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await page.route('**/connections/slack/refresh/', (route) =>
+    route.fulfill({ status: 204 }),
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/settings')
+  const slack = page.getByRole('region', { name: 'Slack', exact: true })
+  await slack.getByRole('button', { name: 'Check Slack status' }).click()
+  await expect(slack.getByRole('status')).toContainText(
+    'Slack connection is working',
+  )
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  )
+  expect(overflow).toBe(false)
+  expect(await axeViolations(page)).toEqual([])
+})
