@@ -15,3 +15,19 @@ test.each(['default', 'outline', 'secondary', 'ghost'] as const)(
     )
   },
 )
+
+test.each([
+  'xs',
+  'sm',
+  'default',
+  'lg',
+  'icon',
+  'icon-xs',
+  'icon-sm',
+  'icon-lg',
+] as const)('the %s button has the phone touch target minimum', (size) => {
+  render(<Button size={size}>Action</Button>)
+  expect(screen.getByRole('button', { name: 'Action' })).toHaveClass(
+    'max-md:min-h-[44px]',
+  )
+})

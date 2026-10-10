@@ -1,6 +1,7 @@
 import { keepPreviousData, useQueries } from '@tanstack/react-query'
 import { listReports, reportKeys, type InboxQuery } from '@/api/reports'
 import { RetryButton } from '@/components/states/async-states'
+import { touchTarget } from '@/components/layout/touch-target'
 import { cn } from '@/lib/utils'
 import { INBOX_REFRESH_MS, triageStates } from './inbox-query'
 
@@ -52,7 +53,8 @@ export function StatusChips({
               aria-pressed={active}
               onClick={() => onChange(chip.value ?? '')}
               className={cn(
-                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-sm whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 max-md:min-h-[44px]',
+                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-sm whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+                touchTarget,
                 active &&
                   'bg-card font-medium text-foreground shadow-elevation-1',
               )}

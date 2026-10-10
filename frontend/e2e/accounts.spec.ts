@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { AxeBuilder } from '@axe-core/playwright'
+import { expectVisibleControlTouchTargets } from './touch-target.js'
 
 const seedPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -44,9 +45,10 @@ test('sign-in is keyboard accessible and has no axe violations', async ({
 })
 
 test('sign-in at mobile width', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
+  await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/sign-in')
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
+  await expectVisibleControlTouchTargets(page)
   expect(
     await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
   ).toBe(true)

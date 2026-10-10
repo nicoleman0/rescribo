@@ -211,7 +211,6 @@ function CompactSelect({
       <NativeSelect
         id={id}
         value={value}
-        className={touchTarget}
         onChange={(event) => onChange(event.target.value)}
       >
         {children}
