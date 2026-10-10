@@ -30,6 +30,21 @@ tasks:
     desc: Start PostgreSQL and Redis containers
     deps: [bootstrap]
     cmds:
+      # The mirror allows one anonymous pull per second and Docker does not retry a 429.
+      - |
+        export COMPOSE_PARALLEL_LIMIT=1
+        attempt=1
+        delay=4
+        until docker compose pull --policy missing postgres redis; do
+          if [ "$attempt" -ge 5 ]; then
+            echo "Image pull failed after $attempt attempts" >&2
+            exit 1
+          fi
+          echo "Image pull failed (attempt $attempt). Retrying in ${delay}s." >&2
+          sleep "$delay"
+          attempt=$((attempt + 1))
+          delay=$((delay * 2))
+        done
       - docker compose up -d --wait --wait-timeout 120 postgres redis
 
   stop:
