@@ -35,6 +35,7 @@ from accounts.throttling import (
     InvitationPasswordThrottle,
     LoginAddressThrottle,
     LoginIdentityThrottle,
+    PasswordResetPasswordThrottle,
     TokenRedemptionThrottle,
 )
 
@@ -107,6 +108,16 @@ def error_response(error: Exception) -> Response:
         return Response(
             {"detail": detail, "reason": reason, "field_errors": {"password": [detail]}},
             status=status.HTTP_401_UNAUTHORIZED,
+        )
+    if reason == "password_unchanged":
+        detail = "Choose a different password."
+        return Response(
+            {
+                "detail": detail,
+                "reason": reason,
+                "field_errors": {"password": ["This is your current password."]},
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
     if reason == "password_rejected":
         detail = "Choose a stronger password."
@@ -552,7 +563,7 @@ class PasswordResetRedeemSerializer(serializers.Serializer):
 
 @method_decorator(csrf_protect, name="dispatch")
 class PasswordResetRedeemView(PublicTokenView):
-    throttle_classes = [TokenRedemptionThrottle]
+    throttle_classes = [TokenRedemptionThrottle, PasswordResetPasswordThrottle]
 
     @extend_schema(
         request=PasswordResetRedeemSerializer,

@@ -223,3 +223,75 @@ test('an existing account accepts with its password', async () => {
   ])
   vi.unstubAllGlobals()
 })
+
+test('the reset page shows why a password was refused and keeps the form', async () => {
+  const bodies: unknown[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/auth/csrf/'))
+        return Promise.resolve(new Response(null, { status: 204 }))
+      if (url.includes('/password-resets/preview/'))
+        return Promise.resolve(response({ status: 'valid' }))
+      if (url.includes('/password-resets/redeem/')) {
+        bodies.push(JSON.parse(String(init?.body)))
+        return Promise.resolve(
+          bodies.length === 1
+            ? response(
+                {
+                  detail: 'Choose a different password.',
+                  reason: 'password_unchanged',
+                  field_errors: {
+                    password: ['This is your current password.'],
+                  },
+                },
+                400,
+              )
+            : response({
+                user: { id: '1', email: 'member@example.test', full_name: 'M' },
+                memberships: [],
+              }),
+        )
+      }
+      throw new Error(`Unexpected request: ${url}`)
+    }),
+  )
+  const user = userEvent.setup()
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/reset-password/example']}>
+        <Routes>
+          <Route
+            path="/reset-password/:token"
+            element={<ResetPasswordPage />}
+          />
+          <Route path="/inbox" element={<p>Inbox reached</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  const password = await screen.findByLabelText('New password')
+  const confirm = screen.getByLabelText('Confirm password')
+  const submit = screen.getByRole('button', { name: 'Save password' })
+  await user.type(password, 'current-password')
+  await user.type(confirm, 'current-password')
+  await user.click(submit)
+  expect(
+    await screen.findByText('This is your current password.'),
+  ).toBeVisible()
+  expect(screen.getByText('Choose a different password.')).toBeVisible()
+  expect(password).toHaveAccessibleDescription('This is your current password.')
+  expect(password).toHaveValue('current-password')
+  await user.clear(password)
+  await user.type(password, 'another-password')
+  await user.clear(confirm)
+  await user.type(confirm, 'another-password')
+  await user.click(submit)
+  expect(await screen.findByText('Inbox reached')).toBeVisible()
+  expect(bodies).toEqual([
+    { token: 'example', password: 'current-password' },
+    { token: 'example', password: 'another-password' },
+  ])
+  vi.unstubAllGlobals()
+})

@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import UUID
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -373,6 +374,15 @@ def preview_password_reset(*, secret: str, now: datetime | None = None) -> dict[
     return {"status": "valid"}
 
 
+def password_reset_account_email(*, secret: str) -> str | None:
+    """The email whose current password a reset link is compared with."""
+    return (
+        PasswordReset.objects.filter(token_digest=digest(secret))
+        .values_list("user__email", flat=True)
+        .first()
+    )
+
+
 def redeem_password_reset(*, secret: str, password: str, now: datetime | None = None) -> User:
     current = now or timezone.now()
     with transaction.atomic():
@@ -408,6 +418,11 @@ def redeem_password_reset(*, secret: str, password: str, now: datetime | None = 
             rejected = TokenError("password_rejected")
             rejected.messages = error.messages
             raise rejected from error
+
+        # A reset exists because the password is lost or exposed, so it must replace it.
+        if check_password(password, reset.user.password):
+            raise TokenError("password_unchanged")
+
         reset.user.set_password(password)
         reset.user.session_generation += 1
         reset.user.save(update_fields=["password", "session_generation"])
