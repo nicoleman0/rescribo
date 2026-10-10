@@ -209,6 +209,18 @@ def preview_invitation(*, secret: str, now: datetime | None = None) -> dict[str,
     }
 
 
+def invited_account_email(*, secret: str) -> str | None:
+    """The email whose password an invitation checks, or None when it creates the account."""
+    email = (
+        Invitation.objects.filter(token_digest=digest(secret))
+        .values_list("email", flat=True)
+        .first()
+    )
+    if email is None or not get_user_model().objects.filter(email=email).exists():
+        return None
+    return email
+
+
 def accept_invitation(
     *,
     secret: str,
@@ -234,8 +246,12 @@ def accept_invitation(
         user_model = get_user_model()
         user = user_model.objects.filter(email=invitation.email).first()
         if user is not None:
-            if authenticated_user is None or authenticated_user.pk != user.pk:
-                raise TokenError("sign_in_required")
+            if authenticated_user is not None:
+                if authenticated_user.pk != user.pk:
+                    raise TokenError("sign_in_required")
+            # Without a session, the account's password is the only proof of control.
+            elif not (user.is_active and user.check_password(password)):
+                raise TokenError("invalid_credentials")
         else:
             try:
                 validate_password(password, user_model(email=invitation.email, full_name=full_name))

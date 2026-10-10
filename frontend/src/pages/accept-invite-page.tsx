@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { apiRequest, type ApiError } from '@/api/request'
 import { csrf, getSession, sessionQueryKey, type Session } from '@/api/auth'
 import { useQueryClient } from '@tanstack/react-query'
@@ -29,7 +29,6 @@ export function AcceptInvitePage() {
   const [passwordError, setPasswordError] = useState('')
   const queryClient = useQueryClient()
   const navigate = useNavigate()
-  const location = useLocation()
   const currentSession = useQuery({
     queryKey: sessionQueryKey,
     queryFn: getSession,
@@ -50,6 +49,7 @@ export function AcceptInvitePage() {
       navigate('/inbox', { replace: true })
     },
   })
+  const acceptError = accept.error as ApiError | null
   function submit(event: FormEvent) {
     event.preventDefault()
     if (password !== confirmation) {
@@ -99,13 +99,36 @@ export function AcceptInvitePage() {
         />
       ) : preview.data?.status === 'requires_sign_in' &&
         !currentSession.data ? (
-        <p>
-          This email already has an account.{' '}
-          <Link className="underline" to="/sign-in" state={{ from: location }}>
-            Sign in
-          </Link>{' '}
-          to accept.
-        </p>
+        <>
+          <p className="my-3 text-sm">
+            Join {preview.data.workspace_name}. This email already has an
+            account. Enter its password to accept.
+          </p>
+          <form
+            className="grid gap-4"
+            onSubmit={(event) => {
+              event.preventDefault()
+              accept.mutate()
+            }}
+          >
+            <Field
+              id="current-password"
+              label="Password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              error={acceptError?.fieldErrors?.password?.[0]}
+            />
+            {accept.isError && !acceptError?.fieldErrors?.password ? (
+              <p role="alert">{accept.error.message}</p>
+            ) : null}
+            <Button type="submit" disabled={accept.isPending}>
+              Accept invitation
+            </Button>
+          </form>
+        </>
       ) : preview.data?.status === 'requires_sign_in' ? (
         <div className="grid gap-4">
           <p>Confirm acceptance while signed in to the invited account.</p>

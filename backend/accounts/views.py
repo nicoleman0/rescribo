@@ -32,6 +32,7 @@ from accounts.services import (
 from accounts.session import bind_session_generation
 from accounts.throttling import (
     InvitationCreationThrottle,
+    InvitationPasswordThrottle,
     LoginAddressThrottle,
     LoginIdentityThrottle,
     TokenRedemptionThrottle,
@@ -99,6 +100,14 @@ def error_response(error: Exception) -> Response:
     code = status.HTTP_400_BAD_REQUEST
     if reason == "last_active_owner":
         detail = "At least one active owner must remain in the workspace."
+    if reason == "sign_in_required":
+        detail = "This invitation is for a different account. Sign out, then open the link again."
+    if reason == "invalid_credentials":
+        detail = "Password is incorrect."
+        return Response(
+            {"detail": detail, "reason": reason, "field_errors": {"password": [detail]}},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
     if reason == "password_rejected":
         detail = "Choose a stronger password."
         return Response(
@@ -338,7 +347,7 @@ class InvitationAcceptSerializer(serializers.Serializer):
 
 @method_decorator(csrf_protect, name="dispatch")
 class InviteAcceptView(PublicTokenView):
-    throttle_classes = [TokenRedemptionThrottle]
+    throttle_classes = [TokenRedemptionThrottle, InvitationPasswordThrottle]
 
     @extend_schema(
         request=InvitationAcceptSerializer,
