@@ -119,7 +119,11 @@ export function ConnectionSettings({
                   setup.mutate(
                     {
                       path: `connections/${provider}/setup/`,
-                      body: { repository, consent },
+                      // The API rejects a blank repository, and Slack has none.
+                      body:
+                        provider === 'github'
+                          ? { repository, consent }
+                          : { consent },
                     },
                     {
                       onSuccess: (data) => {

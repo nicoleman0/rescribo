@@ -139,3 +139,32 @@ test('a long member email does not overflow settings at 320px', async ({
     await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
   ).toBe(true)
 })
+
+test('the Slack connect form passes API validation', async ({ page }) => {
+  const seed = JSON.parse(
+    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
+  ) as { users: { email: string; password: string }[] }
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(seed.users[1].email)
+  await page.getByLabel('Password').fill(seed.users[0].password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  // With Slack credentials the API answers with an authorise URL. Keep the
+  // browser off slack.com.
+  await page.route('https://slack.com/**', (route) =>
+    route.fulfill({ body: 'Slack' }),
+  )
+  await page.goto('/settings')
+  const slack = page.getByRole('region', { name: 'Slack', exact: true })
+  await slack.getByRole('checkbox').check()
+  const [request] = await Promise.all([
+    page.waitForRequest('**/connections/slack/setup/'),
+    slack.getByRole('button', { name: /^(Connect|Reconnect) Slack$/ }).click(),
+  ])
+  expect(request.postDataJSON()).toEqual({ consent: true })
+  const response = (await request.response())!
+  const reply = (await response.json()) as { reason?: string }
+  // 400 operator_setup without credentials, 200 with them.
+  expect(reply.reason).not.toBe('invalid_request')
+  expect([200, 400]).toContain(response.status())
+})
