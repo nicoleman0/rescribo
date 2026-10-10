@@ -277,3 +277,62 @@ test('a provider that was never connected reads not connected', async () => {
     'neutral',
   )
 })
+
+// Answers as the API does with no OAuth application configured, so the
+// form does not navigate away.
+function ownerWithSetup(provider: 'slack' | 'github', connections: unknown[]) {
+  testMembership.role = 'owner'
+  return stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json(connections),
+    [`GET ${base}memberships/`]: () => json([]),
+    [`GET ${base}invitations/`]: () => json([]),
+    [`POST ${base}connections/${provider}/setup/`]: () =>
+      json(
+        {
+          detail: 'Ask the operator.',
+          reason: 'operator_setup',
+          field_errors: {},
+        },
+        400,
+      ),
+  })
+}
+function setupBodies(fetch: ReturnType<typeof stubApi>) {
+  return fetch.mock.calls
+    .filter(([input]) => String(input).endsWith('/setup/'))
+    .map(([, init]) => JSON.parse(String(init?.body)) as unknown)
+}
+
+test.each([
+  ['Connect Slack', []],
+  ['Reconnect Slack', [slackConnection]],
+])('%s sends consent without a repository', async (button, connections) => {
+  const fetch = ownerWithSetup('slack', connections)
+  render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  const user = userEvent.setup()
+  await user.click(within(slack).getByRole('checkbox'))
+  await user.click(within(slack).getByRole('button', { name: button }))
+  expect(await within(slack).findByText('Ask the operator.')).toBeVisible()
+  expect(setupBodies(fetch)).toEqual([{ consent: true }])
+})
+
+test('Connect GitHub sends the repository with consent', async () => {
+  const fetch = ownerWithSetup('github', [])
+  render()
+  const github = await screen.findByRole('region', { name: 'GitHub' })
+  const user = userEvent.setup()
+  await user.type(
+    within(github).getByLabelText('GitHub repository'),
+    'acme/web',
+  )
+  await user.click(within(github).getByRole('checkbox'))
+  await user.click(
+    within(github).getByRole('button', { name: 'Connect GitHub' }),
+  )
+  expect(await within(github).findByText('Ask the operator.')).toBeVisible()
+  expect(setupBodies(fetch)).toEqual([
+    { repository: 'acme/web', consent: true },
+  ])
+})
