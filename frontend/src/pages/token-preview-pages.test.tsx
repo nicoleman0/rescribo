@@ -117,7 +117,7 @@ test('keeps a late preview result scoped to its invitation token', async () => {
 })
 
 test.each([
-  [401, 'This email already has an account', 'Sign in'],
+  [401, 'This email already has an account', 'Accept invitation'],
   [500, 'Could not check your session', 'Try again'],
 ])(
   'handles a %s session check on a requires_sign_in invitation',
@@ -145,11 +145,7 @@ test.each([
       </QueryClientProvider>,
     )
     expect(await screen.findByText(new RegExp(text))).toBeVisible()
-    expect(
-      screen.getByRole(status === 401 ? 'link' : 'button', {
-        name: actionName,
-      }),
-    ).toBeVisible()
+    expect(screen.getByRole('button', { name: actionName })).toBeVisible()
     if (status === 401)
       expect(
         screen.queryByText('Could not check your session'),
@@ -157,3 +153,73 @@ test.each([
     vi.unstubAllGlobals()
   },
 )
+
+test('an existing account accepts with its password', async () => {
+  const bodies: unknown[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/auth/csrf/'))
+        return Promise.resolve(new Response(null, { status: 204 }))
+      if (url.includes('/invitations/preview/'))
+        return Promise.resolve(
+          response({ status: 'requires_sign_in', workspace_name: 'Example' }),
+        )
+      if (url.includes('/auth/session/'))
+        return Promise.resolve(response({ detail: 'Nope' }, 401))
+      if (url.includes('/invitations/accept/')) {
+        bodies.push(JSON.parse(String(init?.body)))
+        return Promise.resolve(
+          bodies.length === 1
+            ? response(
+                {
+                  detail: 'Password is incorrect.',
+                  reason: 'invalid_credentials',
+                  field_errors: { password: ['Password is incorrect.'] },
+                },
+                401,
+              )
+            : response({
+                user: { id: '1', email: 'back@example.test', full_name: 'B' },
+                memberships: [],
+              }),
+        )
+      }
+      throw new Error(`Unexpected request: ${url}`)
+    }),
+  )
+  const user = userEvent.setup()
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/invite/example']}>
+        <Routes>
+          <Route path="/invite/:token" element={<AcceptInvitePage />} />
+          <Route path="/inbox" element={<p>Inbox reached</p>} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  const password = await screen.findByLabelText('Password')
+  expect(screen.getByText(/Join Example\./)).toBeVisible()
+  expect(screen.queryByLabelText('Full name')).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('link', { name: 'Sign in' }),
+  ).not.toBeInTheDocument()
+  const submit = screen.getByRole('button', { name: 'Accept invitation' })
+  await user.type(password, 'wrong-password')
+  await user.click(submit)
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Password is incorrect.',
+  )
+  expect(password).toHaveValue('wrong-password')
+  await user.clear(password)
+  await user.type(password, 'right-password')
+  await user.click(submit)
+  expect(await screen.findByText('Inbox reached')).toBeVisible()
+  expect(bodies).toEqual([
+    { token: 'example', full_name: '', password: 'wrong-password' },
+    { token: 'example', full_name: '', password: 'right-password' },
+  ])
+  vi.unstubAllGlobals()
+})

@@ -167,3 +167,90 @@ test('an owner issued password reset link works in a clean browser context', asy
   await expect(resetPage).toHaveURL(/\/inbox$/)
   await context.close()
 })
+
+test('a removed member accepts a new invitation with their password', async ({
+  page,
+  browser,
+}) => {
+  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+  const email = `reinvite-${Date.now()}@example.test`
+  const password = 'Harbour-Copper-7628!Quilt'
+  await page.goto('/sign-in')
+  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[3].email)
+  await page.getByLabel('Password').fill(seed.users[0].password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await page.evaluate(() => fetch('/api/auth/csrf/'))
+  const csrfCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'csrftoken',
+  )
+  const workspace = `/api/workspaces/${seed.workspace_id}`
+  const ownerPost = (path: string, data?: unknown) =>
+    page.context().request.post(new URL(path, page.url()).toString(), {
+      data,
+      headers: { 'X-CSRFToken': csrfCookie?.value ?? '' },
+    })
+  const invite = async () => {
+    const response = await ownerPost(`${workspace}/invitations/`, {
+      email,
+      role: 'member',
+    })
+    expect(response.status()).toBe(201)
+    return ((await response.json()) as { accept_url: string }).accept_url
+  }
+
+  // One browser context throughout, so the second visit carries the cookie of
+  // the session that the removal ended.
+  const memberContext = await browser.newContext({
+    baseURL: new URL(page.url()).origin,
+  })
+  const member = await memberContext.newPage()
+  await member.goto(await invite())
+  await member.getByLabel('Full name').fill('Returning Member')
+  await member.getByLabel('Password', { exact: true }).fill(password)
+  await member.getByLabel('Confirm password').fill(password)
+  await member.getByRole('button', { name: 'Accept invitation' }).click()
+  await expect(member).toHaveURL(/\/inbox$/)
+
+  const memberships = await page
+    .context()
+    .request.get(`${workspace}/memberships/`)
+  const rows = (await memberships.json()) as { id: string; email: string }[]
+  const membership = rows.find((row) => row.email === email)
+  expect(membership).toBeTruthy()
+  const revoked = await ownerPost(
+    `${workspace}/memberships/${membership!.id}/revoke/`,
+  )
+  expect(revoked.status()).toBe(204)
+  await member.goto('/inbox')
+  await expect(member).toHaveURL(/\/sign-in$/)
+
+  await member.goto(await invite())
+  await expect(
+    member.getByText('This email already has an account.'),
+  ).toBeVisible()
+  await expect(member.getByLabel('Full name')).toHaveCount(0)
+  await member.getByLabel('Password').fill('not-the-password')
+  await member.getByRole('button', { name: 'Accept invitation' }).click()
+  await expect(member.getByRole('alert')).toHaveText('Password is incorrect.')
+  await expect(member).toHaveURL(/\/invite\//)
+  await member.getByLabel('Password').fill(password)
+  await member.getByRole('button', { name: 'Accept invitation' }).click()
+  await expect(member).toHaveURL(/\/inbox$/)
+
+  const session = await memberContext.request.get('/api/auth/session/')
+  expect(session.status()).toBe(200)
+  const { memberships: active } = (await session.json()) as {
+    memberships: { role: string; workspace: { id: string } }[]
+  }
+  expect(active.map((item) => [item.workspace.id, item.role])).toEqual([
+    [seed.workspace_id, 'member'],
+  ])
+  await member.getByRole('button', { name: 'Sign out' }).click()
+  await expect(member).toHaveURL(/\/sign-in$/)
+  await member.getByRole('textbox', { name: 'Email' }).fill(email)
+  await member.getByLabel('Password').fill(password)
+  await member.getByRole('button', { name: 'Sign in' }).click()
+  await expect(member).toHaveURL(/\/inbox$/)
+  await memberContext.close()
+})
