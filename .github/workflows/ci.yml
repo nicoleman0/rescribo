@@ -28,6 +28,11 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task bootstrap
       - run: uv sync --locked
+      # Anonymous Docker Hub pulls are rate limited on shared runners.
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - run: task services migrate
       - run: task check-backend test-backend schema-check-backend
       - name: Stop local services
@@ -82,6 +87,10 @@ jobs:
           node-version-file: .node-version
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - run: task install services migrate
       - run: ../scripts/ci_playwright_install.sh
         working-directory: frontend
@@ -113,6 +122,10 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - run: task bootstrap
       - run: uv sync --locked
+      - uses: docker/login-action@v4
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       - run: task services migrate
       - run: task matcher-build
       - name: Worker smoke check
