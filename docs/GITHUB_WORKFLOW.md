@@ -2,15 +2,9 @@
 
 ## App setup
 
-Install the GitHub App on the repository selected in workspace settings. It needs Issues read/write and Metadata read. Subscribe to **Issues**; installation and installation repository lifecycle events are delivered automatically.
+Create and register the GitHub App as in [Provider app setup](PROVIDER_SETUP.md). Install it on the repository selected in workspace settings. Installation and installation repository lifecycle events are delivered automatically.
 
-Set `RESCRIBO_GITHUB_WEBHOOK_SECRET` to the App webhook secret and register:
-
-```text
-{origin}/api/integrations/github/webhook/
-```
-
-The receiver checks `X-Hub-Signature-256` over the raw body, stores only normalized routing and lifecycle fields, then acknowledges. It does not call GitHub. Keep the app worker and Beat scheduler running with the API.
+The receiver on `/api/integrations/github/webhook/` checks `X-Hub-Signature-256` over the raw body, stores only normalized routing and lifecycle fields, then acknowledges. It does not call GitHub. Keep the app worker and Beat scheduler running with the API.
 
 ## Background work
 
