@@ -2,9 +2,9 @@
 
 Register the GitHub App and Slack App against the development stack behind a
 public tunnel: one ordered procedure from an empty `.env` to both apps ready
-for workspace Settings. For production registration see
-[DEPLOYMENT.md](DEPLOYMENT.md); the variable reference is in
-[SETTINGS.md](SETTINGS.md).
+for workspace Settings. For production, follow steps 7 and 8 with the
+production origin and skip the development tunnel steps. The variable
+reference is in [SETTINGS.md](SETTINGS.md).
 
 Debug mode stays on, so use disposable resources only: a throwaway Slack
 workspace, GitHub account, and repository. Every value below is a placeholder;
@@ -49,12 +49,9 @@ RESCRIBO_NUM_PROXIES=1
 `RESCRIBO_NUM_PROXIES=1` makes Django trust the tunnel's `X-Forwarded-Proto`
 header, so requests keep their HTTPS scheme.
 
-Generate the credential key once, set it as `RESCRIBO_CREDENTIAL_KEY` in
-`.env`, and back it up away from the database:
-
-```sh
-uv run python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
-```
+Generate `RESCRIBO_CREDENTIAL_KEY` as described in
+[SETTINGS.md](SETTINGS.md#operator-setup), then back it up away from the
+database.
 
 ## 4. Serve the built bundle
 
@@ -100,13 +97,13 @@ fields in form order:
 
 1. **GitHub App name**: any unique name.
 2. **Homepage URL**: `<origin>`.
-3. **Callback URL**: GitHub labels this field "Redirect URI" (#139). Enter
+3. **Callback URL**: GitHub labels this field "Redirect URI". Enter
    `<origin>/api/workspaces/<workspace-id>/connections/github/callback/`.
    The path carries the workspace ID, so register the equivalent URL for each
    further workspace.
 4. Leave off user authorisation during installation, device flow, and the
-   setup URL (GitHub labels per #139: "Request user authorization (OAuth)
-   during installation", "Enable Device Flow", "Setup URL"). Install the app
+   setup URL ("Request user authorization (OAuth) during installation",
+   "Enable Device Flow", "Setup URL"). Install the app
    on the repository directly; authorisation starts from workspace Settings.
 5. **Webhook**: active, URL `<origin>/api/integrations/github/webhook/`.
    Set a webhook secret, for example from `openssl rand -hex 32`, and copy it
@@ -163,11 +160,15 @@ The manifest route is from the 10 Oct 2026 check (#139).
      --data-urlencode "manifest=$(sed 's|https://rescribo.example|<origin>|g' docs/slack-app-manifest.json)"
    ```
 
+   Or create the app in the Slack app settings UI from the edited manifest.
+   From **Basic Information**, copy the app ID, client ID, client secret, and
+   signing secret.
+
    The manifest registers the redirect URL prefix `<origin>/api/workspaces/`
    (Slack accepts any callback under it, so every workspace is covered), the
-   events request URL, and the interactivity request URL. The reply carries
-   the app ID, client ID, client secret, and signing secret. Set them in
-   `.env`:
+   events request URL, and the interactivity request URL. Both request URLs are
+   shared by every workspace and resolve the connection from the team ID. Set
+   the app ID, client ID, client secret, and signing secret in `.env`:
 
    ```sh
    RESCRIBO_SLACK_APP_ID=<app-id>
@@ -181,8 +182,7 @@ The manifest route is from the 10 Oct 2026 check (#139).
 
 Slack cannot verify the events request URL until the signing secret is in
 `.env` and the API has restarted. Open **Event Subscriptions** in the Slack
-app settings; if the request URL shows as unverified, click **Retry** (#139;
-the check log does not record whether this was needed).
+app settings; if the request URL shows as unverified, click **Retry**.
 
 ## 9. Connect from workspace Settings
 

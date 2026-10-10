@@ -1,7 +1,7 @@
 # Deployment
 
 Run Rescribo on one Docker host with [`compose.prod.yaml`](../compose.prod.yaml).
-Provider setup is in [SETTINGS.md](SETTINGS.md). The development stack is in
+Provider setup is in [PROVIDER_SETUP.md](PROVIDER_SETUP.md). The development stack is in
 [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md).
 
 Checked on 2026-10-07 on `https://localhost` with Caddy's local CA: readiness,
@@ -59,7 +59,7 @@ It has not yet run on a public domain.
    ```
 
 5. Register the Slack and GitHub Apps against `https://<RESCRIBO_DOMAIN>` and
-   add their keys to `.env.production` ([SETTINGS.md](SETTINGS.md)). Run
+   add their keys to `.env.production` ([PROVIDER_SETUP.md](PROVIDER_SETUP.md)). Run
    `task prod-up` again to apply them.
 
 Optional: `task prod-manage -- seed_demo` adds the fictitious demo workspace.
