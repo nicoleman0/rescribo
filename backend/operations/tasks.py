@@ -447,8 +447,8 @@ def process_inbound_receipt(receipt_id: str) -> None:
         elif event_name in {"installation", "installation_repositories"}:
             installation_event = InstallationEvent(**normalized)
             apply_installation_webhook(installation_id=installation_id, event=installation_event)
-    except Exception:
-        logger.warning("Inbound GitHub receipt processing failed")
+    except Exception as error:
+        logger.warning("Inbound GitHub receipt processing failed: %s", type(error).__name__)
         with transaction.atomic():
             current = (
                 InboundReceipt.objects.select_for_update()
