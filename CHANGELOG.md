@@ -37,7 +37,7 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 ### Fixed
 
 - Retrying a manual report after a lost response returns the original report. Draft submission keys survive same-tab reloads and reset after success or discard (#41).
-- `task services` pulls PostgreSQL and Redis from the ECR mirror of the Docker official images, one at a time and with retries, so Docker Hub limits and mirror throttling no longer fail CI (#136).
+- CI and local services pull PostgreSQL and Redis from the ECR mirror of the Docker official images, so Docker Hub pull limits no longer fail CI (#136).
 
 ### Security
 
