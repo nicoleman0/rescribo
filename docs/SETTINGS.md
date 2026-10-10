@@ -25,19 +25,11 @@ Set these outside the repository:
   seconds. Defaults to `900` (15 minutes).
 - `RESCRIBO_PUBLIC_BASE_URL`: the externally reachable application origin.
 
-Register each workspace's callback URL with the relevant application:
-`{origin}/api/workspaces/{workspace-id}/connections/slack/callback/` and
-`{origin}/api/workspaces/{workspace-id}/connections/github/callback/`.
-Register `{origin}/api/integrations/github/webhook/` as the GitHub App's webhook
-URL; it is shared by every workspace and resolves the connection from the
-delivery's installation ID.
-Create the Slack App from [`slack-app-manifest.json`](slack-app-manifest.json)
-and replace `https://rescribo.example` with the origin. Slack accepts any
-callback under the registered `{origin}/api/workspaces/` redirect URL, which
-must use HTTPS. Both Slack request URLs
-are shared by every workspace and resolve the connection from the team ID.
-Use HTTPS outside local development. Exclude callback query strings and request
-bodies from proxy/application access logs. Never enable provider debug logging.
+Register the GitHub and Slack Apps as in [Provider app setup](PROVIDER_SETUP.md).
+The provider callbacks and request URLs resolve connections to their workspace
+or installation. Use HTTPS outside local development. Exclude callback query
+strings and request bodies from proxy/application access logs. Never enable
+provider debug logging.
 
 Slack setup requests the scopes defined in `integrations/slack/policy.py`.
 Channel approval verifies membership, channel type, and publication consent.

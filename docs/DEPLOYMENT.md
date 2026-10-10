@@ -112,14 +112,5 @@ prints a one-use reset link on the public origin. Treat it as a credential.
 Use a tunnel to try live Slack and GitHub against the development stack. Debug
 mode stays on, so this is for disposable workspaces only.
 
-1. `task slack-tunnel` opens a cloudflared quick tunnel to port 5173 and prints
-   its URL. The host changes on every run.
-2. In `.env`, add the host to `DJANGO_ALLOWED_HOSTS`, add `https://<host>` to
-   `DJANGO_CSRF_TRUSTED_ORIGINS`, and set `RESCRIBO_PUBLIC_BASE_URL=https://<host>`.
-   Restart `task api` and `task worker`.
-3. Start the frontend with the host allowed: `RESCRIBO_TUNNEL_HOST=<host> task web`.
-4. Point the Slack and GitHub App URLs at `https://<host>` as in
-   [SETTINGS.md](SETTINGS.md).
-
-The full app has not yet been run through a tunnel against live providers. The
-manual end-to-end check ([MANUAL_CHECK.md](MANUAL_CHECK.md)) will cover it.
+The full procedure, including a stable tunnel origin, `RESCRIBO_NUM_PROXIES`,
+and both app registrations, is in [Provider app setup](PROVIDER_SETUP.md).

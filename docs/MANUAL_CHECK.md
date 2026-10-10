@@ -13,7 +13,7 @@ The check starts with an empty product database, migrations applied, and no demo
 or E2E seed data. The operator creates the first owner interactively. The owner
 then invites members and connects GitHub and Slack through Settings.
 There is no public signup. See [accounts setup](LOCAL_DEVELOPMENT.md) and
-[provider operator setup](SETTINGS.md).
+[provider operator setup](PROVIDER_SETUP.md).
 
 A database reset removes local users, workspaces, reports, connections, and
 history. It does not uninstall Slack/GitHub Apps or delete upstream issues/messages.
@@ -93,7 +93,7 @@ the cluster or Redis volume may contain another worktree's data.
 
 ## Live connections
 
-- Set up operator keys privately as described in [SETTINGS.md](SETTINGS.md).
+- Set up operator keys privately as described in [PROVIDER_SETUP.md](PROVIDER_SETUP.md).
   An empty product database does not replace this operator configuration.
 - Use a stable HTTPS origin reachable by Slack and GitHub. The application public
   base URL, allowed hosts, CSRF trusted origins, browser proxy, and registered
