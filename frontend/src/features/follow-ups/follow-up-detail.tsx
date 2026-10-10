@@ -893,9 +893,7 @@ function RecordOutcomeForm({
   const id = useId()
   const layout = useContext(FollowUpLayoutContext)
   const choices = choicesFor(followUp.outcome.state)
-  const [state, setState] = useState<FollowUpContactState>(
-    choices[0]?.value ?? 'pending',
-  )
+  const [choice, setChoice] = useState<FollowUpContactState | null>(null)
   const [note, setNote] = useState('')
   const record = useFollowUpMutation(
     workspaceId,
@@ -911,12 +909,19 @@ function RecordOutcomeForm({
         note: nextNote,
         expected_version: followUp.version,
       }),
+    () => {
+      setChoice(null)
+      setNote('')
+    },
   )
   if (!choices.length) {
     return isOwner ? (
       <CorrectionForm workspaceId={workspaceId} followUp={followUp} />
     ) : null
   }
+  // The choices change with the outcome. Send only one that is offered.
+  const state = (choices.find((item) => item.value === choice) ?? choices[0])
+    .value
   function submit(event: FormEvent) {
     event.preventDefault()
     record.mutate({ state, note })
@@ -929,7 +934,7 @@ function RecordOutcomeForm({
           label="Record outcome"
           value={state}
           onChange={(event) =>
-            setState(event.target.value as FollowUpContactState)
+            setChoice(event.target.value as FollowUpContactState)
           }
         >
           {choices.map((choice) => (
@@ -992,7 +997,9 @@ function CorrectionForm({
   ].filter(
     (value) => value !== followUp.outcome.state,
   ) as FollowUpContactState[]
-  const [state, setState] = useState<FollowUpContactState>(choices[0])
+  const [choice, setChoice] = useState<FollowUpContactState | null>(null)
+  // The choices change with the outcome. Send only one that is offered.
+  const state = choice && choices.includes(choice) ? choice : choices[0]
   const [note, setNote] = useState('')
   const [reason, setReason] = useState('')
   const mutation = useFollowUpMutation(
@@ -1012,6 +1019,11 @@ function CorrectionForm({
         reason: nextReason,
         expected_version: followUp.version,
       }),
+    () => {
+      setChoice(null)
+      setNote('')
+      setReason('')
+    },
   )
   function submit(event: FormEvent) {
     event.preventDefault()
@@ -1033,7 +1045,7 @@ function CorrectionForm({
           label="Correct to"
           value={state}
           onChange={(event) =>
-            setState(event.target.value as FollowUpContactState)
+            setChoice(event.target.value as FollowUpContactState)
           }
         >
           {choices.map((value) => (
