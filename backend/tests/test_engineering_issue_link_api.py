@@ -21,7 +21,6 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": None,
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
-    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -102,6 +101,26 @@ def test_link_rejects_pull_requests(client: Client) -> None:
     finally:
         factory.stop()
 
+    assert response.status_code == 400
+    assert response.json()["reason"] == "issue_reference_rejected"
+    assert not EngineeringIssue.objects.filter(problem=problem).exists()
+
+
+def test_link_rejects_a_reply_from_another_repository(client: Client) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    sign_in(client, actor)
+    foreign = {
+        **ISSUE_PAYLOAD,
+        "repository_url": "https://api.github.com/repos/other/widgets",
+        "html_url": "https://github.com/other/widgets/issues/7",
+    }
+    factory = patched_client(github_mock(issue=foreign))
+    try:
+        response = link(client, actor, problem)
+    finally:
+        factory.stop()
     assert response.status_code == 400
     assert response.json()["reason"] == "issue_reference_rejected"
     assert not EngineeringIssue.objects.filter(problem=problem).exists()

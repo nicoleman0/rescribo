@@ -12,6 +12,7 @@ from integrations.github_app.client import GitHubAPIError, GitHubAppClient, inst
 from integrations.github_app.issues import (
     EngineeringIssueSnapshot,
     IssueLinkError,
+    parse_issue_payload,
     parse_issue_reference,
     resolve_issue_link,
 )
@@ -51,9 +52,62 @@ ISSUE_PAYLOAD = {
     "state_reason": None,
     "html_url": "https://github.com/owner/disposable/issues/7",
     "repository_url": "https://api.github.com/repos/owner/disposable",
-    "repository": {"id": 999, "full_name": "owner/disposable"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
+
+FOREIGN_REPLY = {
+    **ISSUE_PAYLOAD,
+    "repository_url": "https://api.github.com/repos/other/disposable",
+    "html_url": "https://github.com/other/disposable/issues/7",
+}
+
+
+def test_issue_reply_identity_comes_from_the_caller() -> None:
+    snapshot = parse_issue_payload(
+        ISSUE_PAYLOAD,
+        repository_id="999",
+        repository_name="owner/disposable",
+        error=IssueLinkError,
+    )
+    assert (snapshot.repository_id, snapshot.repository_name) == ("999", "owner/disposable")
+
+
+@pytest.mark.parametrize(
+    ("reply", "message"),
+    [
+        (FOREIGN_REPLY, "another repository"),
+        (
+            {**ISSUE_PAYLOAD, "repository_url": FOREIGN_REPLY["repository_url"]},
+            "another repository",
+        ),
+        ({**ISSUE_PAYLOAD, "html_url": FOREIGN_REPLY["html_url"]}, "mismatched issue URL"),
+        ({k: v for k, v in ISSUE_PAYLOAD.items() if k != "repository_url"}, "incomplete"),
+    ],
+)
+def test_issue_reply_must_name_the_callers_repository(reply: dict, message: str) -> None:
+    with pytest.raises(IssueLinkError, match=message):
+        parse_issue_payload(
+            reply, repository_id="999", repository_name="owner/disposable", error=IssueLinkError
+        )
+
+
+def test_issue_reply_follows_a_renamed_repository() -> None:
+    renamed = {
+        **ISSUE_PAYLOAD,
+        "repository_url": "https://api.github.com/repos/owner/renamed",
+        "html_url": "https://github.com/owner/renamed/issues/7",
+    }
+    snapshot = parse_issue_payload(
+        renamed, repository_id="999", repository_name="owner/renamed", error=IssueLinkError
+    )
+    assert snapshot.repository_name == "owner/renamed"
+    with pytest.raises(IssueLinkError, match="another repository"):
+        parse_issue_payload(
+            ISSUE_PAYLOAD,
+            repository_id="999",
+            repository_name="owner/renamed",
+            error=IssueLinkError,
+        )
 
 
 def test_create_and_read_issue_round_trip(private_key: bytes) -> None:
@@ -167,6 +221,20 @@ def test_resolve_issue_link_rejects_unknown_issues(private_key: bytes) -> None:
         return httpx.Response(404, json={"message": "Not Found"})
 
     with pytest.raises(IssueLinkError, match="not found"):
+        resolve_issue_link(
+            make_client(private_key, handler),
+            expected_repository_id="999",
+            installation_token="installation-token",
+            expected_repository="owner/disposable",
+            reference="7",
+        )
+
+
+def test_resolve_issue_link_rejects_a_reply_from_another_repository(private_key: bytes) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=FOREIGN_REPLY)
+
+    with pytest.raises(IssueLinkError, match="another repository"):
         resolve_issue_link(
             make_client(private_key, handler),
             expected_repository_id="999",
@@ -328,6 +396,21 @@ def test_apply_issue_event_rejects_stale_deliveries(private_key: bytes) -> None:
     assert outcome.access == "ok"
     assert outcome.snapshot is not None
     assert outcome.snapshot.updated_at == "2026-09-20T21:00:00Z"
+
+
+def test_apply_issue_event_rejects_a_reply_from_another_repository(private_key: bytes) -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=FOREIGN_REPLY)
+
+    with pytest.raises(InvalidWebhookPayload, match="another repository"):
+        apply_issue_event(
+            make_client(private_key, handler),
+            expected_repository_id="999",
+            installation_token="installation-token",
+            expected_repository="owner/disposable",
+            event=closed_event(),
+            stored_updated_at=None,
+        )
 
 
 def test_apply_issue_event_maps_inaccessible_issues_to_access_lost(private_key: bytes) -> None:

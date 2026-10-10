@@ -239,9 +239,12 @@ def fetch_current_issue(
                 number=number, applied=False, access="access_lost", snapshot=None
             )
         raise
-    snapshot = parse_issue_payload(issue, error=InvalidWebhookPayload)
-    if snapshot.repository_id != expected_repository_id:
-        raise InvalidWebhookPayload("The fetched issue belongs to another repository identity.")
+    snapshot = parse_issue_payload(
+        issue,
+        repository_id=expected_repository_id,
+        repository_name=expected_repository,
+        error=InvalidWebhookPayload,
+    )
     if snapshot.issue_id != issue_id:
         raise InvalidWebhookPayload("The fetched issue has a different stable identity.")
     fetched_time = provider_time(snapshot.updated_at)
