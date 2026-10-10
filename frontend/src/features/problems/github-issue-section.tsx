@@ -6,7 +6,6 @@ import { problemKeys, type ProblemDetail } from '@/api/problems'
 import type { ApiError } from '@/api/request'
 import { Field } from '@/components/forms/field'
 import { fieldError } from '@/components/forms/field-error'
-import { touchTarget } from '@/components/layout/touch-target'
 import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { GitHubIssueCreate } from './github-issue-create'
@@ -85,7 +84,6 @@ export function GitHubIssueSection({
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
-              className={touchTarget}
               disabled={busy}
               onClick={() => void refresh()}
             >
@@ -93,7 +91,6 @@ export function GitHubIssueSection({
             </Button>
             <Button
               variant="outline"
-              className={touchTarget}
               disabled={busy}
               aria-expanded={replacing}
               onClick={() => {
@@ -185,7 +182,6 @@ function LinkIssueForm({
       <Button
         type="submit"
         variant="outline"
-        className={touchTarget}
         disabled={busy || !reference.trim()}
       >
         {busy

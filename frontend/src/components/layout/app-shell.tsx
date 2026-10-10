@@ -18,7 +18,6 @@ import {
 import { Wordmark } from '@/components/brand/wordmark'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { touchTarget } from './touch-target'
 
 type NavigationItem = {
   label: string
@@ -131,7 +130,6 @@ export function AppShell({ children }: { children?: ReactNode }) {
             ) : null}
             {!isGallery ? (
               <Button
-                className={touchTarget}
                 size="sm"
                 variant="outline"
                 onClick={() => signOut.mutate()}

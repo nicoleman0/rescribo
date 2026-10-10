@@ -26,7 +26,6 @@ import {
 } from '@/components/auth/use-workspace'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
-import { touchTarget } from '@/components/layout/touch-target'
 import { PageTitle } from '@/components/layout/page-title'
 import { ActionError } from '@/components/states/action-error'
 import {
@@ -89,12 +88,7 @@ export function ProblemDetailPage() {
   return (
     <div className="animate-page-enter grid max-w-5xl gap-6">
       <PageTitle title={problem.data?.title ?? 'Problem'} />
-      <Button
-        asChild
-        variant="ghost"
-        size="sm"
-        className={cn('w-fit', touchTarget)}
-      >
+      <Button asChild variant="ghost" size="sm" className={cn('w-fit')}>
         <Link to="/problems">
           <ArrowLeft aria-hidden="true" />
           Back to problems
@@ -225,7 +219,7 @@ function ConfirmFixForm({
       ) : null}
       <Button
         type="submit"
-        className={cn('w-fit', touchTarget)}
+        className={cn('w-fit')}
         disabled={
           mutation.isPending ||
           !draft.fix_note.trim() ||
@@ -338,7 +332,6 @@ export function FixCard({
       <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          className={touchTarget}
           disabled={isDemo || unlink.isPending}
           onClick={() => setChoosingRelease(!choosingRelease)}
         >
@@ -347,7 +340,6 @@ export function FixCard({
         {problem.fix_release ? (
           <Button
             variant="outline"
-            className={touchTarget}
             disabled={isDemo || unlink.isPending}
             onClick={() => unlink.mutate(undefined)}
           >
@@ -419,7 +411,7 @@ function ProblemHeader({
           <Button
             ref={editButton}
             variant="outline"
-            className={cn('w-fit', touchTarget)}
+            className={cn('w-fit')}
             onClick={() => setEditing(true)}
           >
             Edit title and summary
@@ -510,17 +502,12 @@ function EditProblemForm({
         />
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button
-          type="submit"
-          className={touchTarget}
-          disabled={mutation.isPending || unchanged}
-        >
+        <Button type="submit" disabled={mutation.isPending || unchanged}>
           {mutation.isPending ? 'Saving…' : 'Save changes'}
         </Button>
         <Button
           type="button"
           variant="outline"
-          className={touchTarget}
           disabled={mutation.isPending}
           onClick={onClose}
         >
@@ -548,7 +535,7 @@ function OwnerCard({
           type="button"
           variant="ghost"
           size="sm"
-          className={touchTarget}
+
           aria-expanded={editing}
           aria-controls={editing ? id : undefined}
           aria-label={editing ? 'Cancel changing the owner' : 'Change owner'}
@@ -637,7 +624,7 @@ function OwnerForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9', touchTarget)}
+          className={cn('h-9')}
           disabled={mutation.isPending || owner === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Save owner'}
@@ -780,7 +767,6 @@ function ConfirmFixAppliesButton({
       <Button
         type="button"
         variant="outline"
-        className={touchTarget}
         disabled={mutation.isPending}
         onClick={() => mutation.mutate(undefined)}
       >

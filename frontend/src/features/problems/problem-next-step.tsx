@@ -12,7 +12,6 @@ import {
   toneSurfaceClasses,
   type StatusTone,
 } from '@/components/status/status-tone'
-import { touchTarget } from '@/components/layout/touch-target'
 import { ActionError } from '@/components/states/action-error'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -123,7 +122,7 @@ export function ProblemNextStep({
                 asChild
                 variant="outline"
                 size="sm"
-                className={cn('text-foreground', touchTarget)}
+                className={cn('text-foreground')}
               >
                 <Link to="/follow-ups">Open follow-ups</Link>
               </Button>
@@ -133,7 +132,7 @@ export function ProblemNextStep({
                 asChild
                 variant="outline"
                 size="sm"
-                className={cn('text-foreground', touchTarget)}
+                className={cn('text-foreground')}
               >
                 <a href={issue.url} target="_blank" rel="noreferrer">
                   Open GitHub issue #{issue.number}
@@ -145,7 +144,7 @@ export function ProblemNextStep({
               <Button
                 variant="outline"
                 size="sm"
-                className={cn('text-foreground', touchTarget)}
+                className={cn('text-foreground')}
                 disabled={review.isPending}
                 onClick={() => review.mutate(undefined)}
               >

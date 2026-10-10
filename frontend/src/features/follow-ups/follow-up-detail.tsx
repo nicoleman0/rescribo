@@ -32,7 +32,6 @@ import type { ApiError } from '@/api/request'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { touchTarget } from '@/components/layout/touch-target'
 import {
   EmptyState,
   ErrorState,
@@ -103,18 +102,13 @@ export function FollowUpDetailPanel({
       className="grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2"
     >
       <div className="flex items-center justify-between gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          size="sm"
-          className={cn('w-fit', touchTarget)}
-        >
+        <Button asChild variant="ghost" size="sm" className={cn('w-fit')}>
           <Link to={backTo}>
             <ArrowLeft aria-hidden="true" />
             Back to follow-ups
           </Link>
         </Button>
-        <Button asChild variant="ghost" size="sm" className={touchTarget}>
+        <Button asChild variant="ghost" size="sm">
           <Link to={fullPage}>
             <Maximize2 aria-hidden="true" />
             Open full page
@@ -405,7 +399,7 @@ function DraftSection({
         customers or the GitHub issue is included.
       </p>
       <Button
-        className={cn('w-fit', touchTarget)}
+        className={cn('w-fit')}
         disabled={draft.isPending}
         onClick={() => draft.mutate(undefined)}
       >
@@ -497,7 +491,6 @@ function FailedSection({
       />
       <div className="flex flex-wrap gap-2">
         <Button
-          className={touchTarget}
           disabled={approve.isPending || !messageReady}
           onClick={() => approve.mutate(notification.draft_version)}
         >
@@ -579,7 +572,6 @@ function UncertainSection({
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
-                className={touchTarget}
                 disabled={sendAgain.isPending}
                 onClick={() => {
                   sendAgain.mutate(notification.draft_version)
@@ -591,7 +583,6 @@ function UncertainSection({
               <Button
                 type="button"
                 variant="outline"
-                className={touchTarget}
                 onClick={() => setConfirmingAgain(false)}
               >
                 Cancel
@@ -602,7 +593,6 @@ function UncertainSection({
       ) : (
         <div className="flex flex-wrap gap-2">
           <Button
-            className={touchTarget}
             disabled={markDelivered.isPending}
             onClick={() => markDelivered.mutate(notification.draft_version)}
           >
@@ -610,7 +600,6 @@ function UncertainSection({
           </Button>
           <Button
             variant="outline"
-            className={touchTarget}
             disabled={sendAgain.isPending}
             onClick={() => setConfirmingAgain(true)}
           >
@@ -618,7 +607,6 @@ function UncertainSection({
           </Button>
           <Button
             variant="outline"
-            className={touchTarget}
             disabled={cancel.isPending}
             onClick={() => cancel.mutate(notification.draft_version)}
           >
@@ -721,7 +709,6 @@ function MessageEditor({
         <Button
           type="submit"
           variant="outline"
-          className={touchTarget}
           disabled={save.isPending || !dirty}
         >
           {save.isPending ? 'Saving…' : 'Save edits'}
@@ -766,7 +753,6 @@ function ApproveButton({
           <Button
             type="button"
             variant="outline"
-            className={touchTarget}
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(
@@ -800,7 +786,6 @@ function ApproveButton({
     <div className="grid gap-2">
       <Button
         type="button"
-        className={touchTarget}
         disabled={
           approve.isPending ||
           disabled ||
@@ -977,7 +962,7 @@ function RecordOutcomeForm({
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
-          className={cn(touchTarget, layout === 'page' && 'hover:bg-primary')}
+          className={cn(layout === 'page' && 'hover:bg-primary')}
           disabled={
             record.isPending || (state === 'no_response' && !note.trim())
           }
@@ -1093,7 +1078,6 @@ function CorrectionForm({
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
-          className={touchTarget}
           disabled={
             mutation.isPending ||
             !reason.trim() ||
@@ -1169,7 +1153,7 @@ function RecipientForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9', touchTarget)}
+          className={cn('h-9')}
           disabled={mutation.isPending || recipient === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Change recipient'}

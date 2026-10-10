@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { touchTarget } from '@/components/layout/touch-target'
 
 export type QueryStateStatus = 'loading' | 'empty' | 'error' | 'ready'
 
@@ -40,7 +39,7 @@ export function RetryButton({
   return (
     <Button
       variant="outline"
-      className={cn(touchTarget, className)}
+      className={cn(className)}
       onClick={onRetry}
       disabled={isRetrying}
     >

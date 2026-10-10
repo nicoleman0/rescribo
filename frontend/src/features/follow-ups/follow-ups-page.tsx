@@ -275,7 +275,6 @@ function FollowUpsList({
           <Button
             type="button"
             variant="outline"
-            className={touchTarget}
             disabled={page <= 1}
             onClick={() => {
               const next = new URLSearchParams(params)
@@ -291,7 +290,6 @@ function FollowUpsList({
           <Button
             type="button"
             variant="outline"
-            className={touchTarget}
             disabled={page >= Math.ceil(query.data.count / 25)}
             onClick={() => {
               const next = new URLSearchParams(params)
