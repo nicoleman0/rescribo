@@ -6,7 +6,7 @@ from rest_framework.request import Request
 from rest_framework.throttling import SimpleRateThrottle
 from rest_framework.views import APIView
 
-from accounts.services import invited_account_email
+from accounts.services import invited_account_email, password_reset_account_email
 
 
 class LoginIdentityThrottle(SimpleRateThrottle):
@@ -32,6 +32,16 @@ class InvitationPasswordThrottle(LoginIdentityThrottle):
         payload = request.data
         secret = str(payload.get("token", "") if isinstance(payload, dict) else "")
         email = invited_account_email(secret=secret)
+        return None if email is None else self.identity_key(email)
+
+
+class PasswordResetPasswordThrottle(LoginIdentityThrottle):
+    """Shares the login limit, so a reset link adds no guesses at its account's password."""
+
+    def get_cache_key(self, request: Request, view: APIView) -> str | None:
+        payload = request.data
+        secret = str(payload.get("token", "") if isinstance(payload, dict) else "")
+        email = password_reset_account_email(secret=secret)
         return None if email is None else self.identity_key(email)
 
 
