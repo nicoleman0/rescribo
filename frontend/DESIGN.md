@@ -91,6 +91,8 @@ that owns the draft when a recoverable request fails.
 - Desktop uses a sidebar, a flexible content area, and compact 44px navigation rows.
 - Mobile keeps all navigation targets at a 44px minimum touch target and moves navigation to a bottom tab bar. Action controls use `touchTarget` for the same minimum.
 - Controls use the smaller control radius. Cards use the larger card radius. Status badges are pills.
+- AppShell renders "Skip to main content" before the sidebar, so it is the first Tab stop.
+- AppShell keeps Sign out in the header at every width. The sidebar has no sign-out block, and the UI gallery shows no Sign out.
 - Use left alignment, short text measure, visible focus, and no decorative colour outside the token system.
 
 ## Page frame

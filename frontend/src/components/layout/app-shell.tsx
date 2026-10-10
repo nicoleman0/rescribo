@@ -81,6 +81,13 @@ export function AppShell({ children }: { children?: ReactNode }) {
 
   return (
     <div className="min-h-svh bg-background md:grid md:grid-cols-[14rem_minmax(0,1fr)]">
+      {/* First in the document so it is the first Tab stop. Fixed on focus, so the sidebar does not shift. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-background focus:px-4 focus:py-3 focus:outline-none focus:ring-2 focus:ring-ring"
+      >
+        Skip to main content
+      </a>
       <aside className="hidden border-r border-border bg-sidebar md:flex md:flex-col">
         <div className="flex h-16 items-center border-b border-border px-5">
           <Link
@@ -93,28 +100,11 @@ export function AppShell({ children }: { children?: ReactNode }) {
         </div>
         <div className="flex flex-1 flex-col p-3">
           <Navigation />
-          <div className="mt-auto border-t border-border pt-3">
-            <Button
-              className="min-h-11 w-full"
-              variant="outline"
-              size="sm"
-              onClick={() => signOut.mutate()}
-              disabled={signOut.isPending}
-            >
-              Sign out
-            </Button>
-          </div>
         </div>
       </aside>
 
       <div className="flex min-h-svh min-w-0 flex-col pb-16 md:pb-0">
         <header className="flex h-16 items-center justify-between border-b border-border bg-background px-4 md:px-8">
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-control focus:bg-background focus:px-4 focus:py-3 focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            Skip to main content
-          </a>
           <div className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <p className="truncate text-sm font-medium">
@@ -140,7 +130,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
             ) : null}
             {!isGallery ? (
               <Button
-                className="max-md:min-h-[44px] md:hidden"
+                className="max-md:min-h-[44px]"
                 size="sm"
                 variant="outline"
                 onClick={() => signOut.mutate()}

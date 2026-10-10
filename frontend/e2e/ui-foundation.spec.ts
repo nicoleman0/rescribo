@@ -81,6 +81,33 @@ test.describe('UI foundation', () => {
     await expect(page).toHaveURL(/\/problems$/)
   })
 
+  test('skip link is the first tab stop on desktop', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/inbox')
+    await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
+    const sidebar = page.locator('aside')
+    const beforeFocus = await sidebar.boundingBox()
+    expect(beforeFocus).not.toBeNull()
+    await page.keyboard.press('Tab')
+    await expect(
+      page.getByRole('link', { name: 'Skip to main content' }),
+    ).toBeFocused()
+    expect(await sidebar.boundingBox()).toEqual(beforeFocus)
+  })
+
+  test('sign out is in view on settings without scrolling', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/settings')
+    await expect(
+      page.getByRole('heading', { name: 'Members and invitations' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Sign out' }),
+    ).toBeInViewport()
+  })
+
   test('shell has no axe violations', async ({ page }) => {
     await page.goto('/inbox')
     await expect(page.getByRole('heading', { name: 'Inbox' })).toBeVisible()
