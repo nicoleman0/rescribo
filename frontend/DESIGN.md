@@ -140,6 +140,9 @@ that owns the draft when a recoverable request fails.
   wraps the inbox assignee form, which has no save callback, so it closes
   only on Done.
 - Side-column cards use `problemCard`: elevation level 1 and the card radius.
+- "Mark reviewed" is the review banner's only write action. Its error stays
+  visible when the banner changes step, and focus moves to the banner heading
+  after success.
 
 ## Motion
 

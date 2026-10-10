@@ -406,6 +406,8 @@ class ProblemActivitySerializer(serializers.Serializer):
     def get_metadata(self, activity: Activity) -> dict[str, Any]:
         if activity.action == Activity.Action.PROBLEM_FIX_RELEASE_LINKED:
             return {"tag_name": str(activity.metadata.get("tag_name", ""))}
+        if activity.action == Activity.Action.PROBLEM_UPDATED and activity.metadata.get("reason"):
+            return {"reason": str(activity.metadata["reason"])}
         return {}
 
 
@@ -418,6 +420,10 @@ class LinkFixReleaseSerializer(VersionedSerializer):
 
 
 class UnlinkFixReleaseSerializer(VersionedSerializer):
+    pass
+
+
+class MarkReviewedSerializer(VersionedSerializer):
     pass
 
 

@@ -256,6 +256,7 @@ ROUTES: dict[str, list[tuple[str, Body]]] = {
     "problems/<uuid:problem_id>/assign-owner/": [
         ("post", lambda ids: {**VERSION, "owner_id": None})
     ],
+    "problems/<uuid:problem_id>/mark-reviewed/": [("post", lambda ids: VERSION)],
     "problems/<uuid:problem_id>/issue/link/": [
         (
             "post",

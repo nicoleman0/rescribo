@@ -73,3 +73,20 @@ test.each([
 ])('describes changed fields %j', (fields, text) => {
   expect(describeUpdate(fields)).toBe(text)
 })
+
+test.each([
+  [['needs_review'], 'reviewed', 'marked the problem reviewed'],
+  [['needs_review'], 'issue_closed', 'flagged the problem for review'],
+  [
+    ['needs_review'],
+    'still_affected_outcome',
+    'flagged the problem for review',
+  ],
+  [
+    ['state', 'needs_review'],
+    'issue_reopened',
+    'changed the status and flagged the problem for review',
+  ],
+])('describes %j with reason %s', (fields, reason, text) => {
+  expect(describeUpdate(fields, reason)).toBe(text)
+})

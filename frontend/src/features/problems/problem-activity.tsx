@@ -11,7 +11,11 @@ import {
   LoadingState,
   ReadyState,
 } from '@/components/states/async-states'
-import { formatDate, memberName } from '@/features/inbox/report-format'
+import {
+  actorName,
+  formatDate,
+  memberName,
+} from '@/features/inbox/report-format'
 import { cn } from '@/lib/utils'
 import {
   describeUpdate,
@@ -123,9 +127,6 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   )
 }
 
-const actorName = (entry: ProblemActivity) =>
-  entry.actor ? memberName(entry.actor) : entry.actor_system || 'System'
-
 function reportLink(entry: ProblemActivity): ReactNode {
   if (!entry.report) return 'a report'
   return (
@@ -154,7 +155,12 @@ function describe(entry: ProblemActivity): ReactNode {
     case 'problem.created':
       return 'created the problem'
     case 'problem.updated':
-      return describeUpdate(entry.changed_fields)
+      return describeUpdate(
+        entry.changed_fields,
+        typeof entry.metadata?.reason === 'string'
+          ? entry.metadata.reason
+          : undefined,
+      )
     case 'problem.state_changed':
       return entry.state
         ? `changed the status to ${problemStateLabels[entry.state]}`

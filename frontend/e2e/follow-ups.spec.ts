@@ -256,6 +256,41 @@ test.describe('Follow-ups', () => {
     ).toBeVisible()
   })
 
+  test('marks a problem reviewed after a customer is still affected', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const marker = `Review ${Date.now()}`
+    const title = await confirmFix(page, marker)
+    const problemUrl = page.url()
+    await openFollowUp(page, title)
+    // The contact section appears once the message is prepared. Nothing is sent.
+    await detail(page).getByRole('button', { name: 'Prepare message' }).click()
+    await expect(
+      detail(page).getByRole('textbox', { name: 'Message' }),
+    ).toBeVisible()
+    const contact = page.getByRole('region', { name: 'Customer contact' })
+    await contact
+      .getByLabel('Record outcome')
+      .selectOption({ label: 'Still affected' })
+    await contact.getByRole('button', { name: 'Record outcome' }).click()
+    await expect(contact).toContainText('Outcome: Still affected.')
+
+    await page.goto(problemUrl)
+    await expect(
+      page.getByRole('heading', { level: 2, name: 'Review the fix' }),
+    ).toBeVisible()
+    await expect(page.getByText('Needs review').first()).toBeVisible()
+    await page.getByRole('button', { name: 'Mark reviewed' }).click()
+    await expect(
+      page.getByRole('heading', { level: 2, name: /^Fix available in/ }),
+    ).toBeVisible()
+    await expect(page.getByText('Needs review')).toHaveCount(0)
+    await expect(
+      page.getByRole('list', { name: 'Problem activity' }),
+    ).toContainText('marked the problem reviewed')
+  })
+
   test('is keyboard operable, accessible, and fits a phone', async ({
     page,
   }) => {

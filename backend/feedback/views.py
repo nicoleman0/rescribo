@@ -47,6 +47,7 @@ from feedback.problems import (
     assign_problem_owner,
     confirm_fix,
     confirm_linked_report_fix,
+    mark_problem_reviewed,
     update_problem,
 )
 from feedback.releases import link_fix_release, list_repository_releases, unlink_fix_release
@@ -90,6 +91,7 @@ from feedback.serializers import (
     LinkIssueSerializer,
     LinkReportSerializer,
     ManualReportSerializer,
+    MarkReviewedSerializer,
     MemberSummarySerializer,
     ProblemActivitySerializer,
     ProblemConflictSerializer,
@@ -542,6 +544,18 @@ class ProblemFixReleaseLinkView(ProblemActionView):
             problem_id=problem_id,
             expected_version=data["expected_version"],
             external_id=data["external_id"],
+        )
+
+
+@extend_schema_view(post=problem_action_schema(MarkReviewedSerializer))
+class ProblemMarkReviewedView(ProblemActionView):
+    input_serializer = MarkReviewedSerializer
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        return mark_problem_reviewed(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
         )
 
 

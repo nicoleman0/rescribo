@@ -48,14 +48,20 @@ const fieldLabels: Record<string, string> = {
   state: 'status',
 }
 
-/** Describe a `problem.updated` entry from its changed field names. */
-export function describeUpdate(fields: string[]): string {
+/** Describe a `problem.updated` entry from its changed field names. The
+ * `reviewed` reason marks a member clearing the flag; entries without a reason
+ * predate it and are all flagging entries. */
+export function describeUpdate(fields: string[], reason?: string): string {
   const changed = fields
     .filter((name) => name !== 'needs_review')
     .map((name) => fieldLabels[name] ?? name.replaceAll('_', ' '))
   const parts = []
   if (changed.length) parts.push(`changed the ${changed.join(' and ')}`)
   if (fields.includes('needs_review'))
-    parts.push('flagged the problem for review')
+    parts.push(
+      reason === 'reviewed'
+        ? 'marked the problem reviewed'
+        : 'flagged the problem for review',
+    )
   return parts.join(' and ') || 'updated the problem'
 }
