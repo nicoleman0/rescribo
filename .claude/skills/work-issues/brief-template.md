@@ -29,4 +29,4 @@ Seed the demo with `RESCRIBO_DEMO_PASSWORD='Rescribo-demo-e2e-2026!' uv run pyth
 
 ## PR
 
-Use plain, short sentences. The sections are Changes, Decisions to review, Checks (with real numbers), and Screenshots. Leave Screenshots as "Pending": the coordinator publishes the page and adds the link. Follow the maintainer's rules: no Claude or AI attribution anywhere, no em-dashes, and code comments that say why rather than what.
+Use plain, short sentences. The sections are Changes, Decisions to review, Checks (with real numbers), and Screenshots. Leave Screenshots as "Pending": the coordinator fills it in. Follow the maintainer's rules: no Claude or AI attribution anywhere, no em-dashes, and code comments that say why rather than what.

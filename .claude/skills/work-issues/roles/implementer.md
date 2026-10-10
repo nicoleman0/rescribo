@@ -7,7 +7,7 @@ OpenSpec workflows: use `/opsx:<name>` in Claude Code or `/opsx-<name>` in openc
 Your job:
 1. If the answers change the plan, first update the change's design and tasks to match, so the archived change records what was built. Then run the apply workflow, keeping to the change's tasks and design.
 2. Run every check in the brief and fix failures in your own code. Never weaken a test or a check to make it pass.
-3. For UI work, take after screenshots and look at them yourself. Build the comparison page at `.claude/shots/compare.html` as the brief describes. The coordinator publishes it.
+3. For UI work, take after screenshots and look at them yourself. Build the comparison page at `.claude/shots/compare.html` as the brief describes, and leave it there for the coordinator.
 4. Archive the change in the same branch: sync its delta into `openspec/specs/`, then move it to `openspec/changes/archive/<date>-<name>`.
 5. Commit. Write the PR body to `.claude/pr-body.md` with the brief's sections. Do not push or open the PR. Stop and report the commit and the check results with real numbers.
 
