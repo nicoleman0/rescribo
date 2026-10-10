@@ -2,7 +2,8 @@ name: rescribo
 
 services:
   postgres:
-    image: postgres:17-alpine
+    # ECR mirror of the official image: Docker Hub refuses anonymous pulls from CI.
+    image: public.ecr.aws/docker/library/postgres:17-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-rescribo}
       POSTGRES_USER: ${POSTGRES_USER:-rescribo}
@@ -18,7 +19,7 @@ services:
       retries: 20
 
   redis:
-    image: redis:7-alpine
+    image: public.ecr.aws/docker/library/redis:7-alpine
     command: [redis-server, --appendonly, "yes"]
     ports:
       - "127.0.0.1:${REDIS_PORT:-56379}:6379"
