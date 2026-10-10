@@ -23,7 +23,6 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": "completed",
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
-    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:05:00Z",
 }
 

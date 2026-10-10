@@ -1,5 +1,6 @@
 """Tests for approved and uncertain GitHub issue create operations."""
 
+import logging
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -42,8 +43,18 @@ CREATED_ISSUE: dict[str, Any] = {
     "state_reason": None,
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
-    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:00:00Z",
+}
+
+FOREIGN_ISSUE = {
+    **CREATED_ISSUE,
+    "repository_url": "https://api.github.com/repos/other/widgets",
+    "html_url": "https://github.com/other/widgets/issues/7",
+}
+RENAMED_ISSUE = {
+    **CREATED_ISSUE,
+    "repository_url": "https://api.github.com/repos/acme/renamed",
+    "html_url": "https://github.com/acme/renamed/issues/7",
 }
 
 
@@ -97,6 +108,55 @@ def test_approved_content_is_the_only_content_written_and_linked() -> None:
     assert issue.issue_id == "555"
 
 
+def test_created_reply_from_another_repository_is_not_linked() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider()
+    client.create_issue.return_value = dict(FOREIGN_ISSUE)
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.UNCERTAIN
+    assert not EngineeringIssue.objects.filter(problem=problem).exists()
+
+
+def test_create_follows_a_renamed_repository() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider()
+    client.get_repository_by_id.return_value = {"id": 999, "full_name": "acme/renamed"}
+    client.create_issue.return_value = dict(RENAMED_ISSUE)
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    connection.refresh_from_db()
+    assert operation.state == ExternalOperation.State.SUCCEEDED
+    assert client.create_issue.call_args.kwargs["name"] == "renamed"
+    assert connection.repository == "acme/renamed"
+
+
+def test_create_failure_after_the_write_logs_only_the_exception_type(caplog: Any) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    client = fake_provider(create_error=RuntimeError("customer text"))
+    with (
+        patch("operations.tasks.github_client") as factory,
+        caplog.at_level(logging.WARNING, logger="operations.tasks"),
+    ):
+        factory.return_value.__enter__.return_value = client
+        process_github_issue_create(str(operation.pk))
+    assert "GitHub create failed during write: RuntimeError" in caplog.messages
+    assert "customer text" not in caplog.text
+
+
 def test_ambiguous_create_is_uncertain_and_never_posts_again() -> None:
     actor = make_membership()
     make_connection(workspace=actor.workspace)
@@ -137,6 +197,49 @@ def test_marker_recovery_paginates_and_ignores_pull_requests() -> None:
     assert operation.state == ExternalOperation.State.SUCCEEDED
     assert client.list_issues.call_count == 2
     assert EngineeringIssue.objects.get(problem=problem, active=True).issue_id == "555"
+
+
+def test_recovery_by_reference_links_the_marked_issue() -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    operation.state = ExternalOperation.State.UNCERTAIN
+    operation.save(update_fields=["state"])
+    marker = f"<!-- rescribo-operation:{operation.pk} -->"
+    request_recovery(actor=actor, problem_id=problem.pk, operation_id=operation.pk, reference="7")
+    client = fake_provider()
+    client.get_issue.return_value = {**CREATED_ISSUE, "body": marker}
+    with patch("operations.tasks.github_client") as factory:
+        factory.return_value.__enter__.return_value = client
+        reconcile_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.SUCCEEDED
+    assert EngineeringIssue.objects.get(problem=problem, active=True).issue_id == "555"
+
+
+def test_recovery_does_not_link_a_reply_from_another_repository(caplog: Any) -> None:
+    actor = make_membership()
+    make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    operation = approved_operation(actor, problem)
+    operation.state = ExternalOperation.State.UNCERTAIN
+    operation.save(update_fields=["state"])
+    marker = f"<!-- rescribo-operation:{operation.pk} -->"
+    request_recovery(actor=actor, problem_id=problem.pk, operation_id=operation.pk)
+    client = fake_provider()
+    client.list_issues.side_effect = [([{**FOREIGN_ISSUE, "body": marker}], False)]
+    with (
+        patch("operations.tasks.github_client") as factory,
+        caplog.at_level(logging.WARNING, logger="operations.tasks"),
+    ):
+        factory.return_value.__enter__.return_value = client
+        reconcile_github_issue_create(str(operation.pk))
+    operation.refresh_from_db()
+    assert operation.state == ExternalOperation.State.UNCERTAIN
+    assert operation.safe_error == "recovery_unavailable"
+    assert not EngineeringIssue.objects.filter(problem=problem).exists()
+    assert "GitHub issue recovery failed: IssueLinkError" in caplog.messages
 
 
 @pytest.mark.parametrize("stage", ["create_installation_token", "get_repository_by_id"])

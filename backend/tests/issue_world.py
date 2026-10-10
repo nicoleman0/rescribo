@@ -95,7 +95,6 @@ class World:
             "state_reason": "completed" if state == "closed" else None,
             "html_url": "https://github.com/acme/widgets/issues/7",
             "repository_url": "https://api.github.com/repos/acme/widgets",
-            "repository": {"id": int(REPOSITORY_ID), "full_name": "acme/widgets"},
             "updated_at": self.at(seconds).isoformat(),
         }
 

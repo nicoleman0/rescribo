@@ -39,7 +39,6 @@ ISSUE_PAYLOAD: dict[str, Any] = {
     "state_reason": None,
     "html_url": "https://github.com/acme/widgets/issues/7",
     "repository_url": "https://api.github.com/repos/acme/widgets",
-    "repository": {"id": 999, "full_name": "acme/widgets"},
     "updated_at": "2026-09-20T21:00:00Z",
 }
 
@@ -107,6 +106,71 @@ def test_closed_event_sets_needs_review_and_keeps_state_reason() -> None:
     assert problem.state == Problem.State.OPEN  # closing never sets fix_available
     activity = Activity.objects.get(record_id=problem.pk, action=Activity.Action.PROBLEM_UPDATED)
     assert activity.actor_system == "github_webhook" and activity.actor_membership is None
+
+
+def test_sync_follows_a_renamed_repository() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(
+        problem=problem,
+        connection=connection,
+        created_by=actor,
+        provider_updated_at=STORED_UPDATED_AT,
+    )
+    renamed = {
+        **ISSUE_PAYLOAD,
+        "state": "closed",
+        "state_reason": "completed",
+        "repository_url": "https://api.github.com/repos/acme/renamed",
+        "html_url": "https://github.com/acme/renamed/issues/7",
+    }
+    client = github_mock(get_issue=renamed)
+    client.get_repository_by_id.return_value = {"id": 999, "full_name": "acme/renamed"}
+    factory = patched_client(client)
+    try:
+        apply_issue_webhook(
+            installation_id=connection.external_id,
+            event=issue_event(action="closed", updated_at="2026-09-20T21:05:00Z"),
+        )
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    connection.refresh_from_db()
+    assert issue.state == "closed"
+    assert connection.repository == "acme/renamed"
+
+
+def test_sync_does_not_apply_a_reply_from_another_repository() -> None:
+    actor = make_membership()
+    connection = make_connection(workspace=actor.workspace)
+    problem = make_problem(actor=actor)
+    issue = make_engineering_issue(
+        problem=problem,
+        connection=connection,
+        created_by=actor,
+        provider_updated_at=STORED_UPDATED_AT,
+    )
+    closed = {
+        **ISSUE_PAYLOAD,
+        "state": "closed",
+        "state_reason": "completed",
+        "repository_url": "https://api.github.com/repos/other/widgets",
+        "html_url": "https://github.com/other/widgets/issues/7",
+    }
+    factory = patched_client(github_mock(get_issue=closed))
+    try:
+        apply_issue_webhook(
+            installation_id=connection.external_id,
+            event=issue_event(action="closed", updated_at="2026-09-20T21:05:00Z"),
+        )
+    finally:
+        factory.stop()
+    issue.refresh_from_db()
+    problem.refresh_from_db()
+    assert issue.state == "open"
+    assert issue.sync_error == "provider_unavailable"
+    assert problem.needs_review is False
 
 
 def test_closed_as_not_planned_only_sets_needs_review() -> None:

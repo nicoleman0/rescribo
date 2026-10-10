@@ -207,7 +207,12 @@ def process_github_issue_create(operation_id: str) -> None:
                 title=operation.title,
                 body=exact_body(operation),
             )
-            snapshot = parse_issue_payload(created, error=IssueLinkError)
+            snapshot = parse_issue_payload(
+                created,
+                repository_id=operation.repository_id,
+                repository_name=canonical,
+                error=IssueLinkError,
+            )
             # Preserve known remote IDs even if the lease expires or linking rolls back.
             ExternalOperation.objects.filter(pk=operation_uuid).update(
                 remote_issue_id=snapshot.issue_id,
@@ -242,7 +247,11 @@ def process_github_issue_create(operation_id: str) -> None:
         )
         if isinstance(error, GitHubAPIError) and error.status_code < 500:
             ambiguous = False
-        logger.warning("GitHub create failed during %s", "write" if write_started else "preflight")
+        logger.warning(
+            "GitHub create failed during %s: %s",
+            "write" if write_started else "preflight",
+            type(error).__name__,
+        )
         _mark(
             operation_uuid,
             token,
@@ -542,7 +551,7 @@ def revalidate_github_connection(connection_id: str) -> None:
         dispatch_task("feedback.tasks.sync_github_issue", issue_id)
 
 
-def _recover(operation: ExternalOperation) -> list[dict[str, object]]:
+def _recover(operation: ExternalOperation) -> tuple[str, list[dict[str, object]]]:
     with (
         github_client() as client,
         selected_repository(
@@ -569,8 +578,8 @@ def _recover(operation: ExternalOperation) -> list[dict[str, object]]:
                 or not isinstance(body, str)
                 or marker_for(operation.pk) not in body
             ):
-                return []
-            return [row]
+                return canonical, []
+            return canonical, [row]
         matches: list[dict[str, object]] = []
         page = 1
         while True:
@@ -587,7 +596,7 @@ def _recover(operation: ExternalOperation) -> list[dict[str, object]]:
                 if isinstance(body, str) and marker_for(operation.pk) in body:
                     matches.append(row)
             if not has_next:
-                return matches
+                return canonical, matches
             page += 1
             if page > 1000:
                 raise RuntimeError("Issue pagination exceeded its safety limit.")
@@ -626,7 +635,7 @@ def reconcile_github_issue_create(operation_id: str) -> None:
         hint.recovery_reference = operation.recovery_reference
         attempts = operation.recovery_attempts
     try:
-        matches = _recover(hint)
+        canonical, matches = _recover(hint)
         if len(matches) != 1:
             _finish_recovery(
                 operation_id_uuid,
@@ -635,9 +644,14 @@ def reconcile_github_issue_create(operation_id: str) -> None:
                 attempts=attempts,
             )
             return
-        snapshot = parse_issue_payload(matches[0], error=IssueLinkError)
+        snapshot = parse_issue_payload(
+            matches[0],
+            repository_id=hint.repository_id,
+            repository_name=canonical,
+            error=IssueLinkError,
+        )
     except Exception as error:
-        logger.warning("GitHub issue recovery failed")
+        logger.warning("GitHub issue recovery failed: %s", type(error).__name__)
         retry_after = error.retry_after_seconds if isinstance(error, GitHubAPIError) else None
         _finish_recovery(
             operation_id_uuid,

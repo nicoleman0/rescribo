@@ -39,8 +39,17 @@ class EngineeringIssueSnapshot:
 
 
 def parse_issue_payload(
-    issue: Mapping[str, Any], *, error: type[Exception]
+    issue: Mapping[str, Any],
+    *,
+    repository_id: str,
+    repository_name: str,
+    error: type[Exception],
 ) -> EngineeringIssueSnapshot:
+    """Parse an issue reply read from `repository_name`.
+
+    GitHub names an issue's repository only by URL, so the caller passes the
+    identity it verified before the read and the reply must name the same one.
+    """
     issue_id = issue.get("id")
     number = issue.get("number")
     title = issue.get("title")
@@ -48,9 +57,7 @@ def parse_issue_payload(
     updated_at = issue.get("updated_at")
     url = issue.get("html_url")
     state_reason = issue.get("state_reason")
-    repository = issue.get("repository")
-    repository_id = repository.get("id") if isinstance(repository, Mapping) else None
-    repository_name = repository.get("full_name") if isinstance(repository, Mapping) else None
+    repository_url = issue.get("repository_url")
     if not (
         isinstance(issue_id, int)
         and not isinstance(issue_id, bool)
@@ -63,11 +70,7 @@ def parse_issue_payload(
         and state in {"open", "closed"}
         and isinstance(updated_at, str)
         and isinstance(url, str)
-        and isinstance(repository_id, int)
-        and not isinstance(repository_id, bool)
-        and repository_id > 0
-        and isinstance(repository_name, str)
-        and repository_name.count("/") == 1
+        and isinstance(repository_url, str)
     ):
         raise error("GitHub returned an incomplete issue payload.")
     if state_reason is not None and not isinstance(state_reason, str):
@@ -76,6 +79,8 @@ def parse_issue_payload(
         provider_time(updated_at)
     except (ValueError, OverflowError) as failure:
         raise error("GitHub returned an invalid issue timestamp.") from failure
+    if repository_url.lower() != f"https://api.github.com/repos/{repository_name}".lower():
+        raise error("GitHub returned an issue from another repository.")
     parsed_url = urlparse(url)
     if parsed_url.scheme != "https" or parsed_url.netloc.lower() != "github.com":
         raise error("GitHub returned a foreign issue URL.")
@@ -93,7 +98,7 @@ def parse_issue_payload(
         state=state,
         state_reason=state_reason,
         updated_at=updated_at,
-        repository_id=str(repository_id),
+        repository_id=repository_id,
         repository_name=repository_name,
     )
 
@@ -153,9 +158,12 @@ def resolve_issue_link(
         raise
     if "pull_request" in issue:
         raise IssueLinkError("Pull requests cannot be linked as issues.")
-    snapshot = parse_issue_payload(issue, error=IssueLinkError)
-    if snapshot.repository_id != expected_repository_id:
-        raise IssueLinkError("The issue belongs to a different repository identity.")
+    snapshot = parse_issue_payload(
+        issue,
+        repository_id=expected_repository_id,
+        repository_name=expected_repository,
+        error=IssueLinkError,
+    )
     if snapshot.number != number:
         raise IssueLinkError("GitHub returned a different issue number.")
     return snapshot
