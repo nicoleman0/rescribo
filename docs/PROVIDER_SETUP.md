@@ -160,6 +160,9 @@ The manifest route is from the 10 Oct 2026 check (#139).
      --data-urlencode "manifest=$(sed 's|https://rescribo.example|<origin>|g' docs/slack-app-manifest.json)"
    ```
 
+   The `apps.manifest.create` reply carries the app ID, client ID, client
+   secret, and signing secret.
+
    Or create the app in the Slack app settings UI from the edited manifest.
    From **Basic Information**, copy the app ID, client ID, client secret, and
    signing secret.
