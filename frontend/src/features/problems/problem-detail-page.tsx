@@ -88,7 +88,7 @@ export function ProblemDetailPage() {
   return (
     <div className="animate-page-enter grid max-w-5xl gap-6">
       <PageTitle title={problem.data?.title ?? 'Problem'} />
-      <Button asChild variant="ghost" size="sm" className={cn('w-fit')}>
+      <Button asChild variant="ghost" size="sm" className="w-fit">
         <Link to="/problems">
           <ArrowLeft aria-hidden="true" />
           Back to problems
@@ -219,7 +219,7 @@ function ConfirmFixForm({
       ) : null}
       <Button
         type="submit"
-        className={cn('w-fit')}
+        className="w-fit"
         disabled={
           mutation.isPending ||
           !draft.fix_note.trim() ||
@@ -411,7 +411,7 @@ function ProblemHeader({
           <Button
             ref={editButton}
             variant="outline"
-            className={cn('w-fit')}
+            className="w-fit"
             onClick={() => setEditing(true)}
           >
             Edit title and summary
@@ -553,7 +553,7 @@ function OwnerCard({
           />
         </div>
       ) : (
-        <p className={cn(!problem.owner && 'text-muted-foreground')}>
+        <p className={!problem.owner ? 'text-muted-foreground' : ''}>
           {problem.owner ? memberName(problem.owner) : 'No owner'}
         </p>
       )}
@@ -624,7 +624,7 @@ function OwnerForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9')}
+          className="h-9"
           disabled={mutation.isPending || owner === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Save owner'}

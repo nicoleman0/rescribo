@@ -14,7 +14,7 @@ import { ErrorState } from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ProblemPicker } from '@/features/problems/problem-picker'
-import { cn } from '@/lib/utils'
+
 import { memberName } from './report-format'
 import { useMembers } from './use-members'
 import { useReportMutation } from './use-report-mutation'
@@ -132,7 +132,7 @@ export function AssignReportForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9')}
+          className="h-9"
           disabled={mutation.isPending || assignee === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Save assignee'}
@@ -202,7 +202,7 @@ function GroupingActions({
         </p>
         <Button
           variant="outline"
-          className={cn('w-fit')}
+          className="w-fit"
           disabled={transition.isPending}
           onClick={() => transition.mutate('restore')}
         >

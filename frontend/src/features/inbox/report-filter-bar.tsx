@@ -99,14 +99,14 @@ export function ReportFilterBar({
             onChange={(event) => setCustomer(event.target.value)}
           />
         </div>
-        <Button type="submit" className={cn('h-10')}>
+        <Button type="submit" className="h-10">
           <Search aria-hidden="true" />
           <span className="max-md:sr-only">Search</span>
         </Button>
         <Button
           type="button"
           variant="outline"
-          className={cn('h-10 md:hidden')}
+          className="h-10 md:hidden"
           aria-expanded={open}
           aria-controls={FILTERS_ID}
           onClick={() => onOpenChange(!open)}

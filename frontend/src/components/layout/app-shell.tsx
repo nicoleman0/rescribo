@@ -57,7 +57,7 @@ function Navigation({ mobile = false }: { mobile?: boolean }) {
           }
         >
           <Icon aria-hidden="true" className="size-4 shrink-0" />
-          <span className={cn(mobile && 'truncate')}>{label}</span>
+          <span className={mobile ? 'truncate' : ''}>{label}</span>
         </NavLink>
       ))}
     </nav>

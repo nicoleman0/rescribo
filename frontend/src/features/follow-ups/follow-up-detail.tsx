@@ -102,7 +102,7 @@ export function FollowUpDetailPanel({
       className="grid content-start gap-4 rounded-card surface-raised p-4 shadow-elevation-2"
     >
       <div className="flex items-center justify-between gap-2">
-        <Button asChild variant="ghost" size="sm" className={cn('w-fit')}>
+        <Button asChild variant="ghost" size="sm" className="w-fit">
           <Link to={backTo}>
             <ArrowLeft aria-hidden="true" />
             Back to follow-ups
@@ -399,7 +399,7 @@ function DraftSection({
         customers or the GitHub issue is included.
       </p>
       <Button
-        className={cn('w-fit')}
+        className="w-fit"
         disabled={draft.isPending}
         onClick={() => draft.mutate(undefined)}
       >
@@ -962,7 +962,7 @@ function RecordOutcomeForm({
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
-          className={cn(layout === 'page' && 'hover:bg-primary')}
+          className={layout === 'page' ? 'hover:bg-primary' : ''}
           disabled={
             record.isPending || (state === 'no_response' && !note.trim())
           }
@@ -1153,7 +1153,7 @@ function RecipientForm({
         <Button
           type="submit"
           variant="outline"
-          className={cn('h-9')}
+          className="h-9"
           disabled={mutation.isPending || recipient === saved}
         >
           {mutation.isPending ? 'Saving…' : 'Change recipient'}

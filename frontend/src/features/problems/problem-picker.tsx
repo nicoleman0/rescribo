@@ -77,7 +77,7 @@ export function ProblemPicker({
         <Button
           type="button"
           variant="outline"
-          className={cn('h-9')}
+          className="h-9"
           disabled={disabled}
           onClick={search}
         >
