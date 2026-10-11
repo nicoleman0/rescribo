@@ -8,6 +8,7 @@ export type ReportListItem = Schemas['ReportListItem']
 export type ReportDetail = Schemas['ReportDetail']
 export type ReportPage = Schemas['PaginatedReportListItemList']
 export type MemberSummary = Schemas['MemberSummary']
+export type MemberDirectoryEntry = Schemas['MemberDirectoryEntry']
 export type ManualReportInput = Schemas['ManualReport']
 export type TriageState = Schemas['TriageStateEnum']
 export type SourceKind = Schemas['ReportSourceKindEnum']
@@ -42,7 +43,7 @@ export const getReport = (workspaceId: string, reportId: string) =>
   apiRequest<ReportDetail>(`workspaces/${workspaceId}/reports/${reportId}/`)
 
 export const listMembers = (workspaceId: string) =>
-  apiRequest<MemberSummary[]>(`workspaces/${workspaceId}/members/`)
+  apiRequest<MemberDirectoryEntry[]>(`workspaces/${workspaceId}/members/`)
 
 export async function createManualReport(
   workspaceId: string,

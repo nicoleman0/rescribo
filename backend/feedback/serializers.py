@@ -41,6 +41,10 @@ class MemberSummarySerializer(serializers.Serializer):
         return membership.user.full_name or "Unnamed member"
 
 
+class MemberDirectoryEntrySerializer(MemberSummarySerializer):
+    has_slack_link = serializers.BooleanField()
+
+
 class ProblemSummarySerializer(serializers.Serializer):
     id = serializers.UUIDField()
     title = serializers.CharField()

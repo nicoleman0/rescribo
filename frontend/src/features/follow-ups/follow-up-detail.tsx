@@ -1113,7 +1113,7 @@ function RecipientForm({
   )
   function submit(event: FormEvent) {
     event.preventDefault()
-    mutation.mutate(recipient)
+    mutation.mutate(recipient, { onError: () => void members.refetch() })
   }
   return (
     <form
@@ -1138,8 +1138,13 @@ function RecipientForm({
             onChange={(event) => setChoice(event.target.value)}
           >
             {members.data?.map((member) => (
-              <option key={member.id} value={member.id}>
+              <option
+                key={member.id}
+                value={member.id}
+                disabled={!member.has_slack_link && member.id !== saved}
+              >
                 {memberName(member)}
+                {member.has_slack_link ? '' : ' (no Slack link)'}
               </option>
             ))}
             {members.data &&

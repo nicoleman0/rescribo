@@ -30,6 +30,7 @@ from feedback.follow_ups import (
     record_outcome,
     search_follow_ups,
     send_notification_again,
+    with_slack_link,
     workspace_follow_ups,
 )
 from feedback.http import FeedbackPagination, feedback_error_response, invalid_request
@@ -92,7 +93,7 @@ from feedback.serializers import (
     LinkReportSerializer,
     ManualReportSerializer,
     MarkReviewedSerializer,
-    MemberSummarySerializer,
+    MemberDirectoryEntrySerializer,
     ProblemActivitySerializer,
     ProblemConflictSerializer,
     ProblemDetailSerializer,
@@ -182,10 +183,10 @@ class ReportDetailView(WorkspaceView):
 
 
 class MemberDirectoryView(WorkspaceView):
-    @extend_schema(responses={200: MemberSummarySerializer(many=True), **READ_ERRORS})
+    @extend_schema(responses={200: MemberDirectoryEntrySerializer(many=True), **READ_ERRORS})
     def get(self, request: Request, workspace_id: UUID) -> Response:
-        rows = workspace_directory(actor=self.membership)
-        return Response(MemberSummarySerializer(rows, many=True).data)
+        rows = with_slack_link(workspace_directory(actor=self.membership))
+        return Response(MemberDirectoryEntrySerializer(rows, many=True).data)
 
 
 class ProblemListView(ListModelMixin, WorkspaceView, GenericAPIView):
@@ -993,6 +994,7 @@ class FollowUpRecipientView(OwnerWorkspaceView):
             200: FollowUpDetailSerializer,
             400: ErrorSerializer,
             403: ErrorSerializer,
+            409: ErrorSerializer,
             **WRITE_ERRORS,
         },
     )

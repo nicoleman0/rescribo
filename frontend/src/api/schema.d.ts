@@ -1706,6 +1706,12 @@ export interface components {
          * @enum {string}
          */
         MatchSuggestionDecisionEnum: "pending" | "accepted" | "rejected";
+        MemberDirectoryEntry: {
+            /** Format: uuid */
+            id: string;
+            readonly display_name: string;
+            has_slack_link: boolean;
+        };
         MemberSummary: {
             /** Format: uuid */
             id: string;
@@ -3336,6 +3342,14 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
         };
     };
     workspaces_invitations_list: {
@@ -3641,7 +3655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MemberSummary"][];
+                    "application/json": components["schemas"]["MemberDirectoryEntry"][];
                 };
             };
             401: {

@@ -20,10 +20,12 @@ from accounts.session import SESSION_GENERATION_KEY
 from connections.models import Connection, ExternalIdentity
 from feedback.errors import (
     DeliveryNotReady,
+    InvalidReference,
     InvalidTransition,
     MessageRequired,
-    NotFound,
+    NoChanges,
     ReasonRequired,
+    RecipientNotLinked,
     VersionConflict,
 )
 from feedback.follow_ups import (
@@ -929,6 +931,18 @@ def _setup_recipient_change(
     return report, follow_up, owner, other
 
 
+def _assert_recipient_refusal_unchanged(follow_up: FollowUp, recipient_id: Any) -> None:
+    follow_up.refresh_from_db()
+    operation = current_notification(follow_up)
+    assert follow_up.recipient_id == recipient_id
+    assert operation is not None and operation.state == "draft"
+    assert not Activity.objects.filter(
+        record_type=Activity.RecordType.FOLLOW_UP,
+        record_id=follow_up.pk,
+        action=Activity.Action.RECIPIENT_CHANGED,
+    ).exists()
+
+
 def test_owner_can_reassign_follow_up_recipient(owner: Membership) -> None:
     report, follow_up, _, other = _setup_recipient_change(owner)
     updated = change_recipient(actor=owner, follow_up_id=follow_up.pk, new_recipient_id=other.pk)
@@ -961,16 +975,26 @@ def test_recipient_change_requires_slack_link_for_new_recipient(
     unlinked = make_membership(
         workspace=owner.workspace, user=make_user(email="unlinked@example.test")
     )
-    with pytest.raises(InvalidTransition):
+    with pytest.raises(RecipientNotLinked):
         change_recipient(actor=owner, follow_up_id=follow_up.pk, new_recipient_id=unlinked.pk)
+    _assert_recipient_refusal_unchanged(follow_up, owner.pk)
 
 
 def test_recipient_change_requires_active_member(owner: Membership) -> None:
     _, follow_up, _, _ = _setup_recipient_change(owner)
     revoked = make_membership(workspace=owner.workspace, user=make_user(email="r@example.test"))
     Membership.objects.filter(pk=revoked.pk).update(is_active=False, revoked_at=timezone.now())
-    with pytest.raises(NotFound):
+    with pytest.raises(InvalidReference) as error:
         change_recipient(actor=owner, follow_up_id=follow_up.pk, new_recipient_id=revoked.pk)
+    assert error.value.field == "new_recipient"
+    _assert_recipient_refusal_unchanged(follow_up, owner.pk)
+
+
+def test_recipient_change_to_current_recipient_is_no_changes(owner: Membership) -> None:
+    _, follow_up, _, _ = _setup_recipient_change(owner)
+    with pytest.raises(NoChanges):
+        change_recipient(actor=owner, follow_up_id=follow_up.pk, new_recipient_id=owner.pk)
+    _assert_recipient_refusal_unchanged(follow_up, owner.pk)
 
 
 def test_recipient_change_rejects_non_owner(owner: Membership) -> None:
@@ -1002,6 +1026,97 @@ def test_recipient_change_endpoint_round_trip(client: Client, owner: Membership)
     assert response.status_code == 200
     body = response.json()
     assert body["recipient"]["member"]["id"] == str(other.pk)
+
+
+def test_recipient_change_endpoint_reports_unlinked_member(
+    client: Client, owner: Membership
+) -> None:
+    _, follow_up, _, _ = _setup_recipient_change(owner)
+    unlinked = make_membership(
+        workspace=owner.workspace, user=make_user(email="unlinked-api@example.test")
+    )
+    response = post_json(
+        client, _recipient_url(owner, follow_up.pk), {"new_recipient_id": str(unlinked.pk)}
+    )
+    assert response.status_code == 400
+    assert response.json() == {
+        "detail": (
+            "This member has not linked a Slack account. Choose a member with a Slack link, "
+            "or ask this member to link Slack in Settings."
+        ),
+        "reason": "recipient_not_linked",
+        "field_errors": {},
+    }
+
+
+def test_recipient_change_endpoint_current_recipient_is_no_changes(
+    client: Client, owner: Membership
+) -> None:
+    _, follow_up, _, _ = _setup_recipient_change(owner)
+    response = post_json(
+        client, _recipient_url(owner, follow_up.pk), {"new_recipient_id": str(owner.pk)}
+    )
+    assert response.status_code == 409
+    assert response.json()["reason"] == "no_changes"
+    assert "current" in response.json()
+
+
+def test_recipient_change_endpoint_hides_foreign_membership_reference(
+    client: Client, owner: Membership
+) -> None:
+    _, follow_up, _, _ = _setup_recipient_change(owner)
+    foreign = make_membership(
+        workspace=make_workspace(slug="foreign-recipient"),
+        user=make_user(email="foreign-recipient@example.test"),
+    )
+    foreign_response = post_json(
+        client, _recipient_url(owner, follow_up.pk), {"new_recipient_id": str(foreign.pk)}
+    )
+    revoked = make_membership(
+        workspace=owner.workspace, user=make_user(email="revoked-recipient@example.test")
+    )
+    Membership.objects.filter(pk=revoked.pk).update(is_active=False, revoked_at=timezone.now())
+    revoked_response = post_json(
+        client, _recipient_url(owner, follow_up.pk), {"new_recipient_id": str(revoked.pk)}
+    )
+    expected = {"new_recipient_id": ["invalid_reference"]}
+    assert foreign_response.status_code == revoked_response.status_code == 400
+    assert (
+        foreign_response.json()["reason"]
+        == revoked_response.json()["reason"]
+        == ("invalid_reference")
+    )
+    assert (
+        foreign_response.json()["field_errors"]
+        == revoked_response.json()["field_errors"]
+        == (expected)
+    )
+    assert foreign_response.json() == revoked_response.json()
+
+
+def test_recipient_change_endpoint_accepts_linked_member_after_confirmed_outcome(
+    client: Client, owner: Membership
+) -> None:
+    _, follow_up, _, other = _setup_recipient_change(owner)
+    follow_up = record_outcome(
+        actor=owner,
+        follow_up_id=follow_up.pk,
+        state=FollowUp.ContactState.CONTACTED,
+        note="Spoke.",
+        expected_version=follow_up.version,
+    )
+    follow_up = record_outcome(
+        actor=owner,
+        follow_up_id=follow_up.pk,
+        state=FollowUp.ContactState.CONFIRMED,
+        note="Confirmed.",
+        expected_version=follow_up.version,
+    )
+    response = post_json(
+        client, _recipient_url(owner, follow_up.pk), {"new_recipient_id": str(other.pk)}
+    )
+    assert response.status_code == 200
+    assert response.json()["recipient"]["member"]["id"] == str(other.pk)
 
 
 def test_recipient_change_endpoint_cross_workspace(client: Client, owner: Membership) -> None:
