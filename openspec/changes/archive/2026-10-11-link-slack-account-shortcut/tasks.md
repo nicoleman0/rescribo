@@ -39,7 +39,7 @@ In each group, write the tests first and see them fail.
 
 ## 5. Screenshots
 
-- [x] 5.1 Take the after screenshots as the brief describes and build the comparison page. The demo workspace shows "Linking is disabled in the demo.", so no difference is expected. Say so in the PR.
+- [x] 5.1 Take the after screenshots as the brief describes and build the comparison page. The demo member is already linked, so the changed sentence does not appear in these screenshots. Say so in the PR.
 
 ## 6. Checks and archive
 

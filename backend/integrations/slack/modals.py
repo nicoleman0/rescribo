@@ -17,6 +17,15 @@ _TRUNCATION_NOTE = "\n[Preview truncated. The whole message is captured.]"
 _NO_TEXT_NOTE = "(This message has no text.)"
 
 
+def _link_code_input_block() -> dict[str, Any]:
+    return {
+        "type": "input",
+        "block_id": "slack_link_code",
+        "label": {"type": "plain_text", "text": "Product linking code"},
+        "element": {"type": "plain_text_input", "action_id": "value"},
+    }
+
+
 class SubmissionErrors(ValueError):
     """Maps block ids to visible error messages for `response_action: errors`."""
 
@@ -116,14 +125,7 @@ def build_capture_modal(
         },
     )
     if link_required:
-        blocks.append(
-            {
-                "type": "input",
-                "block_id": "slack_link_code",
-                "label": {"type": "plain_text", "text": "Product linking code"},
-                "element": {"type": "plain_text_input", "action_id": "value"},
-            }
-        )
+        blocks.append(_link_code_input_block())
     title_element: dict[str, Any] = {"type": "plain_text_input", "action_id": "title"}
     prefill = _prefill_title(shortcut.text)
     if prefill:
@@ -272,12 +274,7 @@ def build_link_modal(callback_id: str, code_lifetime: timedelta) -> dict[str, An
                     ),
                 },
             },
-            {
-                "type": "input",
-                "block_id": "slack_link_code",
-                "label": {"type": "plain_text", "text": "Product linking code"},
-                "element": {"type": "plain_text_input", "action_id": "value"},
-            },
+            _link_code_input_block(),
         ],
     }
 

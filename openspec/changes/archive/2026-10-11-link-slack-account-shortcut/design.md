@@ -28,7 +28,7 @@ Slack facts, from Slack's docs:
 - Sign in with Slack, one-time links, or a slash command.
 - A new scope, model, or migration.
 - Changing who may link, how codes are issued, or the unlink flow.
-- Removing the linking field from the capture modal (open question 2).
+- Removing the linking field from the capture modal.
 
 ## Decisions
 
@@ -51,9 +51,9 @@ Slack facts, from Slack's docs:
 
 6. **Route submissions by `view.callback_id`.** Add `submit_view(payload)` to `slack_inbound.py`: `link_rescribo_account` goes to `submit_link`, anything else to `submit_capture` as today. The view calls `submit_view` for `view_submission` and `start_link` for `shortcut`. The edit to `views.py` is confined to the dispatch `try` block in `SlackInteractionsView.post`: one changed call and one added branch. #148 edits `ChannelView` in the same file, about 180 lines above, so the rebase should be clean.
 
-7. **`build_link_modal()` and `parse_link_submission()` in `modals.py`.** The modal has one section of help text ("Generate a code in Rescribo settings, under Your Slack account. Codes last five minutes.") and one input block. The block id is `slack_link_code` with action id `value`, the same as the capture modal's field, so `_input_value` reads both. The five-minute figure comes from `LINK_CODE_LIFETIME`, passed in by the caller, so the number has one home.
+7. **`build_link_modal()` and `parse_link_submission()` in `modals.py`.** The modal has one section of help text ("Generate a code in Rescribo settings, under Your Slack account. Codes last 5 minutes.") and one input block. The block id is `slack_link_code` with action id `value`, the same as the capture modal's field, so `_input_value` reads both. The five-minute figure comes from `LINK_CODE_LIFETIME`, passed in by the caller, so the number has one home.
 
-8. **Capture modal unchanged, text updated.** `UNLINKED_TEXT` becomes: "Your Slack account is not linked to Rescribo. Generate a code in Rescribo settings, then run the "Link Rescribo account" shortcut." The capture modal's field and its tests stay. This is the default under open question 2.
+8. **Capture modal unchanged, text updated.** `UNLINKED_TEXT` becomes: "Your Slack account is not linked to Rescribo. Generate a code in Rescribo settings, then run the "Link Rescribo account" shortcut." The capture modal's field and its tests stay. This follows the maintainer decision to keep the capture field.
 
 9. **Settings text.** The linked-off sentence becomes: 'Link your Slack account to capture reports from Slack. Generate a code, run the "Link Rescribo account" shortcut in Slack, and paste the code.' Nothing else in the component changes.
 
@@ -62,10 +62,10 @@ Slack facts, from Slack's docs:
 ## Risks / Trade-offs
 
 - [The live app keeps the old manifest until the maintainer updates it] → Until then the shortcut does not exist in Slack and Settings names a shortcut members cannot find. Update the manifest before or with the deploy. Steps below.
-- [Two places take a linking code] → Both call `redeem_link_code`, and the block id and empty-code sentence are shared. Open question 2 can remove the second place later.
+- [Two places take a linking code] → Both call `redeem_link_code`, and the block id and empty-code sentence are shared. The capture field stays by maintainer decision; removing it would force unlinked members to restart their capture.
 - [A Slack user whose member was revoked cannot relink to another member] → `linked_membership` ignores the inactive member, so the code modal opens, and `redeem_link_code` then refuses with "This Slack account is already linked to another member." The capture modal behaves the same way today. This change keeps it and covers it with a scenario. Freeing the identity on revocation is a separate issue.
 - [A team with no active connection gets no feedback] → The app has no token to open a view. `start_capture` has the same limit.
-- [Before and after screenshots show no difference] → The demo workspace shows "Linking is disabled in the demo." The changed sentence is covered by the component test instead.
+- [Before and after screenshots show no difference] → The demo member is already linked, so the changed sentence does not appear in these screenshots. The component test covers it.
 
 ## Migration Plan
 

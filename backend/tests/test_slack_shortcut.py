@@ -2,11 +2,12 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from slack_sdk.models.blocks import SectionBlock
 
+from connections.slack_identity import LINK_CODE_LIFETIME
 from integrations.slack import (
     GlobalShortcut,
     InvalidSlackSignature,
@@ -234,10 +235,18 @@ def test_parse_global_shortcut_and_rejects_incomplete_payloads() -> None:
 
 
 def test_link_modal_and_submission() -> None:
-    view = build_link_modal("link_rescribo_account", __import__("datetime").timedelta(minutes=5))
+    view = build_link_modal("link_rescribo_account", LINK_CODE_LIFETIME)
     assert view["title"]["text"] == "Link Rescribo account"
     assert view["callback_id"] == "link_rescribo_account"
     assert block_by_id(view, "slack_link_code")["element"]["action_id"] == "value"
+    help_text = view["blocks"][0]["text"]["text"]
+    assert help_text.endswith("Codes last 5 minutes.")
+    alternate_lifetime = timedelta(minutes=7)
+    alternate_view = build_link_modal("link_rescribo_account", alternate_lifetime)
+    alternate_help_text = alternate_view["blocks"][0]["text"]["text"]
+    assert alternate_help_text.endswith(
+        f"Codes last {int(alternate_lifetime.total_seconds() // 60)} minutes."
+    )
     payload = {"view": {"state": {"values": {"slack_link_code": {"value": {"value": " code "}}}}}}
     assert parse_link_submission(payload) == "code"
     assert parse_link_submission({"view": {"state": {"values": {}}}}) == ""

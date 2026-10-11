@@ -10,7 +10,7 @@ A member can only reach the Slack linking code prompt by running "Submit custome
 - Submitting the modal redeems the code for the signed Slack actor and team, through the same rule the capture modal uses.
 - A member who is already linked sees a notice instead of the code field.
 - Settings and the "Account not linked" notice name the new shortcut.
-- The capture modal keeps its linking field for an unlinked member (open question 2 in `design.md`).
+- The capture modal keeps its linking field for an unlinked member, as recorded in design decision 2.
 - No new scope. No slash command. No Sign in with Slack.
 
 ## Capabilities
