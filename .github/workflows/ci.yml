@@ -45,6 +45,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+      - name: Worktree hook tests
+        run: python3 -m unittest discover -s .claude/skills/work-issues/hooks -p 'test_*.py'
       - uses: arduino/setup-task@v2
         with:
           version: "3.x"
