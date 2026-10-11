@@ -9,6 +9,8 @@ import {
 import type { ApiError } from '@/api/request'
 import { useWorkspace } from '@/components/auth/use-workspace'
 import { Field, TextareaField } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { useReportDraft, type ReportDraft } from './use-report-draft'
@@ -53,9 +55,6 @@ function ManualReportForm({
     },
   })
   const error = mutation.error as ApiError | null
-  const fieldError = (field: keyof ReportDraft) =>
-    error?.fieldErrors?.[field]?.[0]
-
   function submit(event: FormEvent) {
     event.preventDefault()
     mutation.mutate(prepareSubmission())
@@ -65,7 +64,7 @@ function ManualReportForm({
     id: `report-${name.replaceAll('_', '-')}`,
     name,
     value: draft[name],
-    error: fieldError(name),
+    error: fieldError(error, name),
     onChange: (event: { target: { value: string } }) =>
       update(name, event.target.value),
   })
@@ -141,7 +140,10 @@ function ManualReportForm({
           <Alert variant="destructive">
             <AlertTitle>Could not confirm report creation</AlertTitle>
             <AlertDescription>
-              {failureMessage(error)} Your draft is kept on this page.
+              <FormErrorMessage
+                error={error}
+                message={`${failureMessage(error)} Your draft is kept on this page.`}
+              />
             </AlertDescription>
           </Alert>
         ) : null}

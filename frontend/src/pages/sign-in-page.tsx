@@ -5,6 +5,8 @@ import { csrf, login, sessionQueryKey, type Session } from '@/api/auth'
 import type { ApiError } from '@/api/request'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { PageTitle } from '@/components/layout/page-title'
@@ -48,7 +50,7 @@ export function SignInPage() {
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          error={apiError?.fieldErrors?.email?.[0]}
+          error={fieldError(apiError, 'email')}
         />
         <Field
           id="password"
@@ -58,11 +60,13 @@ export function SignInPage() {
           required
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          error={apiError?.fieldErrors?.password?.[0]}
+          error={fieldError(apiError, 'password')}
         />
-        {mutation.isError ? (
+        {apiError ? (
           <Alert variant="destructive">
-            <AlertDescription>{apiError?.message}</AlertDescription>
+            <AlertDescription>
+              <FormErrorMessage error={apiError} />
+            </AlertDescription>
           </Alert>
         ) : null}
         <Button type="submit" disabled={mutation.isPending}>

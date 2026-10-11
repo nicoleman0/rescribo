@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { apiRequest } from '@/api/request'
+import { apiRequest, type ApiError } from '@/api/request'
 import { csrf, sessionQueryKey, type Session } from '@/api/auth'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
 import { PageTitle } from '@/components/layout/page-title'
@@ -37,6 +39,7 @@ export function ResetPasswordPage() {
       navigate('/inbox', { replace: true })
     },
   })
+  const redeemError = redeem.error as ApiError | null
   function submit(event: FormEvent) {
     event.preventDefault()
     if (password !== confirm) {
@@ -81,14 +84,7 @@ export function ResetPasswordPage() {
             required
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            error={
-              error ||
-              (
-                redeem.error as {
-                  fieldErrors?: Record<string, string[]>
-                } | null
-              )?.fieldErrors?.password?.[0]
-            }
+            error={error || fieldError(redeemError, 'password')}
           />
           <Field
             id="confirm"
@@ -99,7 +95,11 @@ export function ResetPasswordPage() {
             value={confirm}
             onChange={(event) => setConfirm(event.target.value)}
           />
-          {redeem.isError ? <p role="alert">{redeem.error.message}</p> : null}
+          {redeemError ? (
+            <p role="alert">
+              <FormErrorMessage error={redeemError} />
+            </p>
+          ) : null}
           <Button type="submit" disabled={redeem.isPending}>
             Save password
           </Button>

@@ -8,6 +8,8 @@ import {
   type Member,
 } from '@/api/settings'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import {
   ErrorState,
@@ -73,7 +75,7 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          error={create.error?.fieldErrors?.email?.join(' ')}
+          error={fieldError(create.error, 'email')}
           hint="Share the one-use link yourself. It expires after 48 hours."
         />
         <Button className="min-h-11 w-fit" disabled={create.isPending}>
@@ -82,7 +84,7 @@ export function MembersSettings({ workspaceId }: { workspaceId: string }) {
         {create.error ? (
           <ErrorState
             title="Invitation failed"
-            description={create.error.message}
+            description={<FormErrorMessage error={create.error} />}
           />
         ) : null}
         {create.data ? (

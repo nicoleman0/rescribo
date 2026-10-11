@@ -84,7 +84,7 @@ export function ErrorState({
   isRetrying = false,
 }: {
   title?: string
-  description?: string
+  description?: ReactNode
   onRetry?: () => void
   isRetrying?: boolean
 }) {
