@@ -22,7 +22,11 @@ import { memberName } from '@/features/inbox/report-format'
 import { cn } from '@/lib/utils'
 import { PageNav } from './page-nav'
 import { countLabel, issueStateLabel, reportCountLabel } from './problem-format'
-import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
+import {
+  NeedsReviewBadge,
+  NoReportsBadge,
+  ProblemStateBadge,
+} from './problem-state'
 import { Badge } from '@/components/ui/badge'
 import { PageTitle } from '@/components/layout/page-title'
 
@@ -217,6 +221,7 @@ function ProblemList({ page }: { page: ProblemPage }) {
               <span className="flex min-w-0 flex-wrap items-center gap-1">
                 {problem.needs_review ? <NeedsReviewBadge /> : null}
                 <ProblemStateBadge state={problem.state} />
+                <NoReportsBadge problem={problem} />
                 {problem.engineering_issue ? (
                   <Badge variant="outline">
                     GitHub #{problem.engineering_issue.number} ·{' '}

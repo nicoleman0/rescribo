@@ -48,7 +48,11 @@ import { problemCard, problemCardHeading } from './problem-card'
 import { reportCountLabel } from './problem-format'
 import { ProblemActivityList } from './problem-activity'
 import { ProblemNextStep } from './problem-next-step'
-import { NeedsReviewBadge, ProblemStateBadge } from './problem-state'
+import {
+  NeedsReviewBadge,
+  NoReportsBadge,
+  ProblemStateBadge,
+} from './problem-state'
 import { GitHubIssueSection } from './github-issue-section'
 import { ReportAssigneeEditor } from './report-assignee-editor'
 import { ReleasePicker } from './release-picker'
@@ -387,6 +391,7 @@ function ProblemHeader({
     <header className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <ProblemStateBadge state={problem.state} />
+        <NoReportsBadge problem={problem} />
         {problem.needs_review ? <NeedsReviewBadge /> : null}
         <span className="font-mono text-[11px] text-muted-foreground">
           {reportCountLabel(problem.report_count)} · v{problem.version}

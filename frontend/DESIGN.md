@@ -181,6 +181,9 @@ colours and shadows and applies no animated transition.
 - A row's title keeps at least 12rem. When the badges do not fit beside
   it, they move under the title, left-aligned, and wrap. No breakpoint is
   involved, so the rule holds beside the sidebar and on phones.
+- An open or in-progress problem with no linked reports shows `NoReportsBadge`
+  after its state in the warning tone. Settled problems do not show it, and the
+  report count stays visible.
 
 ## Follow-up page
 
