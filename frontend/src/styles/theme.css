@@ -315,9 +315,6 @@
   --color-sidebar-accent-foreground: var(--foreground);
   --color-sidebar-border: var(--border);
   --color-sidebar-ring: var(--ring);
-}
-
-:root {
-  --sidebar-width: 14rem;
-  --sidebar-width-icon: 4.25rem;
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
 }

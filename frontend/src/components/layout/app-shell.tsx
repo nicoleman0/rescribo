@@ -1,10 +1,11 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { CircleDot, Inbox, MessageSquareText, Settings } from 'lucide-react'
 import {
   Link,
   NavLink,
   Outlet,
+  matchPath,
   useLocation,
   useNavigate,
 } from 'react-router-dom'
@@ -69,6 +70,7 @@ function Navigation({
     },
     { label: 'Settings', path: '/settings', icon: Settings },
   ]
+  const { pathname } = useLocation()
   if (mobile)
     return (
       <nav
@@ -90,12 +92,8 @@ function Navigation({
             <Icon aria-hidden="true" className="size-4 shrink-0" />
             <span className="truncate">{label}</span>
             {count !== undefined && count > 0 ? (
-              <span
-                role="status"
-                aria-live="polite"
-                aria-label={`${count} ${countLabel}`}
-                className="absolute right-1/2 top-1 -translate-x-[-1.8rem] rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground"
-              >
+              <span className="absolute right-1/2 top-1 -translate-x-[-1.8rem] rounded-full bg-primary px-1.5 text-[10px] leading-4 text-primary-foreground">
+                <span className="sr-only">{`${count} ${countLabel}`}</span>
                 {count > 99 ? '99+' : count}
               </span>
             ) : null}
@@ -110,6 +108,7 @@ function Navigation({
           <SidebarMenuItem key={path} className="relative">
             <SidebarMenuButton
               asChild
+              isActive={Boolean(matchPath({ path, end: false }, pathname))}
               tooltip={label}
               className="h-11 min-h-11 rounded-control px-3 text-sm group-data-[collapsible=icon]:size-11! group-data-[collapsible=icon]:p-0"
             >
@@ -121,12 +120,8 @@ function Navigation({
               </NavLink>
             </SidebarMenuButton>
             {count !== undefined && count > 0 ? (
-              <SidebarMenuBadge
-                role="status"
-                aria-live="polite"
-                aria-label={`${count} ${countLabel}`}
-                className="right-2 group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:translate-x-1/3"
-              >
+              <SidebarMenuBadge className="right-2 font-mono group-data-[collapsible=icon]:!flex group-data-[collapsible=icon]:right-0 group-data-[collapsible=icon]:top-0 group-data-[collapsible=icon]:translate-x-1/3">
+                <span className="sr-only">{`${count} ${countLabel}`}</span>
                 {count > 99 ? '99+' : count}
               </SidebarMenuBadge>
             ) : null}
@@ -158,7 +153,7 @@ function ShellContents({
   signOutPending: boolean
   signOutError?: string
 }) {
-  const { open } = useSidebar()
+  const { open, isMobile } = useSidebar()
   return (
     <>
       {/* First in the document so it is the first Tab stop. */}
@@ -168,17 +163,14 @@ function ShellContents({
       >
         Skip to main content
       </a>
-      {!isGallery ? (
+      {!isGallery && !isMobile ? (
         <Sidebar
           aria-label="Application sidebar"
           collapsible="icon"
           role="complementary"
+          className="border-border"
         >
-          <SidebarHeader
-            aria-label="Workspace"
-            className="h-16 justify-center border-b border-border px-3"
-            role="navigation"
-          >
+          <SidebarHeader className="h-16 justify-center border-b border-border px-3">
             {open ? (
               <Link
                 to="/inbox"
@@ -294,6 +286,12 @@ export function AppShell({ children }: { children?: ReactNode }) {
     <TooltipProvider>
       <SidebarProvider
         open={sidebarOpen}
+        style={
+          {
+            '--sidebar-width': '14rem',
+            '--sidebar-width-icon': '4.25rem',
+          } as CSSProperties
+        }
         onOpenChange={(open) => {
           writeSidebarOpen(open)
           setSidebarOpen(open)

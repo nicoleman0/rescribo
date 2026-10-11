@@ -71,7 +71,15 @@ export function Breadcrumbs() {
         <BreadcrumbItem className="shrink-0">
           {isDetail ? (
             <BreadcrumbLink asChild>
-              <Link to={section === 'Problems' ? '/problems' : '/follow-ups'}>
+              <Link
+                to={
+                  section === 'Problems'
+                    ? '/problems'
+                    : section === 'Inbox'
+                      ? '/inbox'
+                      : '/follow-ups'
+                }
+              >
                 {section}
               </Link>
             </BreadcrumbLink>

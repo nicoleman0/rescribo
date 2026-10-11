@@ -35,6 +35,30 @@ test('shows identity, theme choices, and sign out in the menu', async () => {
   expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
 })
 
+test('marks the selected theme and calls sign out', async () => {
+  const user = userEvent.setup()
+  const onSignOut = vi.fn()
+  localStorage.setItem('rescribo-theme', 'light')
+  render(
+    <UserMenu
+      session={session}
+      workspaceName="Northwind"
+      isDemo={false}
+      onSignOut={onSignOut}
+    />,
+  )
+  const trigger = screen.getByRole('button', {
+    name: /User menu for Ada Lovelace/,
+  })
+  trigger.focus()
+  await user.keyboard('{Enter}')
+  expect(
+    await screen.findByRole('menuitemradio', { name: 'Dark' }),
+  ).toHaveAttribute('aria-checked', 'false')
+  await user.click(screen.getByRole('menuitem', { name: 'Sign out' }))
+  expect(onSignOut).toHaveBeenCalledOnce()
+})
+
 test('shows the demo notice only for demo workspaces', async () => {
   const user = userEvent.setup()
   const view = render(

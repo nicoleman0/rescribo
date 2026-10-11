@@ -36,7 +36,7 @@ Menu buttons keep `min-h-11` on desktop, in the expanded sidebar and in the rail
 
 ### D4. Collapse state
 
-The shell controls `open` and saves it in `localStorage` under `rescribo-sidebar`, the same way `src/lib/theme.ts` saves the theme. With no saved value the sidebar is expanded. The line in `sidebar.tsx` that writes the `sidebar_state` cookie is removed: the app has no server rendering to read it, and a cookie would ride on every API request. This is the one edit to a registry file. Say so in the PR. The shadcn Ctrl/Cmd+B shortcut stays.
+The shell controls `open` and saves it in `localStorage` under `rescribo-sidebar`, the same way `src/lib/theme.ts` saves the theme. With no saved value the sidebar is expanded. The line in `sidebar.tsx` that writes the `sidebar_state` cookie is removed: the app has no server rendering to read it, and a cookie would ride on every API request. The unused `outline` variant is also removed because it reads an undefined token. These are the two edits to `sidebar.tsx`. Say both in the PR. Sidebar width constants stay at registry defaults and are overridden through `SidebarProvider`'s `style` prop. The shadcn Ctrl/Cmd+B shortcut stays.
 
 The toggle is the shadcn `SidebarTrigger` at the left of the header, desktop only.
 
@@ -80,7 +80,7 @@ Each request returns a page of up to 25 rows to get one number. That is what the
 Display:
 
 - The count is a `SidebarMenuBadge`, a sibling of the link, in Geist Mono. The link's accessible name stays "Inbox" or "Follow-ups".
-- The badge has screen-reader text: "3 new reports", "2 follow-ups need approval".
+- The badge has visually hidden text beside the number: "3 new reports", "2 follow-ups need approval". It is not a live region.
 - Zero, loading, and a failed request show no badge. The shell shows no error state for counts; the pages own those.
 - Above 99 the badge reads "99+".
 - In the rail and on the phone tab bar the same count sits on the corner of the icon.
@@ -124,6 +124,8 @@ Append one block at the end of `frontend/src/styles/theme.css`, an `@theme inlin
 | `--color-sidebar-accent-foreground` | `--foreground` |
 | `--color-sidebar-border` | `--border` |
 | `--color-sidebar-ring` | `--ring` |
+| `--color-popover` | `--card` |
+| `--color-popover-foreground` | `--foreground` |
 
 `--color-sidebar` exists already. `--selected` is today's hover and active row colour, so the rows look the same. If `sidebar.tsx` reads a bare `var(--sidebar-*)` anywhere, add that alias in the same block's `:root` companion and nothing else. No other line of the file changes.
 

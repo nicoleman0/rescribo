@@ -22,9 +22,9 @@ import {
 } from '@/components/ui/tooltip'
 import { PanelLeftIcon } from 'lucide-react'
 
-const SIDEBAR_WIDTH = '14rem'
+const SIDEBAR_WIDTH = '16rem'
 const SIDEBAR_WIDTH_MOBILE = '18rem'
-const SIDEBAR_WIDTH_ICON = '4.25rem'
+const SIDEBAR_WIDTH_ICON = '3rem'
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 
 type SidebarContextProps = {

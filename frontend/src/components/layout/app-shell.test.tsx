@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -36,6 +36,7 @@ function renderShell(path = '/inbox', withWorkspace = false) {
               <Route element={<AppShell />}>
                 <Route path="*" element={<h1>Page</h1>} />
               </Route>
+              <Route path="/sign-in" element={<h1>Sign in</h1>} />
             </Routes>
           </MemoryRouter>
         </WorkspaceProvider>
@@ -45,6 +46,7 @@ function renderShell(path = '/inbox', withWorkspace = false) {
             <Route element={<AppShell />}>
               <Route path="*" element={<h1>Page</h1>} />
             </Route>
+            <Route path="/sign-in" element={<h1>Sign in</h1>} />
           </Routes>
         </MemoryRouter>
       )}
@@ -74,6 +76,9 @@ test('shows all exact navigation names and keeps the skip link first', () => {
     'tabindex',
     '-1',
   )
+  expect(
+    document.querySelector('[data-slot="sidebar-menu-button"][href="/inbox"]'),
+  ).toHaveAttribute('data-active', 'true')
 })
 
 test('the user menu holds sign out and the UI gallery has no menu', async () => {
@@ -91,6 +96,54 @@ test('the user menu holds sign out and the UI gallery has no menu', async () => 
   expect(
     await screen.findByRole('menuitem', { name: 'Sign out' }),
   ).toBeInTheDocument()
+})
+
+test('sign out calls logout and navigates to sign in', async () => {
+  const user = userEvent.setup()
+  const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    if (String(input).includes('/auth/logout/')) {
+      return new Response(null, { status: 204 })
+    }
+    return new Response(JSON.stringify(session), { status: 200 })
+  })
+  vi.stubGlobal('fetch', fetcher)
+  renderShell()
+  const trigger = screen.getAllByRole('button', {
+    name: /User menu for Ada Lovelace/,
+  })[0]
+  trigger.focus()
+  await user.keyboard('{Enter}')
+  await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
+  await waitFor(() =>
+    expect(
+      screen.getByRole('heading', { name: 'Sign in' }),
+    ).toBeInTheDocument(),
+  )
+  expect(fetcher).toHaveBeenCalledWith(
+    '/api/auth/logout/',
+    expect.objectContaining({ method: 'POST' }),
+  )
+})
+
+test('failed sign out exposes an alert', async () => {
+  const user = userEvent.setup()
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes('/auth/logout/')
+        ? new Response(JSON.stringify({ detail: 'Logout failed.' }), {
+            status: 500,
+          })
+        : new Response(JSON.stringify(session), { status: 200 }),
+    ),
+  )
+  renderShell()
+  screen
+    .getAllByRole('button', { name: /User menu for Ada Lovelace/ })[0]
+    .focus()
+  await user.keyboard('{Enter}')
+  await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('Logout failed.')
 })
 
 test('the gallery shows no user menu or Sign out', () => {
@@ -139,4 +192,81 @@ test('collapsing hides the wordmark and stores the rail preference', async () =>
     0,
   )
   expect(localStorage.getItem('rescribo-sidebar')).toBe('false')
+})
+
+test('shows navigation counts with accessible labels and keeps link names exact', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.includes('/auth/session/')
+        ? session
+        : { count: url.includes('/reports/') ? 3 : 2, results: [] }
+      return new Response(JSON.stringify(body), { status: 200 })
+    }),
+  )
+  renderShell('/inbox', true)
+  await waitFor(() =>
+    expect(screen.getAllByText('3 new reports').length).toBeGreaterThan(0),
+  )
+  expect(
+    screen.getAllByText('2 follow-ups need approval').length,
+  ).toBeGreaterThan(0)
+  expect(screen.getAllByRole('link', { name: 'Inbox' }).length).toBeGreaterThan(
+    0,
+  )
+  expect(
+    screen.getAllByRole('link', { name: 'Follow-ups' }).length,
+  ).toBeGreaterThan(0)
+  expect(screen.queryByRole('status')).not.toBeInTheDocument()
+})
+
+test.each([
+  ['zero', 0, '0'],
+  ['large', 120, '99+'],
+])('renders the %s report count correctly', async (_name, count, label) => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      const body = url.includes('/auth/session/')
+        ? session
+        : { count: url.includes('/reports/') ? count : 0, results: [] }
+      return new Response(JSON.stringify(body), { status: 200 })
+    }),
+  )
+  renderShell('/inbox', true)
+  if (count === 0) {
+    await waitFor(() => expect(screen.queryAllByRole('status')).toHaveLength(0))
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+  } else {
+    await waitFor(() =>
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0),
+    )
+    expect(screen.getAllByText('120 new reports')).toHaveLength(2)
+  }
+})
+
+test('does not show count badges when the count request fails', async () => {
+  const fetcher = vi.fn(async () => new Response('failed', { status: 500 }))
+  vi.stubGlobal('fetch', fetcher)
+  renderShell('/inbox', true)
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3))
+  expect(
+    document.querySelectorAll('[data-slot="sidebar-menu-badge"]'),
+  ).toHaveLength(0)
+})
+
+test('does not show count badges while count requests are pending', () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => new Promise<Response>(() => undefined)),
+  )
+  const view = renderShell('/inbox', true)
+  expect(
+    document.querySelectorAll('[data-slot="sidebar-menu-badge"]'),
+  ).toHaveLength(0)
+  expect(screen.queryByText(/new reports/)).not.toBeInTheDocument()
+  view.unmount()
+  view.client.clear()
 })

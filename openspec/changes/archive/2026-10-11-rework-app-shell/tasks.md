@@ -6,7 +6,7 @@ Paths are from the repository root. Decisions D1 to D12 are in `design.md`. The 
 
 - [x] 1.1 From `frontend`, run `npx shadcn add sidebar dropdown-menu breadcrumb` per D1. Answer no to every overwrite prompt. Verify: `git status` shows new files only (`sidebar.tsx`, `sheet.tsx`, `tooltip.tsx`, `dropdown-menu.tsx`, `breadcrumb.tsx` in `frontend/src/components/ui/`, and `frontend/src/hooks/use-mobile.ts`); `git diff --stat` shows no change to `package.json`, `package-lock.json`, or any existing file in `components/ui/`. If a dependency was added, stop and ask.
 - [x] 1.2 Append the alias block from D10 at the end of `frontend/src/styles/theme.css`. Verify: `git diff frontend/src/styles/theme.css` shows only added lines at the end, each value is `var(--...)`, and `npm run test -- theme` passes.
-- [x] 1.3 In `frontend/src/components/ui/sidebar.tsx`, remove the `sidebar_state` cookie write and its two constants (D4). Change nothing else in the file. Verify: `grep -n cookie frontend/src/components/ui/sidebar.tsx` finds nothing.
+- [x] 1.3 In `frontend/src/components/ui/sidebar.tsx`, remove the `sidebar_state` cookie write and unused `outline` variant (D4 and raw-colour answer). Keep width constants at registry defaults; set issue widths through `SidebarProvider`'s `style` prop. Verify: no cookie reference remains.
 
 ## 2. Tracer: the shadcn Sidebar with today's behaviour
 
@@ -52,4 +52,4 @@ Paths are from the repository root. Decisions D1 to D12 are in `design.md`. The 
 
 - Archive this change in the PR that completes #198 (`/opsx:archive`).
 - The PR closes #198 and #176. Milestone: H. Product-grade UI.
-- PR body lists: the reworded DESIGN.md lines, the one edit to `sidebar.tsx`, the appended `theme.css` block, and the e2e files touched.
+- PR body lists: the reworded DESIGN.md lines, both edits to `sidebar.tsx`, the appended `theme.css` block, and the e2e files touched.

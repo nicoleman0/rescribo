@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { THEMES, useThemePreference, type ThemePreference } from '@/lib/theme'
 import { cn } from '@/lib/utils'
+import { touchTarget } from './touch-target'
 
 type Props = {
   session: Session
@@ -53,7 +54,7 @@ export function UserMenu({
           className={cn(
             'flex h-auto min-h-11 w-full justify-start gap-3 px-2 text-left',
             collapsed && 'justify-center px-0',
-            phone && 'touchTarget size-11 w-11 md:hidden',
+            phone && `${touchTarget} size-11 w-11 min-w-[44px] md:hidden`,
           )}
         >
           <Avatar className="size-8 shrink-0">
@@ -77,30 +78,24 @@ export function UserMenu({
         side={phone ? 'bottom' : 'top'}
         className="w-64 shadow-elevation-3"
       >
-        <DropdownMenuLabel className="whitespace-normal text-foreground">
+        <DropdownMenuLabel className="whitespace-normal">
           <span className="block truncate">{name}</span>
-          <span className="block truncate font-normal text-foreground">
+          <span className="block truncate font-normal">
             {session.user.email}
           </span>
           {isDemo ? (
-            <span className="mt-2 block font-normal text-foreground">
-              {demoDescription}
-            </span>
+            <span className="mt-2 block font-normal">{demoDescription}</span>
           ) : null}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-foreground">Theme</DropdownMenuLabel>
+        <DropdownMenuLabel>Theme</DropdownMenuLabel>
         <DropdownMenuRadioGroup
           aria-label="Theme"
           value={preference}
           onValueChange={(value) => setPreference(value as ThemePreference)}
         >
           {[...THEMES, 'system'].map((theme) => (
-            <DropdownMenuRadioItem
-              key={theme}
-              value={theme}
-              className="text-foreground"
-            >
+            <DropdownMenuRadioItem key={theme} value={theme}>
               {theme[0].toUpperCase() + theme.slice(1)}
             </DropdownMenuRadioItem>
           ))}
