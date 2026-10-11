@@ -146,6 +146,10 @@ Install the app on the disposable repository from the app's GitHub
 
 ## 8. Create the Slack App from the manifest
 
+For an existing app, apply the updated manifest in **App Manifest** in the app
+settings or with `apps.manifest.update`. The manifest declares both the
+message shortcut and the global **Link Rescribo account** shortcut.
+
 The manifest route is from the 10 Oct 2026 check (#139).
 
 1. On the [Slack app settings page](https://api.slack.com/apps), under

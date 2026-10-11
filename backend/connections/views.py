@@ -446,8 +446,10 @@ class SlackInteractionsView(SlackRequestView):
         try:
             if payload.get("type") == "message_action":
                 slack_inbound.start_capture(payload)
+            elif payload.get("type") == "shortcut":
+                slack_inbound.start_link(payload)
             elif payload.get("type") == "view_submission":
-                return Response(slack_inbound.submit_capture(payload))
+                return Response(slack_inbound.submit_view(payload))
             elif payload.get("type") == "block_actions":
                 return self._handle_block_actions(payload)
         except ShortcutPayloadError, ValueError:

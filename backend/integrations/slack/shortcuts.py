@@ -1,4 +1,4 @@
-"""Message shortcut payload parsing."""
+"""Slack message and global shortcut payload parsing."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -28,6 +28,14 @@ class MessageShortcut:
 
     def source_key(self) -> str:
         return f"{self.team_id}:{self.channel_id}:{self.message_ts}"
+
+
+@dataclass(frozen=True)
+class GlobalShortcut:
+    callback_id: str
+    team_id: str
+    actor_id: str
+    trigger_id: str
 
 
 def _require_string(payload: Mapping[str, Any], *path: str | int) -> str:
@@ -76,5 +84,17 @@ def parse_message_shortcut(payload: Mapping[str, Any]) -> MessageShortcut:
         message_ts=_require_string(message, "ts"),
         thread_ts=thread_ts if isinstance(thread_ts, str) and thread_ts else None,
         text=text,
+        trigger_id=_require_string(payload, "trigger_id"),
+    )
+
+
+def parse_global_shortcut(payload: Mapping[str, Any]) -> GlobalShortcut:
+    """Parse a global `shortcut` payload."""
+    if payload.get("type") != "shortcut":
+        raise ShortcutPayloadError("Interaction is not a global shortcut.")
+    return GlobalShortcut(
+        callback_id=_require_string(payload, "callback_id"),
+        team_id=_require_string(payload, "team", "id"),
+        actor_id=_require_string(payload, "user", "id"),
         trigger_id=_require_string(payload, "trigger_id"),
     )

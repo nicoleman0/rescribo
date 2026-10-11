@@ -20,6 +20,12 @@
         "type": "message",
         "callback_id": "submit_customer_feedback",
         "description": "Capture this message as a customer feedback report"
+      },
+      {
+        "name": "Link Rescribo account",
+        "type": "global",
+        "callback_id": "link_rescribo_account",
+        "description": "Link your Slack user to your Rescribo account"
       }
     ]
   },

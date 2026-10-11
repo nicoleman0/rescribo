@@ -1,8 +1,8 @@
-"""Capture modal building and submission parsing for the message shortcut flow."""
+"""Slack capture and account-linking modal builders and submission parsers."""
 
 from collections.abc import Mapping
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 from slack_sdk.models.blocks import SectionBlock
@@ -251,3 +251,40 @@ def build_notice_modal(title: str, text: str, *, link_url: str | None = None) ->
         "close": {"type": "plain_text", "text": "Close"},
         "blocks": blocks,
     }
+
+
+def build_link_modal(callback_id: str, code_lifetime: timedelta) -> dict[str, Any]:
+    minutes = max(1, int(code_lifetime.total_seconds() // 60))
+    return {
+        "type": "modal",
+        "callback_id": callback_id,
+        "title": {"type": "plain_text", "text": "Link Rescribo account"},
+        "submit": {"type": "plain_text", "text": "Link account"},
+        "close": {"type": "plain_text", "text": "Cancel"},
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "plain_text",
+                    "text": (
+                        f"Generate a code in Rescribo settings, under Your Slack account. "
+                        f"Codes last {minutes} minutes."
+                    ),
+                },
+            },
+            {
+                "type": "input",
+                "block_id": "slack_link_code",
+                "label": {"type": "plain_text", "text": "Product linking code"},
+                "element": {"type": "plain_text_input", "action_id": "value"},
+            },
+        ],
+    }
+
+
+def parse_link_submission(payload: Mapping[str, Any]) -> str:
+    view = payload.get("view")
+    state = view.get("state") if isinstance(view, Mapping) else None
+    values = state.get("values") if isinstance(state, Mapping) else None
+    result = _input_value(values if isinstance(values, Mapping) else {}, "slack_link_code")
+    return result.strip()
