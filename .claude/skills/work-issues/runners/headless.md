@@ -17,7 +17,7 @@ Each worker turn is one command, run from the worktree. It blocks until the work
 | Start and prompt | Run `scripts/start-worker.sh <issue> <role> <backend>`, then use its printed `session` in the first-turn command with the role prompt. |
 | Wait | The turn is over when the command exits. Run it in the background when your harness supports that. |
 | Read | Send each turn's output to `<path>/.claude/turns/<role>-<n>.log` and read the end of it. |
-| End | Nothing to do. The next phase starts a new session. |
+| End | Nothing to do. The next phase starts a new session, and so does each fix round. |
 
 Codex:
 - `codex exec resume` forgets the model, so pass the routing table's `-m` and `-c` flags again.

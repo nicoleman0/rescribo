@@ -26,6 +26,10 @@ else
   printf 'path=%s\n' "$path"
 fi
 
+# Workers never push. Only the main checkout can reach the remote.
+git config extensions.worktreeConfig true
+git -C "$path" config --worktree remote.origin.pushurl workers-do-not-push
+
 state_args=(init "$issue" "branch=$branch" "path=$path")
 if [ "${HERDR_ENV:-}" = 1 ]; then
   state_args+=(runner=herdr "pane=$pane")

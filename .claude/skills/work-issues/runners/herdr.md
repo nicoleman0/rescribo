@@ -12,7 +12,7 @@ Use this when the coordinator runs inside Herdr (`HERDR_ENV=1`). Each worker is 
 | Read | `herdr agent read <name> --source recent-unwrapped --lines 80` |
 | End | send `/exit` to the agent |
 
-- The script names agents `<role>-<issue>`. Herdr rejects `<issue>-<role>` because names must start with a lowercase letter.
+- The script names agents `<role>-<issue>`. A name is free again once its agent has exited, so fix rounds reuse `implementer-<issue>` and `reviewer-<issue>`. Herdr rejects `<issue>-<role>` because names must start with a lowercase letter.
 - Multi-line prompt text does not submit reliably. Put the content in a file and prompt with one line that points to it.
 - `wait-agents.sh` returns when a named agent is `idle`, `done`, `blocked`, or `unknown`. On Claude Code, run it in the background so you are re-invoked when it returns.
 

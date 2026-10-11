@@ -1,6 +1,6 @@
 ---
 name: work-issues
-description: How the coordinator session delivers GitHub issues in this repo. Each issue gets its own worktree, a planner that proposes the OpenSpec change and stops, and an implementer on Claude, Codex, or opencode that applies the reviewed change and commits it. Use whenever the user asks to work on, implement, or run one or more issues, or a milestone's next steps.
+description: How the coordinator session delivers GitHub issues in this repo. Each issue gets its own worktree, a planner that proposes the OpenSpec change and stops, an implementer on Claude, Codex, or opencode that applies the reviewed change and commits it, and a reviewer on another provider that checks the commit against the change. Use whenever the user asks to work on, implement, or run one or more issues, or a milestone's next steps.
 ---
 
 # Work issues
@@ -8,11 +8,12 @@ description: How the coordinator session delivers GitHub issues in this repo. Ea
 You are the coordinator. You run on the main checkout. You never implement an issue yourself. Your work is the judgment and the glue:
 - splitting the work,
 - writing briefs,
-- reviewing plans and PRs,
+- reviewing plans,
+- acting on review verdicts,
 - relaying questions to the maintainer,
 - merging and cleaning up.
 
-Agents do the planning and the building. Scripts do the mechanical steps. Paths below are relative to this skill's folder unless they start with `.claude/`.
+Agents do the planning, the building, and the review of the diff. Scripts do the mechanical steps. Paths below are relative to this skill's folder unless they start with `.claude/`.
 
 ## Runner
 
@@ -24,7 +25,7 @@ The steps below say start, prompt, wait, read, and end. The runner file gives th
 
 ## Routing
 
-The maintainer starts the coordinator on the main checkout, on Claude or Codex. Workers get their role from `roles/planner.md` or `roles/implementer.md`, so every backend follows the same instructions. Each backend's model and effort are set in one place: the Claude profiles in `.claude/agents/`, the Codex coordinator profile below, and this table for the others.
+The maintainer starts the coordinator on the main checkout, on Claude or Codex. Workers get their role from `roles/planner.md`, `roles/implementer.md`, or `roles/reviewer.md`, so every backend follows the same instructions. Each backend's model and effort are set in one place: the Claude profiles in `.claude/agents/`, the Codex coordinator profile below, and this table for the others.
 
 | Role | Backend | Flags |
 |---|---|---|
@@ -35,6 +36,8 @@ The maintainer starts the coordinator on the main checkout, on Claude or Codex. 
 | Implementer | Claude, `issue-implementer` profile | `--agent issue-implementer --permission-mode auto` |
 | Implementer | Codex, `gpt-6-luna`, medium | `-m gpt-6-luna -c model_reasoning_effort=medium --approve-for-me` |
 | Implementer | opencode, Kimi K3 | `--model opencode-go/kimi-k3 --auto` |
+| Reviewer | Claude, `issue-reviewer` profile | `--agent issue-reviewer --permission-mode auto` |
+| Reviewer | Codex, `gpt-5.6-sol`, high | `-m gpt-5.6-sol -c model_reasoning_effort=high --approve-for-me` |
 
 The planner runs on the coordinator's backend. Spread implementers across the providers to share the usage:
 - Use the provider the maintainer names.
@@ -42,9 +45,14 @@ The planner runs on the coordinator's backend. Spread implementers across the pr
 - Skip a provider when more than about 70% of its five-hour window is used. Claude's status line shows usage used, and Codex's shows usage left ("5h N% left"). There is no known way to read opencode's usage from a script, so ask the maintainer when in doubt.
 - Say which backend each issue got.
 
-Each phase starts a fresh session. The implementer reads the plan from disk, not from the planner's context, so the expensive context is not carried into the cheap phase.
+The reviewer runs on a provider other than the implementer's, so no model grades its own work:
+- Implementer on Claude: review on Codex.
+- Implementer on Codex or opencode: review on Claude.
+- `start-worker.sh` refuses a reviewer on the implementer's provider. When the other provider is not installed or is over the usage threshold, set `SWITCHYARD_SAME_PROVIDER=1` for that command and tell the maintainer.
 
-Workers never push. Implementers commit and write `.claude/pr-body.md`, then stop, so nothing reaches the remote before the coordinator has reviewed it. The coordinator pushes and opens the PR.
+Each phase starts a fresh session, fix rounds included. Every handoff is a file in the worktree: the brief, the answers, the change, and the review. A worker reads them from disk, not from another session's context or from your summary, so the expensive context is not carried into the cheap phase.
+
+Workers never push. Implementers commit and write `.claude/pr-body.md`, then stop, so nothing reaches the remote before the review passes. `setup-worktree.sh` disables the push URL in each worktree, so a push works only from the main checkout. The coordinator pushes from there and opens the PR.
 
 Escalate a single issue only when the plan review shows judgment the plan cannot capture. To escalate, run that issue's implementer on Claude with `--agent issue-implementer --model opus --effort high`, and tell the maintainer you did it.
 
@@ -82,31 +90,40 @@ Issue records live in `.claude/state/<issue>.json` in the main checkout. `setup-
    - what is out of scope and which issue owns it,
    - any known traps.
    `.claude/` is git-ignored apart from agents, skills, and commands.
+
+   Record the owned paths for the scope check: `python3 scripts/state.py set <issue> "owned=<path> <path>"`. Separate them with spaces and end folders with `/`.
 3. **Plan.** Start the planner with its routing-table flags, then prompt it: `Read .claude/skills/work-issues/roles/planner.md, then .claude/brief.md, and plan issue #<issue>.` The role path is in the prompt because only Claude loads it from a profile.
 4. **Review the plan.**
-   - Check it against the code and the specs. Verify any claim it makes about the code or the data before you rely on it.
+   - Read the change on disk: the proposal, the design, the spec delta, and the tasks. The planner's last message is only its list of questions.
+   - Check the change against the code and the specs. Verify any claim it makes about the code or the data before you rely on it.
    - Answer what you can.
    - Bring product decisions to the maintainer: anything that changes behaviour the issue does not settle, or that reaches past the paths the issue owns.
    - Write the answers to `<path>/.claude/answers/plan.md`.
 5. **Implement.** End the planner's session. Pick the implementer backend from the routing table and start it in the same worktree. Then prompt it: `Read .claude/skills/work-issues/roles/implementer.md, then .claude/brief.md and .claude/answers/, and implement the change for issue #<issue>.`
 6. **Watch.** Wait for the worker, then read its report. Answer it with a file in `.claude/answers/` and a one-line prompt that points to the file.
+7. **Review.** When the implementer reports its commit, end its session. Start the reviewer on the other provider with its routing-table flags, then prompt it: `Read .claude/skills/work-issues/roles/reviewer.md and follow it for issue #<issue>.` Wait for it, then read the newest file in `<path>/.claude/reviews/`.
+
+## Act on the verdict
+
+The reviewer checks the diff against the change. Read its review, not the diff. Open the diff only to rule on a finding the implementer disputes or a question the reviewer raises.
+
+- **`Verdict: pass`:** open the PR.
+- **`Verdict: changes requested`:** end the reviewer's session and start a new implementer session. Prompt it: `Read .claude/skills/work-issues/roles/implementer.md, then .claude/brief.md, .claude/answers/, and the newest file in .claude/reviews/, and fix the findings for issue #<issue>.` Do not restate the findings. Then run step 7 again with a new reviewer session.
+- **A second `changes requested`:** stop. Bring the open findings to the maintainer.
+- **Questions for the coordinator:** answer what you can in `.claude/answers/`, and bring product decisions to the maintainer. If an answer changes the change, run a fix round.
 
 ## Open the PR
 
-When the implementer reports its commit, check the scope and code below first. Then, from its worktree:
-1. Push with `git push -u origin <branch>`. On Codex, request the push outside the sandbox, so the prompt goes to the maintainer.
-2. Fill the Screenshots section of `.claude/pr-body.md`. If your harness can publish a page, as Claude Code's Artifact tool can, publish `<path>/.claude/shots/compare.html` and put the link there. Otherwise write that the comparison page was not published, and give its local path.
-3. Run `gh pr create --milestone <milestone> --body-file <path>/.claude/pr-body.md`.
+After `Verdict: pass`:
+1. Run `scripts/check-scope.sh <issue>`. It lists the files the branch changed outside its owned paths. The change's files under `openspec/` are always in scope. Rule on each listed file: accept an appended section in a shared doc, and send anything else back as a fix round.
+2. From the main checkout, push with `git push -u origin <branch>`. On Codex, request the push outside the sandbox, so the prompt goes to the maintainer.
+3. Fill the Review section of `.claude/pr-body.md` with the reviewer's backend, the verdict, and the number of rounds.
+4. Fill the Screenshots section. If your harness can publish a page, as Claude Code's Artifact tool can, publish `<path>/.claude/shots/compare.html` and put the link there. Otherwise write that the comparison page was not published, and give its local path.
+5. Run `gh pr create --head <branch> --milestone <milestone> --body-file <path>/.claude/pr-body.md`.
 
-## PR review
+## Several PRs
 
-Before the maintainer sees a PR, check:
-- **Scope:** `git diff --stat origin/main...origin/<branch>`. Only owned paths should change, plus appended sections in shared docs.
-- **Writing:** the PR body and commits follow the writing rules in `AGENTS.md`.
-- **Code:** check DRY, by looking for knowledge copied from a shared component. Check that removed or reordered behaviour was intended. Check that the tests cover the change.
-- **Screenshots:** the comparison page shows every affected screen in light and dark. Check the local file when it was not published.
-
-Send fixes back to the implementer as an answers file. With several PRs in flight, merge every branch into a throwaway worktree off `origin/main`. Resolve the append-only conflicts with `scripts/union-resolve.py`, run every check there, then remove that worktree.
+With several PRs in flight, merge every branch into a throwaway worktree off `origin/main`. Resolve the append-only conflicts with `scripts/union-resolve.py`, run every check there, then remove that worktree.
 
 ## Merge and clean up
 
@@ -116,5 +133,5 @@ For each PR still open:
 1. Rebase its branch in its worktree onto `origin/main`.
 2. Run `scripts/union-resolve.py` on each conflicted append-only file. In zsh, pass the files as separate arguments, not one variable.
 3. Run every check in `AGENTS.md`.
-4. Push with `--force-with-lease`.
+4. From the main checkout, push with `git push --force-with-lease origin <branch>`.
 5. Wait for CI, then merge it and tear it down the same way.
