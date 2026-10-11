@@ -90,24 +90,51 @@ test('keeps the choice for the page when storage is blocked', () => {
   expect(document.documentElement.dataset.theme).toBe('dark')
 })
 
-test('every theme block defines every colour token the light theme does', () => {
-  const block = (selector: RegExp) =>
-    new Set(
-      [...(themeCss.match(selector)?.[1] ?? '').matchAll(/(--[\w-]+):/g)].map(
-        (m) => m[1],
+const block = (selector: RegExp) =>
+  new Map(
+    [
+      ...(themeCss.match(selector)?.[1] ?? '').matchAll(
+        /(--[\w-]+):\s*([^;]+);/g,
       ),
-    )
-  const light = block(/^:root \{([^}]*)\}/m)
-  const colourTokens = [...light].filter((token) => {
-    const value = themeCss.match(new RegExp(`${token}:\\s*([^;]+);`))?.[1] ?? ''
-    return /#|rgb|var\(--border\)/.test(value)
+    ].map((match) => [match[1], match[2].trim()]),
+  )
+
+const themeBlocks = () => [
+  block(/^:root \{([^}]*)\}/m),
+  ...THEMES.filter((theme) => theme !== 'light').map((theme) =>
+    block(new RegExp(`:root\\[data-theme='${theme}'\\] \\{([^}]*)\\}`)),
+  ),
+]
+
+test('every theme block defines every colour token the light theme does', () => {
+  const blocks = themeBlocks()
+  const light = blocks[0]
+  const colourTokens = [...light.keys()].filter((token) => {
+    const value = light.get(token) ?? ''
+    return /#|rgb|oklch|var\(--border\)/.test(value)
   })
   expect(colourTokens.length).toBeGreaterThan(30)
-  for (const theme of THEMES.filter((t) => t !== 'light')) {
-    const tokens = block(
-      new RegExp(`:root\\[data-theme='${theme}'\\] \\{([^}]*)\\}`),
-    )
+  for (const tokens of blocks.slice(1)) {
     expect(colourTokens.filter((token) => !tokens.has(token))).toEqual([])
+  }
+})
+
+test('every theme block sets the palette variables', () => {
+  const paletteVariables = ['--brand-hue', '--brand-chroma', '--neutral-tint']
+  for (const tokens of themeBlocks()) {
+    expect(paletteVariables.filter((token) => !tokens.has(token))).toEqual([])
+  }
+})
+
+test('status tones and destructive are fixed values', () => {
+  for (const tokens of themeBlocks()) {
+    const fixedTokens = [...tokens.keys()].filter(
+      (token) => token.startsWith('--tone-') || token === '--destructive',
+    )
+    expect(fixedTokens.length).toBeGreaterThan(0)
+    for (const token of fixedTokens) {
+      expect(tokens.get(token), token).toMatch(/^#[0-9a-f]{6}$/)
+    }
   }
 })
 

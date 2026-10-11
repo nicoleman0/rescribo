@@ -33,6 +33,15 @@ as they rise, and dark shadows are stronger because they read less.
 To add a theme, add its token block and its name to `THEMES` in
 `src/lib/theme.ts`, then give it a picker option in `theme-settings.tsx`.
 
+## Palette
+
+Each theme block sets three palette variables: `--brand-hue`, `--brand-chroma`,
+and `--neutral-tint`. The surface, border, text, and brand tokens are OKLCH
+values built from them. Each token keeps its own lightness, and a neutral
+token takes a whole-number multiple of the tint. Status tones and
+`--destructive` are fixed hex values and do not follow the palette.
+`e2e/theme-tokens.spec.ts` pins the default palette to its original colours.
+
 ## Status tones
 
 Every status uses `StatusBadge` with one of six tones: a tinted pill, a dot,
