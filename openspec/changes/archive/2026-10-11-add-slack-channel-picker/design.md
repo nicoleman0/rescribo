@@ -38,7 +38,7 @@ The maintainer still needs to verify before merge: a public channel the bot is n
 - `client.member_channels(credential) -> list[dict]`: follows `response_metadata.next_cursor` and stops at `MAX_LISTED_CHANNELS = 1000` (five pages of `PAGE_SIZE = 200`). It returns the raw channel dicts and whether more remained.
 - `client.channel_info(credential, channel_id) -> dict`: `conversations.info`, the call `channel_details` makes today.
 - Both go through `_directory_client(credential)`, which returns the fake under `RESCRIBO_SLACK_FAKE_DELIVERY`, the same switch `_delivery_client` uses. `collect_member_channels(client)` contains the shared pagination loop used by the feasibility script.
-- `settings.channel_options(credential) -> dict`: maps each channel to `channel_id`, `name`, `is_private`, and `unavailable_reason` (empty when it can be chosen), sorted by name, with `truncated`. It turns a 429 into `SetupError("slack_rate_limited", "Slack asked us to wait. Try again in a minute.")`.
+- `settings.channel_options(credential) -> dict`: returns eligible channels and Slack Connect channels, mapped to `channel_id`, `name`, `is_private`, and `unavailable_reason` (empty when it can be chosen), sorted by name, with `truncated`. It omits rows whose reason is not `externally_shared`, including archived channels, DMs, and group DMs. It turns a 429 into `SetupError("slack_rate_limited", "Slack asked us to wait. Try again in a minute.")`.
 - `settings.channel_details` calls `client.channel_info` and is otherwise unchanged.
 
 ### D3. Rate limits and large lists
@@ -67,7 +67,7 @@ The maintainer still needs to verify before merge: a public channel the bot is n
 Errors use the existing `ErrorSerializer` shape through `translated`: 400 with `not_connected`, `demo_workspace`, `slack_rate_limited`, `credential_unavailable`, `missing_scopes`, or `provider_unavailable`. The `POST` is unchanged.
 
 ### D6. Frontend
-- New `allowed-channels.tsx` in `features/settings` holds the whole "Allowed Slack channels" section: heading, help text, allowed list with Remove, and the form. `connection-settings.tsx` passes `workspaceId`, `workspaceName`, `connection`, `action`, and `busy`. The "Connection update failed" box stays where it is, on `action.error`.
+- New `allowed-channels.tsx` in `features/settings` holds the whole "Allowed Slack channels" section: heading, help text, allowed list with Remove, and the form. `connection-settings.tsx` passes `workspaceId`, `workspaceName`, `connection`, `action`, and `busy`. The "Connection update failed" box renders within this section on `action.error`.
 - The list is a `useQuery` with key `['slack-channels', workspaceId]`, `staleTime` 30 seconds, enabled only for an owner with an active Slack connection outside the demo. The key sits outside `settingsKey`, so unrelated settings actions do not call Slack. Refetch on window focus stays on: an owner who invites the bot in Slack and comes back sees the channel.
 - The control is `SelectField` (the shared `NativeSelect`). Options read `#name · Public` or `#name · Private`. Unavailable options are `disabled` and read `#name · Slack Connect, not allowed`. Channels already in `connection.channels` are filtered out. A native select has type-ahead and needs no new component.
   - Alternative: a filter box with a result list. Rejected for now: a new pattern for a list that is short in practice.
@@ -77,8 +77,8 @@ Errors use the existing `ErrorSerializer` shape through `translated`: 400 with `
   - empty (no channel left to choose): "The app is not in any other channel. In Slack, invite it to a channel, then load the list again." with a "Refresh channel list" button;
   - ready: the select, the confirmation box, "Allow channel", and a "Refresh channel list" outline button;
   - `truncated`: one muted line, "Showing the first 1,000 channels."
-- The form has its own `channelConsent` state and checkbox with the existing sentence, "Reports captured from approved channels will be visible to all members of {workspace}." It resets after a channel is allowed, so each channel is confirmed. The connect form keeps `consent`.
-- The section renders after the facts and job counts and before the connect form.
+- The form has its own `channelConsent` state and checkbox labelled "Reports captured from this channel will be visible to all members of {workspace}." It submits the current checkbox value and resets after a channel is allowed, so each channel is confirmed. The connect and reconnect form keeps its existing consent box and wording.
+- A shared `Separator` visually divides the allowed-channels section from Reconnect, Check status, and Disconnect actions. The section renders after the facts and job counts and before those connection actions.
 - The owner screenshot script `.claude/shots/owner-shots.mjs` (git-ignored, written by the planner) waits for the heading "Allowed Slack channels". Keep that heading.
 
 ### D7. Fakes
@@ -100,19 +100,19 @@ Each needs the coordinator's yes. The tasks mark them.
 
 None of these can run in CI. Mocked tests cover the same paths with canned responses.
 
-1. With a real bot token and the five current scopes, `users.conversations` with `types=public_channel,private_channel` answers `ok`, not `missing_scope`.
-2. A private channel the bot is in appears, with `is_private: true`.
+1. Verified by the coordinator on 11 Oct 2026 with the feasibility bot token and five current scopes: `users.conversations` with `types=public_channel,private_channel` answered `ok`, not `missing_scope`.
+2. Verified in that call: a public and private channel the bot is in appeared; the private channel carried `is_private: true`.
 3. A public channel the bot is not in does not appear.
 4. A Slack Connect channel the bot is in appears with `is_ext_shared: true` and shows as unavailable.
 5. Picking a public and a private channel allows both.
 6. Remove the bot from a listed channel without reloading, then submit it: the server rejects it.
 7. Not checkable without a bot in more than 200 channels: live pagination. Mocked only.
 
-If check 1 fails, switch `client.member_channels` to `conversations.list` with an `is_member` filter and rerun.
+Checks 3 to 7 remain for the maintainer before merge. Pagination beyond 200 is covered by mocked tests only. If check 1 fails, switch `client.member_channels` to `conversations.list` with an `is_member` filter and rerun.
 
 ## Questions
 
-Q1 to Q4 are open with the maintainer. The spec delta and tasks follow the recommended option of each.
+Q1 to Q4 were resolved in `.claude/answers/plan.md`: show Slack Connect as unavailable and omit archived channels; remove the raw ID field; use a second consent box in the channel form; place the section above the connection actions.
 
 - Q1. Channels the bot is in that are not eligible. (a) Show Slack Connect channels as unavailable with the reason, leave archived out. (b) Leave all of them out. (c) Show both kinds as unavailable. Recommended: (a).
 - Q2. The raw ID field. (a) Remove it. (b) Keep it behind an "Enter a channel ID instead" control. (c) Keep it visible under the list. Recommended: (a).

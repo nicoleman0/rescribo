@@ -15,7 +15,7 @@ Write each group's tests first and see them fail.
 - [x] 1.3 `backend/tests/test_settings_providers.py`, with `integrations.slack.client.decrypt` and `WebClient` patched as the existing channel test does:
   - `member_channels` calls `users_conversations` with `types="public_channel,private_channel"`, `exclude_archived=True`, `limit=200`, follows `next_cursor` across two pages, and stops when it is empty;
   - it stops at 1,000 channels and reports that more remained;
-  - `channel_options` sorts by name, marks an `is_ext_shared` channel `externally_shared`, leaves the rest with an empty reason, and carries `truncated`;
+  - `channel_options` sorts eligible channels and Slack Connect channels by name, marks the latter `externally_shared`, drops archived channels, DMs, and group DMs, and carries `truncated`;
   - a `SlackApiError` whose response has `status_code == 429` becomes `SetupError` with code `slack_rate_limited`;
   - with `RESCRIBO_SLACK_FAKE_DELIVERY=True`, `channel_options("fake")` returns the three fake channels without decrypting, `channel_details("fake", "C0E2EPUBLIC")` passes, `channel_details("fake", "C0E2ESHARED")` raises `ChannelRejected`, and an unknown ID raises `SlackApiError`.
 - [x] 1.4 New `backend/integrations/slack/fake_channels.py` with `FakeDirectoryClient` (D7).
@@ -28,7 +28,7 @@ Write each group's tests first and see them fail.
 - [x] 2.1 `backend/tests/test_settings.py`:
   - owner `GET channels/` with `connections.providers.channel_options` patched returns 200 with `channels` and `truncated`;
   - a member gets 403 and a user of another workspace gets the same answer the existing foreign-workspace test expects, and `channel_options` is not called in either case;
-  - a disconnected or errored Slack connection answers 400 `not_connected` without calling `channel_options`;
+  - separate disconnected and errored Slack connection rows answer 400 `not_connected` without calling `channel_options`;
   - `channel_options` raising `SetupError("slack_rate_limited", ...)` answers 400 with that reason, and raising `SlackApiError` answers 400 `provider_unavailable`;
   - no `AllowedChannel` row changes on any of these;
   - submit-time check: `POST channels/` with an ID the list never held still goes through `channel_details`, and a `ChannelRejected` answers 400 `channel_ineligible` with no row written.
@@ -42,7 +42,7 @@ Write each group's tests first and see them fail.
 - [x] 3.1 `frontend/src/features/settings/settings-page.test.tsx`, as owner with the active Slack connection, stubbing `GET ${base}channels/`:
   - the select offers `#key-accounts · Private` and `#support-requests · Public`, the Slack Connect option is disabled and names the reason, and an already allowed channel is not offered;
   - "Allow channel" is disabled until a channel is chosen and the box in the channel form is ticked; ticking the connect form's box does not enable it;
-  - submitting posts `{ version, channel_id, consent: true }`, and afterwards the box is unticked;
+  - submitting posts `{ version, channel_id, consent: true }` through a successful POST response, and afterwards the box is unticked;
   - no textbox named "Slack channel ID" exists;
   - while the list is pending, a status named "Loading Slack channels" shows;
   - a 400 with `slack_rate_limited` shows its detail and "Try again", and pressing it refetches;
@@ -62,7 +62,7 @@ Write each group's tests first and see them fail.
 
 ## 5. Screenshots and checks
 
-- [x] 5.1 After screenshots: reseed with `seed_demo` and `seed_test_accounts --json`, start the dev servers on 8148 and 5148, then run `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/shots.mjs .claude/shots/after` and `SHOTS_BASE=http://127.0.0.1:5148 node .claude/shots/owner-shots.mjs .claude/shots/after`. The demo visitor is a member, so only the `settings-owner-*` shots show this change. Build `.claude/shots/compare.html` with `.claude/skills/work-issues/scripts/compare.py`. Stop the servers.
+- [x] 5.1 After screenshots: reseed with `seed_demo` and `seed_test_accounts --json`, start the dev servers on 8148 and 5148, then run `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/shots.mjs .claude/shots/after` and `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/owner-shots.mjs .claude/shots/after`. The demo visitor is a member, so only the `settings-owner-*` shots show this change. Include desktop and phone shots in light and dark themes in the comparison page. Stop the servers.
 - [x] 5.2 `npx @fission-ai/openspec validate --all --strict` passes.
 - [x] 5.3 `task check test build schema-check` passes with PostgreSQL and Redis running.
 - [x] 5.4 `RESCRIBO_E2E_API_PORT=8148 RESCRIBO_E2E_FRONTEND_PORT=5148 task e2e` passes.

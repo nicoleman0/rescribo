@@ -100,6 +100,20 @@ def test_channel_list_requires_active_slack_connection(client: Client, actor: Me
     listing.assert_not_called()
 
 
+@pytest.mark.parametrize("status", [Connection.Status.DISCONNECTED, Connection.Status.ERROR])
+def test_channel_list_rejects_inactive_slack_connection(
+    client: Client, actor: Membership, status: str
+) -> None:
+    connection = connect(actor)
+    connection.status = status
+    connection.save(update_fields=["status"])
+    with patch("connections.providers.channel_options") as listing:
+        response = client.get(url(actor, "channels/"))
+    assert response.status_code == 400
+    assert response.json()["reason"] == "not_connected"
+    listing.assert_not_called()
+
+
 def test_channel_list_is_scoped_to_owner_workspace(client: Client, actor: Membership) -> None:
     other = make_membership(
         workspace=make_workspace(slug="other-channel-list"),

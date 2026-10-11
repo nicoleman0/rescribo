@@ -513,6 +513,7 @@ test('channel picker offers named channels with unavailable choices disabled', a
         ],
         truncated: false,
       }),
+    [`POST ${base}channels/`]: () => json({}),
   })
   render()
   const select = await screen.findByLabelText('Slack channel')
@@ -570,6 +571,7 @@ test('channel picker offers named channels with unavailable choices disabled', a
       ),
     ).toBe(true),
   )
+  await vi.waitFor(() => expect(channelConsent).not.toBeChecked())
 })
 
 test('channel picker sends the current consent checkbox value', async () => {
