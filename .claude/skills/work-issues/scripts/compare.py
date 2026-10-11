@@ -4,12 +4,13 @@ Usage: python3 .claude/skills/work-issues/scripts/compare.py spec.json out.html
 spec.json: {"before": dir, "after": dir, "title": str, "heading": str,
             "intro": str, "meta": str,
             "screens": [[shot-name, caption, note], ...]}
-shot-name is a file stem from shots.mjs, e.g. "inbox-report-desktop-dark".
+shot-name is a file stem from shots.mjs, e.g. "home-desktop-dark".
 """
 
 import base64
 import html
 import json
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,24 +24,14 @@ def img(directory: str, name: str) -> str:
     src = Path(directory) / f"{name}.png"
     out = tmp / f"{Path(directory).name}-{name}.jpg"
     width = "390" if "phone" in name else "1100"
-    subprocess.run(
-        [
-            "sips",
-            "-s",
-            "format",
-            "jpeg",
-            "-s",
-            "formatOptions",
-            "62",
-            "--resampleWidth",
-            width,
-            str(src),
-            "--out",
-            str(out),
-        ],
-        check=True,
-        capture_output=True,
-    )
+    if shutil.which("sips"):
+        command = ["sips", "-s", "format", "jpeg", "-s", "formatOptions", "62",
+                   "--resampleWidth", width, str(src), "--out", str(out)]
+    elif shutil.which("magick"):
+        command = ["magick", str(src), "-resize", f"{width}x", "-quality", "62", str(out)]
+    else:
+        sys.exit("compare.py needs sips (macOS) or ImageMagick (magick) to shrink the screenshots")
+    subprocess.run(command, check=True, capture_output=True)
     return "data:image/jpeg;base64," + base64.b64encode(out.read_bytes()).decode()
 
 

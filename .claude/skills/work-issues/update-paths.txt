@@ -1,0 +1,7 @@
+.claude/agents
+.claude/skills/work-issues
+.github/ISSUE_TEMPLATE
+.github/workflows/ci.yml
+.gitignore
+AGENTS.md
+openspec/config.yaml

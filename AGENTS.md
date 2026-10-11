@@ -1,21 +1,37 @@
 # Working in this repository
 
+## Workflow
+
 - Use the GitHub milestones and issues as the source of truth for implementation breakdown and delivery order.
 - Product behaviour lives in `openspec/specs/`. Change it through an OpenSpec change in `openspec/changes/` (`/opsx:propose`, `/opsx:apply`, `/opsx:archive`), exactly one change per GitHub issue. If work is too big for one PR, split the issue, not the change. Archive the change in the PR that completes it.
 - New work: open a short GitHub issue (problem and milestone) first, then propose a change that names it. After proposing, add `Change: openspec/changes/<name>` as the first line of the issue body with `gh issue edit`. Use `/opsx:explore` while an idea is still vague. Acceptance criteria live in the change's scenarios and tasks; the issue links to the change instead of repeating them.
-- Deliver issues with the `work-issues` skill (`.claude/skills/work-issues/`). The coordinator session plans the work and reviews it. A planner agent proposes each change and an implementer agent builds it, in its own Herdr worktree. The skill holds the roles and the routing of models, effort, and providers (Claude, Codex, opencode).
+- Deliver issues with the `work-issues` skill (`.claude/skills/work-issues/`). The coordinator session plans the work and reviews it. A planner agent proposes each change and an implementer agent builds it, in its own worktree. The skill holds the roles and the routing of models, effort, and providers (Claude, Codex, opencode).
 - A session asked to deliver issues, on Claude or Codex, is the coordinator: read `.claude/skills/work-issues/SKILL.md` and follow it.
 - Skip OpenSpec when no observable behaviour changes: bugs where code diverges from the spec, tooling, infrastructure, refactors. Use an issue and PR, or a change with `skip_specs: true`.
 - Run `npx @fission-ai/openspec validate --all --strict` when specs or changes are edited.
+- The workflow files follow [Switchyard](https://github.com/nicoleman0/switchyard); `.claude/skills/work-issues/VERSION` names the release. Take a later release with `python3 .claude/skills/work-issues/scripts/update-switchyard.py` on a new branch. Rescribo's own parts are `hooks/`, the Isolation, Screenshots, and Shared files sections of `brief-template.md`, and `scripts/shots.mjs`. Send any other change to the skill upstream first.
+
+## Project
+
 - Prioritise reusability, modularity, DRY, and maintainability. Use clear ownership boundaries, shared workflow rules, and typed contracts.
 - Keep provider-specific behaviour in integration modules. Keep HTTP handlers and background tasks thin.
 - Do not add business logic to environment health checks or the development status page.
 - Use `uv` from the repository root and `npm` from `frontend`. Commit both lockfiles.
 - Never commit `.env`, provider credentials, real customer reports, or unredacted webhook fixtures.
+- Shared services: PostgreSQL and Redis run in Docker from the main checkout. Start them with `task services`.
 - Run `task check test build schema-check` with PostgreSQL and Redis running. Run `task e2e` for browser/API changes and `task worker-check` for worker wiring changes.
 - Regenerate OpenAPI and TypeScript contracts with `task schema` when the API changes.
 - Database changes require migrations. Cross-workspace access checks belong in both application code and tests.
 - Use real services for integration checks. Distinguish mocked tests from live provider verification.
 - Production is `compose.prod.yaml` behind Caddy ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)). The `dev` images and development servers are for local use only.
-- Frontend visual rules and shared component ownership are documented in [frontend/DESIGN.md](frontend/DESIGN.md).
+- Frontend visual rules and shared component ownership are documented in [frontend/DESIGN.md](frontend/DESIGN.md). Read it before frontend work.
 - Tune the matcher on `practice` batches in `eval/matching/` only. Do not read or score `exam` batches while choosing features, weights, or thresholds.
+
+## Writing
+
+These apply to commits, PR bodies, issues, docs, and code comments.
+
+- Use plain, short sentences.
+- No AI attribution: no "Generated with" footers and no co-author trailers for an assistant.
+- No em-dashes.
+- Comments say why, not what.

@@ -13,6 +13,26 @@ permissions:
   contents: read
 
 jobs:
+  # Switchyard's checks on the workflow's own files.
+  workflow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Lint shell scripts
+        run: git ls-files -z '.claude/skills/work-issues/*.sh' | xargs -0 shellcheck
+      - name: Compile Python scripts
+        run: git ls-files -z '.claude/skills/work-issues/*.py' | xargs -0 python3 -m py_compile
+      - name: Check JavaScript syntax
+        run: git ls-files -z '.claude/skills/work-issues/*.mjs' | xargs -0 -n 1 node --check
+      - name: Test the scripts
+        run: python3 -m unittest discover -s .claude/skills/work-issues/scripts -p 'test_*.py'
+      - name: Validate OpenSpec
+        run: npx --yes @fission-ai/openspec validate --all --strict
+
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 20

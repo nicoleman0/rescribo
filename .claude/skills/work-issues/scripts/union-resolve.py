@@ -1,7 +1,7 @@
 """Resolve append-only merge conflicts by keeping both sides, upstream first.
 
 Use only on files where parallel branches each append their own section, such
-as frontend/DESIGN.md and openspec/specs/*/spec.md.
+as openspec/specs/*/spec.md.
 Usage: python3 union-resolve.py <file>...
 """
 
