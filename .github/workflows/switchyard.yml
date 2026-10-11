@@ -1,0 +1,43 @@
+# Checks the workflow's own files. The release updater owns this file, so put
+# your project's checks in a workflow of their own.
+name: Switchyard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Lint shell scripts
+        run: git ls-files -z '.claude/skills/work-issues/*.sh' | xargs -0 shellcheck
+      - name: Compile Python scripts
+        run: git ls-files -z '.claude/skills/work-issues/*.py' | xargs -0 python3 -m py_compile
+      - name: Check JavaScript syntax
+        run: git ls-files -z '.claude/skills/work-issues/*.mjs' | xargs -0 -n 1 node --check
+      - name: Test the scripts
+        run: python3 -m unittest discover -s .claude/skills/work-issues/scripts -p 'test_*.py'
+      - name: Check release version
+        if: github.repository == 'nicoleman0/switchyard'
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          version = Path('.claude/skills/work-issues/VERSION').read_text().strip()
+          changelog = Path('CHANGELOG.md').read_text()
+          releases = re.findall(r'^## \[(\d+\.\d+\.\d+)\] - ', changelog, re.MULTILINE)
+          if not releases:
+              raise SystemExit('CHANGELOG.md has no released version heading')
+          if version != releases[0]:
+              raise SystemExit(f'VERSION is {version}; newest release heading is {releases[0]}')
+          print(f'VERSION matches newest release: {version}')
+          PY
+      - name: Validate OpenSpec
+        run: npx --yes @fission-ai/openspec validate --all --strict

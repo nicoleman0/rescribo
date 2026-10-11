@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Block until a Herdr agent needs the coordinator, then print its name and state.
+# Herdr runner only. Block until an agent needs the coordinator, then print its
+# name and state.
 # Usage: wait-agents.sh [agent-name ...]   (no names: every named agent)
 set -euo pipefail
 

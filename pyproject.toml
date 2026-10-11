@@ -44,6 +44,8 @@ testpaths = ["backend/tests"]
 target-version = "py314"
 line-length = 100
 src = ["backend", "scripts"]
+# Switchyard's files keep upstream's style so its updater merges cleanly.
+extend-exclude = [".claude/skills/work-issues"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

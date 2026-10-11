@@ -1,4 +1,4 @@
-/* Layout: a narrow index, then one before/after pair per screen. Tokens borrow the app's own theme. */
+/* Layout: a narrow index, then one before/after pair per screen. */
 :root {
   --bg: #fbfbfc; --surface: #ffffff; --fg: #16161d; --muted: #62626e; --border: #e4e4ea;
   --primary: #5b5bd6; --before-bg: #f0f0f4; --before-fg: #4b4b57; --after-bg: #ebebfd; --after-fg: #3f3fb0;

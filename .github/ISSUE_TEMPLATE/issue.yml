@@ -1,0 +1,13 @@
+name: Issue
+description: A problem to solve or a gap to fill.
+body:
+  - type: markdown
+    attributes:
+      value: Keep it short. Acceptance criteria go in the OpenSpec change, not here.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is wrong or missing, and who it affects.
+    validations:
+      required: true
