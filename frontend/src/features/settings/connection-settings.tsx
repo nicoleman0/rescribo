@@ -6,12 +6,14 @@ import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { ErrorState } from '@/components/states/async-states'
 import { touchTarget } from '@/components/layout/touch-target'
 import { cn } from '@/lib/utils'
 import { ConfirmAction } from './confirm-action'
 import { ConnectionStatusBadge } from './connection-status'
 import { useSettingsAction } from './use-settings-action'
+import { AllowedChannels } from './allowed-channels'
 
 export function ConnectionSettings({
   workspaceId,
@@ -29,7 +31,6 @@ export function ConnectionSettings({
   demo: boolean
 }) {
   const [repository, setRepository] = useState(connection?.repository ?? '')
-  const [channel, setChannel] = useState('')
   const [consent, setConsent] = useState(false)
   const setup = useSettingsAction<{ url: string }>(workspaceId)
   const action = useSettingsAction(workspaceId)
@@ -108,6 +109,24 @@ export function ConnectionSettings({
                   title="Connection needs attention"
                   description={connection.error_detail}
                 />
+              ) : null}
+              {provider === 'slack' &&
+              connection.status === 'active' &&
+              owner &&
+              !demo ? (
+                <AllowedChannels
+                  workspaceId={workspaceId}
+                  workspaceName={workspaceName}
+                  connection={connection}
+                  busy={busy}
+                  action={action}
+                />
+              ) : null}
+              {provider === 'slack' &&
+              connection.status === 'active' &&
+              owner &&
+              !demo ? (
+                <Separator />
               ) : null}
             </>
           ) : (
@@ -212,88 +231,6 @@ export function ConnectionSettings({
                     scope="Remove usable credentials and the installation binding, cancel pending notifications, and stop further use by this workspace. Stored reports and sent history remain. Upstream messages and issues remain. Reconnecting requires fresh notification approval."
                   />
                 </>
-              ) : null}
-              {provider === 'slack' && active ? (
-                <div className="grid gap-3">
-                  <h3 className="font-medium">Allowed Slack channels</h3>
-                  <p className="max-w-prose text-sm text-muted-foreground">
-                    Use an internal public or private channel with the bot
-                    invited. DMs and Slack Connect channels are not allowed. All
-                    workspace members can read captured reports.
-                  </p>
-                  {connection.channels.length === 0 ? (
-                    <p>No channels allowed yet.</p>
-                  ) : null}
-                  <ul className="grid gap-3">
-                    {connection.channels.map((item) => (
-                      <li
-                        key={item.channel_id}
-                        className="flex flex-wrap items-center justify-between gap-2"
-                      >
-                        <span className="break-all">
-                          #{item.name} ({item.channel_id}) ·{' '}
-                          {item.is_private ? 'Private' : 'Public'}
-                        </span>
-                        <Button
-                          variant="outline"
-                          className="h-auto min-h-11 max-w-full py-2 text-left break-words whitespace-normal"
-                          disabled={busy}
-                          onClick={() =>
-                            action.mutate({
-                              path: 'channels/',
-                              body: {
-                                version: connection.version,
-                                channel_id: item.channel_id,
-                                remove: true,
-                              },
-                            })
-                          }
-                        >
-                          Remove channel {item.name}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                  <form
-                    className="grid max-w-lg gap-3"
-                    onSubmit={(event) => {
-                      event.preventDefault()
-                      action.mutate(
-                        {
-                          path: 'channels/',
-                          body: {
-                            version: connection.version,
-                            channel_id: channel,
-                            consent,
-                          },
-                        },
-                        { onSuccess: () => setChannel('') },
-                      )
-                    }}
-                  >
-                    <Field
-                      id="channel-id"
-                      label="Slack channel ID"
-                      required
-                      value={channel}
-                      onChange={(event) => setChannel(event.target.value)}
-                      error={fieldError(action.error, 'channel_id')}
-                      hint="Confirm workspace visibility above before allowing a channel."
-                    />
-                    <Button
-                      className="min-h-11 w-fit"
-                      disabled={!consent || busy}
-                    >
-                      Validate and allow channel
-                    </Button>
-                  </form>
-                </div>
-              ) : null}
-              {action.error ? (
-                <ErrorState
-                  title="Connection update failed"
-                  description={<FormErrorMessage error={action.error} />}
-                />
               ) : null}
             </>
           ) : null}

@@ -279,7 +279,7 @@ tasks:
       - bash scripts/slack_tunnel.sh {{.CLI_ARGS}}
 
   slack-channels:
-    desc: List Slack workspace channel ids and bot membership
+    desc: List the Slack channels the bot is in
     cmds:
       - uv run python scripts/list_slack_channels.py
 

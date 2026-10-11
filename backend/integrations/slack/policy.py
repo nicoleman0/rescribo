@@ -42,14 +42,22 @@ class SlackChannel:
 def validate_channel(data: Mapping[str, Any]) -> SlackChannel:
     """Validate an internal, active channel containing the bot."""
     channel = SlackChannel.from_api(data)
-    if channel.is_im:
-        raise ChannelRejected("direct_message", channel.channel_id)
-    if channel.is_mpim:
-        raise ChannelRejected("group_direct_message", channel.channel_id)
-    if channel.is_ext_shared:
-        raise ChannelRejected("externally_shared", channel.channel_id)
-    if channel.is_archived:
-        raise ChannelRejected("archived", channel.channel_id)
+    reason = unavailable_reason(channel)
+    if reason:
+        raise ChannelRejected(reason, channel.channel_id)
     if not channel.is_member:
         raise ChannelRejected("bot_not_member", channel.channel_id)
     return channel
+
+
+def unavailable_reason(channel: SlackChannel) -> str | None:
+    """Return why a channel cannot be offered for capture."""
+    for flag, reason in (
+        (channel.is_im, "direct_message"),
+        (channel.is_mpim, "group_direct_message"),
+        (channel.is_ext_shared, "externally_shared"),
+        (channel.is_archived, "archived"),
+    ):
+        if flag:
+            return reason
+    return None

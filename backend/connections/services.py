@@ -228,6 +228,16 @@ def update_channel(actor: Membership, version: int, channel_id: str, remove: boo
         row.save(update_fields=["version"])
 
 
+def list_channels(actor: Membership) -> dict[str, Any]:
+    refuse_demo(actor)
+    row = Connection.objects.filter(workspace_id=actor.workspace_id, provider="slack").first()
+    if row is None or row.status != Connection.Status.ACTIVE:
+        raise providers.SetupError(
+            "not_connected", "Connect or reconnect Slack to choose a channel."
+        )
+    return providers.channel_options(row.credential)
+
+
 def refresh_connection(actor: Membership, provider: str, version: int) -> None:
     refuse_demo(actor)
     failure = None

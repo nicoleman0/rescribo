@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import {
@@ -31,12 +31,13 @@ function owner() {
 }
 afterEach(() => {
   testMembership.role = 'member'
+  testMembership.workspace.is_demo = false
   vi.unstubAllGlobals()
 })
 
 test('members see connections but no owner controls', async () => {
   testMembership.role = 'member'
-  stubApi({
+  const fetch = stubApi({
     ...unlinked,
     [`GET ${base}connections/`]: () => json([]),
   })
@@ -47,6 +48,9 @@ test('members see connections but no owner controls', async () => {
   ).not.toBeInTheDocument()
   expect(screen.queryByLabelText('Invite email')).not.toBeInTheDocument()
   expect(screen.queryByText(/AI setting/i)).not.toBeInTheDocument()
+  expect(
+    fetch.mock.calls.some(([input]) => String(input).endsWith('/channels/')),
+  ).toBe(false)
 })
 
 test('workspace deletion requires the exact slug and cancellation makes no request', async () => {
@@ -363,6 +367,7 @@ function ownerWithConnection(
     [`GET ${base}connections/`]: () => json([connection()]),
     [`GET ${base}memberships/`]: () => json([]),
     [`GET ${base}invitations/`]: () => json([]),
+    [`GET ${base}channels/`]: () => json({ channels: [], truncated: false }),
     ...extra,
   })
 }
@@ -450,6 +455,7 @@ test('channel actions never read as a check result', async () => {
   }
   const replies = [pass, missingScopes]
   ownerWithConnection(() => connection, {
+    [`GET ${base}channels/`]: () => json({ channels: [], truncated: false }),
     [`POST ${base}channels/`]: () => replies.shift()!(),
   })
   render()
@@ -467,6 +473,256 @@ test('channel actions never read as a check result', async () => {
     await within(slack).findByText('Connection update failed'),
   ).toBeVisible()
   expect(within(slack).queryByText(/check failed/)).toBeNull()
+})
+
+test('channel picker offers named channels with unavailable choices disabled', async () => {
+  const connection = {
+    ...slackConnection,
+    channels: [
+      { channel_id: 'C1', name: 'already-allowed', is_private: false },
+    ],
+  }
+  const fetch = ownerWithConnection(() => connection, {
+    [`GET ${base}channels/`]: () =>
+      json({
+        channels: [
+          {
+            channel_id: 'C1',
+            name: 'already-allowed',
+            is_private: false,
+            unavailable_reason: '',
+          },
+          {
+            channel_id: 'C2',
+            name: 'support-requests',
+            is_private: false,
+            unavailable_reason: '',
+          },
+          {
+            channel_id: 'G2',
+            name: 'key-accounts',
+            is_private: true,
+            unavailable_reason: '',
+          },
+          {
+            channel_id: 'C3',
+            name: 'partner-shared',
+            is_private: false,
+            unavailable_reason: 'externally_shared',
+          },
+          {
+            channel_id: 'C4',
+            name: 'unknown-reason',
+            is_private: false,
+            unavailable_reason: 'future_reason',
+          },
+        ],
+        truncated: false,
+      }),
+    [`POST ${base}channels/`]: () => json({}),
+  })
+  render()
+  const select = await screen.findByLabelText('Slack channel')
+  expect(
+    within(select).getByRole('option', { name: '#key-accounts · Private' }),
+  ).toBeInTheDocument()
+  expect(
+    within(select).getByRole('option', { name: '#support-requests · Public' }),
+  ).toBeInTheDocument()
+  expect(
+    within(select).getByRole('option', {
+      name: '#partner-shared · Slack Connect, not allowed',
+    }),
+  ).toBeDisabled()
+  expect(
+    within(select).getByRole('option', {
+      name: '#unknown-reason · Not allowed',
+    }),
+  ).toBeDisabled()
+  expect(
+    within(select).queryByRole('option', { name: '#already-allowed · Public' }),
+  ).toBeNull()
+  expect(
+    screen.queryByRole('textbox', { name: 'Slack channel ID' }),
+  ).not.toBeInTheDocument()
+  expect(
+    screen
+      .getByRole('heading', { name: 'Allowed Slack channels' })
+      .compareDocumentPosition(
+        screen.getByRole('button', { name: 'Reconnect Slack' }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
+  const user = userEvent.setup()
+  const channelConsent = screen.getByRole('checkbox', {
+    name: 'Reports captured from this channel will be visible to all members of Example.',
+  })
+  const reconnectConsent = screen.getByRole('checkbox', {
+    name: 'Reports captured from approved channels will be visible to all members of Example.',
+  })
+  await user.click(reconnectConsent)
+  expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
+  await user.selectOptions(select, 'C2')
+  expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
+  await user.click(channelConsent)
+  expect(screen.getByRole('button', { name: 'Allow channel' })).toBeEnabled()
+  await user.click(
+    within(screen.getByRole('region', { name: 'Slack' })).getByRole('button', {
+      name: 'Allow channel',
+    }),
+  )
+  await vi.waitFor(() =>
+    expect(
+      fetch.mock.calls.some(
+        ([input, init]) =>
+          String(input).endsWith('/channels/') &&
+          init?.method === 'POST' &&
+          JSON.stringify(JSON.parse(String(init.body))) ===
+            JSON.stringify({ version: 1, channel_id: 'C2', consent: true }),
+      ),
+    ).toBe(true),
+  )
+  await vi.waitFor(() => expect(channelConsent).not.toBeChecked())
+})
+
+test('channel picker sends the current consent checkbox value', async () => {
+  const fetch = ownerWithConnection(() => slackConnection, {
+    [`GET ${base}channels/`]: () =>
+      json({
+        channels: [
+          {
+            channel_id: 'C2',
+            name: 'support-requests',
+            is_private: false,
+            unavailable_reason: '',
+          },
+        ],
+        truncated: false,
+      }),
+    [`POST ${base}channels/`]: () =>
+      json(
+        {
+          detail: 'Confirm publication before allowing a channel.',
+          reason: 'consent_required',
+          field_errors: {},
+        },
+        400,
+      ),
+  })
+  render()
+  const select = await screen.findByLabelText('Slack channel')
+  await userEvent.setup().selectOptions(select, 'C2')
+  fireEvent.submit(select.closest('form')!)
+  await vi.waitFor(() => {
+    const request = fetch.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith('/channels/') && init?.method === 'POST',
+    )
+    expect(request).toBeDefined()
+    expect(JSON.parse(String(request?.[1]?.body))).toEqual({
+      version: 1,
+      channel_id: 'C2',
+      consent: false,
+    })
+  })
+})
+
+test('channel picker shows loading, rate-limit retry, empty and truncated states', async () => {
+  let calls = 0
+  const fetch = ownerWithConnection(() => slackConnection, {
+    [`GET ${base}channels/`]: () => {
+      calls += 1
+      if (calls === 1)
+        return json(
+          {
+            detail: 'Slack asked us to wait. Try again in a minute.',
+            reason: 'slack_rate_limited',
+            field_errors: {},
+          },
+          400,
+        )
+      if (calls === 2) return json({ channels: [], truncated: false })
+      return json({
+        channels: [
+          {
+            channel_id: 'C4',
+            name: 'later',
+            is_private: false,
+            unavailable_reason: '',
+          },
+        ],
+        truncated: true,
+      })
+    },
+  })
+  render()
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Slack asked us to wait',
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+  expect(await screen.findByText(/invite it to a channel/)).toBeVisible()
+  await userEvent.click(
+    screen.getByRole('button', { name: 'Refresh channel list' }),
+  )
+  expect(
+    await screen.findByText('Showing the first 1,000 channels.'),
+  ).toBeVisible()
+  expect(
+    fetch.mock.calls.filter(([input]) => String(input).endsWith('/channels/')),
+  ).toHaveLength(3)
+})
+
+test('channel picker asks for an internal channel when only Slack Connect is available', async () => {
+  ownerWithConnection(() => slackConnection, {
+    [`GET ${base}channels/`]: () =>
+      json({
+        channels: [
+          {
+            channel_id: 'C3',
+            name: 'partner-shared',
+            is_private: false,
+            unavailable_reason: 'externally_shared',
+          },
+        ],
+        truncated: false,
+      }),
+  })
+  render()
+  expect(await screen.findByText(/invite it to a channel/)).toBeVisible()
+  expect(
+    await screen.findByRole('option', {
+      name: '#partner-shared · Slack Connect, not allowed',
+    }),
+  ).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
+})
+
+test('channel picker announces its loading state before Slack responds', async () => {
+  ownerWithConnection(() => slackConnection, {
+    [`GET ${base}channels/`]: () =>
+      new Promise<Response>(() => {}) as unknown as Response,
+  })
+  render()
+  expect(
+    await screen.findByRole('status', { name: 'Loading Slack channels' }),
+  ).toBeVisible()
+  expect(screen.queryByRole('button', { name: 'Allow channel' })).toBeNull()
+})
+
+test('demo workspaces never request the Slack channel list', async () => {
+  testMembership.role = 'owner'
+  testMembership.workspace.is_demo = true
+  const fetch = stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json([slackConnection]),
+    [`GET ${base}memberships/`]: () => json([]),
+    [`GET ${base}invitations/`]: () => json([]),
+  })
+  render()
+  await screen.findByRole('heading', { name: 'Slack' })
+  expect(
+    fetch.mock.calls.some(([input]) => String(input).endsWith('/channels/')),
+  ).toBe(false)
 })
 
 test('a passed result is hidden when the connection is no longer active', async () => {

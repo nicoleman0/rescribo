@@ -6,6 +6,7 @@ from django.conf import settings
 from slack_sdk import WebClient
 
 from connections.credentials import decrypt
+from integrations.slack.channel_directory import collect_member_channels
 from integrations.slack.policy import SlackChannel, validate_channel
 
 # Slack's acknowledgement deadline is three seconds, so interactive calls must fail fast.
@@ -25,6 +26,23 @@ def eligible_channel(credential: str, channel_id: str, *, timeout: int = 10) -> 
     """Fetch current channel state and raise `ChannelRejected` when it is not eligible."""
     response = bot_client(credential, timeout=timeout).conversations_info(channel=channel_id)
     return validate_channel(response["channel"])
+
+
+def _directory_client(credential: str) -> Any:
+    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+        from integrations.slack.fake_channels import fake_directory_client
+
+        return fake_directory_client()
+    return bot_client(credential)
+
+
+def member_channels(credential: str) -> tuple[list[dict[str, Any]], bool]:
+    """Return up to 1,000 bot memberships and whether more were available."""
+    return collect_member_channels(_directory_client(credential))
+
+
+def channel_info(credential: str, channel_id: str) -> dict[str, Any]:
+    return _directory_client(credential).conversations_info(channel=channel_id)["channel"]
 
 
 def open_view(credential: str, *, trigger_id: str, view: dict[str, Any]) -> None:

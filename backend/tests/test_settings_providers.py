@@ -12,7 +12,7 @@ from integrations.github_app.settings import check_github, github_setup
 from integrations.slack.client import revoke_token
 from integrations.slack.errors import ChannelRejected
 from integrations.slack.policy import REQUIRED_BOT_SCOPES
-from integrations.slack.settings import channel_details, slack_setup
+from integrations.slack.settings import channel_details, channel_options, slack_setup
 
 
 @override_settings(
@@ -113,3 +113,76 @@ def test_revoke_token_calls_auth_revoke_with_the_decrypted_token() -> None:
         revoke_token("encrypted")
     assert sdk.call_args.kwargs["token"] == "secret"
     sdk.return_value.auth_revoke.assert_called_once_with()
+
+
+def test_channel_options_paginates_sorts_and_marks_external_channels() -> None:
+    client = MagicMock()
+    client.users_conversations.side_effect = [
+        {
+            "channels": [
+                {"id": "C2", "name": "zeta", "is_ext_shared": True},
+                {"id": "C3", "name": "archived", "is_archived": True},
+                {"id": "D1", "name": "direct", "is_im": True},
+            ],
+            "response_metadata": {"next_cursor": "next"},
+        },
+        {"channels": [{"id": "C1", "name": "alpha"}], "response_metadata": {"next_cursor": ""}},
+    ]
+    with (
+        patch("integrations.slack.client.decrypt", return_value="secret"),
+        patch("integrations.slack.client.WebClient", return_value=client),
+    ):
+        result = channel_options("encrypted")
+    assert [item["name"] for item in result["channels"]] == ["alpha", "zeta"]
+    assert result["channels"][0]["unavailable_reason"] == ""
+    assert result["channels"][1]["unavailable_reason"] == "externally_shared"
+    assert result["truncated"] is False
+    assert client.users_conversations.call_args_list[0].kwargs == {
+        "types": "public_channel,private_channel",
+        "exclude_archived": True,
+        "limit": 200,
+        "cursor": "",
+    }
+    assert client.users_conversations.call_args_list[1].kwargs["cursor"] == "next"
+
+
+def test_member_channels_caps_at_one_thousand() -> None:
+    from integrations.slack.client import member_channels
+
+    client = MagicMock()
+    client.users_conversations.return_value = {
+        "channels": [{"id": f"C{i}", "name": str(i)} for i in range(200)],
+        "response_metadata": {"next_cursor": "more"},
+    }
+    with (
+        patch("integrations.slack.client.decrypt", return_value="secret"),
+        patch("integrations.slack.client.WebClient", return_value=client),
+    ):
+        channels, truncated = member_channels("encrypted")
+    assert len(channels) == 1000
+    assert truncated is True
+    assert client.users_conversations.call_count == 5
+
+
+def test_channel_options_maps_slack_rate_limit() -> None:
+    from slack_sdk.errors import SlackApiError
+
+    response = MagicMock()
+    response.status_code = 429
+    error = SlackApiError(message="rate_limited", response=response)
+    with patch("integrations.slack.settings.member_channels", side_effect=error):
+        with pytest.raises(SetupError) as raised:
+            channel_options("encrypted")
+    assert raised.value.code == "slack_rate_limited"
+
+
+@override_settings(RESCRIBO_SLACK_FAKE_DELIVERY=True)
+def test_fake_channel_directory_supports_picker_and_submit_without_decrypt() -> None:
+    with patch("integrations.slack.client.decrypt", side_effect=AssertionError("decrypted")):
+        result = channel_options("fake")
+        assert len(result["channels"]) == 3
+        assert channel_details("fake", "C0E2EPUBLIC")["name"] == "support-requests"
+        with pytest.raises(ChannelRejected):
+            channel_details("fake", "C0E2ESHARED")
+        with pytest.raises(Exception, match="channel_not_found"):
+            channel_details("fake", "CUNKNOWN")
