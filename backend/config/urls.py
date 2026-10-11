@@ -4,6 +4,7 @@ from drf_spectacular.views import SpectacularAPIView
 
 from accounts.views import (
     CsrfView,
+    DemoOfferView,
     InvitationCreateView,
     InvitationRevokeView,
     InviteAcceptView,
@@ -162,6 +163,7 @@ urlpatterns = [
     path("api/health/live/", LiveView.as_view(), name="health-live"),
     path("api/health/ready/", ReadyView.as_view(), name="health-ready"),
     path("api/auth/login/", LoginView.as_view(), name="auth-login"),
+    path("api/auth/demo/", DemoOfferView.as_view(), name="auth-demo"),
     path("api/auth/csrf/", CsrfView.as_view(), name="auth-csrf"),
     path("api/auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("api/auth/session/", SessionView.as_view(), name="auth-session"),

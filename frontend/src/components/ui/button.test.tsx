@@ -31,3 +31,8 @@ test.each([
     'max-md:min-h-[44px]',
   )
 })
+
+test('the large button uses the input height', () => {
+  render(<Button size="lg">Large</Button>)
+  expect(screen.getByRole('button', { name: 'Large' })).toHaveClass('h-10')
+})

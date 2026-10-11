@@ -3,6 +3,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { test as setup } from '@playwright/test'
+import { E2E_DEMO_PASSWORD } from './demo-password.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
@@ -30,7 +31,7 @@ setup('seed the demo workspace', async () => {
       env: {
         ...process.env,
         RESCRIBO_DEMO_PASSWORD:
-          process.env.RESCRIBO_DEMO_PASSWORD ?? 'Rescribo-demo-e2e-2026!',
+          process.env.RESCRIBO_DEMO_PASSWORD ?? E2E_DEMO_PASSWORD,
       },
     },
   )

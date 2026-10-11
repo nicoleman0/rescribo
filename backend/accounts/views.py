@@ -14,6 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView, exception_handler
 
+from accounts.demo import demo_offer
 from accounts.models import Invitation, Membership
 from accounts.permissions import IsWorkspaceMember, IsWorkspaceOwner
 from accounts.services import (
@@ -58,6 +59,15 @@ class TokenSerializer(serializers.Serializer):
 class SessionSerializer(serializers.Serializer):
     user = serializers.DictField()
     memberships = serializers.ListField(child=serializers.DictField())
+
+
+class DemoCredentialsSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField()
+
+
+class DemoOfferSerializer(serializers.Serializer):
+    credentials = DemoCredentialsSerializer(allow_null=True)
 
 
 class EmptySerializer(serializers.Serializer):
@@ -250,6 +260,19 @@ class CsrfView(APIView):
     @extend_schema(responses={204: None}, auth=[])
     def get(self, request: Request) -> Response:
         return Response(status=204)
+
+
+class DemoOfferView(APIView):
+    authentication_classes: list = []
+    permission_classes = [AllowAny]
+    throttle_classes: list = []
+
+    @extend_schema(responses={200: DemoOfferSerializer}, auth=[])
+    def get(self, request: Request) -> Response:
+        return Response(
+            {"credentials": demo_offer()},
+            headers={"Cache-Control": "no-store"},
+        )
 
 
 @method_decorator(csrf_protect, name="dispatch")

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_DEMO_PASSWORD } from './e2e/demo-password.js'
 
 const externalServers = Boolean(process.env.PLAYWRIGHT_BASE_URL)
 const apiPort = process.env.RESCRIBO_E2E_API_PORT ?? '8000'
@@ -30,6 +31,8 @@ export default defineConfig({
           cwd: '..',
           env: {
             RESCRIBO_SLACK_FAKE_DELIVERY: 'true',
+            RESCRIBO_DEMO_PASSWORD:
+              process.env.RESCRIBO_DEMO_PASSWORD ?? E2E_DEMO_PASSWORD,
           },
           url: `http://127.0.0.1:${apiPort}/api/health/ready/`,
           reuseExistingServer: !process.env.CI,

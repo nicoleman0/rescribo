@@ -9,8 +9,8 @@ import { Field } from '@/components/forms/field'
 import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
-import { PageTitle } from '@/components/layout/page-title'
 
 type Preview = { status: string; workspace_name?: string }
 
@@ -62,9 +62,7 @@ export function AcceptInvitePage() {
     accept.mutate()
   }
   return (
-    <AuthLayout>
-      <PageTitle title="Accept invitation" />
-      <h1 className="text-xl font-semibold">Accept invitation</h1>
+    <AuthLayout title="Accept invitation">
       {preview.isPending ? (
         <LoadingState label="Checking invitation" />
       ) : preview.isError ? (
@@ -124,11 +122,18 @@ export function AcceptInvitePage() {
               error={fieldError(acceptError, 'password')}
             />
             {acceptError && !acceptError.fieldErrors?.password ? (
-              <p role="alert">
-                <FormErrorMessage error={acceptError} />
-              </p>
+              <Alert variant="destructive">
+                <AlertDescription>
+                  <FormErrorMessage error={acceptError} />
+                </AlertDescription>
+              </Alert>
             ) : null}
-            <Button type="submit" disabled={accept.isPending}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={accept.isPending}
+            >
               Accept invitation
             </Button>
           </form>
@@ -138,15 +143,19 @@ export function AcceptInvitePage() {
           <p>Confirm acceptance while signed in to the invited account.</p>
           <Button
             type="button"
+            size="lg"
+            className="w-full"
             disabled={accept.isPending}
             onClick={() => accept.mutate()}
           >
             Accept invitation
           </Button>
           {acceptError ? (
-            <p role="alert">
-              <FormErrorMessage error={acceptError} />
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>
+                <FormErrorMessage error={acceptError} />
+              </AlertDescription>
+            </Alert>
           ) : null}
         </div>
       ) : (
@@ -181,11 +190,18 @@ export function AcceptInvitePage() {
               onChange={(event) => setConfirmation(event.target.value)}
             />
             {acceptError ? (
-              <p role="alert">
-                <FormErrorMessage error={acceptError} />
-              </p>
+              <Alert variant="destructive">
+                <AlertDescription>
+                  <FormErrorMessage error={acceptError} />
+                </AlertDescription>
+              </Alert>
             ) : null}
-            <Button type="submit" disabled={accept.isPending}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={accept.isPending}
+            >
               Accept invitation
             </Button>
           </form>

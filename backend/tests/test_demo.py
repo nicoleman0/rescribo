@@ -14,7 +14,7 @@ from django.contrib.auth import get_user_model
 from django.core.management import CommandError, call_command
 from django.test import Client, override_settings
 
-from accounts.demo import DEMO_DETAIL, is_demo_workspace
+from accounts.demo import DEMO_DETAIL, demo_offer, is_demo_workspace
 from accounts.models import Invitation, Membership, Workspace
 from accounts.session import SESSION_GENERATION_KEY
 from connections import services
@@ -149,6 +149,63 @@ def test_seed_refuses_a_real_workspace_with_the_demo_slug() -> None:
     with pytest.raises(DemoSeedError):
         seed_demo()
     assert Report.objects.filter(workspace=real).count() == 1
+
+
+def test_demo_offer_requires_configured_password_and_seeded_demo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("django.conf.settings.RESCRIBO_DEMO_PASSWORD", PASSWORD)
+    assert demo_offer() is None
+    make_workspace(slug=DEMO_SLUG)
+    assert demo_offer() is None
+    Workspace.objects.filter(slug=DEMO_SLUG).delete()
+    seed_demo(visitor_password=PASSWORD)
+    assert demo_offer() == {"email": VISITOR_EMAIL, "password": PASSWORD}
+
+
+def test_demo_offer_does_not_publish_when_password_is_unconfigured(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed_demo(visitor_password=PASSWORD)
+    monkeypatch.setattr("django.conf.settings.RESCRIBO_DEMO_PASSWORD", "")
+    assert demo_offer() is None
+
+
+def test_public_demo_offer_is_anonymous_no_store_and_logs_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seed_demo(visitor_password=PASSWORD)
+    monkeypatch.setattr("django.conf.settings.RESCRIBO_DEMO_PASSWORD", PASSWORD)
+    client = Client(enforce_csrf_checks=True)
+    response = client.get("/api/auth/demo/")
+    assert response.status_code == 200
+    assert response.headers["Cache-Control"] == "no-store"
+    assert response.json() == {"credentials": {"email": VISITOR_EMAIL, "password": PASSWORD}}
+    assert OWNER_EMAIL not in response.content.decode()
+    csrf = client.get("/api/auth/csrf/")
+    assert csrf.status_code == 204
+    login = client.post(
+        "/api/auth/login/",
+        response.json()["credentials"],
+        content_type="application/json",
+        HTTP_X_CSRFTOKEN=client.cookies["csrftoken"].value,
+    )
+    assert login.status_code == 200
+    assert login.json()["user"]["email"] == VISITOR_EMAIL
+
+
+def test_public_demo_offer_has_no_credentials_without_a_valid_demo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("django.conf.settings.RESCRIBO_DEMO_PASSWORD", PASSWORD)
+    client = Client(enforce_csrf_checks=True)
+    assert client.get("/api/auth/demo/").json() == {"credentials": None}
+    make_workspace(slug=DEMO_SLUG)
+    assert client.get("/api/auth/demo/").json() == {"credentials": None}
+    Workspace.objects.filter(slug=DEMO_SLUG).delete()
+    seed_demo(visitor_password=PASSWORD)
+    monkeypatch.setattr("django.conf.settings.RESCRIBO_DEMO_PASSWORD", "")
+    assert client.get("/api/auth/demo/").json() == {"credentials": None}
 
 
 def test_seed_refuses_demo_accounts_that_belong_to_another_workspace() -> None:

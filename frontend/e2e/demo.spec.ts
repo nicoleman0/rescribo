@@ -5,6 +5,7 @@ import {
   openDemoInbox,
   saveDemoSession,
 } from './demo-session.js'
+import { E2E_DEMO_PASSWORD } from './demo-password.js'
 
 const sessionPath = demoSessionPath('demo')
 
@@ -12,6 +13,27 @@ test.beforeAll(async ({ browser }, info) =>
   saveDemoSession(browser, info.project.use.baseURL, sessionPath),
 )
 test.use({ storageState: sessionPath })
+
+test('a signed-out visitor uses the demo hint to open the demo inbox', async ({
+  browser,
+}, info) => {
+  const context = await browser.newContext({
+    baseURL: String(info.project.use.baseURL),
+    storageState: { cookies: [], origins: [] },
+  })
+  const page = await context.newPage()
+  await page.goto('/sign-in')
+  await page.getByRole('button', { name: 'Use demo login' }).click()
+  await expect(page.getByRole('textbox', { name: 'Email' })).toHaveValue(
+    'demo@example.com',
+  )
+  await expect(page.getByLabel('Password')).toHaveValue(E2E_DEMO_PASSWORD)
+  await expect(page.getByRole('button', { name: 'Sign in' })).toBeFocused()
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await expect(page.getByLabel('Demo workspace')).toHaveText('Demo')
+  await context.close()
+})
 
 test('the demo visitor sees labelled, simulated data', async ({ page }) => {
   await openDemoInbox(page)

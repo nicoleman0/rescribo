@@ -281,6 +281,9 @@ test('the reset page shows why a password was refused and keeps the form', async
     await screen.findByText('This is your current password.'),
   ).toBeVisible()
   expect(screen.getByText('Choose a different password.')).toBeVisible()
+  expect(document.querySelector('[data-slot="alert"]')).toHaveTextContent(
+    'Choose a different password.',
+  )
   expect(password).toHaveAccessibleDescription('This is your current password.')
   expect(password).toHaveValue('current-password')
   await user.clear(password)
@@ -293,5 +296,47 @@ test('the reset page shows why a password was refused and keeps the form', async
     { token: 'example', password: 'current-password' },
     { token: 'example', password: 'another-password' },
   ])
+  vi.unstubAllGlobals()
+})
+
+test('a rejected invitation shows its reply in a destructive alert', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url.includes('/auth/csrf/'))
+        return Promise.resolve(new Response(null, { status: 204 }))
+      if (url.includes('/invitations/preview/'))
+        return Promise.resolve(
+          response({ status: 'valid', workspace_name: 'Example' }),
+        )
+      if (url.includes('/invitations/accept/'))
+        return Promise.resolve(
+          response({ detail: 'The invitation was rejected.' }, 500),
+        )
+      throw new Error(`Unexpected request: ${url}`)
+    }),
+  )
+  const user = userEvent.setup()
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/invite/example']}>
+        <Routes>
+          <Route path="/invite/:token" element={<AcceptInvitePage />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  await user.type(await screen.findByLabelText('Full name'), 'Member')
+  await user.type(screen.getByLabelText('Password'), 'New-password-42!')
+  await user.type(screen.getByLabelText('Confirm password'), 'New-password-42!')
+  await user.click(screen.getByRole('button', { name: 'Accept invitation' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'The invitation was rejected.',
+  )
+  expect(document.querySelector('[data-slot="alert"]')).toHaveClass(
+    'bg-card',
+    'text-destructive',
+  )
   vi.unstubAllGlobals()
 })

@@ -1,6 +1,10 @@
 import { apiRequest } from './request'
+import type { components } from './schema'
 
 export const sessionQueryKey = ['auth', 'session'] as const
+export const demoOfferQueryKey = ['auth', 'demo-offer'] as const
+
+export type DemoOffer = components['schemas']['DemoOffer']['credentials']
 
 export type Session = {
   user: { id: string; email: string; full_name: string }
@@ -16,3 +20,7 @@ export const login = (email: string, password: string) =>
   apiRequest<Session>('auth/login/', { email, password })
 export const logout = () => apiRequest<void>('auth/logout/', {})
 export const csrf = () => apiRequest<void>('auth/csrf/')
+export const getDemoOffer = () =>
+  apiRequest<components['schemas']['DemoOffer']>('auth/demo/').then(
+    (offer) => offer.credentials,
+  )

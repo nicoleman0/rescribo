@@ -20,6 +20,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth/demo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["auth_demo_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login/": {
         parameters: {
             query?: never;
@@ -1297,6 +1313,14 @@ export interface components {
             confirmation: string;
             version: number;
         };
+        DemoCredentials: {
+            /** Format: email */
+            email: string;
+            password: string;
+        };
+        DemoOffer: {
+            credentials: components["schemas"]["DemoCredentials"] | null;
+        };
         Disconnect: {
             version: number;
             confirmation: components["schemas"]["ConfirmationEnum"];
@@ -2111,6 +2135,25 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    auth_demo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoOffer"];
+                };
             };
         };
     };
