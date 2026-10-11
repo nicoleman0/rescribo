@@ -9,6 +9,7 @@ import {
 } from '@/api/reports'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
+import { ConfirmPanel } from '@/components/confirm/confirm-panel'
 import { ActionError } from '@/components/states/action-error'
 import { ErrorState } from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -19,7 +20,7 @@ import { memberName } from './report-format'
 import { useMembers } from './use-members'
 import { useReportMutation } from './use-report-mutation'
 
-type Panel = 'link' | 'create' | null
+type Panel = 'link' | 'create' | 'unlink' | 'dismiss' | null
 
 /** Triage controls for one report: assignment, grouping, and dismissal. */
 export function ReportTriage({
@@ -171,17 +172,24 @@ function GroupingActions({
   onDone: () => void
 }) {
   const [panel, setPanel] = useState<Panel>(null)
+  const [lastTriageState, setLastTriageState] = useState(report.triage_state)
   const linkButton = useRef<HTMLButtonElement>(null)
   const createButton = useRef<HTMLButtonElement>(null)
+  const actionButton = useRef<HTMLButtonElement>(null)
   const transition = useReportMutation(
     workspaceId,
     (action: 'unlink' | 'dismiss' | 'restore') =>
       transitionReport(workspaceId, report.id, action, {
         expected_version: report.version,
       }),
-    onDone,
+    finish,
   )
   const linked = report.triage_state === 'linked'
+
+  if (lastTriageState !== report.triage_state) {
+    setLastTriageState(report.triage_state)
+    if (panel === 'unlink' || panel === 'dismiss') setPanel(null)
+  }
 
   function close(opener: RefObject<HTMLButtonElement | null>) {
     setPanel(null)
@@ -211,7 +219,11 @@ function GroupingActions({
         {transition.isError ? (
           <ActionError
             error={transition.error}
-            title="The report was not restored"
+            title={
+              transition.variables === 'restore'
+                ? 'The report was not restored'
+                : 'The report was not updated'
+            }
             record="report"
           />
         ) : null}
@@ -240,11 +252,15 @@ function GroupingActions({
             {linked ? 'Move to new problem' : 'Create problem'}
           </Button>
           <Button
+            ref={actionButton}
             variant={linked ? 'outline' : 'destructive'}
             disabled={transition.isPending}
-            onClick={() => transition.mutate(linked ? 'unlink' : 'dismiss')}
+            onClick={() => {
+              transition.reset()
+              setPanel(linked ? 'unlink' : 'dismiss')
+            }}
           >
-            {transition.isPending ? 'Saving…' : linked ? 'Ungroup' : 'Dismiss'}
+            {linked ? 'Ungroup' : 'Dismiss'}
           </Button>
         </div>
       ) : null}
@@ -254,7 +270,7 @@ function GroupingActions({
           unsent employee notification; sent history is kept.
         </p>
       ) : null}
-      {transition.isError ? (
+      {transition.isError && panel !== 'unlink' && panel !== 'dismiss' ? (
         <ActionError
           error={transition.error}
           title="The report was not updated"
@@ -276,6 +292,38 @@ function GroupingActions({
           onCancel={() => close(createButton)}
           onDone={finish}
         />
+      ) : null}
+      {panel === 'unlink' || panel === 'dismiss' ? (
+        <ConfirmPanel
+          title={
+            panel === 'unlink' ? 'Ungroup this report?' : 'Dismiss this report?'
+          }
+          description={
+            panel === 'unlink'
+              ? 'The report returns to New. Any unsent employee notification for it is cancelled. Sent history is kept.'
+              : 'The report is kept but not grouped or followed up. You can restore it later.'
+          }
+          confirmLabel={
+            panel === 'unlink' ? 'Ungroup report' : 'Dismiss report'
+          }
+          pendingLabel="Saving…"
+          isPending={transition.isPending}
+          headingLevel={4}
+          focusOnOpen
+          onConfirm={() => transition.mutate(panel)}
+          onCancel={() => {
+            transition.reset()
+            close(actionButton)
+          }}
+        >
+          {transition.isError ? (
+            <ActionError
+              error={transition.error}
+              title="The report was not updated"
+              record="report"
+            />
+          ) : null}
+        </ConfirmPanel>
       ) : null}
     </div>
   )
