@@ -73,6 +73,7 @@ theme. In the sidebar it links to the inbox.
 - shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, Skeleton, Input, Textarea, and NativeSelect
 - form fields: Field, TextareaField, and SelectField share one label, hint, and inline error layout
 - shared async states: LoadingState, EmptyState, ErrorState, RetryButton, and QueryState
+- ConfirmPanel: the inline confirm step for an action with a side effect; settings adds a typed phrase for permanent deletion
 - ActionError explains a failed save or triage action; the form that owns the input keeps it
 - FormErrorMessage is the text of a form's error summary: the reply's message, then one line for each field error the form does not render. Forms read field errors through `fieldError`, which is how the summary knows what was rendered
 - AppShell: desktop sidebar, mobile bottom navigation, and a compact status header
@@ -122,6 +123,7 @@ that owns the draft when a recoverable request fails.
 
 ## Inbox
 
+- Ungroup and Dismiss open a confirm step in place of the triage actions. Focus goes to its title, and Cancel returns it to the button.
 - Rows are one line: status badge first, then title, customer, assignee
   avatar, and a short date. The list is a container; when it is narrow (a
   report is open, or phone width) a row shows the badge, the title, and a

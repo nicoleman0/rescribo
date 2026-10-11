@@ -230,10 +230,20 @@ test.describe('Report triage', () => {
 
     // Ungroup, dismiss, and restore; provenance is unchanged throughout.
     await openReport(page, manualTitle)
-    await triage(page).getByRole('button', { name: 'Ungroup' }).click()
+    await triage(page)
+      .getByRole('button', { name: 'Ungroup', exact: true })
+      .click()
+    await triage(page).getByRole('button', { name: 'Ungroup report' }).click()
     await expect(detail(page)).toContainText('Not linked')
     await expect(detail(page).getByText('New', { exact: true })).toBeVisible()
-    await triage(page).getByRole('button', { name: 'Dismiss' }).click()
+    await triage(page)
+      .getByRole('button', { name: 'Dismiss', exact: true })
+      .dblclick()
+    await expect(
+      triage(page).getByRole('form', { name: 'Dismiss this report?' }),
+    ).toBeVisible()
+    await expect(detail(page).getByText('New', { exact: true })).toBeVisible()
+    await triage(page).getByRole('button', { name: 'Dismiss report' }).click()
     await expect(
       detail(page).getByText('Dismissed', { exact: true }),
     ).toBeVisible()
@@ -344,6 +354,34 @@ test.describe('Report triage', () => {
     await expect(
       triage(page).getByRole('button', { name: 'Ungroup' }),
     ).toBeVisible()
+    const ungroup = triage(page).getByRole('button', {
+      name: 'Ungroup',
+      exact: true,
+    })
+    await ungroup.focus()
+    await page.keyboard.press('Enter')
+    const ungroupForm = triage(page).getByRole('form', {
+      name: 'Ungroup this report?',
+    })
+    await expect(
+      ungroupForm.getByRole('heading', { name: 'Ungroup this report?' }),
+    ).toBeFocused()
+    expect(await axeViolations(page)).toEqual([])
+    await page.keyboard.press('Enter')
+    await expect(ungroupForm).toBeVisible()
+    await page.keyboard.press('Tab')
+    await expect(
+      ungroupForm.getByRole('button', { name: 'Ungroup report' }),
+    ).toBeFocused()
+    await page.keyboard.press('Tab')
+    await expect(
+      ungroupForm.getByRole('button', { name: 'Cancel' }),
+    ).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(ungroup).toBeFocused()
+    await ungroup.dblclick()
+    await expect(ungroupForm).toBeVisible()
+    await ungroupForm.getByRole('button', { name: 'Cancel' }).click()
     await triage(page).getByRole('button', { name: 'Move to problem' }).click()
     await expect(
       page.getByRole('status', { name: 'Loading problems' }),
@@ -396,5 +434,22 @@ test.describe('Report triage', () => {
     for (const name of ['Move to problem', 'Move to new problem', 'Ungroup']) {
       await expectTouchTarget(triage(page).getByRole('button', { name }))
     }
+    const phoneUngroup = triage(page).getByRole('button', {
+      name: 'Ungroup',
+      exact: true,
+    })
+    await phoneUngroup.click()
+    const phoneForm = triage(page).getByRole('form', {
+      name: 'Ungroup this report?',
+    })
+    await expectTouchTarget(
+      phoneForm.getByRole('button', { name: 'Ungroup report' }),
+    )
+    await expectTouchTarget(phoneForm.getByRole('button', { name: 'Cancel' }))
+    expect(await overflow()).toBe(false)
+    await phoneForm.getByRole('button', { name: 'Cancel' }).click()
+    await phoneUngroup.dblclick()
+    await expect(phoneForm).toBeVisible()
+    await phoneForm.getByRole('button', { name: 'Cancel' }).click()
   })
 })

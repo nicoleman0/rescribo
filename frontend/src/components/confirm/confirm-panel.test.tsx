@@ -2,7 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
 import { ConfirmPanel } from './confirm-panel'
 
-function renderPanel(props: Partial<React.ComponentProps<typeof ConfirmPanel>> = {}) {
+function renderPanel(
+  props: Partial<React.ComponentProps<typeof ConfirmPanel>> = {},
+) {
   const onConfirm = vi.fn()
   const onCancel = vi.fn()
   render(
@@ -22,12 +24,16 @@ function renderPanel(props: Partial<React.ComponentProps<typeof ConfirmPanel>> =
 
 test('renders its title at the requested heading level', () => {
   renderPanel()
-  expect(screen.getByRole('heading', { level: 3, name: 'Delete report?' })).toBeVisible()
+  expect(
+    screen.getByRole('heading', { level: 3, name: 'Delete report?' }),
+  ).toBeVisible()
 })
 
 test('supports a level four title', () => {
   renderPanel({ headingLevel: 4 })
-  expect(screen.getByRole('heading', { level: 4, name: 'Delete report?' })).toBeVisible()
+  expect(
+    screen.getByRole('heading', { level: 4, name: 'Delete report?' }),
+  ).toBeVisible()
 })
 
 test('disables confirm when requested or pending and disables cancel while pending', () => {
@@ -82,5 +88,7 @@ test('focuses the title only when requested', () => {
   expect(focusedTitle).toHaveFocus()
   unmount()
   render(<ConfirmPanel {...panelProps} />)
-  expect(screen.getByRole('heading', { name: 'Delete report?' })).not.toHaveAttribute('tabindex')
+  expect(
+    screen.getByRole('heading', { name: 'Delete report?' }),
+  ).not.toHaveAttribute('tabindex')
 })

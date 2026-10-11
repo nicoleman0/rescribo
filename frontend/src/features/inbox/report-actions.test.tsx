@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import type { ProblemListItem } from '@/api/problems'
 import type { ReportDetail } from '@/api/reports'
@@ -220,12 +221,197 @@ test('locks actions while a dismissal is pending', async () => {
   })
   renderWorkspaceRoutes(routes, '/inbox/rep-1')
   fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  const confirm = await screen.findByRole('button', { name: 'Dismiss report' })
+  fireEvent.click(confirm)
   expect(await screen.findByRole('button', { name: 'Saving…' })).toBeDisabled()
-  expect(screen.getByRole('button', { name: 'Link to problem' })).toBeDisabled()
+  expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled()
   fireEvent.click(screen.getByRole('button', { name: 'Saving…' }))
   finish()
   await screen.findByRole('button', { name: 'Restore report' })
   expect(sent).toHaveLength(1)
+})
+
+test('Dismiss asks before changing the report and focuses Triage after confirmation', async () => {
+  const { sent } = stubReport(report, {
+    dismiss: accept({ triage_state: 'dismissed' }),
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  const form = screen.getByRole('form', { name: 'Dismiss this report?' })
+  expect(within(form).getByText(/You can restore it later/)).toBeVisible()
+  expect(within(form).getByRole('heading', { level: 4 })).toHaveFocus()
+  expect(sent).toEqual([])
+  fireEvent.click(within(form).getByRole('button', { name: 'Dismiss report' }))
+  await screen.findByRole('button', { name: 'Restore report' })
+  expect(sent).toEqual([{ path: 'dismiss', body: { expected_version: 3 } }])
+  expect(
+    within(triage()).getByRole('heading', { name: 'Triage' }),
+  ).toHaveFocus()
+})
+
+test('Ungroup names its notification side effect and confirms the fixed action', async () => {
+  const linked = {
+    ...report,
+    triage_state: 'linked' as const,
+    problem: { id: 'prob-1', title: 'Exports fail', state: 'open' as const },
+  }
+  const { sent } = stubReport(linked, {
+    unlink: accept({ triage_state: 'new', problem: null }),
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Ungroup' }))
+  const form = screen.getByRole('form', { name: 'Ungroup this report?' })
+  expect(form).toHaveTextContent('unsent employee notification')
+  expect(form).toHaveTextContent('Sent history is kept')
+  fireEvent.click(within(form).getByRole('button', { name: 'Ungroup report' }))
+  await screen.findByRole('button', { name: 'Link to problem' })
+  expect(sent).toEqual([{ path: 'unlink', body: { expected_version: 3 } }])
+})
+
+test('cancels without a request and returns focus to Ungroup', async () => {
+  const linked = {
+    ...report,
+    triage_state: 'linked' as const,
+    problem: { id: 'prob-1', title: 'Exports fail', state: 'open' as const },
+  }
+  const { sent } = stubReport(linked)
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Ungroup' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+  await waitFor(() =>
+    expect(screen.getByRole('button', { name: 'Ungroup' })).toHaveFocus(),
+  )
+  expect(sent).toEqual([])
+  expect(screen.getByRole('button', { name: 'Move to problem' })).toBeVisible()
+})
+
+test('repeated Enter opens Dismiss without confirming it', async () => {
+  const user = userEvent.setup()
+  const { sent } = stubReport(report)
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  const dismiss = await screen.findByRole('button', { name: 'Dismiss' })
+  dismiss.focus()
+  await user.keyboard('{Enter}{Enter}')
+  expect(
+    screen.getByRole('form', { name: 'Dismiss this report?' }),
+  ).toBeVisible()
+  expect(sent).toEqual([])
+})
+
+test('keeps Ungroup open after a network failure and retries', async () => {
+  const linked = {
+    ...report,
+    triage_state: 'linked' as const,
+    problem: { id: 'prob-1', title: 'Exports fail', state: 'open' as const },
+  }
+  let calls = 0
+  stubReport(linked, {
+    unlink: (body, server) => {
+      calls += 1
+      if (calls === 1) throw new TypeError('Failed to fetch')
+      return accept({ triage_state: 'new', problem: null })(body, server)
+    },
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Ungroup' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Ungroup report' }))
+  const form = screen.getByRole('form', { name: 'Ungroup this report?' })
+  expect(
+    await within(form).findByText('The report was not updated'),
+  ).toBeVisible()
+  expect(within(form).getByText(/Could not reach Rescribo/)).toBeVisible()
+  fireEvent.click(within(form).getByRole('button', { name: 'Ungroup report' }))
+  await screen.findByRole('button', { name: 'Link to problem' })
+  expect(calls).toBe(2)
+})
+
+test('keeps Dismiss open after reassignment and retries against the current version', async () => {
+  let calls = 0
+  const { sent } = stubReport(report, {
+    dismiss: (body, server) => {
+      calls += 1
+      if (calls === 1) {
+        server.report = { ...report, assignee: grace, version: 5 }
+        return json(
+          {
+            detail: 'Changed.',
+            reason: 'version_conflict',
+            field_errors: {},
+            current: server.report,
+          },
+          409,
+        )
+      }
+      return accept({ triage_state: 'dismissed' })(body, server)
+    },
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss report' }))
+  const form = screen.getByRole('form', { name: 'Dismiss this report?' })
+  expect(
+    await within(form).findByText(/changed while you were working/),
+  ).toBeVisible()
+  fireEvent.click(within(form).getByRole('button', { name: 'Dismiss report' }))
+  await screen.findByRole('button', { name: 'Restore report' })
+  expect(sent.map((call) => call.body.expected_version)).toEqual([3, 5])
+})
+
+test('closes Ungroup when another member already ungrouped the report', async () => {
+  const linked = {
+    ...report,
+    triage_state: 'linked' as const,
+    problem: { id: 'prob-1', title: 'Exports fail', state: 'open' as const },
+  }
+  const current = { ...report, version: 5 }
+  const { sent } = stubReport(linked, {
+    unlink: (_body, server) => {
+      server.report = current
+      return json(
+        {
+          detail: 'Changed.',
+          reason: 'version_conflict',
+          field_errors: {},
+          current,
+        },
+        409,
+      )
+    },
+    dismiss: accept({ triage_state: 'dismissed' }),
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Ungroup' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Ungroup report' }))
+  await screen.findByRole('button', { name: 'Dismiss' })
+  expect(
+    screen.queryByRole('form', { name: 'Ungroup this report?' }),
+  ).toBeNull()
+  expect(screen.getByText('The report was not updated')).toBeVisible()
+  expect(sent.map((call) => call.path)).toEqual(['unlink'])
+})
+
+test('a lost Dismiss shows the update error instead of a restore error', async () => {
+  const current = { ...report, triage_state: 'dismissed' as const, version: 4 }
+  stubReport(report, {
+    dismiss: (_body, server) => {
+      server.report = current
+      return json(
+        {
+          detail: 'Changed.',
+          reason: 'version_conflict',
+          field_errors: {},
+          current,
+        },
+        409,
+      )
+    },
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Dismiss' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Dismiss report' }))
+  await screen.findByRole('button', { name: 'Restore report' })
+  expect(screen.getByText('The report was not updated')).toBeVisible()
+  expect(screen.queryByText('The report was not restored')).toBeNull()
 })
 
 test('shows the current report on a stale assignment and retries only on request', async () => {
