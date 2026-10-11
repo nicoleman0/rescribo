@@ -19,6 +19,19 @@ case "$runner" in herdr|headless) ;; *) echo "Unknown runner: $runner" >&2; exit
 pane=""
 if [ "$runner" = herdr ]; then pane=$(python3 "$state" get "$issue" pane); fi
 
+extra=()
+if [ "$role" = implementer ]; then extra=("implementer_backend=$backend"); fi
+if [ "$role" = reviewer ]; then
+  # An independent review needs a provider other than the one that wrote the code.
+  built_on=$(python3 "$state" get "$issue" implementer_backend 2>/dev/null || true)
+  [ -n "$built_on" ] || { echo "Issue $issue: no implementer has run, so there is nothing to review" >&2; exit 1; }
+  [ "$backend" != opencode ] || { echo "Issue $issue: the reviewer runs on claude or codex, not opencode" >&2; exit 1; }
+  if [ "$backend" = "$built_on" ] && [ "${SWITCHYARD_SAME_PROVIDER:-}" != 1 ]; then
+    echo "Issue $issue: the implementer ran on $backend. Review on another provider, or set SWITCHYARD_SAME_PROVIDER=1" >&2
+    exit 1
+  fi
+fi
+
 worker=""
 session=""
 if [ "$backend" = opencode ]; then
@@ -30,7 +43,7 @@ elif [ "$backend" = claude ]; then
   session=$(python3 -c 'import uuid; print(uuid.uuid4())')
 fi
 
-python3 "$state" set "$issue" "role=$role" "backend=$backend" "worker=$worker" "session=$session"
+python3 "$state" set "$issue" "role=$role" "backend=$backend" "worker=$worker" "session=$session" ${extra[@]+"${extra[@]}"}
 printf 'path=%s\n' "$path"
 [ -z "$pane" ] || printf 'pane=%s\n' "$pane"
 [ -z "$worker" ] || printf 'name=%s\n' "$worker"
