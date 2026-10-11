@@ -6,9 +6,11 @@ const PRODUCT_LINE = 'Customer feedback. Engineering work. Follow-up.'
 
 export function AuthLayout({
   title,
+  subtitle,
   children,
 }: {
   title: string
+  subtitle?: string
   children: ReactNode
 }) {
   return (
@@ -22,7 +24,12 @@ export function AuthLayout({
           </p>
         </header>
         <section className="w-full rounded-card surface-raised p-6 shadow-elevation-2 sm:p-8">
-          <h1 className="mb-5 text-xl font-semibold">{title}</h1>
+          <h1 className={`${subtitle ? 'mb-1' : 'mb-5'} text-xl font-semibold`}>
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mb-6 text-sm text-muted-foreground">{subtitle}</p>
+          ) : null}
           {children}
         </section>
       </div>

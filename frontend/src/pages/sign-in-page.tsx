@@ -48,10 +48,7 @@ export function SignInPage() {
   const apiError = mutation.error as ApiError | null
   const credentials = demoOffer.data
   return (
-    <AuthLayout title="Sign in">
-      <p className="-mt-4 mb-6 text-sm text-muted-foreground">
-        Use your workspace account.
-      </p>
+    <AuthLayout title="Sign in" subtitle="Use your workspace account.">
       <form className="grid gap-4" onSubmit={submit}>
         <Field
           id="email"

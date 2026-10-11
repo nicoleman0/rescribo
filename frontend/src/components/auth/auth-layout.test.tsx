@@ -18,3 +18,13 @@ test('shows the shared brand and page heading', () => {
     'Sign in · Rescribo',
   )
 })
+
+test('places an optional subtitle close below the heading', () => {
+  render(
+    <AuthLayout title="Sign in" subtitle="Use your workspace account.">
+      <form aria-label="Sign-in form" />
+    </AuthLayout>,
+  )
+  expect(screen.getByRole('heading', { level: 1 })).toHaveClass('mb-1')
+  expect(screen.getByText('Use your workspace account.')).toHaveClass('mb-6')
+})

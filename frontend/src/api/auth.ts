@@ -4,8 +4,6 @@ import type { components } from './schema'
 export const sessionQueryKey = ['auth', 'session'] as const
 export const demoOfferQueryKey = ['auth', 'demo-offer'] as const
 
-export type DemoCredentials = components['schemas']['DemoOffer']['credentials']
-
 export type Session = {
   user: { id: string; email: string; full_name: string }
   memberships: {

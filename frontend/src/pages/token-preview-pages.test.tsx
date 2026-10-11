@@ -29,10 +29,13 @@ test.each([
   'recovers a transient preview failure on %s',
   async (route, path, page, passwordLabel) => {
     let previews = 0
+    const requests: string[] = []
     vi.stubGlobal(
       'fetch',
       vi.fn((input: RequestInfo | URL) => {
-        if (String(input).includes('/auth/csrf/'))
+        const url = String(input)
+        requests.push(url)
+        if (url.includes('/auth/csrf/'))
           return Promise.resolve(new Response(null, { status: 204 }))
         previews += 1
         return Promise.resolve(
@@ -60,6 +63,7 @@ test.each([
     expect(
       screen.queryByRole('button', { name: 'Use demo login' }),
     ).not.toBeInTheDocument()
+    expect(requests.some((url) => url.includes('/auth/demo/'))).toBe(false)
     vi.unstubAllGlobals()
   },
 )
