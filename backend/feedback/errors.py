@@ -65,6 +65,10 @@ class DeliveryNotReady(FeedbackError):
         super().__init__(reason)
 
 
+class RecipientNotLinked(FeedbackError):
+    reason = "recipient_not_linked"
+
+
 class ConfirmationRequired(FeedbackError, ValueError):
     reason = "confirmation_required"
 

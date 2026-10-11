@@ -190,3 +190,4 @@ colours and shadows and applies no animated transition.
   `problemCard` as resting cards.
 - The panel title is `h2` and its section headings are `h3`. The page title is
   `h1` and its section headings are `h2`.
+- The Recipient picker lists every active member. A member with no Slack link is a disabled option ending in `(no Slack link)`.

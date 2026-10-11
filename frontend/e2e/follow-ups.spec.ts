@@ -110,6 +110,25 @@ test.describe('Follow-ups', () => {
   )
   test.use({ storageState: sessionPath })
 
+  test('marks members without Slack links unavailable in the recipient picker', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const marker = `Recipient ${Date.now()}`
+    const title = await confirmFix(page, marker)
+    await openFollowUp(page, title)
+    const recipient = detail(page).getByRole('combobox', { name: 'Recipient' })
+    await expect(
+      recipient
+        .locator('option')
+        .filter({ hasText: '(no Slack link)' })
+        .first(),
+    ).toBeDisabled()
+    await expect(
+      recipient.locator('option', { hasText: 'Owner' }).first(),
+    ).toBeEnabled()
+  })
+
   test('delivers an approved fix to Slack and records the customer outcome', async ({
     page,
   }) => {

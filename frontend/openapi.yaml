@@ -1324,6 +1324,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
         '401':
           content:
             application/json:
@@ -1629,7 +1635,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/MemberSummary'
+                  $ref: '#/components/schemas/MemberDirectoryEntry'
           description: ''
         '401':
           content:
@@ -5118,6 +5124,21 @@ components:
         * `pending` - Pending
         * `accepted` - Accepted
         * `rejected` - Rejected
+    MemberDirectoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+          readOnly: true
+        has_slack_link:
+          type: boolean
+      required:
+      - display_name
+      - has_slack_link
+      - id
     MemberSummary:
       type: object
       properties:

@@ -25,6 +25,7 @@ from feedback.errors import (
     NoChanges,
     NotFound,
     ReasonRequired,
+    RecipientNotLinked,
     ReleaseAccessMissing,
     ReleaseConnectionNotReady,
     ReleaseNotFound,
@@ -139,6 +140,18 @@ def feedback_error_response(error: FeedbackError, *, current: Callable[[], Any])
     if isinstance(error, DeliveryNotReady):
         return Response(
             {"detail": error.detail, "reason": error.reason, "field_errors": {}}, status=400
+        )
+    if isinstance(error, RecipientNotLinked):
+        return Response(
+            {
+                "detail": (
+                    "This member has not linked a Slack account. Choose a member with a Slack "
+                    "link, or ask this member to link Slack in Settings."
+                ),
+                "reason": error.reason,
+                "field_errors": {},
+            },
+            status=400,
         )
     if isinstance(error, MessageRequired):
         return Response(

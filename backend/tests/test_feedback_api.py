@@ -4,10 +4,13 @@ from uuid import uuid4
 
 import pytest
 from builders import make_membership, make_problem, make_report, make_user, make_workspace
+from django.db import connection
 from django.test import Client
+from django.test.utils import CaptureQueriesContext
 
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
+from connections.models import ExternalIdentity
 from feedback.models import Activity, Report, ReportSource
 from feedback.problems import confirm_fix
 from feedback.reports import (
@@ -247,8 +250,15 @@ def test_revoked_member_loses_inbox_access(client: Client) -> None:
 
 def test_member_directory_lists_active_workspace_members(client: Client) -> None:
     actor = make_membership(role=Membership.Role.MEMBER)
-    make_membership(
+    ada = make_membership(
         workspace=actor.workspace, user=make_user(email="a@example.test", full_name="Ada")
+    )
+    ExternalIdentity.objects.create(
+        workspace=actor.workspace,
+        membership=ada,
+        provider="slack",
+        provider_team_id="T0",
+        provider_user_id="U0ADA",
     )
     make_membership(workspace=actor.workspace, user=make_user(email="u@example.test", full_name=""))
     revoked = make_membership(workspace=actor.workspace, user=make_user(email="r@example.test"))
@@ -259,7 +269,32 @@ def test_member_directory_lists_active_workspace_members(client: Client) -> None
     assert response.status_code == 200
     rows = response.json()
     assert [row["display_name"] for row in rows] == ["Unnamed member", "Ada", "Test Member"]
-    assert all(set(row) == {"id", "display_name"} for row in rows)
+    assert all(set(row) == {"id", "display_name", "has_slack_link"} for row in rows)
+    assert [row["has_slack_link"] for row in rows] == [False, True, False]
+
+
+def test_member_directory_slack_flag_query_count_does_not_grow_with_members(
+    client: Client,
+) -> None:
+    actor = make_membership(role=Membership.Role.OWNER)
+    make_membership(workspace=actor.workspace, user=make_user(email="second@example.test"))
+    sign_in(client, actor)
+    url = f"/api/workspaces/{actor.workspace_id}/members/"
+    with CaptureQueriesContext(connection) as two_member_queries:
+        two_member_response = client.get(url)
+    assert two_member_response.status_code == 200
+    assert len(two_member_response.json()) == 2
+
+    for index in range(3):
+        make_membership(
+            workspace=actor.workspace,
+            user=make_user(email=f"extra-{index}@example.test"),
+        )
+    with CaptureQueriesContext(connection) as five_member_queries:
+        five_member_response = client.get(url)
+    assert five_member_response.status_code == 200
+    assert len(five_member_response.json()) == 5
+    assert len(two_member_queries) == len(five_member_queries)
 
 
 def test_manual_capture_replays_committed_submission(client: Client) -> None:

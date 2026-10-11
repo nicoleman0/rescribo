@@ -5,6 +5,7 @@ follow-up's notification rows. Nothing here resends an ambiguous write.
 """
 
 from datetime import datetime
+from typing import Any
 from uuid import UUID
 
 from django.conf import settings
@@ -17,10 +18,13 @@ from connections.models import Connection, ExternalIdentity
 from feedback.errors import (
     ConfirmationRequired,
     DeliveryNotReady,
+    InvalidReference,
     InvalidTransition,
     MessageRequired,
+    NoChanges,
     NotFound,
     ReasonRequired,
+    RecipientNotLinked,
     VersionConflict,
 )
 from feedback.models import Activity, FollowUp, Problem, Report, ReportSource
@@ -263,12 +267,24 @@ def _require_send_reconciled(operation: Operation) -> None:
         )
 
 
-def has_slack_identity(follow_up: FollowUp) -> bool:
+def _slack_identities(*, workspace_id: Any, membership_id: Any) -> QuerySet[ExternalIdentity]:
     return ExternalIdentity.objects.filter(
-        workspace_id=follow_up.workspace_id,
-        provider=Connection.Provider.SLACK,
-        membership=follow_up.recipient,
+        workspace_id=workspace_id, provider=Connection.Provider.SLACK, membership_id=membership_id
+    )
+
+
+def has_slack_identity(follow_up: FollowUp) -> bool:
+    return _slack_identities(
+        workspace_id=follow_up.workspace_id, membership_id=follow_up.recipient_id
     ).exists()
+
+
+def with_slack_link(members: QuerySet[Membership]) -> QuerySet[Membership]:
+    return members.annotate(
+        has_slack_link=Exists(
+            _slack_identities(workspace_id=OuterRef("workspace_id"), membership_id=OuterRef("pk"))
+        )
+    )
 
 
 def slack_readiness(*, follow_up: FollowUp) -> tuple[Connection, ExternalIdentity]:
@@ -827,15 +843,13 @@ def change_recipient(
             .first()
         )
         if new_recipient is None:
-            raise NotFound(record="recipient")
-        if not ExternalIdentity.objects.filter(
-            workspace_id=actor.workspace_id,
-            membership=new_recipient,
-            provider=Connection.Provider.SLACK,
-        ).exists():
-            raise InvalidTransition(action="change_recipient", from_state="")
+            raise InvalidReference(field="new_recipient")
         if new_recipient.pk == follow_up.recipient_id:
-            raise InvalidTransition(action="change_recipient", from_state="")
+            raise NoChanges()
+        if not _slack_identities(
+            workspace_id=actor.workspace_id, membership_id=new_recipient.pk
+        ).exists():
+            raise RecipientNotLinked()
         previous_recipient_id = follow_up.recipient_id
         follow_up.recipient = new_recipient
         follow_up.report_version = report.version
