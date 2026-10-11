@@ -12,7 +12,7 @@ docker compose exec -T postgres true >&2 || {
 suffix=$(printf '%03d' $((ISSUE % 1000)))
 api="8$suffix"
 web="5$suffix"
-redis_index=$((ISSUE % 15 + 1))
+redis_index=$(python3 "$MAIN_CHECKOUT/.claude/skills/work-issues/hooks/redis_index.py" claim "$ISSUE")
 database="rescribo_wt$ISSUE"
 
 docker compose exec -T postgres sh -c \
