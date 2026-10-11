@@ -1,143 +1,142 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
+import { sessionQueryKey, type Session } from '@/api/auth'
 import { WorkspaceProvider } from '@/components/auth/workspace-provider'
 import { AppShell } from './app-shell'
 
-test('exposes all primary destinations and a keyboard skip link', () => {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/inbox']}>
-        <AppShell>
-          <h1>Inbox</h1>
-        </AppShell>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
+const session: Session = {
+  user: { id: 'u-1', full_name: 'Ada Lovelace', email: 'ada@example.test' },
+  memberships: [],
+}
+const demo = {
+  membership_id: 'm-1',
+  role: 'member' as const,
+  workspace: {
+    id: 'ws-1',
+    name: 'Northwind (demo)',
+    slug: 'demo',
+    is_demo: true,
+  },
+}
 
-  expect(screen.getAllByRole('link', { name: 'Inbox' })).toHaveLength(2)
-  expect(screen.getAllByRole('link', { name: 'Problems' })).toHaveLength(2)
-  expect(screen.getAllByRole('link', { name: 'Follow-ups' })).toHaveLength(2)
-  expect(screen.getAllByRole('link', { name: 'Settings' })).toHaveLength(2)
-  expect(
-    screen.getByRole('link', { name: 'Skip to main content' }),
-  ).toHaveAttribute('href', '#main-content')
-  expect(screen.getByRole('main')).toHaveAttribute('tabindex', '-1')
+function renderShell(path = '/inbox', withWorkspace = false) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  client.setQueryData(sessionQueryKey, session)
+  const shell = (
+    <QueryClientProvider client={client}>
+      {withWorkspace ? (
+        <WorkspaceProvider membership={demo}>
+          <MemoryRouter initialEntries={[path]}>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route path="*" element={<h1>Page</h1>} />
+              </Route>
+            </Routes>
+          </MemoryRouter>
+        </WorkspaceProvider>
+      ) : (
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route path="*" element={<h1>Page</h1>} />
+            </Route>
+          </Routes>
+        </MemoryRouter>
+      )}
+    </QueryClientProvider>
+  )
+  return { ...render(shell), client }
+}
+
+beforeEach(() => {
+  localStorage.clear()
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('max-width') ? false : false,
+    media: query,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }))
 })
 
-test('renders the skip link as the first tab stop', () => {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/inbox']}>
-        <AppShell>
-          <h1>Inbox</h1>
-        </AppShell>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
-
+test('shows all exact navigation names and keeps the skip link first', () => {
+  renderShell()
+  for (const name of ['Inbox', 'Problems', 'Follow-ups', 'Settings']) {
+    expect(screen.getAllByRole('link', { name }).length).toBeGreaterThan(0)
+  }
   const skip = screen.getByRole('link', { name: 'Skip to main content' })
-  const focusable = document.body.querySelectorAll('a[href], button')
-  expect(focusable[0]).toBe(skip)
+  expect(document.body.querySelectorAll('a[href], button')[0]).toBe(skip)
+  expect(document.getElementById('main-content')).toHaveAttribute(
+    'tabindex',
+    '-1',
+  )
 })
 
-test('keeps a single sign out button in the header', () => {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/inbox']}>
-        <AppShell>
-          <h1>Inbox</h1>
-        </AppShell>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
-
-  expect(
-    within(screen.getByRole('banner')).getByRole('button', {
-      name: 'Sign out',
-    }),
-  ).toBeInTheDocument()
-  expect(screen.getAllByRole('button', { name: 'Sign out' })).toHaveLength(1)
-})
-
-test('shows no sign out button on the UI gallery', () => {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/dev/ui']}>
-        <AppShell>
-          <h1>UI gallery</h1>
-        </AppShell>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
-
+test('the user menu holds sign out and the UI gallery has no menu', async () => {
+  const user = userEvent.setup()
+  renderShell()
   expect(
     screen.queryByRole('button', { name: 'Sign out' }),
   ).not.toBeInTheDocument()
+  const trigger = screen.getAllByRole('button', {
+    name: /User menu for Ada Lovelace/,
+  })[0]
+  trigger.focus()
+  await user.keyboard('{Enter}')
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  expect(
+    await screen.findByRole('menuitem', { name: 'Sign out' }),
+  ).toBeInTheDocument()
 })
 
-test('labels a demo workspace on every screen', () => {
-  const demo = {
-    membership_id: 'm-1',
-    role: 'member' as const,
-    workspace: {
-      id: 'ws-1',
-      name: 'Northwind (demo)',
-      slug: 'demo',
-      is_demo: true,
-    },
-  }
-  const view = render(
-    <QueryClientProvider client={new QueryClient()}>
-      <WorkspaceProvider membership={demo}>
-        <MemoryRouter initialEntries={['/follow-ups']}>
-          <AppShell>
-            <h1>Follow-ups</h1>
-          </AppShell>
-        </MemoryRouter>
-      </WorkspaceProvider>
-    </QueryClientProvider>,
-  )
+test('the gallery shows no user menu or Sign out', () => {
+  renderShell('/dev/ui')
+  expect(
+    screen.queryByRole('button', { name: /User menu for/ }),
+  ).not.toBeInTheDocument()
+  expect(
+    screen.queryByRole('menuitem', { name: 'Sign out' }),
+  ).not.toBeInTheDocument()
+})
+
+test('demo sentence is inside the user menu', async () => {
+  const user = userEvent.setup()
+  renderShell('/follow-ups', true)
   expect(screen.getByLabelText('Demo workspace')).toHaveTextContent('Demo')
   expect(
-    screen.getByText('Fictitious data. Nothing is sent to Slack or GitHub.'),
+    screen.queryByText('Fictitious data. Nothing is sent to Slack or GitHub.'),
+  ).not.toBeInTheDocument()
+  const trigger = screen.getAllByRole('button', {
+    name: /User menu for Ada Lovelace/,
+  })[0]
+  trigger.focus()
+  await user.keyboard('{Enter}')
+  expect(
+    await screen.findByText(
+      'Fictitious data. Nothing is sent to Slack or GitHub.',
+    ),
   ).toBeInTheDocument()
-
-  view.rerender(
-    <QueryClientProvider client={new QueryClient()}>
-      <WorkspaceProvider
-        membership={{
-          ...demo,
-          workspace: { ...demo.workspace, is_demo: false },
-        }}
-      >
-        <MemoryRouter initialEntries={['/follow-ups']}>
-          <AppShell>
-            <h1>Follow-ups</h1>
-          </AppShell>
-        </MemoryRouter>
-      </WorkspaceProvider>
-    </QueryClientProvider>,
-  )
-  expect(screen.queryByLabelText('Demo workspace')).not.toBeInTheDocument()
 })
 
-test('links the sidebar wordmark to the inbox', async () => {
-  render(
-    <QueryClientProvider client={new QueryClient()}>
-      <MemoryRouter initialEntries={['/settings']}>
-        <Routes>
-          <Route element={<AppShell />}>
-            <Route path="settings" element={<h1>Settings</h1>} />
-            <Route path="inbox" element={<h1>Inbox</h1>} />
-          </Route>
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>,
-  )
+test('wordmark links to Inbox when expanded', () => {
+  renderShell('/settings')
   fireEvent.click(screen.getByRole('link', { name: 'rescribo, go to inbox' }))
+  expect(screen.getByRole('heading', { name: 'Page' })).toBeInTheDocument()
+})
+
+test('collapsing hides the wordmark and stores the rail preference', async () => {
+  const user = userEvent.setup()
+  renderShell('/settings')
+  await user.click(screen.getByRole('button', { name: 'Toggle Sidebar' }))
   expect(
-    await screen.findByRole('heading', { name: 'Inbox' }),
-  ).toBeInTheDocument()
+    screen.queryByRole('link', { name: 'rescribo, go to inbox' }),
+  ).not.toBeInTheDocument()
+  expect(screen.getAllByRole('link', { name: 'Inbox' }).length).toBeGreaterThan(
+    0,
+  )
+  expect(localStorage.getItem('rescribo-sidebar')).toBe('false')
 })

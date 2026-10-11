@@ -22,7 +22,7 @@ interaction surface.
 Light, dark, and system. `data-theme` on `<html>` always holds a concrete
 theme; `src/lib/theme.ts` resolves system and saves the choice in this
 browser, and an inline script in `index.html` applies it before first paint.
-Members pick a theme under Settings, Appearance.
+Members pick a theme under Settings, Appearance or in the user menu.
 
 `:root` holds the light values. Each other theme is one
 `:root[data-theme='…']` block that redefines every colour, tone, and
@@ -74,18 +74,18 @@ Boxes nested inside an elevated surface use a plain border.
 ## Wordmark
 
 The wordmark is the SVG used as a mask over `--primary`, so it follows the
-theme. In the sidebar it links to the inbox.
+theme. In the expanded sidebar it links to the inbox. The wordmark is hidden in the collapsed rail.
 
 ## Components
 
 - StatusBadge: the only status pill
-- shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, Skeleton, Input, Textarea, and NativeSelect
+- shadcn primitives: Button, Badge, Card, Alert, Avatar, Separator, Skeleton, Input, Textarea, NativeSelect, Sidebar, Sheet, Tooltip, DropdownMenu, and Breadcrumb
 - form fields: Field, TextareaField, and SelectField share one label, hint, and inline error layout
 - shared async states: LoadingState, EmptyState, ErrorState, RetryButton, and QueryState
 - ConfirmPanel: the inline confirm step for an action with a side effect; settings adds a typed phrase for permanent deletion
 - ActionError explains a failed save or triage action; the form that owns the input keeps it
 - FormErrorMessage is the text of a form's error summary: the reply's message, then one line for each field error the form does not render. Forms read field errors through `fieldError`, which is how the summary knows what was rendered
-- AppShell: desktop sidebar, mobile bottom navigation, and a compact status header
+- AppShell: collapsible desktop sidebar, mobile bottom navigation, user menu, navigation counts, breadcrumbs, and a compact header
 
 ## Async state pattern
 
@@ -99,11 +99,11 @@ that owns the draft when a recoverable request fails.
 
 ## Layout rules
 
-- Desktop uses a sidebar, a flexible content area, and compact 44px navigation rows.
+- Desktop uses a sidebar, a flexible content area, and compact 35.75px navigation rows (`min-h-11` at the 13px root size).
 - Mobile keeps all navigation targets at a 44px minimum touch target and moves navigation to a bottom tab bar. `Button`, `Input`, and `NativeSelect` carry the 44px phone minimum themselves; other action controls (chips, tabs, option rows, checkbox labels) use `touchTarget`.
 - Controls use the smaller control radius. Cards use the larger card radius. Status badges are pills.
 - AppShell renders "Skip to main content" before the sidebar, so it is the first Tab stop.
-- AppShell keeps Sign out in the header at every width. The sidebar has no sign-out block, and the UI gallery shows no Sign out.
+- AppShell keeps Sign out in the user menu. The menu is in the sidebar footer on desktop and the header on phones. The UI gallery shows no Sign out.
 - Use left alignment, short text measure, visible focus, and no decorative colour outside the token system.
 
 ## Page frame
@@ -213,3 +213,10 @@ colours and shadows and applies no animated transition.
 - The product line lives in `auth-layout.tsx`: "Customer feedback. Engineering work. Follow-up."
 - Submit buttons use the shared `lg` size and span the form width. `lg` matches `Input`; phone controls keep their 44px minimum.
 - Sign-in shows the demo visitor credentials only when the public offer loads. The hint says the data is fictitious and fills the form without signing in.
+
+## App shell
+
+- Desktop navigation uses a 14rem sidebar that collapses to an icon rail. Its state persists in this browser. Rows use `min-h-11`; phone navigation targets stay at 44px.
+- The user menu shows the member's name and email, theme choice, and Sign out. On phones, an avatar in the header opens the same menu. Demo workspaces show the fictitious data notice in the menu and keep the Demo badge in the header.
+- Inbox and Follow-ups show counts from their filtered list queries. Zero, loading, and failed counts are hidden, and the count does not change the link name.
+- Breadcrumbs replace the header tagline. Detail pages show their section and record title. The header keeps an empty place for the command palette trigger.

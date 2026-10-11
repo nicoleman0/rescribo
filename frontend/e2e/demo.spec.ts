@@ -86,3 +86,12 @@ test('the demo visitor sees labelled, simulated data', async ({ page }) => {
   expect(wideBadge.y).toBeLessThan(wideTitle.y + wideTitle.height)
   expect(wideBadge.x).toBeGreaterThan(wideTitle.x + wideTitle.width)
 })
+
+test('the demo label stays visible with the sidebar collapsed', async ({
+  page,
+}) => {
+  await openDemoInbox(page)
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.getByRole('button', { name: 'Toggle Sidebar' }).click()
+  await expect(page.getByLabel('Demo workspace')).toBeVisible()
+})

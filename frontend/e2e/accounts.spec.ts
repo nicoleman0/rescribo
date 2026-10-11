@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
 import { expectVisibleControlTouchTargets } from './touch-target.js'
+import { signOut } from './shell.js'
 
 const seedPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -22,7 +23,7 @@ test('owner signs in and signs out', async ({ page }) => {
   await page.getByLabel('Password').fill(seed.users[0].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
-  await page.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(page)
   await expect(page).toHaveURL(/\/sign-in$/)
   await page.goto('/inbox')
   await expect(page).toHaveURL(/\/sign-in$/)
@@ -153,7 +154,7 @@ test('a member accepts an invitation in a clean browser context', async ({
     .fill('Harbour-Copper-7628!Quilt')
   await invitePage.getByRole('button', { name: 'Accept invitation' }).click()
   await expect(invitePage).toHaveURL(/\/inbox$/)
-  await invitePage.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(invitePage)
   await expect(invitePage).toHaveURL(/\/sign-in$/)
   await invitePage.getByRole('textbox', { name: 'Email' }).fill(inviteEmail)
   await invitePage.getByLabel('Password').fill('Harbour-Copper-7628!Quilt')
@@ -205,7 +206,7 @@ test('an owner issued password reset link works in a clean browser context', asy
     .fill('Cobalt-Window-9264!Birch')
   await resetPage.getByRole('button', { name: 'Save password' }).click()
   await expect(resetPage).toHaveURL(/\/inbox$/)
-  await resetPage.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(resetPage)
   await resetPage
     .getByRole('textbox', { name: 'Email' })
     .fill('member@example.test')
@@ -293,7 +294,7 @@ test('a removed member accepts a new invitation with their password', async ({
   expect(active.map((item) => [item.workspace.id, item.role])).toEqual([
     [seed.workspace_id, 'member'],
   ])
-  await member.getByRole('button', { name: 'Sign out' }).click()
+  await signOut(member)
   await expect(member).toHaveURL(/\/sign-in$/)
   await member.getByRole('textbox', { name: 'Email' }).fill(email)
   await member.getByLabel('Password').fill(password)
