@@ -7,6 +7,7 @@ from connections.errors import safe_provider_error as safe_provider_error
 from integrations.github_app.settings import check_github
 from integrations.github_app.settings import github_setup as github_setup
 from integrations.slack.settings import channel_details as channel_details
+from integrations.slack.settings import channel_options as channel_options
 from integrations.slack.settings import check_slack
 from integrations.slack.settings import slack_setup as slack_setup
 

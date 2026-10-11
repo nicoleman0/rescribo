@@ -97,6 +97,18 @@ class ChannelInputSerializer(VersionSerializer):
     consent = serializers.BooleanField(default=False)
 
 
+class ChannelOptionSerializer(serializers.Serializer):
+    channel_id = serializers.CharField()
+    name = serializers.CharField()
+    is_private = serializers.BooleanField()
+    unavailable_reason = serializers.CharField()
+
+
+class ChannelOptionsSerializer(serializers.Serializer):
+    channels = ChannelOptionSerializer(many=True)
+    truncated = serializers.BooleanField()
+
+
 class DeleteSerializer(serializers.Serializer):
     confirmation = serializers.CharField()
 
@@ -221,6 +233,18 @@ class RefreshView(OwnerWorkspaceView):
 
 
 class ChannelView(OwnerWorkspaceView):
+    @extend_schema(responses={200: ChannelOptionsSerializer, 400: ErrorSerializer})
+    def get(self, request: Request, workspace_id: UUID) -> Response:
+        def listing() -> dict[str, Any]:
+            try:
+                return services.list_channels(self.membership)
+            except providers.SetupError:
+                raise
+            except providers.PROVIDER_ERRORS as error:
+                raise providers.safe_provider_error(error) from error
+
+        return translated(listing)
+
     @extend_schema(
         request=ChannelInputSerializer,
         responses={204: None, 400: ErrorSerializer, 409: ErrorSerializer},

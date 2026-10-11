@@ -10,6 +10,8 @@ from integrations.slack.policy import SlackChannel, validate_channel
 
 # Slack's acknowledgement deadline is three seconds, so interactive calls must fail fast.
 INTERACTIVE_TIMEOUT = 2
+PAGE_SIZE = 200
+MAX_LISTED_CHANNELS = 1000
 
 
 def bot_client(credential: str, *, timeout: int = 10) -> WebClient:
@@ -25,6 +27,44 @@ def eligible_channel(credential: str, channel_id: str, *, timeout: int = 10) -> 
     """Fetch current channel state and raise `ChannelRejected` when it is not eligible."""
     response = bot_client(credential, timeout=timeout).conversations_info(channel=channel_id)
     return validate_channel(response["channel"])
+
+
+def _directory_client(credential: str) -> Any:
+    if settings.RESCRIBO_SLACK_FAKE_DELIVERY:
+        from integrations.slack.fake_channels import fake_directory_client
+
+        return fake_directory_client()
+    return bot_client(credential)
+
+
+def member_channels(credential: str) -> tuple[list[dict[str, Any]], bool]:
+    """Return up to 1,000 bot memberships and whether more were available."""
+    return collect_member_channels(_directory_client(credential))
+
+
+def collect_member_channels(client: Any) -> tuple[list[dict[str, Any]], bool]:
+    """Paginate a Slack directory client with the same cap used by settings."""
+    channels: list[dict[str, Any]] = []
+    cursor = ""
+    while len(channels) < MAX_LISTED_CHANNELS:
+        response = client.users_conversations(
+            types="public_channel,private_channel",
+            exclude_archived=True,
+            limit=PAGE_SIZE,
+            cursor=cursor,
+        )
+        channels.extend(response.get("channels", []))
+        if len(channels) >= MAX_LISTED_CHANNELS:
+            channels = channels[:MAX_LISTED_CHANNELS]
+            return channels, bool(response.get("response_metadata", {}).get("next_cursor"))
+        cursor = response.get("response_metadata", {}).get("next_cursor", "")
+        if not cursor:
+            return channels, False
+    return channels, False
+
+
+def channel_info(credential: str, channel_id: str) -> dict[str, Any]:
+    return _directory_client(credential).conversations_info(channel=channel_id)["channel"]
 
 
 def open_view(credential: str, *, trigger_id: str, view: dict[str, Any]) -> None:

@@ -4,11 +4,17 @@ from typing import Any
 
 from django.conf import settings
 from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 from connections.credentials import cipher
 from connections.errors import SetupError
-from integrations.slack.client import bot_client
-from integrations.slack.policy import REQUIRED_BOT_SCOPES, validate_channel
+from integrations.slack.client import bot_client, channel_info, member_channels
+from integrations.slack.policy import (
+    REQUIRED_BOT_SCOPES,
+    SlackChannel,
+    unavailable_reason,
+    validate_channel,
+)
 
 
 def slack_setup(code: str, redirect_uri: str) -> dict[str, Any]:
@@ -41,14 +47,40 @@ def slack_setup(code: str, redirect_uri: str) -> dict[str, Any]:
 
 
 def channel_details(credential: str, channel_id: str) -> dict[str, Any]:
-    response = bot_client(credential).conversations_info(channel=channel_id)
-    data = response["channel"]
+    data = channel_info(credential, channel_id)
     validated = validate_channel(data)
     return dict(
         channel_id=validated.channel_id,
         name=data.get("name", validated.channel_id),
         is_private=validated.is_private,
     )
+
+
+def channel_options(credential: str) -> dict[str, Any]:
+    try:
+        channels, truncated = member_channels(credential)
+    except SlackApiError as error:
+        if getattr(error.response, "status_code", None) == 429:
+            raise SetupError(
+                "slack_rate_limited", "Slack asked us to wait. Try again in a minute."
+            ) from error
+        raise
+    options: list[dict[str, Any]] = []
+    for data in channels:
+        channel = SlackChannel.from_api(data)
+        name = data.get("name")
+        if not isinstance(name, str) or not name:
+            name = channel.channel_id
+        options.append(
+            {
+                "channel_id": channel.channel_id,
+                "name": name,
+                "is_private": channel.is_private,
+                "unavailable_reason": unavailable_reason(channel) or "",
+            }
+        )
+    options.sort(key=lambda option: option["name"].casefold())
+    return {"channels": options, "truncated": truncated}
 
 
 def check_slack(credential: str, external_id: str) -> None:

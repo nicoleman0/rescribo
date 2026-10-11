@@ -193,7 +193,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["workspaces_channels_retrieve"];
         put?: never;
         post: operations["workspaces_channels_create"];
         delete?: never;
@@ -1236,6 +1236,16 @@ export interface components {
             remove: boolean;
             /** @default false */
             consent: boolean;
+        };
+        ChannelOption: {
+            channel_id: string;
+            name: string;
+            is_private: boolean;
+            unavailable_reason: string;
+        };
+        ChannelOptions: {
+            channels: components["schemas"]["ChannelOption"][];
+            truncated: boolean;
         };
         /**
          * @description * `DISCONNECT` - DISCONNECT
@@ -2437,6 +2447,35 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    workspaces_channels_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChannelOptions"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

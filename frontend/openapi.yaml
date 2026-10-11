@@ -402,6 +402,32 @@ paths:
                 additionalProperties: {}
           description: ''
   /api/workspaces/{workspace_id}/channels/:
+    get:
+      operationId: workspaces_channels_retrieve
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChannelOptions'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
     post:
       operationId: workspaces_channels_create
       parameters:
@@ -4049,6 +4075,34 @@ components:
       required:
       - channel_id
       - version
+    ChannelOption:
+      type: object
+      properties:
+        channel_id:
+          type: string
+        name:
+          type: string
+        is_private:
+          type: boolean
+        unavailable_reason:
+          type: string
+      required:
+      - channel_id
+      - is_private
+      - name
+      - unavailable_reason
+    ChannelOptions:
+      type: object
+      properties:
+        channels:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelOption'
+        truncated:
+          type: boolean
+      required:
+      - channels
+      - truncated
     ConfirmationEnum:
       enum:
       - DISCONNECT

@@ -16,5 +16,8 @@ export const getInvitations = (workspaceId: string) =>
   apiRequest<Invitation[]>(settingsPath(workspaceId, 'invitations/'))
 export type SlackIdentity = components['schemas']['SlackIdentity']
 export type SlackLinkCode = components['schemas']['SlackLinkCode']
+export type SlackChannelOptions = components['schemas']['ChannelOptions']
 export const getSlackIdentity = (workspaceId: string) =>
   apiRequest<SlackIdentity>(settingsPath(workspaceId, 'slack/identity/'))
+export const getSlackChannels = (workspaceId: string) =>
+  apiRequest<SlackChannelOptions>(settingsPath(workspaceId, 'channels/'))

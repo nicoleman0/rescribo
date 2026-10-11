@@ -379,6 +379,7 @@ def test_connection_settings_are_refused(seeded: Workspace, no_providers: Any) -
         lambda: services.finish_setup(owner, "slack", "session", "state", "code"),
         lambda: services.disconnect(owner, "slack", slack.version),
         lambda: services.update_channel(owner, slack.version, "CDEMO", False),
+        lambda: services.list_channels(owner),
         lambda: services.refresh_connection(owner, "slack", slack.version),
     ]
     for action in actions:

@@ -158,7 +158,7 @@ test('the Slack connect form passes API validation', async ({ page }) => {
   )
   await page.goto('/settings')
   const slack = page.getByRole('region', { name: 'Slack', exact: true })
-  await slack.getByRole('checkbox').check()
+  await slack.locator('form').nth(1).getByRole('checkbox').check()
   const [request] = await Promise.all([
     page.waitForRequest('**/connections/slack/setup/'),
     slack.getByRole('button', { name: /^(Connect|Reconnect) Slack$/ }).click(),
@@ -199,4 +199,37 @@ test('a passing Slack check shows its result beside the button (mocked)', async 
   )
   expect(overflow).toBe(false)
   expect(await axeViolations(page)).toEqual([])
+})
+
+test('an owner allows and removes a Slack channel from the picker', async ({
+  page,
+}) => {
+  const seed = JSON.parse(
+    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
+  ) as { users: { email: string; password: string }[] }
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/sign-in')
+  await page.getByLabel('Email').fill(seed.users[4].email)
+  await page.getByLabel('Password').fill(seed.users[4].password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/inbox$/)
+  await page.goto('/settings')
+  const slack = page.getByRole('region', { name: 'Slack', exact: true })
+  const channels = slack.getByRole('region', { name: 'Allowed Slack channels' })
+  await channels
+    .getByRole('combobox', { name: 'Slack channel' })
+    .selectOption('C0E2EPUBLIC')
+  await channels.getByRole('checkbox').check()
+  await slack.getByRole('button', { name: 'Allow channel' }).click()
+  await expect(
+    slack.getByText(/#support-requests \(C0E2EPUBLIC\)/),
+  ).toBeVisible()
+  expect(
+    await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+  ).toBe(true)
+  expect(await axeViolations(page)).toEqual([])
+  await slack
+    .getByRole('button', { name: 'Remove channel support-requests' })
+    .click()
+  await expect(slack.getByText('No channels allowed yet.')).toBeVisible()
 })

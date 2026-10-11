@@ -26,6 +26,7 @@ from connections.providers import SetupError
 from feedback.models import Activity, FollowUp, Report, ReportNotificationOperation, ReportSource
 from feedback.problems import confirm_fix
 from feedback.reports import link_report
+from integrations.slack.errors import ChannelRejected
 
 pytestmark = pytest.mark.django_db
 
@@ -79,6 +80,89 @@ def test_read_omits_secrets_and_is_scoped(client: Client, actor: Membership) -> 
     assert client.get(url(other, "connections/")).status_code == 404
 
 
+def test_owner_lists_slack_channels(client: Client, actor: Membership) -> None:
+    connect(actor)
+    with patch(
+        "connections.providers.channel_options",
+        return_value={"channels": [], "truncated": False},
+    ) as listing:
+        response = client.get(url(actor, "channels/"))
+    assert response.status_code == 200
+    assert response.json() == {"channels": [], "truncated": False}
+    listing.assert_called_once_with("encrypted-secret")
+
+
+def test_channel_list_requires_active_slack_connection(client: Client, actor: Membership) -> None:
+    with patch("connections.providers.channel_options") as listing:
+        response = client.get(url(actor, "channels/"))
+    assert response.status_code == 400
+    assert response.json()["reason"] == "not_connected"
+    listing.assert_not_called()
+
+
+def test_channel_list_is_scoped_to_owner_workspace(client: Client, actor: Membership) -> None:
+    other = make_membership(
+        workspace=make_workspace(slug="other-channel-list"),
+        user=make_user(email="other-channel-list@test.dev"),
+    )
+    login(client, other)
+    with patch("connections.providers.channel_options") as listing:
+        response = client.get(url(actor, "channels/"))
+    assert response.status_code == 404
+    listing.assert_not_called()
+
+
+def test_channel_list_errors_do_not_change_allowed_channels(
+    client: Client, actor: Membership
+) -> None:
+    row = connect(actor)
+    allowed = AllowedChannel.objects.create(
+        connection=row,
+        channel_id="COLD",
+        name="old-channel",
+        is_private=False,
+    )
+    for error, reason in (
+        (SetupError("slack_rate_limited", "Wait."), "slack_rate_limited"),
+        (SlackApiError("failed", {"error": "internal_error"}), "provider_unavailable"),
+    ):
+        with patch("connections.providers.channel_options", side_effect=error):
+            response = client.get(url(actor, "channels/"))
+        assert response.status_code == 400
+        assert response.json()["reason"] == reason
+        assert list(AllowedChannel.objects.filter(connection=row).values_list("pk", flat=True)) == [
+            allowed.pk
+        ]
+
+
+def test_submit_rechecks_channel_not_in_list_and_preserves_allowed_channels(
+    client: Client, actor: Membership
+) -> None:
+    row = connect(actor)
+    allowed = AllowedChannel.objects.create(
+        connection=row,
+        channel_id="COLD",
+        name="old-channel",
+        is_private=False,
+    )
+    with patch(
+        "connections.providers.channel_details",
+        side_effect=ChannelRejected("bot_not_member", "CNEW"),
+    ) as details:
+        response = post(
+            client,
+            actor,
+            "channels/",
+            {"version": 1, "channel_id": "CNEW", "consent": True},
+        )
+    assert response.status_code == 400
+    assert response.json()["reason"] == "channel_ineligible"
+    details.assert_called_once_with("encrypted-secret", "CNEW")
+    assert list(AllowedChannel.objects.filter(connection=row).values_list("pk", flat=True)) == [
+        allowed.pk
+    ]
+
+
 @pytest.mark.parametrize(
     "path,body",
     [
@@ -93,6 +177,10 @@ def test_owner_only(client: Client, actor: Membership, path: str, body: dict[str
     member = make_membership(workspace=actor.workspace, user=make_user(email="another@test.dev"))
     login(client, member)
     assert post(client, actor, path, body).status_code == 403
+    if path == "channels/":
+        with patch("connections.providers.channel_options") as listing:
+            assert client.get(url(actor, path)).status_code == 403
+        listing.assert_not_called()
 
 
 @pytest.mark.parametrize("provider", ["slack", "github"])

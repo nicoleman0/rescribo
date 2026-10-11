@@ -4,6 +4,7 @@
 Run with `task slack-channels`. Reads the bot token from `.env.slack-feasibility`.
 """
 
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -13,14 +14,15 @@ from slack_sdk import WebClient
 from live_check import required_environment
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+
+from integrations.slack.client import collect_member_channels  # noqa: E402
+
 environ.Env.read_env(REPOSITORY_ROOT / ".env.slack-feasibility", overwrite=False)
 
 
 def list_channels(client: WebClient) -> list[dict[str, Any]]:
-    response = client.conversations_list(
-        types="public_channel,private_channel", exclude_archived=True, limit=200
-    )
-    channels: list[dict[str, Any]] = list(response["channels"])
+    channels, _truncated = collect_member_channels(client)
     return sorted(channels, key=lambda channel: str(channel["name"]))
 
 
@@ -30,7 +32,7 @@ def main() -> None:
     print(f"{'id':<14} {'kind':<8} {'bot in?':<8} name")
     for channel in channels:
         kind = "private" if channel["is_private"] else "public"
-        member = "yes" if channel["is_member"] else "no"
+        member = "yes"
         print(f"{channel['id']:<14} {kind:<8} {member:<8} #{channel['name']}")
 
 
