@@ -19,9 +19,10 @@ Write each group's tests first and see them fail.
   - a `SlackApiError` whose response has `status_code == 429` becomes `SetupError` with code `slack_rate_limited`;
   - with `RESCRIBO_SLACK_FAKE_DELIVERY=True`, `channel_options("fake")` returns the three fake channels without decrypting, `channel_details("fake", "C0E2EPUBLIC")` passes, `channel_details("fake", "C0E2ESHARED")` raises `ChannelRejected`, and an unknown ID raises `SlackApiError`.
 - [x] 1.4 New `backend/integrations/slack/fake_channels.py` with `FakeDirectoryClient` (D7).
-- [x] 1.5 `backend/integrations/slack/client.py`: `PAGE_SIZE`, `MAX_LISTED_CHANNELS`, `_directory_client`, `member_channels`, `channel_info` (D2).
+- [x] 1.5 New `backend/integrations/slack/channel_directory.py`: Django-free `PAGE_SIZE`, `MAX_LISTED_CHANNELS`, and `collect_member_channels`. `client.py` imports the shared pagination function and constants; `scripts/list_slack_channels.py` imports from the Django-free module (D2).
 - [x] 1.6 `backend/integrations/slack/settings.py`: add `channel_options`; `channel_details` calls `client.channel_info` (D2). The existing `test_channel_policy_rejects_ineligible_sources` must pass unchanged.
 - [x] 1.7 [shared] `backend/connections/providers.py`: re-export `channel_options`. Fallback: none; ask if refused.
+- [x] 1.8 `backend/tests/test_slack_channel_script.py`: run the feasibility script in a subprocess without a Slack token or Django settings and assert it exits with the missing-token message before any API call.
 
 ## 2. Service and endpoint
 
@@ -41,6 +42,7 @@ Write each group's tests first and see them fail.
 
 - [x] 3.1 `frontend/src/features/settings/settings-page.test.tsx`, as owner with the active Slack connection, stubbing `GET ${base}channels/`:
   - the select offers `#key-accounts · Private` and `#support-requests · Public`, the Slack Connect option is disabled and names the reason, and an already allowed channel is not offered;
+  - an unavailable option with an unrecognized reason is disabled and displays `Not allowed`;
   - "Allow channel" is disabled until a channel is chosen and the box in the channel form is ticked; ticking the connect form's box does not enable it;
   - submitting posts `{ version, channel_id, consent: true }` through a successful POST response, and afterwards the box is unticked;
   - no textbox named "Slack channel ID" exists;

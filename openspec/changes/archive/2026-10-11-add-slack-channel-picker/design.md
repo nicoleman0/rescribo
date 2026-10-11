@@ -35,9 +35,10 @@ The maintainer still needs to verify before merge: a public channel the bot is n
 `policy.py` gains `unavailable_reason(channel: SlackChannel) -> str | None`. It returns the first of `direct_message`, `group_direct_message`, `externally_shared`, `archived`, or `None`. `validate_channel` calls it and then checks membership. The list uses it without the membership check, because `users.conversations` omits `is_member` and returns only the bot's conversations.
 
 ### D2. Provider calls stay in `integrations/slack/`
-- `client.member_channels(credential) -> list[dict]`: follows `response_metadata.next_cursor` and stops at `MAX_LISTED_CHANNELS = 1000` (five pages of `PAGE_SIZE = 200`). It returns the raw channel dicts and whether more remained.
+- `channel_directory.py` has no Django or connection imports. It owns `PAGE_SIZE`, `MAX_LISTED_CHANNELS`, and `collect_member_channels(client)`, which follows `response_metadata.next_cursor` for at most five pages and returns the raw channel dicts with a truncated flag. The app client and `scripts/list_slack_channels.py` both use it.
+- `client.member_channels(credential) -> list[dict]` passes the directory client to `collect_member_channels`.
 - `client.channel_info(credential, channel_id) -> dict`: `conversations.info`, the call `channel_details` makes today.
-- Both go through `_directory_client(credential)`, which returns the fake under `RESCRIBO_SLACK_FAKE_DELIVERY`, the same switch `_delivery_client` uses. `collect_member_channels(client)` contains the shared pagination loop used by the feasibility script.
+- Both go through `_directory_client(credential)`, which returns the fake under `RESCRIBO_SLACK_FAKE_DELIVERY`, the same switch `_delivery_client` uses.
 - `settings.channel_options(credential) -> dict`: returns eligible channels and Slack Connect channels, mapped to `channel_id`, `name`, `is_private`, and `unavailable_reason` (empty when it can be chosen), sorted by name, with `truncated`. It omits rows whose reason is not `externally_shared`, including archived channels, DMs, and group DMs. It turns a 429 into `SetupError("slack_rate_limited", "Slack asked us to wait. Try again in a minute.")`.
 - `settings.channel_details` calls `client.channel_info` and is otherwise unchanged.
 
@@ -69,7 +70,7 @@ Errors use the existing `ErrorSerializer` shape through `translated`: 400 with `
 ### D6. Frontend
 - New `allowed-channels.tsx` in `features/settings` holds the whole "Allowed Slack channels" section: heading, help text, allowed list with Remove, and the form. `connection-settings.tsx` passes `workspaceId`, `workspaceName`, `connection`, `action`, and `busy`. The "Connection update failed" box renders within this section on `action.error`.
 - The list is a `useQuery` with key `['slack-channels', workspaceId]`, `staleTime` 30 seconds, enabled only for an owner with an active Slack connection outside the demo. The key sits outside `settingsKey`, so unrelated settings actions do not call Slack. Refetch on window focus stays on: an owner who invites the bot in Slack and comes back sees the channel.
-- The control is `SelectField` (the shared `NativeSelect`). Options read `#name · Public` or `#name · Private`. Unavailable options are `disabled` and read `#name · Slack Connect, not allowed`. Channels already in `connection.channels` are filtered out. A native select has type-ahead and needs no new component.
+- The control is `SelectField` (the shared `NativeSelect`). Options read `#name · Public` or `#name · Private`. Unavailable options are `disabled` and read `#name · Slack Connect, not allowed`; an unknown unavailable reason reads `Not allowed`. Channels already in `connection.channels` are filtered out. A native select has type-ahead and needs no new component.
   - Alternative: a filter box with a result list. Rejected for now: a new pattern for a list that is short in practice.
 - States, composed from the shared components per the "Async state pattern" in `frontend/DESIGN.md`:
   - loading: `LoadingState` with the label "Loading Slack channels";
@@ -94,7 +95,7 @@ Each needs the coordinator's yes. The tasks mark them.
 - `backend/connections/providers.py`: one line, `from integrations.slack.settings import channel_options as channel_options`. Without it `services.py` would import the integration directly, against the file's "Provider boundary" rule.
 - `frontend/src/api/settings.ts`: one type and one fetcher, `getSlackChannels`. If refused, they live in `allowed-channels.tsx`.
 - `backend/integrations/slack/settings.py` and the new `fake_channels.py`: the brief names `client.py` and `policy.py`, but `channel_details` lives in `settings.py`.
-- `scripts/list_slack_channels.py` (optional): it reads one page of 200 and stops, so it misses channels in a larger workspace. Pointing it at `client.member_channels` would fix that and give the maintainer a one-command live check of `users.conversations`. Left out of the tasks unless approved.
+- `scripts/list_slack_channels.py`: imports the Django-free pagination module and uses the same channel cap when it reports a truncated result. A subprocess test verifies that it reports a missing token before any Slack call without Django settings configured.
 
 ## Live checks before merge
 

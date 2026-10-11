@@ -6,12 +6,11 @@ from django.conf import settings
 from slack_sdk import WebClient
 
 from connections.credentials import decrypt
+from integrations.slack.channel_directory import collect_member_channels
 from integrations.slack.policy import SlackChannel, validate_channel
 
 # Slack's acknowledgement deadline is three seconds, so interactive calls must fail fast.
 INTERACTIVE_TIMEOUT = 2
-PAGE_SIZE = 200
-MAX_LISTED_CHANNELS = 1000
 
 
 def bot_client(credential: str, *, timeout: int = 10) -> WebClient:
@@ -40,27 +39,6 @@ def _directory_client(credential: str) -> Any:
 def member_channels(credential: str) -> tuple[list[dict[str, Any]], bool]:
     """Return up to 1,000 bot memberships and whether more were available."""
     return collect_member_channels(_directory_client(credential))
-
-
-def collect_member_channels(client: Any) -> tuple[list[dict[str, Any]], bool]:
-    """Paginate a Slack directory client with the same cap used by settings."""
-    channels: list[dict[str, Any]] = []
-    cursor = ""
-    while len(channels) < MAX_LISTED_CHANNELS:
-        response = client.users_conversations(
-            types="public_channel,private_channel",
-            exclude_archived=True,
-            limit=PAGE_SIZE,
-            cursor=cursor,
-        )
-        channels.extend(response.get("channels", []))
-        if len(channels) >= MAX_LISTED_CHANNELS:
-            channels = channels[:MAX_LISTED_CHANNELS]
-            return channels, bool(response.get("response_metadata", {}).get("next_cursor"))
-        cursor = response.get("response_metadata", {}).get("next_cursor", "")
-        if not cursor:
-            return channels, False
-    return channels, False
 
 
 def channel_info(credential: str, channel_id: str) -> dict[str, Any]:

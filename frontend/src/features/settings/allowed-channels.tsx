@@ -160,7 +160,8 @@ export function AllowedChannels({
                 >
                   #{item.name} ·{' '}
                   {item.unavailable_reason
-                    ? unavailableLabels[item.unavailable_reason]
+                    ? (unavailableLabels[item.unavailable_reason] ??
+                      'Not allowed')
                     : item.is_private
                       ? 'Private'
                       : 'Public'}

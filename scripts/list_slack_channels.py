@@ -16,7 +16,10 @@ from live_check import required_environment
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 
-from integrations.slack.client import collect_member_channels  # noqa: E402
+from integrations.slack.channel_directory import (  # noqa: E402
+    MAX_LISTED_CHANNELS,
+    collect_member_channels,
+)
 
 environ.Env.read_env(REPOSITORY_ROOT / ".env.slack-feasibility", overwrite=False)
 
@@ -34,7 +37,7 @@ def main() -> None:
         kind = "private" if channel["is_private"] else "public"
         print(f"{channel['id']:<14} {kind:<8} #{channel['name']}")
     if truncated:
-        print("Channel list was cut short at 1,000 channels.")
+        print(f"Channel list was cut short at {MAX_LISTED_CHANNELS:,} channels.")
 
 
 if __name__ == "__main__":

@@ -510,6 +510,12 @@ test('channel picker offers named channels with unavailable choices disabled', a
             is_private: false,
             unavailable_reason: 'externally_shared',
           },
+          {
+            channel_id: 'C4',
+            name: 'unknown-reason',
+            is_private: false,
+            unavailable_reason: 'future_reason',
+          },
         ],
         truncated: false,
       }),
@@ -526,6 +532,11 @@ test('channel picker offers named channels with unavailable choices disabled', a
   expect(
     within(select).getByRole('option', {
       name: '#partner-shared · Slack Connect, not allowed',
+    }),
+  ).toBeDisabled()
+  expect(
+    within(select).getByRole('option', {
+      name: '#unknown-reason · Not allowed',
     }),
   ).toBeDisabled()
   expect(
