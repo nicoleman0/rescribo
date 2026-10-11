@@ -30,11 +30,11 @@ test.beforeAll(async ({ browser }, info) => {
       expect(response.ok(), `Could not load seeded ${kind} records`).toBe(true)
       const data = (await response.json()) as PageOfIds
       const id = data.results[0]?.id
-      expect(
-        id,
-        `No seeded ${kind} was found. Run the full E2E suite to seed records.`,
-      ).toBeTruthy()
-      routes.set(kind, `/${endpoint === 'reports' ? 'inbox' : endpoint}/${id}`)
+      if (id)
+        routes.set(
+          kind,
+          `/${endpoint === 'reports' ? 'inbox' : endpoint}/${id}`,
+        )
     }
   } finally {
     await context.close()
@@ -61,7 +61,10 @@ for (const productRoute of productRoutes) {
   }) => {
     const route =
       'path' in productRoute ? productRoute.path : routes.get(productRoute.key)
-    expect(route, `No route was prepared for ${productRoute.name}`).toBeTruthy()
+    expect(
+      route,
+      `No seeded ${'key' in productRoute ? productRoute.key : 'route'} record was found. Run the full E2E suite to seed records.`,
+    ).toBeTruthy()
 
     for (const width of [375, 320]) {
       await page.setViewportSize({ width, height: 740 })
