@@ -100,7 +100,7 @@ function ProblemSearch({
         maxLength={200}
         onChange={(event) => setText(event.target.value)}
       />
-      <Button type="submit" size="lg" className="h-10">
+      <Button type="submit" size="lg">
         <Search aria-hidden="true" />
         Search
       </Button>

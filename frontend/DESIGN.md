@@ -206,3 +206,10 @@ colours and shadows and applies no animated transition.
 - The panel title is `h2` and its section headings are `h3`. The page title is
   `h1` and its section headings are `h2`.
 - The Recipient picker lists every active member. A member with no Slack link is a disabled option ending in `(no Slack link)`.
+
+## Signed-out pages
+
+- Sign-in, accept-invite, and reset-password share `AuthLayout`. Desktop places the wordmark and product line beside a raised form card; phones place them above it. The layout owns each page's single `h1` and document title.
+- The product line lives in `auth-layout.tsx`: "Customer feedback. Engineering work. Follow-up."
+- Submit buttons use the shared `lg` size and span the form width. `lg` matches `Input`; phone controls keep their 44px minimum.
+- Sign-in shows the demo visitor credentials only when the public offer loads. The hint says the data is fictitious and fills the form without signing in.

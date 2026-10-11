@@ -8,8 +8,8 @@ import { Field } from '@/components/forms/field'
 import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
-import { PageTitle } from '@/components/layout/page-title'
 
 export function ResetPasswordPage() {
   const { token = '' } = useParams()
@@ -50,9 +50,7 @@ export function ResetPasswordPage() {
     redeem.mutate()
   }
   return (
-    <AuthLayout>
-      <PageTitle title="Reset password" />
-      <h1 className="mb-5 text-xl font-semibold">Reset password</h1>
+    <AuthLayout title="Reset password">
       {preview.isPending ? (
         <LoadingState label="Checking reset link" />
       ) : preview.isError ? (
@@ -96,11 +94,18 @@ export function ResetPasswordPage() {
             onChange={(event) => setConfirm(event.target.value)}
           />
           {redeemError ? (
-            <p role="alert">
-              <FormErrorMessage error={redeemError} />
-            </p>
+            <Alert variant="destructive">
+              <AlertDescription>
+                <FormErrorMessage error={redeemError} />
+              </AlertDescription>
+            </Alert>
           ) : null}
-          <Button type="submit" disabled={redeem.isPending}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={redeem.isPending}
+          >
             Save password
           </Button>
         </form>

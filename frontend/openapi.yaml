@@ -11,6 +11,18 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/auth/demo/:
+    get:
+      operationId: auth_demo_retrieve
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoOffer'
+          description: ''
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -4217,6 +4229,26 @@ components:
       required:
       - confirmation
       - version
+    DemoCredentials:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    DemoOffer:
+      type: object
+      properties:
+        credentials:
+          allOf:
+          - $ref: '#/components/schemas/DemoCredentials'
+          nullable: true
+      required:
+      - credentials
     Disconnect:
       type: object
       properties:

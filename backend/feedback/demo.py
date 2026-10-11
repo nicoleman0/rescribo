@@ -10,6 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import transaction
 from django.utils import timezone
 
+from accounts.demo import DEMO_SLUG, VISITOR_EMAIL
 from accounts.models import Membership, Workspace
 from connections.models import Connection, ExternalIdentity
 from connections.slack_delivery import send_follow_up_notification
@@ -23,8 +24,6 @@ from feedback.services import write_activity, write_system_activity
 from feedback.submissions import ReportSubmission, SourceSnapshot
 from operations.models import ExternalOperation
 
-DEMO_SLUG = "demo"
-VISITOR_EMAIL = "demo@example.com"
 OWNER_EMAIL = "demo-owner@example.com"
 SLACK_TEAM = "TDEMO"
 # Non-numeric, so a missed guard fails before any GitHub request.

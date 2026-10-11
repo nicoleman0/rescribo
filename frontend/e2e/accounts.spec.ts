@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { AxeBuilder } from '@axe-core/playwright'
+import { axeViolations } from './axe.js'
 import { expectVisibleControlTouchTargets } from './touch-target.js'
 
 const seedPath = path.join(
@@ -33,6 +33,9 @@ test('sign-in is keyboard accessible and has no axe violations', async ({
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 })
   await page.goto('/sign-in')
+  await expect(
+    page.getByRole('button', { name: 'Use demo login' }),
+  ).toBeVisible()
   const email = page.getByRole('textbox', { name: 'Email' })
   await page.keyboard.press('Tab')
   await expect(email).toBeFocused()
@@ -40,8 +43,11 @@ test('sign-in is keyboard accessible and has no axe violations', async ({
   await page.getByLabel('Password').fill('temporary')
   await page.keyboard.press('Tab')
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeFocused()
-  const results = await new AxeBuilder({ page }).analyze()
-  expect(results.violations).toEqual([])
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme })
+    await expect(page.locator('html')).toHaveAttribute('data-theme', scheme)
+    expect(await axeViolations(page)).toEqual([])
+  }
 })
 
 test('sign-in at mobile width', async ({ page }) => {
@@ -52,6 +58,32 @@ test('sign-in at mobile width', async ({ page }) => {
   expect(
     await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
   ).toBe(true)
+  for (const path of [
+    '/invite/unknown-token',
+    '/reset-password/unknown-token',
+  ]) {
+    await page.goto(path)
+    await expect(page.getByRole('status')).toBeVisible()
+    expect(
+      await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+    ).toBe(true)
+  }
+})
+
+test('sign-in button matches the email input at desktop width', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/sign-in')
+  await expect(
+    page.getByRole('button', { name: 'Use demo login' }),
+  ).toBeVisible()
+  const email = await page.getByRole('textbox', { name: 'Email' }).boundingBox()
+  const submit = await page
+    .getByRole('button', { name: 'Sign in' })
+    .boundingBox()
+  expect(submit?.height).toBe(email?.height)
+  expect(submit?.width).toBe(email?.width)
 })
 
 test('expired invitation explains the problem without a password form', async ({
@@ -62,7 +94,20 @@ test('expired invitation explains the problem without a password form', async ({
   await expect(page.getByRole('status')).toHaveText(
     'This invitation has expired or is no longer available.',
   )
+  await expect(page.getByRole('img', { name: 'rescribo' })).toBeVisible()
+  await expect(
+    page.getByText('Customer feedback. Engineering work. Follow-up.'),
+  ).toBeVisible()
   await expect(page.getByLabel('Password')).toHaveCount(0)
+})
+
+test('expired reset link shows the signed-out brand', async ({ page }) => {
+  await page.goto('/reset-password/unknown-token')
+  await expect(page.getByRole('status')).toBeVisible()
+  await expect(page.getByRole('img', { name: 'rescribo' })).toBeVisible()
+  await expect(
+    page.getByText('Customer feedback. Engineering work. Follow-up.'),
+  ).toBeVisible()
 })
 
 test('a member accepts an invitation in a clean browser context', async ({

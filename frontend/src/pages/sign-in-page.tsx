@@ -1,7 +1,14 @@
-import { useState, type FormEvent } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRef, useState, type FormEvent } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { csrf, login, sessionQueryKey, type Session } from '@/api/auth'
+import {
+  csrf,
+  demoOfferQueryKey,
+  getDemoOffer,
+  login,
+  sessionQueryKey,
+  type Session,
+} from '@/api/auth'
 import type { ApiError } from '@/api/request'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
@@ -9,11 +16,16 @@ import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { PageTitle } from '@/components/layout/page-title'
 
 export function SignInPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const signInButton = useRef<HTMLButtonElement>(null)
+  const demoOffer = useQuery({
+    queryKey: demoOfferQueryKey,
+    queryFn: getDemoOffer,
+    retry: false,
+  })
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const location = useLocation()
@@ -34,13 +46,9 @@ export function SignInPage() {
     mutation.mutate()
   }
   const apiError = mutation.error as ApiError | null
+  const credentials = demoOffer.data
   return (
-    <AuthLayout>
-      <PageTitle title="Sign in" />
-      <h1 className="text-xl font-semibold">Sign in</h1>
-      <p className="mt-1 mb-6 text-sm text-muted-foreground">
-        Use your workspace account.
-      </p>
+    <AuthLayout title="Sign in" subtitle="Use your workspace account.">
       <form className="grid gap-4" onSubmit={submit}>
         <Field
           id="email"
@@ -69,10 +77,45 @@ export function SignInPage() {
             </AlertDescription>
           </Alert>
         ) : null}
-        <Button type="submit" disabled={mutation.isPending}>
+        <Button
+          ref={signInButton}
+          type="submit"
+          size="lg"
+          className="w-full"
+          disabled={mutation.isPending}
+        >
           {mutation.isPending ? 'Signing in…' : 'Sign in'}
         </Button>
       </form>
+      {credentials ? (
+        <section className="mt-6 grid gap-3 border-t border-border pt-5">
+          <p className="text-sm font-medium">
+            Try the demo. Its data is fictitious.
+          </p>
+          <dl className="grid gap-2 text-sm">
+            <div className="grid gap-1">
+              <dt className="text-muted-foreground">Visitor email</dt>
+              <dd className="break-all font-mono">{credentials.email}</dd>
+            </div>
+            <div className="grid gap-1">
+              <dt className="text-muted-foreground">Visitor password</dt>
+              <dd className="break-all font-mono">{credentials.password}</dd>
+            </div>
+          </dl>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => {
+              setEmail(credentials.email)
+              setPassword(credentials.password)
+              signInButton.current?.focus()
+            }}
+          >
+            Use demo login
+          </Button>
+        </section>
+      ) : null}
     </AuthLayout>
   )
 }

@@ -1,13 +1,38 @@
 import { Wordmark } from '@/components/brand/wordmark'
+import { PageTitle } from '@/components/layout/page-title'
 import type { ReactNode } from 'react'
 
-export function AuthLayout({ children }: { children: ReactNode }) {
+const PRODUCT_LINE = 'Customer feedback. Engineering work. Follow-up.'
+
+export function AuthLayout({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: ReactNode
+}) {
   return (
     <main className="grid min-h-svh place-items-center bg-background p-5">
-      <section className="w-full max-w-md rounded-card surface-raised p-6 shadow-elevation-2 sm:p-8">
-        <Wordmark className="mb-6 h-7" />
-        {children}
-      </section>
+      <PageTitle title={title} />
+      <div className="grid w-full max-w-5xl items-center gap-8 lg:grid-cols-2 lg:gap-16">
+        <header className="grid gap-4 lg:justify-self-end">
+          <Wordmark className="h-8" />
+          <p className="max-w-md text-lg text-muted-foreground">
+            {PRODUCT_LINE}
+          </p>
+        </header>
+        <section className="w-full rounded-card surface-raised p-6 shadow-elevation-2 sm:p-8">
+          <h1 className={`${subtitle ? 'mb-1' : 'mb-5'} text-xl font-semibold`}>
+            {title}
+          </h1>
+          {subtitle ? (
+            <p className="mb-6 text-sm text-muted-foreground">{subtitle}</p>
+          ) : null}
+          {children}
+        </section>
+      </div>
     </main>
   )
 }
