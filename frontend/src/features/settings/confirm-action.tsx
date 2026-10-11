@@ -1,5 +1,7 @@
 import { useId, useRef, useState } from 'react'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { ErrorState } from '@/components/states/async-states'
 import { useSettingsAction } from './use-settings-action'
@@ -64,10 +66,13 @@ export function ConfirmAction({
         onChange={(event) => setConfirmation(event.target.value)}
         autoComplete="off"
         autoFocus
-        error={action.error?.fieldErrors?.confirmation?.join(' ')}
+        error={fieldError(action.error, 'confirmation')}
       />
       {action.error ? (
-        <ErrorState title="Action failed" description={action.error.message} />
+        <ErrorState
+          title="Action failed"
+          description={<FormErrorMessage error={action.error} />}
+        />
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button

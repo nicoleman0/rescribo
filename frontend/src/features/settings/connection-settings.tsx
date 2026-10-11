@@ -2,6 +2,8 @@ import { useState } from 'react'
 import type { Connection } from '@/api/settings'
 import { formatDate } from '@/features/inbox/report-format'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
 import { ErrorState } from '@/components/states/async-states'
@@ -147,7 +149,7 @@ export function ConnectionSettings({
                     value={repository}
                     onChange={(event) => setRepository(event.target.value)}
                     hint="Install the configured GitHub App on this repository first. Authorise a GitHub user who can access it."
-                    error={setup.error?.fieldErrors?.repository?.join(' ')}
+                    error={fieldError(setup.error, 'repository')}
                   />
                 ) : null}
                 <label
@@ -176,7 +178,7 @@ export function ConnectionSettings({
               {setup.error ? (
                 <ErrorState
                   title={`Could not connect ${name}`}
-                  description={setup.error.message}
+                  description={<FormErrorMessage error={setup.error} />}
                 />
               ) : null}
               {active ? (
@@ -275,7 +277,7 @@ export function ConnectionSettings({
                       required
                       value={channel}
                       onChange={(event) => setChannel(event.target.value)}
-                      error={action.error?.fieldErrors?.channel_id?.join(' ')}
+                      error={fieldError(action.error, 'channel_id')}
                       hint="Confirm workspace visibility above before allowing a channel."
                     />
                     <Button
@@ -290,7 +292,7 @@ export function ConnectionSettings({
               {action.error ? (
                 <ErrorState
                   title="Connection update failed"
-                  description={action.error.message}
+                  description={<FormErrorMessage error={action.error} />}
                 />
               ) : null}
             </>

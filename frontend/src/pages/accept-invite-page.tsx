@@ -6,6 +6,8 @@ import { csrf, getSession, sessionQueryKey, type Session } from '@/api/auth'
 import { useQueryClient } from '@tanstack/react-query'
 import { AuthLayout } from '@/components/auth/auth-layout'
 import { Field } from '@/components/forms/field'
+import { fieldError } from '@/components/forms/field-error'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { ErrorState, LoadingState } from '@/components/states/async-states'
 import { PageTitle } from '@/components/layout/page-title'
@@ -119,10 +121,12 @@ export function AcceptInvitePage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              error={acceptError?.fieldErrors?.password?.[0]}
+              error={fieldError(acceptError, 'password')}
             />
-            {accept.isError && !acceptError?.fieldErrors?.password ? (
-              <p role="alert">{accept.error.message}</p>
+            {acceptError && !acceptError.fieldErrors?.password ? (
+              <p role="alert">
+                <FormErrorMessage error={acceptError} />
+              </p>
             ) : null}
             <Button type="submit" disabled={accept.isPending}>
               Accept invitation
@@ -139,7 +143,11 @@ export function AcceptInvitePage() {
           >
             Accept invitation
           </Button>
-          {accept.isError ? <p role="alert">{accept.error.message}</p> : null}
+          {acceptError ? (
+            <p role="alert">
+              <FormErrorMessage error={acceptError} />
+            </p>
+          ) : null}
         </div>
       ) : (
         <>
@@ -161,14 +169,7 @@ export function AcceptInvitePage() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              error={
-                passwordError ||
-                (
-                  accept.error as {
-                    fieldErrors?: Record<string, string[]>
-                  } | null
-                )?.fieldErrors?.password?.[0]
-              }
+              error={passwordError || fieldError(acceptError, 'password')}
             />
             <Field
               id="confirm-password"
@@ -179,7 +180,11 @@ export function AcceptInvitePage() {
               value={confirmation}
               onChange={(event) => setConfirmation(event.target.value)}
             />
-            {accept.isError ? <p role="alert">{accept.error.message}</p> : null}
+            {acceptError ? (
+              <p role="alert">
+                <FormErrorMessage error={acceptError} />
+              </p>
+            ) : null}
             <Button type="submit" disabled={accept.isPending}>
               Accept invitation
             </Button>

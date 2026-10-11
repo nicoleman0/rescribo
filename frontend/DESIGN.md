@@ -74,6 +74,7 @@ theme. In the sidebar it links to the inbox.
 - form fields: Field, TextareaField, and SelectField share one label, hint, and inline error layout
 - shared async states: LoadingState, EmptyState, ErrorState, RetryButton, and QueryState
 - ActionError explains a failed save or triage action; the form that owns the input keeps it
+- FormErrorMessage is the text of a form's error summary: the reply's message, then one line for each field error the form does not render. Forms read field errors through `fieldError`, which is how the summary knows what was rendered
 - AppShell: desktop sidebar, mobile bottom navigation, and a compact status header
 
 ## Async state pattern

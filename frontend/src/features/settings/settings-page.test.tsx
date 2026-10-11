@@ -486,3 +486,53 @@ test('a passed result is hidden when the connection is no longer active', async 
   await within(github).findByText('Needs attention')
   expect(within(github).queryByText(/connection is working/)).toBeNull()
 })
+
+test.each([
+  ['slack', 'Connect Slack'],
+  ['github', 'Connect GitHub'],
+] as const)(
+  '%s setup shows a rejected repository where the owner can see it',
+  async (provider, button) => {
+    testMembership.role = 'owner'
+    stubApi({
+      ...unlinked,
+      [`GET ${base}connections/`]: () => json([]),
+      [`GET ${base}memberships/`]: () => json([]),
+      [`GET ${base}invitations/`]: () => json([]),
+      [`POST ${base}connections/${provider}/setup/`]: () =>
+        json(
+          {
+            detail: 'Check the submitted fields.',
+            reason: 'invalid_request',
+            field_errors: { repository: ['This field may not be blank.'] },
+          },
+          400,
+        ),
+    })
+    render()
+    const name = provider === 'slack' ? 'Slack' : 'GitHub'
+    const card = await screen.findByRole('region', { name })
+    const user = userEvent.setup()
+    if (provider === 'github') {
+      await user.type(
+        within(card).getByLabelText('GitHub repository'),
+        'acme/web',
+      )
+    }
+    await user.click(within(card).getByRole('checkbox'))
+    await user.click(within(card).getByRole('button', { name: button }))
+    const summary = (
+      await within(card).findByText(`Could not connect ${name}`)
+    ).closest('[role="alert"]')
+    if (provider === 'slack') {
+      expect(summary).toHaveTextContent(
+        'Check the submitted fields. Repository: This field may not be blank.',
+      )
+    } else {
+      expect(summary).not.toHaveTextContent('Repository:')
+      expect(
+        within(card).getAllByText('This field may not be blank.'),
+      ).toHaveLength(1)
+    }
+  },
+)

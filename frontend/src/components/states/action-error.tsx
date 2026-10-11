@@ -1,4 +1,5 @@
 import type { ApiError } from '@/api/request'
+import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 function actionMessage(error: ApiError, record: string) {
@@ -38,7 +39,12 @@ export function ActionError({
   return (
     <Alert variant="destructive">
       <AlertTitle>{title}</AlertTitle>
-      <AlertDescription>{actionMessage(error, record)}</AlertDescription>
+      <AlertDescription>
+        <FormErrorMessage
+          error={error}
+          message={actionMessage(error, record)}
+        />
+      </AlertDescription>
     </Alert>
   )
 }
