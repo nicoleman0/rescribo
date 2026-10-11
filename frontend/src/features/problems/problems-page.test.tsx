@@ -115,6 +115,7 @@ test('lists problems with owner, state, count, and review flag, and searches', a
   expect(within(link).getByText('In progress')).toBeInTheDocument()
   expect(within(link).getByText('Owner: Ada Lovelace')).toBeInTheDocument()
   expect(within(link).getByText('2 reports')).toBeInTheDocument()
+  expect(within(link).queryByText('No reports', { exact: true })).toBeNull()
 
   fireEvent.change(screen.getByRole('searchbox', { name: 'Search problems' }), {
     target: { value: ' nothing ' },
@@ -129,6 +130,37 @@ test('lists problems with owner, state, count, and review flag, and searches', a
   )
   fireEvent.click(screen.getByRole('button', { name: 'Clear search' }))
   await screen.findByRole('list', { name: 'Problems' })
+})
+
+test('marks empty live problems but keeps settled problem counts unmarked', async () => {
+  const empty = {
+    ...listItem,
+    id: 'prob-2',
+    title: 'Empty',
+    report_count: 0,
+    needs_review: false,
+  }
+  const declined = {
+    ...listItem,
+    id: 'prob-3',
+    title: 'Declined',
+    state: 'not_planned' as const,
+    report_count: 0,
+  }
+  stubApi({ [`GET ${base}/problems/`]: () => page([empty, declined]) })
+  renderWorkspaceRoutes(listRoutes, '/problems')
+  const list = await screen.findByRole('list', { name: 'Problems' })
+  const emptyLink = within(list).getByRole('link', { name: /Empty/ })
+  expect(within(emptyLink).getByText('No reports')).toHaveAttribute(
+    'data-tone',
+    'warning',
+  )
+  expect(within(emptyLink).getByText('0 reports')).toBeInTheDocument()
+  const declinedLink = within(list).getByRole('link', { name: /Declined/ })
+  expect(within(declinedLink).getByText('0 reports')).toBeInTheDocument()
+  expect(
+    within(declinedLink).queryByText('No reports', { exact: true }),
+  ).toBeNull()
 })
 
 test('distinguishes no problems, an invalid search, and a failed load', async () => {
@@ -156,7 +188,10 @@ test('distinguishes no problems, an invalid search, and a failed load', async ()
   expect(await screen.findByText('No problems yet')).toBeInTheDocument()
 })
 
-function stubDetail(problem: ProblemDetail = detail) {
+function stubDetail(
+  problem: ProblemDetail = detail,
+  reports: ReportDetail[] = [linkedReport],
+) {
   document.cookie = 'csrftoken=csrf-token'
   const server = { problem }
   const sent: Record<string, unknown>[] = []
@@ -164,7 +199,7 @@ function stubDetail(problem: ProblemDetail = detail) {
     'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
     [`GET ${base}/members/`]: () => json([ada]),
     [`GET ${base}/problems/prob-1/`]: () => json(server.problem),
-    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page(reports),
     [`GET ${base}/problems/prob-1/activity/`]: () =>
       page([
         activity({
@@ -203,6 +238,21 @@ function stubDetail(problem: ProblemDetail = detail) {
   return { sent }
 }
 
+test('marks empty problem detail and explains that its history is kept', async () => {
+  stubDetail({ ...detail, state: 'in_progress', report_count: 0 }, [])
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  const badge = await screen.findByText('No reports', { exact: true })
+  expect(badge).toHaveAttribute('data-tone', 'warning')
+  expect(
+    await screen.findByText(
+      (_, node) =>
+        node?.tagName === 'P' &&
+        node.textContent?.replace(/\s+/g, ' ').trim() ===
+          'No reports are linked. The problem and its history are kept. Link a report from the Inbox.',
+    ),
+  ).toBeInTheDocument()
+})
+
 test('shows compact linked reports and a readable activity history', async () => {
   stubDetail()
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
@@ -210,6 +260,7 @@ test('shows compact linked reports and a readable activity history', async () =>
     await screen.findByRole('heading', { level: 1, name: 'Exports fail' }),
   ).toBeInTheDocument()
   expect(screen.getByText('1 report · v2')).toBeInTheDocument()
+  expect(screen.queryByText('No reports', { exact: true })).toBeNull()
   expect(
     screen.getByRole('heading', { name: 'Confirm the fix when it ships' }),
   ).toBeInTheDocument()

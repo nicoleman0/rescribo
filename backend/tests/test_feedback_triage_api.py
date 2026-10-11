@@ -19,7 +19,7 @@ from django.utils import timezone
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
 from feedback.models import Activity, Problem, Report, ReportNotificationOperation
-from feedback.problems import assign_problem_owner
+from feedback.problems import assign_problem_owner, change_problem_state
 from feedback.reports import assign_report, link_report, unlink_report
 from feedback.submissions import SourceSnapshot
 
@@ -348,6 +348,43 @@ def test_problem_activity_keeps_removed_reports_and_names_people(
     second_rows = client.get(api(actor, f"problems/{second.pk}/activity/")).json()["results"]
     assert second_rows[0]["action"] == "report.unlinked" and second_rows[0]["to_problem"] is None
     assert second_rows[1]["from_problem"] == {"id": str(first.pk), "title": "First"}
+
+
+def test_problems_keep_state_and_history_after_last_report_moves_and_ungroups(
+    client: Client, actor: Membership
+) -> None:
+    first = make_problem(actor=actor, title="First")
+    second = make_problem(actor=actor, title="Second")
+    change_problem_state(
+        actor=actor,
+        problem_id=first.pk,
+        expected_version=1,
+        action="start",
+    )
+    report = make_report(actor=actor, title="Moved report")
+    link_report(actor=actor, report_id=report.pk, expected_version=1, problem_id=first.pk)
+    link_report(actor=actor, report_id=report.pk, expected_version=2, problem_id=second.pk)
+    unlink_report(actor=actor, report_id=report.pk, expected_version=3)
+
+    first_detail = client.get(api(actor, f"problems/{first.pk}/"))
+    second_detail = client.get(api(actor, f"problems/{second.pk}/"))
+    assert first_detail.status_code == second_detail.status_code == 200
+    assert first_detail.json()["state"] == "in_progress"
+    assert first_detail.json()["report_count"] == 0
+    assert second_detail.json()["state"] == "open"
+    assert second_detail.json()["report_count"] == 0
+
+    listed = client.get(api(actor, "problems/")).json()["results"]
+    listed_by_id = {row["id"]: row for row in listed}
+    assert str(first.pk) in listed_by_id and str(second.pk) in listed_by_id
+    assert listed_by_id[str(first.pk)]["report_count"] == 0
+    assert listed_by_id[str(second.pk)]["report_count"] == 0
+
+    second_activity = client.get(api(actor, f"problems/{second.pk}/activity/"))
+    assert second_activity.status_code == 200
+    actions = [row["action"] for row in second_activity.json()["results"]]
+    assert "report.linked" in actions
+    assert "report.unlinked" in actions
 
 
 def test_problem_edit_and_owner(client: Client, actor: Membership) -> None:
