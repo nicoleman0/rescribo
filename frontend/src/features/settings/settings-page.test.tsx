@@ -157,6 +157,8 @@ test('a member generates a Slack linking code and sees the link once made', asyn
     await screen.findByRole('button', { name: 'Generate linking code' }),
   )
   expect(await screen.findByLabelText('Linking code')).toHaveValue('code-123')
+  expect(screen.getByText(/Link Rescribo account/)).toBeVisible()
+  expect(screen.queryByText(/Submit customer feedback/)).not.toBeInTheDocument()
   linked = true
   await user.click(screen.getByRole('button', { name: 'Generate a new code' }))
   expect(await screen.findByText(/Linked to Slack user/)).toBeVisible()

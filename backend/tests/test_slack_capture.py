@@ -97,6 +97,34 @@ def shortcut(
     return payload
 
 
+def link_shortcut(**overrides: Any) -> dict[str, Any]:
+    payload = {
+        "type": "shortcut",
+        "callback_id": "link_rescribo_account",
+        "trigger_id": "Tr0link",
+        "team": {"id": TEAM},
+        "user": {"id": ACTOR},
+    }
+    payload.update(overrides)
+    return payload
+
+
+def link_submission(code: str, *, team: str = TEAM, user: str = ACTOR) -> dict[str, Any]:
+    return {
+        "type": "view_submission",
+        "team": {"id": team},
+        "user": {"id": user},
+        "view": {
+            "callback_id": "link_rescribo_account",
+            "state": {
+                "values": {
+                    "slack_link_code": {"value": {"value": code}},
+                }
+            },
+        },
+    }
+
+
 def submission(
     context_id: str, *, title: str = "Export fails", link_code: str | None = None, **who: str
 ) -> dict[str, Any]:
@@ -174,6 +202,133 @@ def link(member: Membership, user_id: str = ACTOR) -> None:
         provider_team_id=TEAM,
         provider_user_id=user_id,
     )
+
+
+class TestLinkShortcut:
+    def test_opens_link_modal_without_capture_context(
+        self, client: Client, api: MagicMock, connection: Connection
+    ) -> None:
+        assert interact(client, link_shortcut()).status_code == 200
+        view = opened_view(api)
+        assert view["callback_id"] == "link_rescribo_account"
+        assert any(block.get("block_id") == "slack_link_code" for block in view["blocks"])
+        assert not SlackCaptureContext.objects.exists()
+
+    def test_redeems_code_and_already_linked_actor_gets_notice(
+        self, client: Client, api: MagicMock, connection: Connection, member: Membership
+    ) -> None:
+        code = slack_identity.issue_link_code(member).secret
+        response = interact(client, link_submission(code)).json()
+        assert response["response_action"] == "update"
+        assert response["view"]["title"]["text"] == "Account linked"
+        assert (
+            slack_identity.linked_membership(
+                workspace_id=member.workspace_id, team_id=TEAM, user_id=ACTOR
+            )
+            == member
+        )
+        sign_in(client, member)
+        assert client.get(f"/api/workspaces/{member.workspace_id}/slack/identity/").json()["linked"]
+        assert interact(client, link_shortcut()).status_code == 200
+        assert opened_view(api)["title"]["text"] == "Already linked"
+        assert not any(
+            block.get("block_id") == "slack_link_code" for block in opened_view(api)["blocks"]
+        )
+
+    def test_rejected_codes_stay_on_link_field(
+        self, client: Client, connection: Connection
+    ) -> None:
+        response = interact(client, link_submission("unknown")).json()
+        assert response["response_action"] == "errors"
+        assert "slack_link_code" in response["errors"]
+        assert not ExternalIdentity.objects.exists()
+
+    def test_empty_code_returns_field_error(self, client: Client, connection: Connection) -> None:
+        response = interact(client, link_submission("")).json()
+        assert response == {
+            "response_action": "errors",
+            "errors": {"slack_link_code": slack_inbound.EMPTY_LINK_CODE_TEXT},
+        }
+
+    @pytest.mark.parametrize("case", ["reused", "expired", "other_workspace", "revoked"])
+    def test_invalid_code_states_are_rejected(
+        self,
+        client: Client,
+        connection: Connection,
+        member: Membership,
+        case: str,
+    ) -> None:
+        code_member = member
+        if case == "other_workspace":
+            code_member = make_membership(
+                user=make_user(email="outsider-link@example.test"),
+                workspace=make_workspace(name="Outside", slug="outside"),
+            )
+        code = slack_identity.issue_link_code(code_member).secret
+        if case == "reused":
+            slack_identity.redeem_link_code(
+                code, workspace_id=member.workspace_id, team_id=TEAM, user_id="U0FIRST"
+            )
+        elif case == "expired":
+            SlackLinkCode.objects.filter(membership=code_member).update(
+                expires_at=timezone.now() - timedelta(seconds=1)
+            )
+        elif case == "revoked":
+            Membership.objects.filter(pk=member.pk).update(
+                is_active=False, revoked_at=timezone.now()
+            )
+        response = interact(client, link_submission(code)).json()
+        assert response["response_action"] == "errors"
+        assert "slack_link_code" in response["errors"]
+        assert not ExternalIdentity.objects.filter(provider_user_id=ACTOR).exists()
+
+    def test_existing_slack_identity_is_preserved_when_link_is_rejected(
+        self,
+        client: Client,
+        connection: Connection,
+        member: Membership,
+    ) -> None:
+        other = make_membership(
+            user=make_user(email="already-linked@example.test"), workspace=member.workspace
+        )
+        link(other)
+        code = slack_identity.issue_link_code(member).secret
+        response = interact(client, link_submission(code)).json()
+        assert response["errors"]["slack_link_code"] == (
+            "This Slack account is already linked to another member."
+        )
+        assert list(ExternalIdentity.objects.values_list("membership_id", flat=True)) == [other.pk]
+
+    def test_team_without_connection_and_bad_signatures_do_not_link(
+        self, client: Client, api: MagicMock, connection: Connection, member: Membership
+    ) -> None:
+        assert interact(client, link_shortcut(team={"id": "T0UNKNOWN"})).status_code == 200
+        api.open_view.assert_not_called()
+        code = slack_identity.issue_link_code(member).secret
+        assert interact(client, link_shortcut(), secret="wrong").status_code == 401
+        assert interact(client, link_submission(code), secret="wrong").status_code == 401
+        assert not ExternalIdentity.objects.exists()
+
+    def test_other_team_cannot_redeem_code(
+        self, client: Client, connection: Connection, member: Membership
+    ) -> None:
+        other = make_membership(
+            user=make_user(email="other-team-owner@example.test"),
+            workspace=make_workspace(name="Other team", slug="other-team"),
+        )
+        Connection.objects.create(
+            workspace=other.workspace,
+            provider="slack",
+            external_id="T0OTHER",
+            identity="Other Slack",
+            status="active",
+            credential="encrypted",
+        )
+        code = slack_identity.issue_link_code(member).secret
+        response = interact(client, link_submission(code, team="T0OTHER")).json()
+        assert response["response_action"] == "errors"
+        assert "slack_link_code" in response["errors"]
+        assert not ExternalIdentity.objects.exists()
 
 
 def opened_view(api: MagicMock) -> dict[str, Any]:

@@ -76,7 +76,7 @@ export function SlackAccount({
                 {demo
                   ? 'Linking is disabled in the demo.'
                   : connected
-                    ? 'Link your Slack account to capture reports from Slack. Generate a code, run "Submit customer feedback" on a message in Slack, and paste the code when asked.'
+                    ? 'Link your Slack account to capture reports from Slack. Generate a code, run the "Link Rescribo account" shortcut in Slack, and paste the code.'
                     : 'Slack is not connected to this workspace. You can link your account once an owner connects it.'}
               </p>
               {connected && !demo ? (

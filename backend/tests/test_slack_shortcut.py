@@ -2,18 +2,23 @@ import hashlib
 import hmac
 import json
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from slack_sdk.models.blocks import SectionBlock
 
+from connections.slack_identity import LINK_CODE_LIFETIME
 from integrations.slack import (
+    GlobalShortcut,
     InvalidSlackSignature,
     MessageShortcut,
     ShortcutPayloadError,
     SubmissionErrors,
     build_capture_modal,
+    build_link_modal,
     parse_capture_submission,
+    parse_global_shortcut,
+    parse_link_submission,
     parse_message_shortcut,
     verify_slack_signature,
 )
@@ -206,6 +211,45 @@ def test_parse_message_shortcut_accepts_a_message_without_text() -> None:
     payload = shortcut_payload()
     payload["message"] = {"ts": "1758400000.000100", "text": ""}
     assert parse_message_shortcut(payload).text == ""
+
+
+def test_parse_global_shortcut_and_rejects_incomplete_payloads() -> None:
+    payload = {
+        "type": "shortcut",
+        "callback_id": "link_rescribo_account",
+        "trigger_id": "Tr0",
+        "team": {"id": "T0"},
+        "user": {"id": "U0"},
+    }
+    assert parse_global_shortcut(payload) == GlobalShortcut(
+        "link_rescribo_account", "T0", "U0", "Tr0"
+    )
+    for broken in [
+        {**payload, "type": "message_action"},
+        {**payload, "team": {}},
+        {**payload, "user": {}},
+        {key: value for key, value in payload.items() if key != "trigger_id"},
+    ]:
+        with pytest.raises(ShortcutPayloadError):
+            parse_global_shortcut(broken)
+
+
+def test_link_modal_and_submission() -> None:
+    view = build_link_modal("link_rescribo_account", LINK_CODE_LIFETIME)
+    assert view["title"]["text"] == "Link Rescribo account"
+    assert view["callback_id"] == "link_rescribo_account"
+    assert block_by_id(view, "slack_link_code")["element"]["action_id"] == "value"
+    help_text = view["blocks"][0]["text"]["text"]
+    assert help_text.endswith("Codes last 5 minutes.")
+    alternate_lifetime = timedelta(minutes=7)
+    alternate_view = build_link_modal("link_rescribo_account", alternate_lifetime)
+    alternate_help_text = alternate_view["blocks"][0]["text"]["text"]
+    assert alternate_help_text.endswith(
+        f"Codes last {int(alternate_lifetime.total_seconds() // 60)} minutes."
+    )
+    payload = {"view": {"state": {"values": {"slack_link_code": {"value": {"value": " code "}}}}}}
+    assert parse_link_submission(payload) == "code"
+    assert parse_link_submission({"view": {"state": {"values": {}}}}) == ""
 
 
 def test_parse_message_shortcut_rejects_non_string_text() -> None:

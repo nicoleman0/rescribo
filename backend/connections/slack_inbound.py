@@ -27,16 +27,23 @@ from integrations.slack.modals import (
     CaptureSubmission,
     SubmissionErrors,
     build_capture_modal,
+    build_link_modal,
     build_notice_modal,
     parse_capture_submission,
+    parse_link_submission,
 )
-from integrations.slack.shortcuts import MessageShortcut, parse_message_shortcut
+from integrations.slack.shortcuts import (
+    MessageShortcut,
+    parse_global_shortcut,
+    parse_message_shortcut,
+)
 from operations.dispatch import dispatch_task
 from operations.models import InboundReceipt
 
 logger = logging.getLogger(__name__)
 
 CAPTURE_CALLBACK_ID = "submit_customer_feedback"
+LINK_CALLBACK_ID = "link_rescribo_account"
 CONTEXT_LIFETIME = timedelta(minutes=15)
 CHANNEL_CACHE_SECONDS = 60
 
@@ -47,8 +54,9 @@ REJECTED_TEXT = (
 EXPIRED_TEXT = "This capture expired. Run the shortcut on the message again."
 UNLINKED_TEXT = (
     "Your Slack account is not linked to Rescribo. Generate a code in Rescribo settings, "
-    "then run the shortcut again."
+    'then run the "Link Rescribo account" shortcut.'
 )
+EMPTY_LINK_CODE_TEXT = "Enter the linking code from Rescribo settings."
 
 
 class CaptureRejected(Exception):
@@ -183,6 +191,67 @@ def start_capture(payload: Mapping[str, Any]) -> None:
     dispatch_task("connections.tasks.revalidate_capture_channel", str(context.pk))
 
 
+def start_link(payload: Mapping[str, Any]) -> None:
+    shortcut = parse_global_shortcut(payload)
+    if shortcut.callback_id != LINK_CALLBACK_ID:
+        return
+    connection = active_connection(shortcut.team_id)
+    if connection is None:
+        logger.info("Slack link shortcut from a team without an active connection")
+        return
+    membership = slack_identity.linked_membership(
+        workspace_id=connection.workspace_id,
+        team_id=shortcut.team_id,
+        user_id=shortcut.actor_id,
+    )
+    view = (
+        build_notice_modal(
+            "Already linked",
+            "Your Slack account is already linked. You can unlink it in Rescribo settings.",
+        )
+        if membership is not None
+        else build_link_modal(LINK_CALLBACK_ID, slack_identity.LINK_CODE_LIFETIME)
+    )
+    _open(connection, shortcut.trigger_id, view)
+
+
+def submit_link(payload: Mapping[str, Any]) -> dict[str, Any]:
+    code = parse_link_submission(payload)
+    team = payload.get("team")
+    user = payload.get("user")
+    team_id = team.get("id") if isinstance(team, Mapping) else None
+    user_id = user.get("id") if isinstance(user, Mapping) else None
+    if not code:
+        return _errors({"slack_link_code": EMPTY_LINK_CODE_TEXT})
+    if not isinstance(team_id, str) or not isinstance(user_id, str):
+        return _update(build_notice_modal("Account not linked", "Slack identity is missing."))
+    connection = active_connection(team_id)
+    if connection is None:
+        return _update(build_notice_modal("Slack disconnected", "Slack is no longer connected."))
+    try:
+        membership = slack_identity.redeem_link_code(
+            code,
+            workspace_id=connection.workspace_id,
+            team_id=team_id,
+            user_id=user_id,
+        )
+    except slack_identity.LinkCodeRejected as rejected:
+        return _errors({"slack_link_code": str(rejected)})
+    return _update(
+        build_notice_modal(
+            "Account linked",
+            f"Your Slack account is linked to {membership.workspace.name}.",
+        )
+    )
+
+
+def submit_view(payload: Mapping[str, Any]) -> dict[str, Any]:
+    view = payload.get("view")
+    if isinstance(view, Mapping) and view.get("callback_id") == LINK_CALLBACK_ID:
+        return submit_link(payload)
+    return submit_capture(payload)
+
+
 def revalidate_capture_channel(context_id: UUID) -> None:
     """Fresh channel check while the modal is open; submission fails closed without it."""
     context = (
@@ -279,7 +348,7 @@ def _submit_locked(
     )
     if membership is None:
         if context.link_required:
-            return _errors({"slack_link_code": "Enter the linking code from Rescribo settings."})
+            return _errors({"slack_link_code": EMPTY_LINK_CODE_TEXT})
         _settle(context, rejected_reason="unlinked")
         return _update(build_notice_modal("Account not linked", UNLINKED_TEXT))
     if context.rejected_reason:
