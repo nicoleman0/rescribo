@@ -542,18 +542,17 @@ test('channel picker offers named channels with unavailable choices disabled', a
   ).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
   const user = userEvent.setup()
-  const consents = screen
-    .getAllByRole('checkbox')
-    .filter((item) =>
-      item.parentElement?.textContent?.includes(
-        'Reports captured from approved channels',
-      ),
-    )
-  await user.click(consents[1])
+  const channelConsent = screen.getByRole('checkbox', {
+    name: 'Reports captured from this channel will be visible to all members of Example.',
+  })
+  const reconnectConsent = screen.getByRole('checkbox', {
+    name: 'Reports captured from approved channels will be visible to all members of Example.',
+  })
+  await user.click(reconnectConsent)
   expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
   await user.selectOptions(select, 'C2')
   expect(screen.getByRole('button', { name: 'Allow channel' })).toBeDisabled()
-  await user.click(consents[0])
+  await user.click(channelConsent)
   expect(screen.getByRole('button', { name: 'Allow channel' })).toBeEnabled()
   await user.click(
     within(screen.getByRole('region', { name: 'Slack' })).getByRole('button', {

@@ -6,6 +6,7 @@ import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
 import { ErrorState } from '@/components/states/async-states'
 import { touchTarget } from '@/components/layout/touch-target'
 import { cn } from '@/lib/utils'
@@ -120,6 +121,12 @@ export function ConnectionSettings({
                   busy={busy}
                   action={action}
                 />
+              ) : null}
+              {provider === 'slack' &&
+              connection.status === 'active' &&
+              owner &&
+              !demo ? (
+                <Separator />
               ) : null}
             </>
           ) : (

@@ -179,8 +179,8 @@ export function AllowedChannels({
                 checked={channelConsent}
                 onChange={(event) => setChannelConsent(event.target.checked)}
               />
-              Reports captured from approved channels will be visible to all
-              members of {workspaceName}.
+              Reports captured from this channel will be visible to all members
+              of {workspaceName}.
             </label>
             <Button
               className="min-h-11 w-fit"
