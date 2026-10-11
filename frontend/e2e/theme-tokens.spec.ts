@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 
+// The raw-colour check keeps literals in theme.css; this table is the one deliberate copy.
 // Each token's colour before the palette variables existed for issue 197: [light, dark].
 const REFERENCE: Record<string, [string, string]> = {
   '--background': ['fbfbfc', '0f0f14'],

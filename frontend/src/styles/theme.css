@@ -114,8 +114,8 @@
   );
   --muted: oklch(0.235 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --secondary: oklch(0.235 calc(var(--neutral-tint) * 2) var(--brand-hue));
-  --accent: oklch(0.235 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --secondary-foreground: oklch(0.943 var(--neutral-tint) var(--brand-hue));
+  --accent: oklch(0.235 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --accent-foreground: oklch(0.943 var(--neutral-tint) var(--brand-hue));
   --input: oklch(0.331 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --selected: oklch(0.268 calc(var(--neutral-tint) * 5) var(--brand-hue));
