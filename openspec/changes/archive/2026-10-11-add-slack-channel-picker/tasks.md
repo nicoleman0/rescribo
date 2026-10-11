@@ -64,7 +64,7 @@ Write each group's tests first and see them fail.
 
 ## 5. Screenshots and checks
 
-- [x] 5.1 After screenshots: reseed with `seed_demo` and `seed_test_accounts --json`, start the dev servers on 8148 and 5148, then run `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/shots.mjs .claude/shots/after` and `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/owner-shots.mjs .claude/shots/after`. The demo visitor is a member, so only the `settings-owner-*` shots show this change. Include desktop and phone shots in light and dark themes in the comparison page. Stop the servers.
+- [x] 5.1 After screenshots: reseed with `seed_demo` and `seed_test_accounts --json`, start the dev servers on 8148 and 5148, then run `SHOTS_BASE=http://127.0.0.1:5148 node .claude/skills/work-issues/scripts/shots.mjs .claude/shots/after` and `SHOTS_BASE=http://127.0.0.1:5148 node .claude/shots/owner-shots.mjs .claude/shots/after`. The demo visitor is a member, so only the `settings-owner-*` shots show this change. Include desktop and phone shots in light and dark themes in the comparison page. Stop the servers.
 - [x] 5.2 `npx @fission-ai/openspec validate --all --strict` passes.
 - [x] 5.3 `task check test build schema-check` passes with PostgreSQL and Redis running.
 - [x] 5.4 `RESCRIBO_E2E_API_PORT=8148 RESCRIBO_E2E_FRONTEND_PORT=5148 task e2e` passes.
