@@ -18,7 +18,7 @@ print(matches[0])
 EOF
   )
   if [ "$redis_index" != "$env_index" ]; then
-    echo "Issue $ISSUE record holds Redis index $redis_index but $WORKTREE/.env uses $env_index. Fix the record or .env before teardown." >&2
+    echo "Issue $ISSUE record holds Redis index $redis_index but $WORKTREE/.env uses $env_index. Fix with: state.py set $ISSUE redis_index=$env_index" >&2
     exit 1
   fi
 fi

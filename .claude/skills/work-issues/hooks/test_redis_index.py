@@ -142,7 +142,18 @@ class RedisIndexTests(unittest.TestCase):
                                   env=common, capture_output=True, text=True)
         self.assertEqual(mismatch.returncode, 1)
         self.assertIn("record holds Redis index 1", mismatch.stderr)
+        self.assertIn("state.py set 194 redis_index=8", mismatch.stderr)
         self.assertEqual(log.read_text(), "")
+
+        self.record(194)
+        log.write_text("")
+        no_index = subprocess.run(["bash", str(hook_dir / "worktree-down.sh")], cwd=self.root,
+                                  env=common, capture_output=True, text=True)
+        self.assertEqual(no_index.returncode, 0, no_index.stderr)
+        calls = log.read_text()
+        self.assertIn("dropdb -U", calls)
+        self.assertNotIn("redis-cli", calls)
+        self.assertIn("no recorded Redis index", no_index.stderr)
 
 
 if __name__ == "__main__":
