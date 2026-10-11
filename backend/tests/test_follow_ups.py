@@ -39,7 +39,7 @@ from feedback.follow_ups import (
     record_outcome,
     search_follow_ups,
 )
-from feedback.models import Activity, FollowUp, Problem, Report
+from feedback.models import Activity, FollowUp, Problem, Report, ReportNotificationOperation
 from feedback.problems import confirm_fix
 from feedback.reports import assign_report, link_report
 from feedback.submissions import SourceSnapshot
@@ -615,6 +615,33 @@ def test_then_confirmed_from_contacted(owner: Membership) -> None:
     final = _record(owner, follow_up.pk, FollowUp.ContactState.CONFIRMED, expected_version=2)
     assert final.contact_state == FollowUp.ContactState.CONFIRMED
     assert list(search_follow_ups(actor=owner, bucket="completed")) == [final]
+
+
+def test_outcomes_without_a_notification_move_buckets(owner: Membership) -> None:
+    report = fixed_report(owner, source=slack_source())
+    follow_up = report.follow_ups.get()
+    assert list(search_follow_ups(actor=owner, bucket="needs_approval")) == [follow_up]
+
+    _record(owner, follow_up.pk, FollowUp.ContactState.CONTACTED)
+    final = _record(owner, follow_up.pk, FollowUp.ContactState.CONFIRMED, expected_version=2)
+
+    assert list(search_follow_ups(actor=owner, bucket="completed")) == [final]
+    for bucket in ("needs_approval", "awaiting_contact", "awaiting_confirmation"):
+        assert not search_follow_ups(actor=owner, bucket=bucket).exists()
+    assert not ReportNotificationOperation.objects.filter(follow_up=follow_up).exists()
+
+
+def test_recording_an_outcome_leaves_the_draft_alone(owner: Membership) -> None:
+    report = fixed_report(owner, source=slack_source())
+    follow_up = report.follow_ups.get()
+    operation = draft_notification(actor=owner, follow_up_id=follow_up.pk)
+    before = (operation.state, operation.message, operation.draft_version, operation.updated_at)
+
+    _record(owner, follow_up.pk, FollowUp.ContactState.CONTACTED)
+
+    operation.refresh_from_db()
+    after = (operation.state, operation.message, operation.draft_version, operation.updated_at)
+    assert after == before
 
 
 def test_still_affected_from_pending_sets_problem_review(owner: Membership) -> None:

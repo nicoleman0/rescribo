@@ -345,7 +345,6 @@ test.describe('Follow-ups', () => {
     const marker = `Second outcome ${Date.now()}`
     const title = await confirmFix(page, marker)
     await openFollowUp(page, title)
-    // The contact section appears once the message is prepared. Nothing is sent.
     await detail(page).getByRole('button', { name: 'Prepare message' }).click()
     await expect(
       detail(page).getByRole('textbox', { name: 'Message' }),
@@ -378,7 +377,6 @@ test.describe('Follow-ups', () => {
     const title = await confirmFix(page, marker)
     const problemUrl = page.url()
     await openFollowUp(page, title)
-    // The contact section appears once the message is prepared. Nothing is sent.
     await detail(page).getByRole('button', { name: 'Prepare message' }).click()
     await expect(
       detail(page).getByRole('textbox', { name: 'Message' }),
@@ -456,5 +454,30 @@ test.describe('Follow-ups', () => {
       .click()
     await expect(detail(page)).toBeVisible()
     expect(await overflow(page)).toBe(false)
+  })
+
+  test('records customer contact without preparing a message', async ({
+    page,
+  }) => {
+    await ensureFollowUpOwner(page)
+    const title = await confirmFix(page, `No draft ${Date.now()}`)
+    await openFollowUp(page, title)
+    const contact = detail(page).getByRole('region', {
+      name: 'Customer contact',
+    })
+    await contact.getByRole('button', { name: 'Record outcome' }).click()
+    await expect(contact).toContainText('Outcome: Contacted.')
+    await expect(detail(page)).toContainText('Not prepared')
+
+    await page.goto('/follow-ups')
+    await page.getByRole('button', { name: /Awaiting confirmation/ }).click()
+    const row = list(page).getByRole('link', { name: new RegExp(title) })
+    await expect(row).toBeVisible()
+    await expect(row).toContainText('Not prepared')
+
+    await page.getByRole('button', { name: /Needs approval/ }).click()
+    await expect(
+      list(page).getByRole('link', { name: new RegExp(title) }),
+    ).toHaveCount(0)
   })
 })
