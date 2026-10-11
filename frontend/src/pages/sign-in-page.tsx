@@ -49,7 +49,7 @@ export function SignInPage() {
   const credentials = demoOffer.data
   return (
     <AuthLayout title="Sign in">
-      <p className="mt-1 mb-6 text-sm text-muted-foreground">
+      <p className="-mt-4 mb-6 text-sm text-muted-foreground">
         Use your workspace account.
       </p>
       <form className="grid gap-4" onSubmit={submit}>

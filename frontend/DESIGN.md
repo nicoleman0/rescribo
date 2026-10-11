@@ -211,5 +211,5 @@ colours and shadows and applies no animated transition.
 
 - Sign-in, accept-invite, and reset-password share `AuthLayout`. Desktop places the wordmark and product line beside a raised form card; phones place them above it. The layout owns each page's single `h1` and document title.
 - The product line lives in `auth-layout.tsx`: "Customer feedback. Engineering work. Follow-up."
-- Submit buttons use the shared `lg` size and span the form width. `lg` is 40px tall, matching `Input`; phone controls keep their 44px minimum.
+- Submit buttons use the shared `lg` size and span the form width. `lg` matches `Input`; phone controls keep their 44px minimum.
 - Sign-in shows the demo visitor credentials only when the public offer loads. The hint says the data is fictitious and fills the form without signing in.

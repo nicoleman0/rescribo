@@ -57,6 +57,9 @@ test.each([
     expect(retry).toBeEnabled()
     await user.click(retry)
     expect(await screen.findByLabelText(passwordLabel)).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Use demo login' }),
+    ).not.toBeInTheDocument()
     vi.unstubAllGlobals()
   },
 )

@@ -459,9 +459,9 @@ When the instance offers a demo, the sign-in page SHALL show a hint with the dem
 - **WHEN** the demo offer request fails
 - **THEN** the page shows no hint and no error, and a member can still sign in
 
-#### Scenario: Keyboard use
-- **WHEN** a visitor tabs to the demo action and activates it
-- **THEN** the visitor fields are filled and focus returns to Sign in
+#### Scenario: Keyboard only
+- **WHEN** a visitor reaches the hint's action with the keyboard and activates it
+- **THEN** the form is filled and focus is on the Sign in button
 
 #### Scenario: Auth pages have no demo hint
 - **WHEN** a person opens accept-invite or reset-password

@@ -17,7 +17,7 @@ export function AuthLayout({
       <div className="grid w-full max-w-5xl items-center gap-8 lg:grid-cols-2 lg:gap-16">
         <header className="grid gap-4 lg:justify-self-end">
           <Wordmark className="h-8" />
-          <p className="max-w-sm text-lg text-muted-foreground">
+          <p className="max-w-md text-lg text-muted-foreground">
             {PRODUCT_LINE}
           </p>
         </header>

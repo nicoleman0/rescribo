@@ -90,7 +90,12 @@ test('fills and focuses the sign-in form from the demo hint', async () => {
   )
   expect(await screen.findByText('demo@example.com')).toBeVisible()
   expect(screen.getByText('Demo-password-42!')).toBeVisible()
-  await user.click(screen.getByRole('button', { name: 'Use demo login' }))
+  await user.tab()
+  await user.tab()
+  await user.tab()
+  await user.tab()
+  expect(screen.getByRole('button', { name: 'Use demo login' })).toHaveFocus()
+  await user.keyboard('{Enter}')
   expect(screen.getByRole('textbox', { name: 'Email' })).toHaveValue(
     'demo@example.com',
   )

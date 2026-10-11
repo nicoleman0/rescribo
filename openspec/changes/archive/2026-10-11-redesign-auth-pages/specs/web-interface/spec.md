@@ -50,3 +50,7 @@ When the instance offers a demo, the sign-in page SHALL show a hint with the dem
 #### Scenario: Keyboard only
 - **WHEN** a visitor reaches the hint's action with the keyboard and activates it
 - **THEN** the form is filled and focus is on the Sign in button
+
+#### Scenario: Auth pages have no demo hint
+- **WHEN** a person opens accept-invite or reset-password
+- **THEN** the demo hint does not appear
