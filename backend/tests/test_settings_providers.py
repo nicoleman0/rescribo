@@ -119,7 +119,11 @@ def test_channel_options_paginates_sorts_and_marks_external_channels() -> None:
     client = MagicMock()
     client.users_conversations.side_effect = [
         {
-            "channels": [{"id": "C2", "name": "zeta", "is_ext_shared": True}],
+            "channels": [
+                {"id": "C2", "name": "zeta", "is_ext_shared": True},
+                {"id": "C3", "name": "archived", "is_archived": True},
+                {"id": "D1", "name": "direct", "is_im": True},
+            ],
             "response_metadata": {"next_cursor": "next"},
         },
         {"channels": [{"id": "C1", "name": "alpha"}], "response_metadata": {"next_cursor": ""}},

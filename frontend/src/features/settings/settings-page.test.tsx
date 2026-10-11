@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import {
@@ -571,6 +571,48 @@ test('channel picker offers named channels with unavailable choices disabled', a
       ),
     ).toBe(true),
   )
+})
+
+test('channel picker sends the current consent checkbox value', async () => {
+  const fetch = ownerWithConnection(() => slackConnection, {
+    [`GET ${base}channels/`]: () =>
+      json({
+        channels: [
+          {
+            channel_id: 'C2',
+            name: 'support-requests',
+            is_private: false,
+            unavailable_reason: '',
+          },
+        ],
+        truncated: false,
+      }),
+    [`POST ${base}channels/`]: () =>
+      json(
+        {
+          detail: 'Confirm publication before allowing a channel.',
+          reason: 'consent_required',
+          field_errors: {},
+        },
+        400,
+      ),
+  })
+  render()
+  const select = await screen.findByLabelText('Slack channel')
+  await userEvent.setup().selectOptions(select, 'C2')
+  fireEvent.submit(select.closest('form')!)
+  await vi.waitFor(() => {
+    const request = fetch.mock.calls.find(
+      ([input, init]) =>
+        String(input).endsWith('/channels/') && init?.method === 'POST',
+    )
+    expect(request).toBeDefined()
+    expect(JSON.parse(String(request?.[1]?.body))).toEqual({
+      version: 1,
+      channel_id: 'C2',
+      consent: false,
+    })
+  })
 })
 
 test('channel picker shows loading, rate-limit retry, empty and truncated states', async () => {

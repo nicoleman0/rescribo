@@ -11,6 +11,10 @@ import { touchTarget } from '@/components/layout/touch-target'
 import { cn } from '@/lib/utils'
 import { useSettingsAction } from './use-settings-action'
 
+const unavailableLabels: Record<string, string> = {
+  externally_shared: 'Slack Connect, not allowed',
+}
+
 export function AllowedChannels({
   workspaceId,
   workspaceName,
@@ -126,7 +130,7 @@ export function AllowedChannels({
                   body: {
                     version: connection.version,
                     channel_id: channelId,
-                    consent: true,
+                    consent: channelConsent,
                   },
                 },
                 {
@@ -156,7 +160,7 @@ export function AllowedChannels({
                 >
                   #{item.name} ·{' '}
                   {item.unavailable_reason
-                    ? 'Slack Connect, not allowed'
+                    ? unavailableLabels[item.unavailable_reason]
                     : item.is_private
                       ? 'Private'
                       : 'Public'}

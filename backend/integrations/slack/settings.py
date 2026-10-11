@@ -68,6 +68,9 @@ def channel_options(credential: str) -> dict[str, Any]:
     options: list[dict[str, Any]] = []
     for data in channels:
         channel = SlackChannel.from_api(data)
+        reason = unavailable_reason(channel)
+        if reason and reason != "externally_shared":
+            continue
         name = data.get("name")
         if not isinstance(name, str) or not name:
             name = channel.channel_id
@@ -76,7 +79,7 @@ def channel_options(credential: str) -> dict[str, Any]:
                 "channel_id": channel.channel_id,
                 "name": name,
                 "is_private": channel.is_private,
-                "unavailable_reason": unavailable_reason(channel) or "",
+                "unavailable_reason": reason or "",
             }
         )
     options.sort(key=lambda option: option["name"].casefold())
