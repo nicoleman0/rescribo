@@ -226,14 +226,13 @@ function FollowUpBody({
       notification={notification}
     />
   )
-  const contact =
-    notification && notification.state !== 'cancelled' ? (
-      <ContactSection
-        workspaceId={workspaceId}
-        followUp={followUp}
-        isOwner={isOwner}
-      />
-    ) : null
+  const contact = (
+    <ContactSection
+      workspaceId={workspaceId}
+      followUp={followUp}
+      isOwner={isOwner}
+    />
+  )
   const recipient = isOwner ? (
     <RecipientForm workspaceId={workspaceId} followUp={followUp} />
   ) : null
@@ -243,12 +242,8 @@ function FollowUpBody({
       <FollowUpSummary followUp={followUp} notification={notification} />
       <Separator />
       {message}
-      {contact ? (
-        <>
-          <Separator />
-          {contact}
-        </>
-      ) : null}
+      <Separator />
+      {contact}
       {recipient ? (
         <>
           <Separator />
@@ -398,6 +393,12 @@ function DraftSection({
         version, and a link to the report in Rescribo. Nothing from other
         customers or the GitHub issue is included.
       </p>
+      {followUp.outcome.state !== 'pending' ? (
+        <p className="text-sm text-muted-foreground">
+          Customer contact is already recorded. Prepare a message only if{' '}
+          {memberName(followUp.recipient.member)} still needs it.
+        </p>
+      ) : null}
       <Button
         className="w-fit"
         disabled={draft.isPending}

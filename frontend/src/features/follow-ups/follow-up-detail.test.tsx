@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import type { FollowUpDetail } from '@/api/follow-ups'
@@ -141,6 +141,69 @@ test('shows delivery as not prepared before a message exists', async () => {
   expect(
     screen.getByRole('heading', { name: 'Message to the employee' }),
   ).toBeInTheDocument()
+})
+
+test.each(['/follow-ups/fu-1', '/follow-ups/fu-1/page'])(
+  'shows customer contact before a message is prepared at %s',
+  async (path) => {
+    stubDetail()
+    renderWorkspaceRoutes(routes, path)
+    expect(
+      await screen.findByRole('region', { name: 'Customer contact' }),
+    ).toBeVisible()
+    expect(
+      screen.getByRole('combobox', { name: 'Record outcome' }),
+    ).toBeVisible()
+  },
+)
+
+test('records contact with no message prepared', async () => {
+  const bodies: unknown[] = []
+  document.cookie = 'csrftoken=csrf-token'
+  let current = detail()
+  stubApi({
+    [csrfPath]: () => new Response(null, { status: 204 }),
+    [`GET ${base}/`]: () => json(current),
+    [`POST ${base}/outcome/`]: (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)))
+      current = detail({
+        outcome: {
+          state: 'contacted',
+          note: '',
+          at: '2026-09-20T10:00:01Z',
+          by: ada,
+        },
+        version: 2,
+      })
+      return json(current)
+    },
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await screen.findByRole('combobox', { name: 'Record outcome' })
+  fireEvent.click(screen.getByRole('button', { name: 'Record outcome' }))
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  expect(await screen.findByText('Outcome: Contacted.')).toBeVisible()
+  expect(bodies).toEqual([
+    { state: 'contacted', note: '', expected_version: 1 },
+  ])
+  expect(definitionOf('Delivery')).toHaveTextContent('Not prepared')
+})
+
+test('says contact is recorded when no message was prepared', async () => {
+  stubDetail({ outcome: { state: 'contacted', note: '', at: null, by: ada } })
+  const { unmount } = renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  const message = await screen.findByRole('region', { name: 'Message' })
+  expect(message).toHaveTextContent('Customer contact is already recorded')
+  expect(
+    within(message).getByRole('button', { name: 'Prepare message' }),
+  ).toBeVisible()
+
+  unmount()
+  stubDetail()
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1/page')
+  expect(
+    await screen.findByRole('region', { name: 'Message' }),
+  ).not.toHaveTextContent('Customer contact is already recorded')
 })
 
 test('drafts the default message then edits it before approving', async () => {
