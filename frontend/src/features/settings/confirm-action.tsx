@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from 'react'
+import { ConfirmPanel } from '@/components/confirm/confirm-panel'
 import { Field } from '@/components/forms/field'
 import { fieldError } from '@/components/forms/field-error'
 import { FormErrorMessage } from '@/components/forms/form-error-message'
@@ -40,11 +41,14 @@ export function ConfirmAction({
       </Button>
     )
   return (
-    <form
-      className="grid gap-3 rounded-control border border-destructive p-4"
-      aria-label={label}
-      onSubmit={(event) => {
-        event.preventDefault()
+    <ConfirmPanel
+      title={label}
+      description={scope}
+      confirmLabel={label}
+      pendingLabel="Working…"
+      isPending={action.isPending}
+      confirmDisabled={confirmation !== phrase}
+      onConfirm={() => {
         action.mutate(
           { path, body: { ...body, confirmation } },
           {
@@ -56,9 +60,13 @@ export function ConfirmAction({
           },
         )
       }}
+      onCancel={() => {
+        setOpen(false)
+        setConfirmation('')
+        action.reset()
+        requestAnimationFrame(() => triggerRef.current?.focus())
+      }}
     >
-      <h3 className="font-semibold">{label}</h3>
-      <p className="max-w-prose text-sm">{scope}</p>
       <Field
         id={id}
         label={`Type ${phrase} to confirm`}
@@ -74,29 +82,6 @@ export function ConfirmAction({
           description={<FormErrorMessage error={action.error} />}
         />
       ) : null}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant="destructive"
-          className="h-auto min-h-11 max-w-full py-2 text-left break-words whitespace-normal"
-          disabled={confirmation !== phrase || action.isPending}
-        >
-          {action.isPending ? 'Working…' : label}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          disabled={action.isPending}
-          onClick={() => {
-            setOpen(false)
-            setConfirmation('')
-            action.reset()
-            requestAnimationFrame(() => triggerRef.current?.focus())
-          }}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+    </ConfirmPanel>
   )
 }
