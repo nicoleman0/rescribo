@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { axeViolations } from './axe.js'
 import { signInAsDemo } from './demo-session.js'
+import { signOut } from './shell.js'
 
 const html = (page: Page) => page.locator('html')
 
@@ -25,7 +26,7 @@ test.describe('Themes', () => {
     await page.reload()
     await expect(theme.getByRole('radio', { name: 'Dark' })).toBeChecked()
 
-    await page.getByRole('button', { name: 'Sign out' }).first().click()
+    await signOut(page)
     await expect(page).toHaveURL(/\/sign-in$/)
     await expect(html(page)).toHaveAttribute('data-theme', 'dark')
   })

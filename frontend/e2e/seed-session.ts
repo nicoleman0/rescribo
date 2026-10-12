@@ -20,6 +20,7 @@ export async function saveSeedSession(
   browser: Browser,
   baseURL: string | undefined,
   sessionPath: string,
+  userIndex = 1,
 ) {
   const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
   const page = await browser.newPage({
@@ -28,8 +29,10 @@ export async function saveSeedSession(
   })
   try {
     await page.goto('/sign-in')
-    await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[1].email)
-    await page.getByLabel('Password').fill(seed.users[1].password)
+    await page
+      .getByRole('textbox', { name: 'Email' })
+      .fill(seed.users[userIndex].email)
+    await page.getByLabel('Password').fill(seed.users[userIndex].password)
     await page.getByRole('button', { name: 'Sign in' }).click()
     await expect(page).toHaveURL(/\/inbox$/)
     await mkdir(path.dirname(sessionPath), { recursive: true })
