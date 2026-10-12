@@ -117,15 +117,17 @@ export default function UiGalleryPage() {
             onOpenChange={setDialogOpen}
             title="Command dialog"
           >
-            <CommandInput placeholder="Search commands" />
-            <CommandList>
-              <CommandEmpty>No results</CommandEmpty>
-              <CommandGroup heading="Go to">
-                <CommandItem onSelect={() => setDialogOpen(false)}>
-                  Inbox
-                </CommandItem>
-              </CommandGroup>
-            </CommandList>
+            <Command>
+              <CommandInput placeholder="Search commands" />
+              <CommandList>
+                <CommandEmpty>No results</CommandEmpty>
+                <CommandGroup heading="Go to">
+                  <CommandItem onSelect={() => setDialogOpen(false)}>
+                    Inbox
+                  </CommandItem>
+                </CommandGroup>
+              </CommandList>
+            </Command>
           </CommandDialog>
         </CardContent>
       </Card>
