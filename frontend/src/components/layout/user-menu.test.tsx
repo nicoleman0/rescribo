@@ -10,6 +10,7 @@ const session: Session = {
 }
 
 test('shows identity, theme choices, and sign out in the menu', async () => {
+  localStorage.setItem('rescribo-theme', 'light')
   const user = userEvent.setup()
   render(
     <UserMenu
@@ -33,6 +34,11 @@ test('shows identity, theme choices, and sign out in the menu', async () => {
   await user.keyboard('{Enter}')
   await user.click(screen.getByRole('menuitemradio', { name: 'Dark' }))
   expect(document.documentElement).toHaveAttribute('data-theme', 'dark')
+  await user.click(trigger)
+  expect(screen.getByRole('menuitemradio', { name: 'Dark' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  )
 })
 
 test('marks the selected theme and calls sign out', async () => {

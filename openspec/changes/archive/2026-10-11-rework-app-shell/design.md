@@ -32,7 +32,7 @@ The Sidebar uses `collapsible="icon"` and shows from `md` up. Under `md` the she
 
 ### D3. Row height (#176)
 
-Menu buttons keep `min-h-11` on desktop, in the expanded sidebar and in the rail. The shadcn default (`h-8`, and `size-8!` in the rail) is overridden by class on the shell's own usage, not by editing `sidebar.tsx`. The expanded width stays 14rem through `--sidebar-width`. The rail width is the row height plus the sidebar padding. Phone tab targets stay 44 px.
+Menu buttons keep `min-h-11` on desktop, in the expanded sidebar and in the rail. The shadcn default (`h-8`, and `size-8!` in the rail) is overridden by class on the shell's own usage, not by editing `sidebar.tsx`. Keep a 3 px gap between desktop rows with a class on the shell's `SidebarMenu`. The expanded width stays 14rem through `--sidebar-width`. The rail width is the row height plus the sidebar padding. Phone tab targets stay 44 px.
 
 ### D4. Collapse state
 
@@ -60,7 +60,7 @@ The trigger in the sidebar footer shows an `Avatar` with initials, the name, and
 
 Under `md` the sidebar is not shown, so an avatar button at the right of the header opens the same `UserMenu`. It uses `touchTarget` and has the member's name as its accessible name. The bottom bar keeps four tabs.
 
-The theme choice also stays under Settings, Appearance. `theme-settings.tsx` is not edited.
+The theme choice also stays under Settings, Appearance. `theme-settings.tsx` is not edited. The UI foundation e2e spec uses one stored owner session, saved with `saveSeedSession`'s optional user index (8 for the owner; default 1), to stay under the 10 sign-ins per minute throttle. Its sign-out test uses a separate empty context.
 
 The shell reads the session with `useQuery({ queryKey: sessionQueryKey, queryFn: getSession, enabled: !isGallery })`. With no session data (the gallery) the user menu does not render, so the gallery still shows no Sign out.
 

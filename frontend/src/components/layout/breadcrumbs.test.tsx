@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { expect, test, vi } from 'vitest'
@@ -68,6 +68,72 @@ test.each([
     </QueryClientProvider>,
   )
   expect(screen.getByText(label)).toBeInTheDocument()
+  if (path === '/problems/problem-1' || path.endsWith('/page')) {
+    expect(
+      screen.getByRole('link', {
+        name: path.startsWith('/problems') ? 'Problems' : 'Follow-ups',
+      }),
+    ).toBeInTheDocument()
+  }
+})
+
+test('shows the follow-up page report title and links to its section', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ report: { title: 'Reset email delay' } }),
+          {
+            status: 200,
+          },
+        ),
+    ),
+  )
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <WorkspaceProvider membership={membership}>
+        <MemoryRouter initialEntries={['/follow-ups/follow-up-1/page']}>
+          <Breadcrumbs />
+        </MemoryRouter>
+      </WorkspaceProvider>
+    </QueryClientProvider>,
+  )
+  const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' })
+  expect(await screen.findByText('Reset email delay')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  expect(
+    within(breadcrumb).getByRole('link', { name: 'Follow-ups' }),
+  ).toHaveAttribute('href', '/follow-ups')
+})
+
+test('uses the fallback title when the detail request fails', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response('failed', { status: 500 })),
+  )
+  render(
+    <QueryClientProvider
+      client={
+        new QueryClient({ defaultOptions: { queries: { retry: false } } })
+      }
+    >
+      <WorkspaceProvider membership={membership}>
+        <MemoryRouter initialEntries={['/problems/problem-1']}>
+          <Breadcrumbs />
+        </MemoryRouter>
+      </WorkspaceProvider>
+    </QueryClientProvider>,
+  )
+  await waitFor(() =>
+    expect(screen.getByText('Problem')).toHaveAttribute('aria-current', 'page'),
+  )
 })
 
 test('shares the problem detail query with the page', async () => {

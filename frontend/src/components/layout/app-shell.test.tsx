@@ -1,9 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, expect, test, vi } from 'vitest'
 import { sessionQueryKey, type Session } from '@/api/auth'
+import { reportKeys } from '@/api/reports'
+import { followUpKeys } from '@/api/follow-ups'
 import { WorkspaceProvider } from '@/components/auth/workspace-provider'
 import { AppShell } from './app-shell'
 
@@ -27,6 +29,10 @@ function renderShell(path = '/inbox', withWorkspace = false) {
     defaultOptions: { queries: { retry: false } },
   })
   client.setQueryData(sessionQueryKey, session)
+  function PageHeading() {
+    const { pathname } = useLocation()
+    return <h1>{pathname === '/inbox' ? 'Inbox page' : 'Settings page'}</h1>
+  }
   const shell = (
     <QueryClientProvider client={client}>
       {withWorkspace ? (
@@ -34,7 +40,7 @@ function renderShell(path = '/inbox', withWorkspace = false) {
           <MemoryRouter initialEntries={[path]}>
             <Routes>
               <Route element={<AppShell />}>
-                <Route path="*" element={<h1>Page</h1>} />
+                <Route path="*" element={<PageHeading />} />
               </Route>
               <Route path="/sign-in" element={<h1>Sign in</h1>} />
             </Routes>
@@ -44,7 +50,7 @@ function renderShell(path = '/inbox', withWorkspace = false) {
         <MemoryRouter initialEntries={[path]}>
           <Routes>
             <Route element={<AppShell />}>
-              <Route path="*" element={<h1>Page</h1>} />
+              <Route path="*" element={<PageHeading />} />
             </Route>
             <Route path="/sign-in" element={<h1>Sign in</h1>} />
           </Routes>
@@ -67,6 +73,9 @@ beforeEach(() => {
 
 test('shows all exact navigation names and keeps the skip link first', () => {
   renderShell()
+  expect(document.querySelector('[data-slot="sidebar-menu"]')).toHaveClass(
+    'gap-[3px]',
+  )
   for (const name of ['Inbox', 'Problems', 'Follow-ups', 'Settings']) {
     expect(screen.getAllByRole('link', { name }).length).toBeGreaterThan(0)
   }
@@ -175,10 +184,17 @@ test('demo sentence is inside the user menu', async () => {
   ).toBeInTheDocument()
 })
 
+test('does not show the Demo badge outside a demo workspace', () => {
+  renderShell('/inbox')
+  expect(screen.queryByLabelText('Demo workspace')).not.toBeInTheDocument()
+})
+
 test('wordmark links to Inbox when expanded', () => {
   renderShell('/settings')
   fireEvent.click(screen.getByRole('link', { name: 'rescribo, go to inbox' }))
-  expect(screen.getByRole('heading', { name: 'Page' })).toBeInTheDocument()
+  expect(
+    screen.getByRole('heading', { name: 'Inbox page' }),
+  ).toBeInTheDocument()
 })
 
 test('collapsing hides the wordmark and stores the rail preference', async () => {
@@ -225,19 +241,27 @@ test.each([
   ['zero', 0, '0'],
   ['large', 120, '99+'],
 ])('renders the %s report count correctly', async (_name, count, label) => {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input)
-      const body = url.includes('/auth/session/')
-        ? session
-        : { count: url.includes('/reports/') ? count : 0, results: [] }
-      return new Response(JSON.stringify(body), { status: 200 })
-    }),
-  )
-  renderShell('/inbox', true)
+  const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    const body = url.includes('/auth/session/')
+      ? session
+      : { count: url.includes('/reports/') ? count : 0, results: [] }
+    return new Response(JSON.stringify(body), { status: 200 })
+  })
+  vi.stubGlobal('fetch', fetcher)
+  const { client } = renderShell('/inbox', true)
   if (count === 0) {
-    await waitFor(() => expect(screen.queryAllByRole('status')).toHaveLength(0))
+    await waitFor(() => {
+      expect(
+        client.getQueryData(reportKeys.list('ws-1', { triage_state: 'new' })),
+      ).toEqual({ count: 0, results: [] })
+      expect(
+        client.getQueryData(followUpKeys.list('ws-1', 'needs_approval', 1)),
+      ).toEqual({ count: 0, results: [] })
+    })
+    expect(
+      document.querySelectorAll('[data-slot="sidebar-menu-badge"]'),
+    ).toHaveLength(0)
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   } else {
     await waitFor(() =>

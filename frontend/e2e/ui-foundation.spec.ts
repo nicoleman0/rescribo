@@ -50,6 +50,11 @@ test.describe('UI foundation', () => {
       (el) => getComputedStyle(el).backgroundColor,
     )
     expect(inboxColor).not.toBe(problemsColor)
+    const inboxBox = await inbox.boundingBox()
+    const problemsBox = await problems.boundingBox()
+    expect(inboxBox).not.toBeNull()
+    expect(problemsBox).not.toBeNull()
+    expect(problemsBox!.y - inboxBox!.y - inboxBox!.height).toBe(3)
   })
 
   test('phone Ctrl+B does not open a sidebar sheet', async ({ page }) => {
@@ -232,15 +237,22 @@ test.describe('Demo shell', () => {
       .first()
       .click()
     await expect(
+      page
+        .getByRole('navigation', { name: 'Breadcrumb' })
+        .getByRole('link', { name: 'Problems' }),
+    ).toHaveAttribute('href', '/problems')
+    await expect(
       page.getByRole('navigation', { name: 'Breadcrumb' }).getByText(title),
     ).toBeVisible()
     expect(await axeViolations(page)).toEqual([])
     await page.getByRole('button', { name: /User menu for/ }).click()
+    await expect(page.getByRole('menu')).toBeVisible()
     const menuViolations = await axeViolations(page)
     expect(menuViolations).toEqual([])
     await page.getByRole('menuitemradio', { name: 'Dark' }).click()
     expect(await axeViolations(page)).toEqual([])
     await page.getByRole('button', { name: /User menu for/ }).click()
+    await expect(page.getByRole('menu')).toBeVisible()
     expect(await axeViolations(page)).toEqual([])
   })
 

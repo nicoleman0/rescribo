@@ -103,7 +103,7 @@ function Navigation({
     )
   return (
     <nav aria-label="Primary navigation">
-      <SidebarMenu>
+      <SidebarMenu className="gap-[3px]">
         {items.map(({ label, path, icon: Icon, count, countLabel }) => (
           <SidebarMenuItem key={path} className="relative">
             <SidebarMenuButton
@@ -188,7 +188,7 @@ function ShellContents({
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          {!isGallery && session ? (
+          {session ? (
             <SidebarFooter className="border-t border-border p-2">
               <UserMenu
                 session={session}
