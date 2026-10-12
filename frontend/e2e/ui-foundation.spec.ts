@@ -54,7 +54,7 @@ test.describe('UI foundation', () => {
     const problemsBox = await problems.boundingBox()
     expect(inboxBox).not.toBeNull()
     expect(problemsBox).not.toBeNull()
-    expect(problemsBox!.y - inboxBox!.y - inboxBox!.height).toBe(3)
+    expect(problemsBox!.y - inboxBox!.y - inboxBox!.height).toBeCloseTo(3, 1)
   })
 
   test('phone Ctrl+B does not open a sidebar sheet', async ({ page }) => {

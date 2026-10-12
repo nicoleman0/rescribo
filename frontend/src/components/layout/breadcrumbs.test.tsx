@@ -114,22 +114,26 @@ test('shows the follow-up page report title and links to its section', async () 
 })
 
 test('uses the fallback title when the detail request fails', async () => {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response('failed', { status: 500 })),
   )
   render(
-    <QueryClientProvider
-      client={
-        new QueryClient({ defaultOptions: { queries: { retry: false } } })
-      }
-    >
+    <QueryClientProvider client={client}>
       <WorkspaceProvider membership={membership}>
         <MemoryRouter initialEntries={['/problems/problem-1']}>
           <Breadcrumbs />
         </MemoryRouter>
       </WorkspaceProvider>
     </QueryClientProvider>,
+  )
+  await waitFor(() =>
+    expect(
+      client.getQueryState(problemKeys.detail('ws-1', 'problem-1'))?.status,
+    ).toBe('error'),
   )
   await waitFor(() =>
     expect(screen.getByText('Problem')).toHaveAttribute('aria-current', 'page'),
