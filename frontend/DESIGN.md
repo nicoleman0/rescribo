@@ -227,3 +227,8 @@ colours and shadows and applies no animated transition.
 - Groups, in order: Go to, Reports, Problems, Theme, Shortcuts. Report and problem rows come from the same `q` searches as the inbox and problems list, five rows at most. Phones list no shortcuts.
 - `src/lib/shortcuts.ts` is the only place a keyboard shortcut is declared. The palette lists shortcuts from it.
 - `Command`, `Dialog`, and `InputGroup` are shared primitives. `Command` holds no palette wording, routing, or data. The palette surface uses elevation 3, and its motion is off under reduced motion.
+
+## Markdown
+
+- `src/components/markdown/markdown.tsx` is the shared Markdown renderer. It shows raw HTML as text, never loads images, and activates only `http`, `https`, and `mailto` links.
+- `headingOffset` raises heading levels to fit the surrounding page hierarchy, capped at `h6`.

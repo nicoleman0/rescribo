@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { axeViolations } from './axe.js'
 
 const seedPath = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -24,17 +25,21 @@ async function signIn(page: Page) {
 }
 
 async function createProblem(page: Page) {
-  await page.getByRole('link', { name: 'Synthetic Slack report' }).click()
+  const title = `Synthetic GitHub issue flow ${Date.now()}`
+  await page.goto('/inbox/new')
+  await page.getByLabel('Title').fill(title)
+  await page.getByLabel('Customer organisation').fill(`Customer ${title}`)
+  await page.getByRole('button', { name: 'Create report' }).click()
+  await expect(page.getByRole('heading', { name: title })).toBeVisible()
   await page.getByRole('button', { name: 'Create problem' }).click()
-  await page.getByLabel('Problem title').fill('Synthetic GitHub issue flow')
+  await page.getByLabel('Problem title').fill(title)
   await page.getByRole('button', { name: 'Create and link' }).click()
-  await expect(
-    page.getByRole('link', { name: 'Synthetic GitHub issue flow' }),
-  ).toBeVisible()
-  await page.getByRole('link', { name: 'Synthetic GitHub issue flow' }).click()
+  await expect(page.getByRole('link', { name: title })).toBeVisible()
+  await page.getByRole('link', { name: title }).click()
   await expect(
     page.getByRole('heading', { name: 'GitHub issue', exact: true }),
   ).toBeVisible()
+  return title
 }
 
 test('links to a responsive preview and publishes only after keyboard approval', async ({
@@ -59,7 +64,8 @@ test('links to a responsive preview and publishes only after keyboard approval',
           draft_version: 1,
           expires_at: '2026-09-28T12:15:00Z',
           title: body.title ?? 'Synthetic GitHub issue flow',
-          body: `${body.body ?? 'Synthetic problem summary'}\n\n${marker}`,
+          body: body.body ?? 'Synthetic problem summary',
+          marker,
           repository: 'acme/widgets',
           visibility: 'private',
         }),
@@ -141,4 +147,64 @@ test('links to a responsive preview and publishes only after keyboard approval',
     draft_version: 1,
     approved: true,
   })
+})
+
+test('renders a safe Markdown preview at phone width in both themes', async ({
+  page,
+}) => {
+  const externalRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().includes('images.example.com'))
+      externalRequests.push(request.url())
+  })
+  await page.route('**/api/workspaces/*/problems/*/issue/preview/', (route) =>
+    route.fulfill({
+      status: 201,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: draftIds[0],
+        draft_version: 1,
+        expires_at: '2026-09-28T12:15:00Z',
+        title: 'Markdown preview issue',
+        body:
+          '# Preview\n\n- [x] Ready\n\n| Field | Value |\n| --- | --- |\n| Example | Content |\n\n```text\n' +
+          'x'.repeat(400) +
+          '\n```\n\n[Docs](https://example.com/docs) ![Chart](https://images.example.com/chart.png)\n\n<script>alert(1)</script>',
+        marker: `<!-- rescribo-operation:${draftIds[0]} -->`,
+        repository: 'acme/widgets',
+        visibility: 'private',
+      }),
+    }),
+  )
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page)
+  await createProblem(page)
+  const issueSection = page.getByRole('region', { name: 'GitHub issue' })
+  await issueSection
+    .getByRole('button', { name: 'Create GitHub issue' })
+    .click()
+  await issueSection.getByRole('button', { name: 'Preview issue' }).click()
+  const preview = issueSection.getByText('Exact preview').locator('..')
+  await expect(
+    preview.getByRole('heading', { name: 'Preview', level: 5 }),
+  ).toBeVisible()
+  const link = preview.getByRole('link', { name: 'Docs' })
+  await expect(link).toHaveAttribute('target', '_blank')
+  await expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+  await expect(preview).toContainText('<script>alert(1)</script>')
+  await expect(preview.locator('script, img')).toHaveCount(0)
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true)
+  expect(externalRequests).toEqual([])
+  expect(await axeViolations(page)).toEqual([])
+  await page
+    .locator('html')
+    .evaluate((element) => element.setAttribute('data-theme', 'dark'))
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+  expect(await axeViolations(page)).toEqual([])
 })
