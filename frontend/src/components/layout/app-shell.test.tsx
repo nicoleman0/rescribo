@@ -294,3 +294,19 @@ test('does not show count badges while count requests are pending', () => {
   view.unmount()
   view.client.clear()
 })
+
+test('Ctrl+B collapses the sidebar and stores the rail preference', () => {
+  renderShell('/settings')
+  fireEvent.keyDown(window, { key: 'b', ctrlKey: true })
+  expect(
+    screen.queryByRole('link', { name: 'rescribo, go to inbox' }),
+  ).not.toBeInTheDocument()
+  expect(localStorage.getItem('rescribo-sidebar')).toBe('false')
+})
+
+test('the palette trigger is absent from the UI gallery and without a workspace', () => {
+  renderShell('/dev/ui')
+  expect(
+    screen.queryByRole('button', { name: 'Open command palette' }),
+  ).not.toBeInTheDocument()
+})

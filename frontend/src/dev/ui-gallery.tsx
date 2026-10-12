@@ -14,10 +14,21 @@ import { STATUS_TONES } from '@/components/status/status-tone'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandShortcut,
+} from '@/components/ui/command'
 
 export default function UiGalleryPage() {
   const [motionReplay, setMotionReplay] = useState(0)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const retry = () => {
     setIsRetrying(true)
     window.setTimeout(() => setIsRetrying(false), 400)
@@ -72,6 +83,50 @@ export default function UiGalleryPage() {
               Unassigned
             </span>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Command</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <Command className="max-w-md shadow-elevation-2">
+            <CommandInput placeholder="Search commands" />
+            <CommandList>
+              <CommandEmpty>No results</CommandEmpty>
+              <CommandGroup heading="Go to">
+                <CommandItem>Inbox</CommandItem>
+                <CommandItem>Problems</CommandItem>
+              </CommandGroup>
+              <CommandGroup heading="Shortcuts">
+                <CommandItem>
+                  Toggle sidebar
+                  <CommandShortcut>Ctrl B</CommandShortcut>
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </Command>
+          <div>
+            <Button variant="outline" onClick={() => setDialogOpen(true)}>
+              Open command dialog
+            </Button>
+          </div>
+          <CommandDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            title="Command dialog"
+          >
+            <CommandInput placeholder="Search commands" />
+            <CommandList>
+              <CommandEmpty>No results</CommandEmpty>
+              <CommandGroup heading="Go to">
+                <CommandItem onSelect={() => setDialogOpen(false)}>
+                  Inbox
+                </CommandItem>
+              </CommandGroup>
+            </CommandList>
+          </CommandDialog>
         </CardContent>
       </Card>
 

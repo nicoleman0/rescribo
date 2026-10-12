@@ -220,3 +220,10 @@ colours and shadows and applies no animated transition.
 - The user menu shows the member's name and email, theme choice, and Sign out. On phones, an avatar in the header opens the same menu. Demo workspaces show the fictitious data notice in the menu and keep the Demo badge in the header.
 - Inbox and Follow-ups show counts from their filtered list queries. Zero, loading, and failed counts are hidden, and the count does not change the link name.
 - Breadcrumbs replace the header tagline. Detail pages show their section and record title. The header keeps an empty place for the command palette trigger.
+
+## Command palette
+
+- The header trigger and Cmd+K or Ctrl+K open the palette on every signed-in product screen. The trigger is named "Open command palette"; at desktop width it shows the keys.
+- Groups, in order: Go to, Reports, Problems, Theme, Shortcuts. Report and problem rows come from the same `q` searches as the inbox and problems list, five rows at most. Phones list no shortcuts.
+- `src/lib/shortcuts.ts` is the only place a keyboard shortcut is declared. The palette lists shortcuts from it.
+- `Command`, `Dialog`, and `InputGroup` are shared primitives. `Command` holds no palette wording, routing, or data. The palette surface uses elevation 3, and its motion is off under reduced motion.
