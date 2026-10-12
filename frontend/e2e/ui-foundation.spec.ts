@@ -125,6 +125,17 @@ test.describe('UI foundation', () => {
     ).toBeVisible()
   })
 
+  test('gallery command dialog opens and closes with Escape', async ({
+    page,
+  }) => {
+    await page.goto('/dev/ui')
+    await page.getByRole('button', { name: 'Open command dialog' }).click()
+    const dialog = page.getByRole('dialog', { name: 'Command dialog' })
+    await expect(dialog).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(dialog).toBeHidden()
+  })
+
   test('gallery at mobile width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 })
     await page.goto('/dev/ui')

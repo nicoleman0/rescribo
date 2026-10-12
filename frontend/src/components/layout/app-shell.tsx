@@ -1,6 +1,5 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
-import { CircleDot, Inbox, MessageSquareText, Settings } from 'lucide-react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Link,
   NavLink,
@@ -31,7 +30,11 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/components/ui/sidebar'
+import { CommandPalette } from '@/components/command-palette/command-palette'
+import { PaletteTrigger } from '@/components/command-palette/palette-trigger'
+import { useShortcut } from '@/lib/shortcuts'
 import { Breadcrumbs } from './breadcrumbs'
+import { NAVIGATION_ITEMS } from './navigation-items'
 import { readSidebarOpen, writeSidebarOpen } from './sidebar-state'
 import { useNavigationCounts } from './use-navigation-counts'
 import { UserMenu } from './user-menu'
@@ -52,24 +55,17 @@ function Navigation({
   mobile?: boolean
   counts: ReturnType<typeof useNavigationCounts>
 }) {
-  const items: NavigationItem[] = [
-    {
-      label: 'Inbox',
-      path: '/inbox',
-      icon: Inbox,
-      count: counts.reports,
-      countLabel: 'new reports',
-    },
-    { label: 'Problems', path: '/problems', icon: CircleDot },
-    {
-      label: 'Follow-ups',
-      path: '/follow-ups',
-      icon: MessageSquareText,
+  const badges: Record<string, Pick<NavigationItem, 'count' | 'countLabel'>> = {
+    '/inbox': { count: counts.reports, countLabel: 'new reports' },
+    '/follow-ups': {
       count: counts.followUps,
       countLabel: 'follow-ups need approval',
     },
-    { label: 'Settings', path: '/settings', icon: Settings },
-  ]
+  }
+  const items: NavigationItem[] = NAVIGATION_ITEMS.map((item) => ({
+    ...item,
+    ...badges[item.path],
+  }))
   const { pathname } = useLocation()
   if (mobile)
     return (
@@ -153,7 +149,15 @@ function ShellContents({
   signOutPending: boolean
   signOutError?: string
 }) {
-  const { open, isMobile } = useSidebar()
+  const { open, isMobile, toggleSidebar } = useSidebar()
+  const [paletteOpen, setPaletteOpen] = useState(false)
+  const workspace = useOptionalWorkspace()
+  const palette = !isGallery && session && workspace ? workspace : undefined
+  useShortcut('toggleSidebar', toggleSidebar)
+  // The palette needs a session and workspace; the gallery has neither.
+  useShortcut('openPalette', () => {
+    if (palette) setPaletteOpen((current) => !current)
+  })
   return (
     <>
       {/* First in the document so it is the first Tab stop. */}
@@ -222,7 +226,9 @@ function ShellContents({
             ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {/* The command palette trigger belongs in this header group. */}
+            {palette ? (
+              <PaletteTrigger onOpen={() => setPaletteOpen(true)} />
+            ) : null}
             {signOutError ? (
               <p role="alert" className="max-w-48 text-xs text-destructive">
                 {signOutError}
@@ -249,6 +255,13 @@ function ShellContents({
             {children ?? <Outlet />}
           </div>
         </SidebarInset>
+        {palette ? (
+          <CommandPalette
+            open={paletteOpen}
+            onOpenChange={setPaletteOpen}
+            workspaceId={palette.workspace.id}
+          />
+        ) : null}
         {!isGallery ? (
           <div className="fixed inset-x-0 bottom-0 z-10 md:hidden">
             <Navigation mobile counts={counts} />
