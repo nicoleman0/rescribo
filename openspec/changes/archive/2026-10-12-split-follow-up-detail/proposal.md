@@ -8,7 +8,7 @@ Delivers GitHub issue #209 (milestone H. Product-grade UI).
 
 ## What Changes
 
-- `follow-up-detail.tsx` is split by concern into eight files under `features/follow-ups/`. Code moves as it is. The only edits are `export` keywords and import lines.
+- `follow-up-detail.tsx` is split by concern into eight files under `features/follow-ups/`. Code moves as it is. The only edits are `export` keywords and import lines, plus one exception: Prettier reflowed two declarations in `follow-up-detail.fixtures.tsx`, `ada` and `detail`, because `export ` pushed them past 80 columns during implementation.
 - `follow-up-detail.test.tsx` is split the same way into six test files and one fixtures file. Test bodies move as they are.
 - `FollowUpDetailPanel` and `FollowUpDetailContent` keep their names and stay in `follow-up-detail.tsx`.
 

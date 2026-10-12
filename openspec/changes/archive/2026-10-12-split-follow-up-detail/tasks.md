@@ -5,7 +5,7 @@ Delivers #209. Refactor; `skip_specs: true`. Touch only `frontend/src/features/f
 Rules for every task:
 
 - Move code as it is. Do not rename, reorder inside a function, reword, or reformat.
-- The only new text is `export` in front of a moved declaration and import lines.
+- The only new text is `export` in front of a moved declaration and import lines. Exception, decided during implementation: Prettier reflowed two declarations in `follow-up-detail.fixtures.tsx`, `ada` and `detail`, because `export ` pushed them past 80 columns.
 - Do not change a test title, body, or assertion.
 - Keep the order the declarations and tests have in the old file.
 - All paths below are under `frontend/src/features/follow-ups/`.
@@ -97,7 +97,7 @@ Run from the repository root with `bash`. `$F` is `frontend/src/features/follow-
   comm -13 <(old) <(new)
   ```
 
-  Verify: every line printed is part of an import statement or a blank line.
+  Verify: every line printed is part of an import statement or a blank line, apart from the reflowed `ada` and `detail` declarations in the fixtures file. If any other line of test code appears, the move changed it. Fix the move, not the check.
 
 - [x] 3.3 `git status --short` lists only files under `frontend/src/features/follow-ups/` and `openspec/changes/`. `frontend/package.json` and `frontend/package-lock.json` are unchanged.
 - [x] 3.4 From `frontend`: `npx oxlint src/features/follow-ups` reports no warning and no error, as it does before the change. `npx prettier --check src/features/follow-ups` passes.

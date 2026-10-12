@@ -6,7 +6,7 @@ Every component in `follow-up-detail.tsx` is private except `FollowUpDetailPanel
 
 ## Decisions
 
-1. **Imports point one way.** `follow-up-detail` imports the section files. `follow-up-message` imports `follow-up-message-editor`. Every section file imports `follow-up-layout` and `follow-up-section-heading`. No file imports `follow-up-detail`, so there is no cycle.
+1. **Imports point one way.** `follow-up-detail` imports the section files. `follow-up-message` imports `follow-up-message-editor`. Every section file imports the layout helpers it uses from `follow-up-layout`, and `follow-up-section-heading` when it needs it. No file imports `follow-up-detail`, so there is no cycle. The editor file imports only `follow-up-layout`: it has no heading.
 
 2. **Shared layout helpers go in two files.** `react/only-export-components` warns when a `.tsx` file exports a component beside a hook or a context. The context, the hook, the type, and `wrapLongText` go in `follow-up-layout.ts`. `SectionHeading` goes in `follow-up-section-heading.tsx`. The feature has no lint warning today and keeps none.
 
@@ -23,7 +23,7 @@ Every component in `follow-up-detail.tsx` is private except `FollowUpDetailPanel
    - "uses section-level headings for panel history" goes with the history tests.
    - "labels a delivered message in the demo as simulated" goes with the message tests.
 
-8. **The move is checked by line comparison.** Tasks 3.1 and 3.2 compare the sorted lines of the old files with the new ones. Any line that is not an import must exist on both sides, apart from an added `export`.
+8. **The move is checked by line comparison.** Tasks 3.1 and 3.2 compare the sorted lines of the old files with the new ones. Any line that is not an import must exist on both sides, apart from an added `export`. One exception, decided during implementation: Prettier reflowed two declarations in `follow-up-detail.fixtures.tsx`, `ada` and `detail`, because `export ` pushed them past 80 columns. Task 3.2 names them in its verify text.
 
 ## Risks
 
