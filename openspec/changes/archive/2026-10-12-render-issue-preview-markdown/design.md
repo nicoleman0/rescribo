@@ -29,7 +29,7 @@
 
 ## Decisions
 
-1. **`Markdown` component in `frontend/src/components/markdown/markdown.tsx`.** Props: `children: string` and `headingOffset?: number`. It wraps `react-markdown` with `remark-gfm` and `remark-breaks`, no rehype plugins, and a fixed `components` map. No other props until a second caller needs one.
+1. **`Markdown` component in `frontend/src/components/markdown/markdown.tsx`, wrapping `frontend/src/components/markdown/markdown-renderer.tsx`.** Props: `children: string` and `headingOffset?: number`. `markdown.tsx` lazy loads the renderer behind a `Suspense` boundary and an error boundary (decision 12). `markdown-renderer.tsx` wraps `react-markdown` with `remark-gfm` and `remark-breaks`, no rehype plugins, and a fixed `components` map. No other props until a second caller needs one.
 
 2. **Single newlines are line breaks, via `remark-breaks`.** GitHub renders a newline in an issue body as a line break. Without this, the default body's summary lines would run together in the preview and not on GitHub. Pending question 1.
    - No plugin: the preview is wrong for the most common body.
