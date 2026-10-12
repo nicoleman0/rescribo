@@ -25,6 +25,10 @@ The create preview SHALL render the saved issue body as GitHub-flavoured Markdow
 - **WHEN** the preview of a formatted body is checked with axe in the light and dark themes
 - **THEN** no violations are reported
 
+#### Scenario: Renderer load failure
+- **WHEN** the Markdown renderer chunk fails to load
+- **THEN** the body remains visible as plain text and the preview says formatted preview could not load
+
 ### Requirement: Preview never renders raw HTML
 The create preview MUST NOT render raw HTML from the issue body. HTML in the body SHALL show as literal text, so the member reads everything that will be sent.
 

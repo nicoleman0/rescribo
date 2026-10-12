@@ -8,6 +8,7 @@
 - [x] 1.4 Tests for raw HTML per decision 3: `<details>`, `<script>`, `<img onerror>`, and an HTML comment each show as literal text, and the container holds no `details`, `script`, or `img` element
 - [x] 1.5 Add `headingOffset` per decision 6. Tests cover: default `#` is `h1`; with offset 4, `#` is `h5` and `###` is `h6`
 - [x] 1.6 Style every element per decision 7. Tests cover: a table sits in a horizontally scrolling wrapper; a task list renders two disabled checkboxes named "Done" and "Not done"; `~~x~~` renders `del`
+- [x] 1.7 Export the renderer through a lazy shared component. Show plain text while it loads and after a load failure; add fallback and error-boundary coverage.
 
 ## 2. Preview
 
@@ -24,6 +25,7 @@
 - [x] 3.3 `RESCRIBO_E2E_API_PORT=8208 RESCRIBO_E2E_FRONTEND_PORT=5208 task e2e`
 - [x] 3.4 Take the after shots into `.claude/shots/after`: run `shots.mjs`, then `.claude/shots/preview-shots.mjs`, which mocks the preview reply because the demo refuses GitHub actions. Build `.claude/shots/compare.html`
 - [x] 3.5 Write the PR body per the brief. Under Decisions to review, list the answers to the five plan questions, the link schemes allowed, and the bundle size change
+- [x] 3.6 Correct the archived footnote behavior and add the renderer load-failure scenario to the spec.
 
 ## Workflow follow-up
 

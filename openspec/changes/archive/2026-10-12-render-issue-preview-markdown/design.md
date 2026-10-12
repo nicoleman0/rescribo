@@ -24,7 +24,7 @@
 **Non-Goals:**
 - Matching GitHub pixel for pixel, or rendering GitHub-only features (see the table below).
 - Markdown in report text, fix notes, or follow-up messages.
-- Syntax highlighting, a typography plugin, lazy loading the renderer.
+- Syntax highlighting and a typography plugin.
 - Backend or API changes.
 
 ## Decisions
@@ -74,15 +74,17 @@
    | Relative links | resolve against the repository | inactive text |
    | Heading anchors | added | none |
 
-   Tables, task lists, strikethrough, footnotes, and bare URL autolinks match, through `remark-gfm`.
+   Tables, task lists, strikethrough, and bare URL autolinks match, through `remark-gfm`. Footnote references and back links render as plain text because fragment links are inactive; the "Footnotes" heading follows the heading offset.
 
 10. **Fix the e2e mock to match the API.** It returns `body` without the marker and `marker` as a field. Otherwise the marker would show as literal text inside the rendered body and the marker line would be empty.
 
 11. **`frontend/DESIGN.md` gains a "Markdown" section**: where the renderer lives, that it never renders HTML or loads images, and the heading offset rule. Shared file; pending question 5.
 
+12. **Load the renderer on demand.** `Markdown` is a shared lazy component. While its chunk loads, show the body as plain `whitespace-pre-wrap` text. If loading fails, keep that text visible and add "Formatted preview could not load." This keeps the preview useful as a privacy check without adding the renderer to the entry chunk.
+
 ## Risks / Trade-offs
 
-- Three dependencies and their `unified` tree add to the bundle. → The problem page is not the entry route's critical path; measure with `task build` and report the size change in the PR.
+- The lazy renderer adds a chunk request when a Markdown preview opens. → The entry chunk stays close to its previous size; report both bundle sizes in the PR.
 - "Exact preview" overstates the match for bodies that use GitHub-only features. → The note in decision 9 names the two with side effects.
 - A member may expect an image to show. → The link carries the alt text and opens the image on request.
 

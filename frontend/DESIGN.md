@@ -232,3 +232,4 @@ colours and shadows and applies no animated transition.
 
 - `src/components/markdown/markdown.tsx` is the shared Markdown renderer. It shows raw HTML as text, never loads images, and activates only `http`, `https`, and `mailto` links.
 - `headingOffset` raises heading levels to fit the surrounding page hierarchy, capped at `h6`.
+- The renderer loads on demand and falls back to plain text while loading or if its chunk fails.

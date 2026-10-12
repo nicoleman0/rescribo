@@ -1,21 +1,50 @@
 import { render, screen, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
-import { Markdown } from './markdown'
+import { Markdown, MarkdownErrorBoundary } from './markdown'
 
-test('renders headings, lists, and single newlines', () => {
+test('shows the plain text fallback while the renderer loads', () => {
+  render(<Markdown>{'# Private body'}</Markdown>)
+  expect(screen.getByText('# Private body')).toHaveClass('whitespace-pre-wrap')
+  expect(screen.queryByRole('heading', { name: 'Private body' })).toBeNull()
+})
+
+test('keeps plain text visible and reports a renderer load failure', () => {
+  function FailedChunk(): never {
+    throw new Error('chunk failed')
+  }
+  render(
+    <MarkdownErrorBoundary
+      fallback={
+        <>
+          <p>Private body</p>
+          <p>Formatted preview could not load.</p>
+        </>
+      }
+    >
+      <FailedChunk />
+    </MarkdownErrorBoundary>,
+  )
+  expect(screen.getByText('Private body')).toBeInTheDocument()
+  expect(
+    screen.getByText('Formatted preview could not load.'),
+  ).toBeInTheDocument()
+})
+
+test('renders headings, lists, and single newlines', async () => {
   const { container } = render(
     <Markdown>{'# Title\nFirst line\nSecond line\n\n- One\n- Two'}</Markdown>,
   )
   expect(
-    screen.getByRole('heading', { name: 'Title', level: 1 }),
+    await screen.findByRole('heading', { name: 'Title', level: 1 }),
   ).toBeInTheDocument()
   expect(
     within(screen.getByRole('list')).getAllByRole('listitem'),
   ).toHaveLength(2)
   expect(container.querySelector('p br')).toBeInTheDocument()
+  expect(container.querySelector('[node]')).toBeNull()
 })
 
-test('allows only web and mail links and turns images into links', () => {
+test('allows only web and mail links and turns images into links', async () => {
   render(
     <Markdown>
       {
@@ -23,7 +52,7 @@ test('allows only web and mail links and turns images into links', () => {
       }
     </Markdown>,
   )
-  const web = screen.getByRole('link', { name: 'web' })
+  const web = await screen.findByRole('link', { name: 'web' })
   expect(web).toHaveAttribute('target', '_blank')
   expect(web).toHaveAttribute('rel', 'noopener noreferrer')
   expect(screen.getByRole('link', { name: 'mail' })).toHaveAttribute(
@@ -42,7 +71,7 @@ test('allows only web and mail links and turns images into links', () => {
     expect(screen.getByText(text, { selector: 'span' })).toBeInTheDocument()
 })
 
-test('shows raw HTML literally without creating elements', () => {
+test('shows raw HTML literally without creating elements', async () => {
   const { container } = render(
     <Markdown>
       {
@@ -50,6 +79,7 @@ test('shows raw HTML literally without creating elements', () => {
       }
     </Markdown>,
   )
+  await screen.findByText(/<details>/)
   expect(container).toHaveTextContent(
     '<details><summary>More</summary>Hidden</details>',
   )
@@ -59,7 +89,7 @@ test('shows raw HTML literally without creating elements', () => {
   expect(container.querySelector('details, script, img')).toBeNull()
 })
 
-test('offsets headings and styles markdown structures', () => {
+test('offsets headings and styles markdown structures', async () => {
   const { container } = render(
     <Markdown headingOffset={4}>
       {
@@ -68,7 +98,7 @@ test('offsets headings and styles markdown structures', () => {
     </Markdown>,
   )
   expect(
-    screen.getByRole('heading', { name: 'First', level: 5 }),
+    await screen.findByRole('heading', { name: 'First', level: 5 }),
   ).toBeInTheDocument()
   expect(
     screen.getByRole('heading', { name: 'Third', level: 6 }),
