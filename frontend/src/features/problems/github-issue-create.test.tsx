@@ -142,3 +142,48 @@ test('shows the exact persisted preview and posts only after explicit approval',
     await screen.findByText('Issue creation is queued.'),
   ).toBeInTheDocument()
 })
+
+test('renders Markdown and explains GitHub mention behavior', async () => {
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`POST ${base}/preview/`]: (_url, init) => {
+      const request = JSON.parse(String(init?.body)) as {
+        title?: string
+        body?: string
+      }
+      return json(
+        draft(request.title ?? problem.title, request.body ?? '', 'draft-md'),
+        201,
+      )
+    },
+  })
+  renderWorkspaceRoutes(
+    [
+      {
+        path: '/problems/prob-1',
+        element: <GitHubIssueCreate workspaceId="ws-1" problem={problem} />,
+      },
+    ],
+    '/problems/prob-1',
+  )
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Create GitHub issue' }),
+  )
+  fireEvent.change(await screen.findByRole('textbox', { name: 'Issue body' }), {
+    target: { value: '## Steps\n\n1. One\n2. Two\n\ncc @octocat, see #12' },
+  })
+  fireEvent.click(screen.getByRole('button', { name: 'Preview issue' }))
+  expect(
+    await screen.findByRole('heading', { name: 'Steps', level: 6 }),
+  ).toBeInTheDocument()
+  expect(screen.getAllByRole('listitem')).toHaveLength(2)
+  expect(screen.getByText('cc @octocat, see #12')).toBeInTheDocument()
+  expect(
+    screen.getByText(
+      'GitHub also links @mentions and #references, and notifies anyone you mention.',
+    ),
+  ).toBeInTheDocument()
+  expect(
+    screen.getByText('<!-- rescribo-operation:draft-md -->'),
+  ).toBeInTheDocument()
+})

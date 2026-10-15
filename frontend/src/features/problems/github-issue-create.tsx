@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { applyProblem } from '@/api/cache'
 import { Link } from 'react-router-dom'
 import { fieldError } from '@/components/forms/field-error'
+import { Markdown } from '@/components/markdown/markdown'
 
 export function GitHubIssueCreate({
   workspaceId,
@@ -356,8 +357,12 @@ export function GitHubIssueCreate({
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Exact preview
           </p>
+          <p className="text-xs text-muted-foreground">
+            GitHub also links @mentions and #references, and notifies anyone you
+            mention.
+          </p>
           <h4 className="font-medium break-words">{title}</h4>
-          <p className="whitespace-pre-wrap break-words text-sm">{body}</p>
+          <Markdown headingOffset={4}>{body}</Markdown>
           <p className="border-t border-border pt-2 font-mono text-xs text-muted-foreground">
             {draft?.marker}
           </p>
