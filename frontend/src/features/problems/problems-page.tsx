@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search, X } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useLiveSearchParams } from '@/hooks/use-live-search-params'
 import {
   listProblems,
   problemKeys,
@@ -51,7 +52,7 @@ function withQuery(params: URLSearchParams, query: ProblemQuery) {
 
 export function ProblemsPage() {
   const { workspace } = useWorkspace()
-  const [params, setParams] = useSearchParams()
+  const [params, updateParams] = useLiveSearchParams()
   const query = queryFromParams(params)
   return (
     <div className="animate-page-enter grid gap-6">
@@ -66,7 +67,9 @@ export function ProblemsPage() {
       <ProblemSearch
         key={query.q ?? ''}
         initial={query.q ?? ''}
-        onSearch={(q) => setParams(withQuery(params, { q, page: undefined }))}
+        onSearch={(q) =>
+          updateParams((current) => withQuery(current, { q, page: undefined }))
+        }
       />
       <ProblemResults workspaceId={workspace.id} query={query} />
     </div>
@@ -115,7 +118,7 @@ function ProblemResults({
   workspaceId: string
   query: ProblemQuery
 }) {
-  const [params, setParams] = useSearchParams()
+  const [, updateParams] = useLiveSearchParams()
   const problems = useQuery({
     queryKey: problemKeys.list(workspaceId, query),
     queryFn: () => listProblems(workspaceId, query),
@@ -126,7 +129,9 @@ function ProblemResults({
     <Button
       variant="outline"
       onClick={() =>
-        setParams(withQuery(params, { q: undefined, page: undefined }))
+        updateParams((current) =>
+          withQuery(current, { q: undefined, page: undefined }),
+        )
       }
     >
       <X aria-hidden="true" />
@@ -145,7 +150,11 @@ function ProblemResults({
           action={
             <Button
               variant="outline"
-              onClick={() => setParams(withQuery(params, { page: undefined }))}
+              onClick={() =>
+                updateParams((current) =>
+                  withQuery(current, { page: undefined }),
+                )
+              }
             >
               Go to the first page
             </Button>
@@ -196,7 +205,9 @@ function ProblemResults({
         count={countLabel(problems.data.count, 'problem')}
         page={problems.data}
         pageNumber={query.page ?? 1}
-        onPage={(page) => setParams(withQuery(params, { page }))}
+        onPage={(page) =>
+          updateParams((current) => withQuery(current, { page }))
+        }
       />
     </ReadyState>
   )

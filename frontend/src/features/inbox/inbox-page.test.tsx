@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { ReportDetail, ReportListItem, ReportPage } from '@/api/reports'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
@@ -357,4 +357,24 @@ test('shows manual provenance and a missing report', async () => {
   view.unmount()
   renderWorkspaceRoutes(routes, '/inbox/gone')
   expect(await screen.findByText('Report not found')).toBeInTheDocument()
+})
+
+test('keeps two filter changes made before the inbox re-renders', async () => {
+  stubApi({
+    [reportsPath]: () => page([]),
+    [membersPath]: () => json([]),
+  })
+  renderWorkspaceRoutes(routes, '/inbox?customer=acme')
+  const status = await screen.findByRole('group', { name: 'Status' })
+  const newChip = await within(status).findByRole('button', { name: /^New/ })
+  // One act: both handlers run before the router's transition commits.
+  act(() => {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Assignee' }), {
+      target: { value: 'unassigned' },
+    })
+    fireEvent.click(newChip)
+  })
+  expect(screen.getByTestId('location').textContent).toBe(
+    '/inbox?customer=acme&assignee=unassigned&triage_state=new',
+  )
 })

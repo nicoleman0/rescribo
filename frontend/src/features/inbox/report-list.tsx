@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { useLiveSearchParams } from '@/hooks/use-live-search-params'
 import type { MemberSummary, ReportPage } from '@/api/reports'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
@@ -118,7 +119,7 @@ function Pagination({
   page: ReportPage
   pageNumber: number
 }) {
-  const [params, setParams] = useSearchParams()
+  const [, updateParams] = useLiveSearchParams()
   const hasPages = Boolean(page.previous || page.next)
   return (
     <nav
@@ -135,7 +136,9 @@ function Pagination({
             variant="outline"
             size="sm"
             disabled={!page.previous}
-            onClick={() => setParams(withPage(params, pageNumber - 1))}
+            onClick={() =>
+              updateParams((current) => withPage(current, pageNumber - 1))
+            }
           >
             <ChevronLeft aria-hidden="true" />
             Previous
@@ -144,7 +147,9 @@ function Pagination({
             variant="outline"
             size="sm"
             disabled={!page.next}
-            onClick={() => setParams(withPage(params, pageNumber + 1))}
+            onClick={() =>
+              updateParams((current) => withPage(current, pageNumber + 1))
+            }
           >
             Next
             <ChevronRight aria-hidden="true" />

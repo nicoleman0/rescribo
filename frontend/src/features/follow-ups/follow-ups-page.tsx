@@ -1,5 +1,6 @@
 import { keepPreviousData, useQueries, useQuery } from '@tanstack/react-query'
-import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
+import { useLiveSearchParams } from '@/hooks/use-live-search-params'
 import {
   followUpKeys,
   listFollowUps,
@@ -34,7 +35,7 @@ const FOLLOW_UPS_REFRESH_MS = 30_000
 export function FollowUpsPage() {
   const { workspace } = useWorkspace()
   const { followUpId } = useParams()
-  const [params, setParams] = useSearchParams()
+  const [params, updateParams] = useLiveSearchParams()
   const bucket = bucketFromParams(params)
   const pageValue = Number(params.get('page') ?? '1')
   const page = Number.isSafeInteger(pageValue) && pageValue > 0 ? pageValue : 1
@@ -53,7 +54,9 @@ export function FollowUpsPage() {
       <BucketTabs
         workspaceId={workspace.id}
         active={bucket}
-        onChange={(next) => setParams(withBucket(params, next))}
+        onChange={(next) =>
+          updateParams((current) => withBucket(current, next))
+        }
       />
       <div
         className={cn(
@@ -209,7 +212,7 @@ function FollowUpsList({
   page: number
   selectedId: string | undefined
 }) {
-  const [params, setParams] = useSearchParams()
+  const [params, updateParams] = useLiveSearchParams()
   const query = useQuery<FollowUpPage, ApiError>({
     queryKey: followUpKeys.list(workspaceId, bucket, page),
     queryFn: () => listFollowUps(workspaceId, bucket, page),
@@ -277,9 +280,11 @@ function FollowUpsList({
             variant="outline"
             disabled={page <= 1}
             onClick={() => {
-              const next = new URLSearchParams(params)
-              next.set('page', String(page - 1))
-              setParams(next)
+              updateParams((current) => {
+                const next = new URLSearchParams(current)
+                next.set('page', String(page - 1))
+                return next
+              })
             }}
           >
             Previous page
@@ -292,9 +297,11 @@ function FollowUpsList({
             variant="outline"
             disabled={page >= Math.ceil(query.data.count / 25)}
             onClick={() => {
-              const next = new URLSearchParams(params)
-              next.set('page', String(page + 1))
-              setParams(next)
+              updateParams((current) => {
+                const next = new URLSearchParams(current)
+                next.set('page', String(page + 1))
+                return next
+              })
             }}
           >
             Next page
