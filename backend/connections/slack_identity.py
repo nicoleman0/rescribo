@@ -7,6 +7,7 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from accounts.models import Membership
+from accounts.services import revoke_membership
 from accounts.tokens import IssuedToken, digest, issue_token
 from connections.models import Connection, ExternalIdentity, SlackLinkCode
 
@@ -74,6 +75,13 @@ def redeem_link_code(code: str, *, workspace_id: UUID, team_id: str, user_id: st
 
 def unlink(actor: Membership) -> None:
     ExternalIdentity.objects.filter(membership=actor, provider=Connection.Provider.SLACK).delete()
+
+
+def revoke_member(*, actor: Membership, target: Membership) -> None:
+    """Revoke a membership and its Slack identity as one unit."""
+    with transaction.atomic():
+        revoke_membership(actor=actor, target=target)
+        unlink(target)
 
 
 def linked_identity(actor: Membership) -> ExternalIdentity | None:

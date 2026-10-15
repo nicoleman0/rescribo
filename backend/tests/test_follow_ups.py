@@ -18,6 +18,7 @@ from django.utils import timezone
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
 from connections.models import Connection, ExternalIdentity
+from connections.slack_identity import revoke_member
 from feedback.errors import (
     DeliveryNotReady,
     InvalidReference,
@@ -415,6 +416,31 @@ def test_approval_needs_an_active_connection(owner: Membership, connection: Conn
             notification_id=_notification_id(follow_up),
             draft_version=1,
         )
+
+
+def test_approval_reports_inactive_recipient_before_missing_slack_link(
+    owner: Membership, connection: Connection
+) -> None:
+    recipient = make_membership(
+        workspace=owner.workspace, user=make_user(email="inactive-recipient@example.test")
+    )
+    link_slack(recipient)
+    report = fixed_report(owner, source=slack_source())
+    follow_up = report.follow_ups.get()
+    follow_up.recipient = recipient
+    follow_up.save(update_fields=["recipient"])
+    draft_notification(actor=owner, follow_up_id=follow_up.pk)
+    revoke_member(actor=owner, target=recipient)
+
+    with pytest.raises(DeliveryNotReady) as error:
+        approve_notification(
+            actor=owner,
+            follow_up_id=follow_up.pk,
+            notification_id=_notification_id(follow_up),
+            draft_version=1,
+        )
+
+    assert error.value.reason == "recipient_inactive"
 
 
 def test_stale_approvals_are_rejected(owner: Membership, connection: Connection) -> None:

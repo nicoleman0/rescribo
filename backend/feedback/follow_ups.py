@@ -420,8 +420,6 @@ def approve_notification(
                 reason=blocker,
                 detail="The report changed since the draft. Review the message before approving.",
             )
-        # Fresh readiness immediately before queuing: same rules the task rechecks.
-        slack_readiness(follow_up=follow_up)
         if not Membership.objects.filter(
             pk=follow_up.recipient_id, workspace_id=follow_up.workspace_id, is_active=True
         ).exists():
@@ -429,6 +427,8 @@ def approve_notification(
                 reason="recipient_inactive",
                 detail="Reassign this follow-up to an active member before sending.",
             )
+        # Fresh readiness immediately before queuing: same rules the task rechecks.
+        slack_readiness(follow_up=follow_up)
         operation.state = Operation.State.QUEUED
         operation.approved_by = actor
         operation.approved_at = current

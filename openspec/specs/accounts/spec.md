@@ -39,11 +39,15 @@ The system SHALL use secure HttpOnly session cookies and require a CSRF token on
 - **THEN** further attempts are rejected until the limit window passes
 
 ### Requirement: Access revocation
-Logout, password change, and revocation of a user's last active membership SHALL invalidate that user's sessions. Membership SHALL be rechecked on every workspace request.
+Logout, password change, and revocation of a user's last active membership SHALL invalidate that user's sessions. Membership SHALL be rechecked on every workspace request. Revoking a membership SHALL also remove its Slack identity in the same transaction. Restoring a membership MUST NOT restore its Slack identity.
 
 #### Scenario: Member removed
 - **WHEN** an owner revokes a member's only membership
-- **THEN** the member's next request is rejected and their sessions no longer authenticate
+- **THEN** the member's next request is rejected, their sessions no longer authenticate, and their Slack identity is removed
+
+#### Scenario: Revoked membership restored
+- **WHEN** a revoked membership is restored
+- **THEN** the member has no Slack identity until they link again
 
 ### Requirement: Password recovery without email
 An owner SHALL be able to issue a one-use reset link for a member. An operator command SHALL issue a reset for an owner. No email provider is required.
