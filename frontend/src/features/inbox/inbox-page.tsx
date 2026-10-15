@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Plus, X } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import { useLiveSearchParams } from '@/hooks/use-live-search-params'
 import { listReports, reportKeys } from '@/api/reports'
 import type { ApiError } from '@/api/request'
 import { useWorkspace } from '@/components/auth/use-workspace'
@@ -89,7 +90,7 @@ function InboxResults({
   workspaceId: string
   selectedId?: string
 }) {
-  const [params, setParams] = useSearchParams()
+  const [params, updateParams] = useLiveSearchParams()
   const query = queryFromParams(params)
   const reports = useQuery({
     queryKey: reportKeys.list(workspaceId, query),
@@ -98,7 +99,7 @@ function InboxResults({
     refetchInterval: INBOX_REFRESH_MS,
   })
   const clearFilters = (
-    <Button variant="outline" onClick={() => setParams(withoutFilters(params))}>
+    <Button variant="outline" onClick={() => updateParams(withoutFilters)}>
       <X aria-hidden="true" />
       Clear filters
     </Button>
@@ -115,7 +116,7 @@ function InboxResults({
           action={
             <Button
               variant="outline"
-              onClick={() => setParams(withPage(params, 1))}
+              onClick={() => updateParams((current) => withPage(current, 1))}
             >
               Go to the first page
             </Button>

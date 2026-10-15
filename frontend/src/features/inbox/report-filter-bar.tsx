@@ -1,12 +1,12 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
-import { useSearchParams } from 'react-router-dom'
 import type { InboxQuery } from '@/api/reports'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect } from '@/components/ui/native-select'
 import { RetryButton } from '@/components/states/async-states'
+import { useLiveSearchParams } from '@/hooks/use-live-search-params'
 import { cn } from '@/lib/utils'
 import {
   hasActiveFilters,
@@ -35,7 +35,7 @@ export function ReportFilterBar({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const [params, setParams] = useSearchParams()
+  const [, updateParams] = useLiveSearchParams()
   const [text, setText] = useState(query.q ?? '')
   const [customer, setCustomer] = useState(query.customer ?? '')
   const members = useMembers(workspaceId)
@@ -48,7 +48,7 @@ export function ReportFilterBar({
   const collapsed = !open && 'max-md:hidden'
 
   function apply(changes: Partial<Record<FilterKey, string>>) {
-    setParams(withFilters(params, changes))
+    updateParams((current) => withFilters(current, changes))
   }
 
   function submit(event: FormEvent) {
@@ -163,10 +163,7 @@ export function ReportFilterBar({
           </CompactSelect>
         </div>
         {hasActiveFilters(query) ? (
-          <Button
-            variant="ghost"
-            onClick={() => setParams(withoutFilters(params))}
-          >
+          <Button variant="ghost" onClick={() => updateParams(withoutFilters)}>
             <X aria-hidden="true" />
             Clear filters
           </Button>
