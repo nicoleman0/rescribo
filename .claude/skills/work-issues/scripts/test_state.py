@@ -32,6 +32,7 @@ class Harness(unittest.TestCase):
         subprocess.run(["git", "-C", str(self.repo), "remote", "add", "origin", str(self.origin)], check=True)
         self.skill = self.repo / ".claude/skills/work-issues"
         shutil.copytree(SOURCE_SKILL, self.skill)
+        (self.skill / "routing.md").write_text("# Routing\n")
         (self.skill / "roles/planner.md").write_text("role")
         self.up_hook = self.skill / "hooks/worktree-up.sh"
         self.up_hook.write_text("#!/bin/sh\necho hook-output\n[ \"${FAIL_HOOK:-}\" != 1 ]\n")
@@ -41,6 +42,8 @@ class Harness(unittest.TestCase):
         self.down_hook.chmod(0o755)
         self.bin = self.base / "bin"
         self.bin.mkdir()
+        for cli in ("claude", "codex", "opencode", "pi"):
+            self.stub(cli, "exit 0")
         self.log = self.base / "calls.jsonl"
         self.stub("gh", 'echo "$*" >> "$CALL_LOG"\n[ "$1 $2" = "pr list" ] && [ "$3" = "--head" ] && [ "$5" = "--state" ] && [ "$6" = all ] && [ "$7" = "--json" ] && [ "$8" = "number,state" ] && [ "$9" = "--limit" ] && [ "${10}" = 1 ] || exit 23\n[ "${FAIL_GH:-}" != 1 ] || exit 2\nprintf \'%s\\n\' "${GH_RESULT:-[]}"')
         self.stub("herdr", 'echo "$*" >> "$CALL_LOG"\n[ "${FAIL_HERDR:-}" != 1 ] || exit 2\nif [ "$1 $2" = "agent list" ] && [ "$#" = 2 ]; then printf \'%s\\n\' "$HERDR_RESULT"; elif [ "$1 $2" = "agent start" ]; then [ "${FAIL_START:-}" != 1 ] || exit 2; case "$3" in planner-10|planner-8|implementer-10|reviewer-10) ;; *) exit 23 ;; esac; echo "agent start output"; elif [ "$1 $2" = "worktree create" ]; then printf \'%s\\n\' "$HERDR_CREATE_RESULT"; else exit 23; fi')
@@ -145,6 +148,133 @@ class Harness(unittest.TestCase):
         result = self.script("teardown-worktree.sh", "77", "topic")
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def stub_teardown_git(self, branch, on_delete):
+        real = shutil.which("git")
+        origin = str(self.origin)
+        self.stub("git", f'''if [ "$1 $2 $3" = "push origin --delete" ] && [ "$4" = "{branch}" ]; then
+  {on_delete}
+fi
+exec "{real}" "$@"''')
+
+    def test_teardown_tolerates_branch_deleted_between_check_and_push(self):
+        self.assertEqual(self.script("setup-worktree.sh", "39", "race").returncode, 0)
+        subprocess.run(["git", "-C", str(self.repo), "push", "-q", "origin", "race"], capture_output=True)
+        # The wrapper deletes the ref right before its own push --delete runs,
+        # so the push is rejected the way the bare repo rejects a missing ref.
+        self.stub_teardown_git("race", f'"{shutil.which("git")}" -C "{self.origin}" update-ref -d refs/heads/race')
+        down = self.script("teardown-worktree.sh", "39", "race")
+        self.assertEqual(down.returncode, 0, down.stderr)
+        self.assertEqual(subprocess.run(["git", "ls-remote", "--heads", str(self.origin), "race"], capture_output=True, text=True).stdout, "")
+        self.assertFalse((self.repo / ".claude/state/39.json").exists())
+
+    def test_teardown_reports_failed_remote_delete_and_removes_record(self):
+        self.assertEqual(self.script("setup-worktree.sh", "39", "race").returncode, 0)
+        subprocess.run(["git", "-C", str(self.repo), "push", "-q", "origin", "race"], capture_output=True)
+        self.stub_teardown_git("race", 'echo "push failed" >&2; exit 1')
+        down = self.script("teardown-worktree.sh", "39", "race")
+        self.assertNotEqual(down.returncode, 0)
+        self.assertIn("race", down.stderr)
+        self.assertIn("still exists", down.stderr)
+        hinted = subprocess.run(["git", "ls-remote", "--heads", str(self.origin), "race"], capture_output=True, text=True).stdout
+        self.assertIn("refs/heads/race", hinted)
+        self.assertFalse((self.repo / ".claude/state/39.json").exists())
+
+    def make_dirty(self, tree):
+        # Modified, staged, and untracked files, as git's plain removal refuses.
+        (tree / ".keep").write_text("changed\n")
+        (tree / "staged.txt").write_text("x\n")
+        (tree / "untracked.txt").write_text("x\n")
+        subprocess.run(["git", "-C", str(tree), "add", "staged.txt"], check=True)
+
+    def test_teardown_refuses_dirty_worktree_before_the_hook(self):
+        self.down_hook.write_text('#!/bin/sh\necho down >> "$MAIN_CHECKOUT/hook-log"\n')
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.make_dirty(tree)
+        down = self.script("teardown-worktree.sh", "8", "topic")
+        self.assertNotEqual(down.returncode, 0)
+        self.assertIn("--abandon", down.stderr)
+        self.assertIn("untracked.txt", down.stderr)
+        self.assertIn(" M .keep", down.stderr)
+        self.assertTrue((self.repo / ".claude/state/8.json").exists())
+        self.assertTrue(tree.exists())
+        self.assertEqual(subprocess.run(["git", "-C", str(self.repo), "branch", "--list", "topic"], capture_output=True, text=True).stdout.count("topic"), 1)
+        self.assertFalse((self.repo / "hook-log").exists())
+
+    def test_teardown_rejects_unknown_options(self):
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.make_dirty(tree)
+        down = self.script("teardown-worktree.sh", "--force", "8", "topic")
+        self.assertEqual(down.returncode, 2)
+        self.assertIn("Usage: teardown-worktree.sh", down.stderr)
+        self.assertTrue((self.repo / ".claude/state/8.json").exists())
+        self.assertTrue(tree.exists())
+
+    def test_abandon_reports_and_discards_dirty_worktree(self):
+        self.down_hook.write_text('#!/bin/sh\necho down >> "$MAIN_CHECKOUT/hook-log"\n')
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.make_dirty(tree)
+        draft = subprocess.run(["git", "-C", str(tree), "commit", "-qm", "draft change", "staged.txt"], capture_output=True, text=True)
+        self.assertEqual(draft.returncode, 0, draft.stderr)
+        down = self.script("teardown-worktree.sh", "--abandon", "8", "topic")
+        self.assertEqual(down.returncode, 0, down.stderr)
+        self.assertEqual(down.stderr, "")
+        self.assertIn("?? untracked.txt", down.stdout)
+        self.assertIn(" M .keep", down.stdout)
+        self.assertIn("draft change", down.stdout)
+        self.assertTrue((self.repo / "hook-log").exists())
+        self.assertFalse((self.repo / ".claude/state/8.json").exists())
+        self.assertFalse(tree.exists())
+        self.assertEqual(subprocess.run(["git", "-C", str(self.repo), "branch", "--list", "topic"], capture_output=True, text=True).stdout, "")
+        self.assertEqual(subprocess.run(["git", "ls-remote", "--heads", str(self.origin), "topic"], capture_output=True, text=True).stdout, "")
+
+    def test_abandon_deletes_the_remote_branch(self):
+        self.assertEqual(self.script("setup-worktree.sh", "39", "race").returncode, 0)
+        subprocess.run(["git", "-C", str(self.repo), "push", "-q", "origin", "race"], capture_output=True)
+        down = self.script("teardown-worktree.sh", "--abandon", "39", "race")
+        self.assertEqual(down.returncode, 0, down.stderr)
+        self.assertEqual(subprocess.run(["git", "ls-remote", "--heads", str(self.origin), "race"], capture_output=True, text=True).stdout, "")
+        self.assertFalse((self.repo / ".claude/state/39.json").exists())
+
+    def stub_teardown_herdr(self, workspace, tree):
+        # Stands in for `herdr worktree remove`, which takes the checkout with
+        # it and leaves the local branch for `git branch -D`.
+        self.stub("herdr", 'echo "$*" >> "$CALL_LOG"\nif [ "$1 $2" = "worktree list" ]; then printf \'%s\\n\' "$HERDR_LIST_RESULT"\nelif [ "$1 $2" = "worktree remove" ]; then git worktree remove --force "$HERDR_TREE"\nelse exit 23\nfi')
+        env = self.env.copy()
+        env["HERDR_ENV"] = "1"
+        env["HERDR_LIST_RESULT"] = json.dumps({"result": {"worktrees": [{"branch": "topic", "open_workspace_id": workspace}]}})
+        env["HERDR_TREE"] = str(tree)
+        return env
+
+    def test_abandon_forces_herdr_removal_on_dirty_worktree(self):
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.make_dirty(tree)
+        env = self.stub_teardown_herdr("ws-open", tree)
+        down = self.script("teardown-worktree.sh", "--abandon", "8", "topic", env=env)
+        self.assertEqual(down.returncode, 0, down.stderr)
+        self.assertIn("worktree remove --workspace ws-open --force", self.log.read_text())
+        self.assertFalse(tree.exists())
+        self.assertFalse((self.repo / ".claude/state/8.json").exists())
+        self.assertEqual(subprocess.run(["git", "-C", str(self.repo), "branch", "--list", "topic"], capture_output=True, text=True).stdout, "")
+
+    def test_plain_teardown_refuses_dirty_herdr_worktree_before_removal(self):
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.make_dirty(tree)
+        env = self.stub_teardown_herdr("ws-open", tree)
+        down = self.script("teardown-worktree.sh", "8", "topic", env=env)
+        self.assertNotEqual(down.returncode, 0)
+        self.assertIn("--abandon", down.stderr)
+        # The stub logs every herdr call, so nothing means teardown stopped first.
+        self.assertNotIn("worktree remove", self.log.read_text() if self.log.exists() else "")
+        self.assertTrue((self.repo / ".claude/state/8.json").exists())
+        self.assertTrue(tree.exists())
+
+
+
     def test_setup_herdr_records_pane(self):
         env = self.env.copy(); env["HERDR_ENV"] = "1"
         env["HERDR_CREATE_RESULT"] = '{"result":{"root_pane":{"cwd":"' + str(self.base / "herdr-tree") + '","pane_id":"w9:p2","workspace_id":"ws9"}}}'
@@ -173,30 +303,42 @@ class Harness(unittest.TestCase):
 
     def test_start_worker_modes(self):
         self.init(branch="b", path=str(self.repo), runner="headless")
-        result = self.script("start-worker.sh", "8", "planner", "claude")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        session = self.get("8", "session")
-        self.assertEqual(len(session), 36)
-        self.assertEqual(session, session.lower())
-        self.init("9", branch="b", path=str(self.repo), runner="headless")
-        self.assertEqual(self.script("start-worker.sh", "9", "planner", "codex").returncode, 0)
-        self.assertEqual(self.record("9")["worker"], "")
-        self.assertEqual(self.record("9")["session"], "")
-        self.init("11", branch="b", path=str(self.repo), runner="headless")
-        self.assertEqual(self.script("start-worker.sh", "11", "planner", "opencode").returncode, 0)
-        self.assertEqual(self.get("11", "session"), "ses_issue11")
+        sessions = []
+        for provider in ("claude", "codex", "opencode", "pi"):
+            issue = str(8 + len(sessions))
+            self.init(issue, branch="b", path=str(self.repo), runner="headless")
+            result = self.script("start-worker.sh", issue, "planner", provider)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = self.record(issue)
+            self.assertEqual(record["worker"], "")
+            self.assertRegex(record["session"], r"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
+            sessions.append(record["session"])
+        self.assertEqual(len(sessions), len(set(sessions)))
+        self.init("20", branch="b", path=str(self.repo), runner="headless")
+        first = self.script("start-worker.sh", "20", "planner", "pi")
+        first_session = self.get("20", "session")
+        second = self.script("start-worker.sh", "20", "implementer", "pi")
+        self.assertEqual(first.returncode, 0, first.stderr)
+        self.assertEqual(second.returncode, 0, second.stderr)
+        self.assertNotEqual(first_session, self.get("20", "session"))
         self.init("10", branch="b", path=str(self.repo), runner="herdr", pane="w1:p1")
         herdr_env = self.env.copy(); herdr_env["HERDR_ENV"] = "1"
-        result = self.script("start-worker.sh", "10", "planner", "claude", "--", "--agent", "x", env=herdr_env)
+        result = self.script("start-worker.sh", "10", "planner", "pi", "--", "--agent", "x", env=herdr_env)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(result.stdout.splitlines(), [f"path={self.repo}", "pane=w1:p1", "name=planner-10"])
         self.assertEqual(self.get("10", "worker"), "planner-10")
-        self.assertIn("agent start planner-10 --kind claude --pane w1:p1 -- --agent x", self.log.read_text())
-        result = self.script("start-worker.sh", "10", "planner", "opencode", env=herdr_env)
+        self.assertIn("agent start planner-10 --kind pi --pane w1:p1 -- --agent x", self.log.read_text())
+        result = self.script("start-worker.sh", "10", "planner", "pi", "--turns", env=herdr_env)
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.get("10", "session"), "ses_issue10")
+        self.assertRegex(self.get("10", "session"), r"^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$")
         self.assertEqual(self.record("10")["worker"], "")
         self.assertEqual(self.record("10")["role"], "planner")
+        self.assertIn("pane=w1:p1", result.stdout)
+        self.assertIn("session=", result.stdout)
+        calls = self.log.read_text()
+        self.assertEqual(calls.count("agent start"), 1)
+        self.init("21", branch="b", path=str(self.repo), runner="headless")
+        self.assertEqual(self.script("start-worker.sh", "21", "planner", "pi", "--turns").returncode, 0)
         before = self.record("10")
         fail_env = herdr_env.copy(); fail_env["FAIL_START"] = "1"
         failed = self.script("start-worker.sh", "10", "planner", "claude", env=fail_env)
@@ -206,9 +348,19 @@ class Harness(unittest.TestCase):
     def test_start_failures_do_not_mutate(self):
         self.init(branch="b", path=str(self.repo), runner="headless", role="planner", backend="codex", session="old")
         before = self.record()
-        for args in [("8", "unknown", "claude"), ("8", "planner", "bad"), ("99", "planner", "claude")]:
-            self.assertNotEqual(self.script("start-worker.sh", *args).returncode, 0)
+        for args in [("8", "unknown", "claude"), ("8", "planner", "bad"), ("8", "planner", "ClaUde"), ("8", "planner", "foo/bar"), ("8", "planner", "eval"), ("99", "planner", "claude")]:
+            result = self.script("start-worker.sh", *args)
+            self.assertNotEqual(result.returncode, 0)
+            if args[2] != "claude":
+                self.assertIn(args[2], result.stderr)
         self.assertEqual(self.record(), before)
+
+    def test_start_without_routing_file_succeeds(self):
+        self.init(branch="b", path=str(self.repo), runner="headless", role="planner", backend="codex", session="old")
+        (self.skill / "routing.md").unlink()
+        result = self.script("start-worker.sh", "8", "planner", "claude")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.get("8", "backend"), "claude")
 
     def test_worktree_cannot_push_and_scope_is_checked(self):
         git = lambda *args, cwd=self.repo: subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
@@ -240,6 +392,25 @@ class Harness(unittest.TestCase):
         self.assertIn("refs/heads/topic", git("ls-remote", "--heads", "origin", "topic").stdout)
         self.assertEqual(self.script("teardown-worktree.sh", "8", "topic").returncode, 0)
 
+    def test_check_scope_reports_all_files_when_owned_is_blank(self):
+        bash = "/bin/bash"
+        version = subprocess.run([bash, "-c", "echo $BASH_VERSION"], capture_output=True, text=True).stdout.strip()
+        if not version.startswith("3."):
+            self.skipTest(f"test needs bash 3; /bin/bash is {version or 'unknown'}")
+        git = lambda *args, cwd=self.repo: subprocess.run(["git", "-C", str(cwd), *args], capture_output=True, text=True)
+        self.assertEqual(git("push", "-q", "origin", "HEAD:main").returncode, 0)
+        git("fetch", "-q", "origin")
+        self.assertEqual(self.script("setup-worktree.sh", "8", "topic").returncode, 0)
+        tree = Path(self.record()["path"])
+        self.state("set", "8", "owned= ")
+        (tree / "README.md").write_text("x")
+        added = git("add", "-A", cwd=tree)
+        committed = git("commit", "-qm", "out of scope", cwd=tree)
+        result = subprocess.run([bash, str(self.skill / "scripts/check-scope.sh"), "8"], cwd=self.repo, env=self.env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1, result.stderr + result.stdout + added.stderr + committed.stderr)
+        self.assertEqual(result.stdout.split(), ["README.md"])
+        self.assertNotIn("unbound variable", result.stderr)
+
     def test_reviewer_runs_on_another_provider(self):
         self.init(branch="b", path=str(self.repo), runner="headless")
         self.assertEqual(self.script("start-worker.sh", "8", "planner", "claude").returncode, 0)
@@ -252,7 +423,7 @@ class Harness(unittest.TestCase):
         self.assertEqual(self.script("start-worker.sh", "8", "implementer", "claude").returncode, 0)
         self.assertEqual(self.get("8", "implementer_backend"), "claude")
         before = self.record()
-        for backend, reason in [("claude", "another provider"), ("opencode", "not opencode")]:
+        for backend, reason in [("claude", "another provider")]:
             failed = self.script("start-worker.sh", "8", "reviewer", backend)
             self.assertNotEqual(failed.returncode, 0)
             self.assertIn(reason, failed.stderr)
@@ -269,7 +440,29 @@ class Harness(unittest.TestCase):
         result = self.script("start-worker.sh", "8", "reviewer", "claude", env=same)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.record()["backend"], "claude")
-        self.assertNotEqual(self.script("start-worker.sh", "8", "reviewer", "opencode", env=same).returncode, 0)
+        self.assertEqual(self.script("start-worker.sh", "8", "reviewer", "opencode", env=same).returncode, 0)
+
+    def test_opencode_same_provider_reviewer_needs_override(self):
+        self.init(branch="b", path=str(self.repo), runner="headless")
+        self.assertEqual(self.script("start-worker.sh", "8", "implementer", "opencode").returncode, 0)
+
+        result = self.script("start-worker.sh", "8", "reviewer", "opencode")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("another provider", result.stderr)
+
+        same = self.env.copy()
+        same["SWITCHYARD_SAME_PROVIDER"] = "1"
+        result = self.script("start-worker.sh", "8", "reviewer", "opencode", env=same)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.record()["backend"], "opencode")
+
+    def test_opencode_reviewer_after_claude_needs_no_override(self):
+        self.init(branch="b", path=str(self.repo), runner="headless")
+        self.assertEqual(self.script("start-worker.sh", "8", "implementer", "claude").returncode, 0)
+
+        result = self.script("start-worker.sh", "8", "reviewer", "opencode")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.record()["backend"], "opencode")
 
     def test_reviewer_starts_in_herdr_pane(self):
         self.init("10", branch="b", path=str(self.repo), runner="herdr", pane="w1:p1")

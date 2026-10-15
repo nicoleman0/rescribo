@@ -13,7 +13,7 @@ read -r -a prefixes <<<"$owned"
 outside=()
 while IFS= read -r file; do
   inside=0
-  for prefix in openspec/ "${prefixes[@]}"; do
+  for prefix in openspec/ ${prefixes[@]+"${prefixes[@]}"}; do
     case "$file" in "$prefix"*) inside=1 ;; esac
   done
   [ "$inside" = 1 ] || outside+=("$file")

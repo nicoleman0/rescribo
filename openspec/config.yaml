@@ -22,7 +22,7 @@ context: |
   matching meets its gates or stays disabled, and the demo and setup are
   reproducible.
 
-  Delivery order and issue breakdown live in GitHub milestones and issues.
+  Delivery order and issue breakdown live in GitHub issues; milestones set the order when the project uses them.
   Architecture and module ownership: docs/DEVELOPMENT.md. Decisions: docs/adr/.
 
 rules:
