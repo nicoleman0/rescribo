@@ -125,21 +125,12 @@ After creation:
   `RESCRIBO_GITHUB_CLIENT_SECRET`.
 - Generate a **private key**. GitHub downloads a `.pem` file.
 
-Keep the `.pem` outside the repository with mode 600. Pass it per process
-with real newlines; only the API and the worker read the key, through
-`github_client()` in `backend/integrations/github_app/settings.py`:
-
-```sh
-chmod 600 <path-to-pem>
-RESCRIBO_GITHUB_PRIVATE_KEY="$(cat <path-to-pem>)" task api
-RESCRIBO_GITHUB_PRIVATE_KEY="$(cat <path-to-pem>)" task worker
-```
-
-Run these instead of the plain `task api` and `task worker` from step 5; they
-also load the new `.env` values. The quoted `\n` form and a multi-line value in
-`.env` do not load; [issue
-#168](https://github.com/nicoleman0/rescribo/issues/168) owns the fix. The
-scheduler never calls GitHub, so it does not need the key.
+Keep the `.pem` outside the repository with mode 600. Set
+`RESCRIBO_GITHUB_PRIVATE_KEY` in `.env` in the one-line form from
+[SETTINGS.md](SETTINGS.md#operator-setup), then run `task api` and
+`task worker`. The API, worker, and scheduler load the key at startup and
+fail with a message naming the variable if the value is not an unencrypted
+RSA private key in PEM format.
 
 Install the app on the disposable repository from the app's GitHub
 **Install App** page.
@@ -184,8 +175,8 @@ The manifest route is from the 10 Oct 2026 check (#139).
    RESCRIBO_SLACK_SIGNING_SECRET=<signing-secret>
    ```
 
-3. Restart the API and the worker as in step 7, with
-   `RESCRIBO_GITHUB_PRIVATE_KEY` set, to load the values.
+3. Restart the API and the worker (`task api` and `task worker`) to load
+   the values.
 
 Slack cannot verify the events request URL until the signing secret is in
 `.env` and the API has restarted. Open **Event Subscriptions** in the Slack

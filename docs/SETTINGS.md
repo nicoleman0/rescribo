@@ -18,7 +18,20 @@ Set these outside the repository:
   every request to `/api/integrations/slack/interactions/` and
   `/api/integrations/slack/events/`.
 - `RESCRIBO_GITHUB_APP_ID`, `RESCRIBO_GITHUB_CLIENT_ID`,
-  `RESCRIBO_GITHUB_CLIENT_SECRET`, `RESCRIBO_GITHUB_PRIVATE_KEY` (PEM text).
+  `RESCRIBO_GITHUB_CLIENT_SECRET`.
+- `RESCRIBO_GITHUB_PRIVATE_KEY`: the GitHub App's private key, in either of
+  two forms:
+
+  - the `.pem` file's full text with real newlines (as from a quoted shell
+    value or a Compose multi-line value), or
+  - one line with a literal `\n` between the PEM lines, as produced by
+    `awk 'NF {printf "%s\\n", $0}' app.private-key.pem`.
+
+  In `.env`, use the one-line form only: a multi-line value loads as its
+  first line alone. An empty value means the GitHub App is not configured.
+  A set value that is not an unencrypted RSA private key in PEM format stops
+  every process at startup with a message naming this variable; the key text
+  is never printed.
 - `RESCRIBO_GITHUB_WEBHOOK_SECRET`: the secret configured on the GitHub App's
   webhook. Verifies `X-Hub-Signature-256` on `/api/integrations/github/webhook/`.
 - `RESCRIBO_GITHUB_RECONCILIATION_INTERVAL_SECONDS`: issue refresh interval in
