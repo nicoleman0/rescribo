@@ -5,6 +5,7 @@ from django.test import Client
 
 from accounts.models import Membership
 from accounts.session import SESSION_GENERATION_KEY
+from connections.models import Connection, ExternalIdentity
 
 pytestmark = pytest.mark.django_db
 
@@ -79,6 +80,51 @@ def test_last_owner_revoke_is_a_400(client: Client) -> None:
     )
     assert response.status_code == 400
     assert response.json()["reason"] == "last_active_owner"
+
+
+def test_revoke_removes_link_and_hides_foreign_membership(client: Client) -> None:
+    owner = make_membership(role=Membership.Role.OWNER)
+    target = make_membership(
+        workspace=owner.workspace, user=make_user(email="linked-member@example.test")
+    )
+    linked = ExternalIdentity.objects.create(
+        workspace=owner.workspace,
+        membership=target,
+        provider=Connection.Provider.SLACK,
+        provider_team_id="T1",
+        provider_user_id="U1",
+    )
+    foreign_workspace = make_workspace(slug="other-revoke")
+    foreign = make_membership(
+        workspace=foreign_workspace, user=make_user(email="foreign@example.test")
+    )
+    foreign_identity = ExternalIdentity.objects.create(
+        workspace=foreign_workspace,
+        membership=foreign,
+        provider=Connection.Provider.SLACK,
+        provider_team_id="T2",
+        provider_user_id="U2",
+    )
+    client.force_login(owner.user)
+    session = client.session
+    session[SESSION_GENERATION_KEY] = owner.user.session_generation
+    session.save()
+
+    response = client.post(
+        f"/api/workspaces/{owner.workspace_id}/memberships/{target.pk}/revoke/",
+        {},
+        content_type="application/json",
+    )
+    assert response.status_code == 204
+    assert not ExternalIdentity.objects.filter(pk=linked.pk).exists()
+
+    hidden = client.post(
+        f"/api/workspaces/{owner.workspace_id}/memberships/{foreign.pk}/revoke/",
+        {},
+        content_type="application/json",
+    )
+    assert hidden.status_code == 404
+    assert ExternalIdentity.objects.filter(pk=foreign_identity.pk).exists()
 
 
 def test_last_owner_demotion_is_400_and_member_promotion_works(client: Client) -> None:

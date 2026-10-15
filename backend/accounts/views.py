@@ -28,7 +28,6 @@ from accounts.services import (
     preview_password_reset,
     redeem_password_reset,
     revoke_invitation,
-    revoke_membership,
 )
 from accounts.session import bind_session_generation
 from accounts.throttling import (
@@ -39,6 +38,7 @@ from accounts.throttling import (
     PasswordResetPasswordThrottle,
     TokenRedemptionThrottle,
 )
+from connections.slack_identity import revoke_member
 
 
 class ErrorSerializer(serializers.Serializer):
@@ -481,7 +481,7 @@ class MembershipRevokeView(OwnerWorkspaceView):
 
             raise NotFound()
         try:
-            revoke_membership(actor=self.membership, target=target)
+            revoke_member(actor=self.membership, target=target)
         except LastActiveOwner as error:
             return error_response(error)
         return Response(status=204)
