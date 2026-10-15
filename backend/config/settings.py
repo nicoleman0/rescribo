@@ -4,6 +4,8 @@ import environ
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
+from integrations.github_app.private_key import load_private_key
+
 BASE_DIR = Path(__file__).resolve().parents[2]
 env = environ.Env(DJANGO_DEBUG=(bool, False))
 environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
@@ -197,5 +199,5 @@ RESCRIBO_SLACK_FAKE_DELIVERY = env.bool("RESCRIBO_SLACK_FAKE_DELIVERY", default=
 RESCRIBO_GITHUB_CLIENT_ID = env("RESCRIBO_GITHUB_CLIENT_ID", default="")
 RESCRIBO_GITHUB_CLIENT_SECRET = env("RESCRIBO_GITHUB_CLIENT_SECRET", default="")
 RESCRIBO_GITHUB_APP_ID = env("RESCRIBO_GITHUB_APP_ID", default="")
-RESCRIBO_GITHUB_PRIVATE_KEY = env("RESCRIBO_GITHUB_PRIVATE_KEY", default="")
+RESCRIBO_GITHUB_PRIVATE_KEY = load_private_key(env("RESCRIBO_GITHUB_PRIVATE_KEY", default=""))
 RESCRIBO_GITHUB_WEBHOOK_SECRET = env("RESCRIBO_GITHUB_WEBHOOK_SECRET", default="")
