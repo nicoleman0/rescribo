@@ -134,7 +134,7 @@ In each file, import `useLiveSearchParams` from `@/hooks/use-live-search-params`
 - [x] 3.3 `frontend/src/features/inbox/report-list.tsx`, the paging component at line 121: Previous and Next call `updateParams((current) => withPage(current, pageNumber - 1))` and `+ 1`. The `useSearchParams` at line 25 only reads and stays.
 - [x] 3.4 `frontend/src/features/problems/problems-page.tsx`: in `ProblemsPage`, `onSearch` calls `updateParams((current) => withQuery(current, { q, page: undefined }))`. In `ProblemResults`, Clear search, Go to the first page, and `onPage` pass `(current) => withQuery(current, ...)` with the same query objects as today.
 - [x] 3.5 `frontend/src/features/follow-ups/follow-ups-page.tsx`: `BucketTabs` `onChange` calls `updateParams((current) => withBucket(current, next))`. Both paging buttons build `next` from `current` inside `updateParams((current) => { ... return next })` instead of from `params`. `params` stays for `bucketFromParams`, the page read, and `search`.
-- [x] 3.6 Verify: `grep -rn "setParams\|setSearchParams" frontend/src` prints nothing. `cd frontend && npx prettier --check src && npm run lint && npm run typecheck` passes.
+- [x] 3.6 Verify: `grep -rn "setParams\|setSearchParams" frontend/src --exclude=use-live-search-params.ts` prints nothing. Only the hook calls the router setter. `cd frontend && npx prettier --check src && npm run lint && npm run typecheck` passes.
 - [x] 3.7 Rerun 1.2. Verify: 1 passed. Run `cd frontend && npx vitest run src/features/inbox src/features/problems src/features/follow-ups src/hooks`. Verify: no failures, and record the counts.
 
 ## 4. Repository checks

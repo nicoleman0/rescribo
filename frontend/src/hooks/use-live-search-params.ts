@@ -17,9 +17,7 @@ export function useLiveSearchParams() {
   const { navigator } = useContext(UNSAFE_NavigationContext)
   const update = useCallback(
     (change: SearchChange) => {
-      // Not window.location (stale under MemoryRouter) and not the function
-      // form of setParams (it gets the render-time params). Browser and memory
-      // history both have `location`; React Router's type does not.
+      // Not window.location (stale under MemoryRouter) or the setParams function form (render-time params).
       const { location } = navigator as { location?: Location }
       if (!location) {
         throw new Error('The router history has no location to read.')
