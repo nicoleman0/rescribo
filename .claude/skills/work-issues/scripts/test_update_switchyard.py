@@ -12,7 +12,9 @@ from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("update-switchyard.py").resolve()
 VERSION = ".claude/skills/work-issues/VERSION"
+ROUTING = ".claude/skills/work-issues/routing.md"
 PATHS = ".claude/skills/work-issues/update-paths.txt"
+UPDATER = ".claude/skills/work-issues/scripts/update-switchyard.py"
 COVERED = [
     ".claude/agents",
     ".claude/skills/work-issues",
@@ -22,14 +24,40 @@ COVERED = [
     "AGENTS.md",
     "openspec/config.yaml",
 ]
+INIT_COMMAND = "npx @fission-ai/openspec init --tools claude,codex,opencode"
+RELEASE_AGENTS = (
+    b"# Working in this repository\n\n"
+    b"## Workflow\n\n"
+    b"- ship issues one at a time\n"
+    b"- archive the change in the PR\n\n"
+    b"## Project\n\n"
+    b"Describe the project here.\n\n"
+    b"## Writing\n\n"
+    b"- plain words\n"
+)
+RELEASE_CONFIG = (
+    b"schema: spec-driven\n\n"
+    b"context: |\n"
+    b"  delivery order lives in issues\n\n"
+    b"rules:\n"
+    b"  proposal:\n"
+    b"    - Name the GitHub issue the change delivers.\n"
+    b"  tasks:\n"
+    b"    - Include the repository checks from AGENTS.md as the final task group.\n"
+)
+RELEASE_GITIGNORE = (
+    b"node_modules/\n\n"
+    b"# Briefs, answers, screenshots, and PR bodies stay local to each worktree.\n"
+    b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n"
+)
 DEFAULT_FILES = {
     ".claude/agents/worker.md": b"worker v1\n",
     ".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nlast line\n",
     ".github/ISSUE_TEMPLATE/issue.yml": b"issue\n",
     ".github/workflows/switchyard.yml": b"ci v1\n",
-    ".gitignore": b"ignored\n",
-    "AGENTS.md": b"rules\n",
-    "openspec/config.yaml": b"context: project\n",
+    ".gitignore": RELEASE_GITIGNORE,
+    "AGENTS.md": RELEASE_AGENTS,
+    "openspec/config.yaml": RELEASE_CONFIG,
     VERSION: b"0.1.0\n",
     PATHS: ("\n".join(COVERED) + "\n").encode(),
     "outside.txt": b"outside v1\n",
@@ -136,6 +164,74 @@ class UpdateSwitchyardTests(unittest.TestCase):
                          b"first line\nstable line\nnew last line\n")
         self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
         self.assertIn(b"updated: .claude/skills/work-issues/workflow.txt", result.stdout)
+
+    def test_project_owned_routing_is_never_updated_or_removed(self) -> None:
+        self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
+        self.commit(self.source, "add routing base")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({ROUTING: b"example v2\n"})
+        files = {k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"}
+        files[ROUTING] = b"project edit\n"
+        self.make_project(files=files)
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"project edit\n")
+        self.assertNotIn(("updated: " + ROUTING).encode(), result.stdout)
+        self.assertNotIn(("added: " + ROUTING).encode(), result.stdout)
+
+    def test_project_owned_routing_survives_upstream_deletion_without_report(self) -> None:
+        self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
+        self.commit(self.source, "add routing base")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({ROUTING: None})
+        files = {k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"}
+        files[ROUTING] = b"project edit\n"
+        self.make_project(files=files)
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"project edit\n")
+        for status in ("removed", "kept", "updated", "added"):
+            self.assertNotIn((status + ": " + ROUTING).encode(), result.stdout)
+
+    def test_unedited_project_owned_routing_is_not_updated(self) -> None:
+        self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
+        self.commit(self.source, "add routing base")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({ROUTING: b"example v2\n"})
+        files = {k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"}
+        files[ROUTING] = b"example v1\n"
+        self.make_project(files=files)
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"example v1\n")
+        self.assertNotIn(("updated: " + ROUTING).encode(), result.stdout)
+        self.assertNotIn(("added: " + ROUTING).encode(), result.stdout)
+
+    def test_project_owned_routing_adds_only_when_missing_and_other_files_update(self) -> None:
+        self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
+        self.commit(self.source, "add routing base")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({ROUTING: b"example v2\n", ".claude/skills/work-issues/workflow.txt": b"new content\n"})
+        files = {k: v for k, v in DEFAULT_FILES.items() if k not in ("outside.txt", ROUTING)}
+        self.make_project(files=files)
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"example v2\n")
+        self.assertIn(("added: " + ROUTING).encode(), result.stdout)
+        self.assertIn(b"updated: .claude/skills/work-issues/workflow.txt", result.stdout)
+
+    def test_project_owned_routing_added_in_new_release_does_not_conflict(self) -> None:
+        (self.source / ROUTING).unlink(missing_ok=True)
+        self.commit(self.source, "ensure base has no routing")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({ROUTING: b"example\n"})
+        files = {k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"}
+        files[ROUTING] = b"local file\n"
+        self.make_project(files=files)
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"local file\n")
+        self.assertNotIn(("conflict: " + ROUTING).encode(), result.stdout)
 
     def test_independent_edits_merge(self) -> None:
         self.make_target({".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nupstream last\n"})
@@ -390,6 +486,228 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn(b"not a regular file", result.stderr)
         self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, b"")
+
+    def test_install_into_empty_repo(self) -> None:
+        self.make_target()
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        for path in (".claude/agents/worker.md", ".claude/skills/work-issues/workflow.txt", PATHS,
+                     ".github/ISSUE_TEMPLATE/issue.yml", ".github/workflows/switchyard.yml",
+                     "AGENTS.md", ".gitignore", "openspec/config.yaml"):
+            self.assertIn(("added: " + path).encode(), result.stdout, path)
+        self.assertIn(b"added: 8", result.stdout)
+        self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
+        self.assertEqual((self.project / "README.md").read_bytes(), b"mine\n")
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
+        self.assertEqual((self.project / ".gitignore").read_bytes(),
+                         b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+        self.assertEqual((self.project / "openspec/config.yaml").read_bytes(),
+                         b"schema: spec-driven\n\n"
+                         b"rules:\n"
+                         b"  proposal:\n"
+                         b"    - Name the GitHub issue the change delivers.\n"
+                         b"  tasks:\n"
+                         b"    - Include the repository checks from AGENTS.md as the final task group.\n")
+        self.assertIn(("Next: run " + INIT_COMMAND).encode(), result.stdout)
+        self.assertNotIn(b"checks in AGENTS.md", result.stdout)
+        after = self.run_update()
+        self.assertEqual(after.returncode, 0, after.stdout.decode() + after.stderr.decode())
+        self.assertIn(b"Already at 0.2.0", after.stdout)
+
+    def test_install_merges_own_files(self) -> None:
+        self.make_target()
+        own_config = (b"schema: spec-driven\n"
+                      b"context: |\n"
+                      b"  my project\n"
+                      b"\n"
+                      b"rules:\n"
+                      b"  proposal:\n"
+                      b"    - Name the GitHub issue the change delivers.\n"
+                      b"    - Local proposal step.\n"
+                      b"  tasks:\n"
+                      b"    - Local task rule.\n")
+        self.make_project(files={
+            "README.md": b"mine\n",
+            ".gitignore": b"node_modules/\n.env\n",
+            "openspec/config.yaml": own_config,
+            "AGENTS.md": b"# My repo\n\n## Build\n\nmake\n",
+        }, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(b"merged: .gitignore", result.stdout)
+        self.assertIn(b"merged: openspec/config.yaml", result.stdout)
+        self.assertIn(b"merged: AGENTS.md", result.stdout)
+        self.assertEqual((self.project / ".gitignore").read_bytes(),
+                         b"node_modules/\n.env\n.claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+        self.assertEqual((self.project / "openspec/config.yaml").read_bytes(),
+                         b"schema: spec-driven\n"
+                         b"context: |\n"
+                         b"  my project\n"
+                         b"\n"
+                         b"rules:\n"
+                         b"  proposal:\n"
+                         b"    - Name the GitHub issue the change delivers.\n"
+                         b"    - Local proposal step.\n"
+                         b"  tasks:\n"
+                         b"    - Local task rule.\n"
+                         b"    - Include the repository checks from AGENTS.md as the final task group.\n")
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(),
+                         b"# My repo\n\n## Build\n\nmake\n\n"
+                         b"## Workflow\n\n- ship issues one at a time\n- archive the change in the PR\n\n"
+                         b"## Writing\n\n- plain words\n")
+        self.assertIn(b"Next: list the project's checks in AGENTS.md", result.stdout)
+        self.assertNotIn(b"openspec init", result.stdout)
+
+    def test_install_gitignore_adds_only_missing_lines(self) -> None:
+        self.make_target()
+        self.make_project(files={".gitignore": b".claude/*\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(b"merged: .gitignore", result.stdout)
+        self.assertEqual((self.project / ".gitignore").read_bytes(),
+                         b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+
+    def test_install_agents_conflict_keeps_local_content(self) -> None:
+        self.make_target()
+        self.make_project(files={"AGENTS.md": b"# My repo\n\n## Workflow\n\n- local rule\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(b"conflict: AGENTS.md", result.stdout)
+        text = (self.project / "AGENTS.md").read_bytes()
+        self.assertIn(b"# My repo\n\n## Workflow", text)
+        for marker in ("<<<<<<< yours", "- local rule", "- ship issues one at a time",
+                       ">>>>>>> switchyard 0.2.0"):
+            self.assertIn(marker, text.decode())
+        self.assertNotIn(b"Describe the project here.", text)
+        self.assertIn(b"## Writing\n\n- plain words", text)
+        self.assertIn(b"Next: list the project's checks in AGENTS.md", result.stdout)
+
+    def test_install_agents_empty_section_takes_release_body(self) -> None:
+        self.make_target()
+        self.make_project(files={"AGENTS.md": b"# My repo\n\n## Workflow\n\n## Writing\n\n- plain words\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(b"merged: AGENTS.md", result.stdout)
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(),
+                         b"# My repo\n\n## Workflow\n\n"
+                         b"- ship issues one at a time\n- archive the change in the PR\n\n"
+                         b"## Writing\n\n- plain words\n")
+
+    def test_install_identical_agents_is_silent(self) -> None:
+        self.make_target()
+        self.make_project(files={"AGENTS.md": RELEASE_AGENTS}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        for status in ("added", "merged", "conflict", "updated", "removed"):
+            self.assertNotIn((status + ": AGENTS.md").encode(), result.stdout)
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
+        self.assertIn(b"Next: list the project's checks in AGENTS.md", result.stdout)
+
+    def test_install_keeps_existing_project_owned_routing(self) -> None:
+        self.make_target({ROUTING: b"release routing\n"})
+        self.make_project(files={ROUTING: b"project routing\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertNotIn(b"routing.md", result.stdout)
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"project routing\n")
+
+    def test_install_adds_missing_project_owned_routing(self) -> None:
+        self.make_target({ROUTING: b"release routing\n"})
+        self.make_project(files={}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(("added: " + ROUTING).encode(), result.stdout)
+        self.assertEqual((self.project / ROUTING).read_bytes(), b"release routing\n")
+
+    def test_install_existing_ordinary_file_conflicts(self) -> None:
+        self.make_target()
+        self.make_project(files={"README.md": b"mine\n",
+                                 ".claude/skills/work-issues/workflow.txt": b"local hook\n"}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
+        self.assertIn(b"conflict: .claude/skills/work-issues/workflow.txt", result.stdout)
+        text = (self.project / ".claude/skills/work-issues/workflow.txt").read_bytes()
+        for marker in (b"<<<<<<< yours", b"local hook", b"first line", b">>>>>>> switchyard 0.2.0"):
+            self.assertIn(marker, text)
+
+    def test_install_identical_ordinary_file_is_silent(self) -> None:
+        self.make_target()
+        self.make_project(files={".claude/skills/work-issues/workflow.txt":
+                                 DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"]}, version=None)
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertNotIn(b"workflow.txt", result.stdout)
+        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(),
+                         DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"])
+
+    def test_install_refusals(self) -> None:
+        self.make_target()
+        self.make_project()
+        result = self.run_update("--install", "--from", "0.1.0")
+        self.assert_refused_clean(result, "does not take --from")
+        result = self.run_update("--install")
+        self.assert_refused_clean(result, "already names 0.1.0")
+        self.assertIn(b"without --install", result.stderr)
+        self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
+
+    def test_install_malformed_rules_refused_before_writes(self) -> None:
+        self.make_target()
+        for local_config in (b"rules: 3\n", b"- a list, not a mapping\n",
+                             b"schema: x\nrules:\n    - oops\n"):
+            with self.subTest(rules=local_config):
+                self.make_project(files={"README.md": b"mine\n", "openspec/config.yaml": local_config},
+                                  version=None)
+                result = self.run_update("--install")
+                self.assertEqual(result.returncode, 2, result.stdout.decode() + result.stderr.decode())
+                self.assertIn(b"openspec/config.yaml", result.stderr)
+                self.assertEqual((self.project / "openspec/config.yaml").read_bytes(), local_config)
+                self.git(self.project, "reset", "-q", "--hard")
+                self.git(self.project, "clean", "-qfd")
+
+    def test_install_malformed_agents_refused_before_writes(self) -> None:
+        self.make_target()
+        local_agents = b"# x\n\n## Workflow\n\na\n\n## Workflow\n\ndup\n"
+        self.make_project(files={"README.md": b"mine\n", "AGENTS.md": local_agents}, version=None)
+        result = self.run_update("--install")
+        self.assert_refused_clean(result, "more than one Workflow section")
+
+    def test_install_refuses_release_without_managed_sections(self) -> None:
+        self.make_target({"AGENTS.md": b"# no sections\n"})
+        self.make_project(files={"AGENTS.md": b"# own\n"}, version=None)
+        result = self.run_update("--install")
+        self.assert_refused_clean(result, "release AGENTS.md has no Workflow section")
+
+    def test_install_targets_an_older_release(self) -> None:
+        self.make_target()
+        self.git(self.source, "commit", "--allow-empty", "-qm", "release 3")
+        self.tag(self.source, "v0.3.0")
+        self.make_project(files={}, version=None)
+        result = self.run_update("--install", "--to", "0.1.0")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
+        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(),
+                         b"first line\nstable line\nlast line\n")
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
+        self.project = self.root / "versionless-project"
+        self.make_project(files={}, version=None)
+        result = self.run_update("--install", "--to", "9.9.9")
+        self.assert_refused_clean(result, "unknown target release")
+
+    def test_install_runs_from_a_clone_beside_the_repo(self) -> None:
+        self.make_target({UPDATER: Path(SCRIPT).read_bytes()})
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+        clone = self.root / "switchyard"
+        subprocess.run(["git", "clone", "--quiet", str(self.source), str(clone)], check=True,
+                       env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(
+            ["python3", "../switchyard/.claude/skills/work-issues/scripts/update-switchyard.py",
+             "--install", "--source", "../switchyard"],
+            cwd=self.project, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
+        self.assertIn(b"added: AGENTS.md", result.stdout)
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
 
 
 if __name__ == "__main__":

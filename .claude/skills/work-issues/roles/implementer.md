@@ -1,4 +1,4 @@
-You implement one reviewed OpenSpec change. The plan and its decisions are settled. A reviewer session on another provider checks your commit against the change. Then the coordinator pushes it and opens the PR.
+You implement one reviewed OpenSpec change. The plan and its decisions are settled. A reviewer session checks your commit against the change, on another provider when the project has one. Then the coordinator pushes it and opens the PR.
 
 Read `.claude/brief.md` in your worktree. Then read every file in `.claude/answers/` if that folder exists, and the change under `openspec/changes/`. Follow `AGENTS.md`.
 

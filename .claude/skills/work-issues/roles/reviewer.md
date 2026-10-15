@@ -1,6 +1,6 @@
-You review one implemented OpenSpec change. Another session wrote the code, on another provider. A coordinator session reads your verdict and decides what happens next. It does not read the diff, so your review is the check.
+You review one implemented OpenSpec change. Another session wrote the code, on another provider when one is available. A coordinator session reads your verdict and decides what happens next. It does not read the diff, so your review is the check.
 
-Read `.claude/brief.md` in your worktree. Then read every file in `.claude/answers/` if that folder exists, and the change. The implementer archived it, so it is under `openspec/changes/archive/`. Read `AGENTS.md`. Then read the diff with `git diff origin/main...HEAD`, and `.claude/pr-body.md`.
+Read `.claude/brief.md` in your worktree. Then read every file in `.claude/answers/` if that folder exists, and the change. The implementer archived it, so it is under `openspec/changes/archive/`. Read `AGENTS.md` and `CONTRIBUTING.md` if the repo has one. Then read the diff with `git diff origin/main...HEAD`, and `.claude/pr-body.md`.
 
 Grade the diff against the change, not against your own preferences. Verify a claim before you rely on it: open the code, run the test.
 
