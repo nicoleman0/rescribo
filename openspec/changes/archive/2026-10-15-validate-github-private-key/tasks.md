@@ -14,7 +14,7 @@
 ## 3. Docs
 
 - [x] 3.1 In `docs/SETTINGS.md`, replace "(PEM text)" with a short entry for `RESCRIBO_GITHUB_PRIVATE_KEY`: the two accepted forms, a one-line example made with `awk 'NF {printf "%s\\n", $0}' key.pem` (or the equivalent the implementer verifies), the note not to put a multi-line value in `.env`, that empty means not configured, and that a bad value stops startup. Verify by running the documented command on a generated key and loading the result through task 1.2's test.
-- [x] 3.2 In `.env.production.example`, show the one-line form as a placeholder, for example `RESCRIBO_GITHUB_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----`, with a one-line comment pointing at `docs/SETTINGS.md`. Verify the line is covered by task 1.2.
+- [x] 3.2 In `.env.production.example`, keep `RESCRIBO_GITHUB_PRIVATE_KEY` blank so a fresh deploy starts with GitHub unconfigured; a comment above it shows the one-line form, `RESCRIBO_GITHUB_PRIVATE_KEY=-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----`, and points at `docs/SETTINGS.md`. Verify the blank value starts the app and a set placeholder still fails startup in the subprocess tests.
 - [x] 3.3 In `docs/PROVIDER_SETUP.md` step 7, replace the per-process `$(cat ...)` block and the #168 note with: keep the `.pem` outside the repository with mode 600, set `RESCRIBO_GITHUB_PRIVATE_KEY` in `.env` in the one-line form from `docs/SETTINGS.md`, and run `task api` and `task worker`. In step 8.3, drop "with `RESCRIBO_GITHUB_PRIVATE_KEY` set". Leave `RESCRIBO_GITHUB_PRIVATE_KEY_PATH` in the live check docs alone. Verify with `git grep -n 'cat <path-to-pem>\|#168' docs/` returning nothing.
 
 ## 4. Repository checks

@@ -192,11 +192,11 @@ def test_full_pem_text_from_a_shell_can_be_loaded(tmp_path: Path) -> None:
 
 def run_django_setup(github_key: str) -> subprocess.CompletedProcess[bytes]:
     repo_root = Path(__file__).resolve().parents[2]
-    env = dict(os.environ, DJANGO_SETTINGS_MODULE="config.settings")
-    if github_key is None:
-        env.pop("RESCRIBO_GITHUB_PRIVATE_KEY", None)
-    else:
-        env["RESCRIBO_GITHUB_PRIVATE_KEY"] = github_key
+    env = dict(
+        os.environ,
+        DJANGO_SETTINGS_MODULE="config.settings",
+        RESCRIBO_GITHUB_PRIVATE_KEY=github_key,
+    )
     return subprocess.run(
         [sys.executable, "-c", "import django; django.setup()"],
         cwd=repo_root / "backend",
@@ -205,15 +205,37 @@ def run_django_setup(github_key: str) -> subprocess.CompletedProcess[bytes]:
     )
 
 
-def test_subprocess_startup_fails_on_a_truncated_key() -> None:
-    first_line = generate_pkcs1_pem().decode().splitlines()[0]
-    result = run_django_setup(first_line)
+def test_subprocess_startup_fails_on_a_key_with_its_end_line_removed() -> None:
+    """Task 2.2: a truncated key that still has body lines must not leak them."""
+    pem_lines = generate_pkcs1_pem().decode().splitlines()
+    truncated = "\n".join(pem_lines[:-1])
+    body_lines = pem_lines[1:-1]
+    result = run_django_setup(truncated)
     assert result.returncode != 0
     assert "RESCRIBO_GITHUB_PRIVATE_KEY" in result.stderr.decode()
-    assert first_line not in result.stderr.decode()
+    stderr = result.stderr.decode()
+    for line in body_lines:
+        assert line not in stderr
 
 
-def test_subprocess_startup_fails_on_the_documented_one_line_placeholder() -> None:
+def documented_example_github_key() -> str:
+    repo_root = Path(__file__).resolve().parents[2]
+    for line in (repo_root / ".env.production.example").read_text().splitlines():
+        stripped = line.strip()
+        if stripped.startswith("RESCRIBO_GITHUB_PRIVATE_KEY="):
+            return stripped.partition("=")[2]
+    raise AssertionError(".env.production.example has no RESCRIBO_GITHUB_PRIVATE_KEY line")
+
+
+def test_documented_example_starts_with_github_unconfigured() -> None:
+    """A fresh deploy copies the example; GitHub starts unconfigured, app starts."""
+    value = documented_example_github_key()
+    assert value == ""
+    result = run_django_setup(value)
+    assert result.returncode == 0
+
+
+def test_subprocess_startup_fails_on_a_set_placeholder() -> None:
     value = "-----BEGIN RSA PRIVATE KEY-----\\n...\\n-----END RSA PRIVATE KEY-----"
     result = run_django_setup(value)
     assert result.returncode != 0
