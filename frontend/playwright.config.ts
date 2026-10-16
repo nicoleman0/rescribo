@@ -47,7 +47,10 @@ export default defineConfig({
         },
         {
           command: `npm run dev -- --host 127.0.0.1 --port ${frontendPort}`,
-          env: { API_PROXY_TARGET: `http://127.0.0.1:${apiPort}` },
+          env: {
+            API_PROXY_TARGET: `http://127.0.0.1:${apiPort}`,
+            RESCRIBO_VITE_HMR: 'false',
+          },
           url: frontendUrl,
           reuseExistingServer: !process.env.CI,
         },

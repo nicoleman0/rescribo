@@ -12,6 +12,8 @@ export default defineConfig({
     },
   },
   server: {
+    // Playwright turns this off so a file save cannot reload a page mid-test.
+    hmr: process.env.RESCRIBO_VITE_HMR !== 'false',
     port: 5173,
     strictPort: true,
     // A tunnel host must be named; Vite refuses unknown hosts against DNS rebinding.
