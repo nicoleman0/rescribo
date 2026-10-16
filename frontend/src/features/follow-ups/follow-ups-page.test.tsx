@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import type { FollowUpListItem, FollowUpPage } from '@/api/follow-ups'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
@@ -141,20 +142,20 @@ test('paginates follow-ups, resets on bucket change, and supports keyboard navig
   renderWorkspaceRoutes(routes, '/follow-ups?bucket=needs_approval')
   const next = await screen.findByRole('button', { name: 'Next page' })
   next.focus()
-  fireEvent.keyDown(next, { key: 'Enter' })
-  fireEvent.click(next)
-  const secondPageLink = await screen.findByRole('link', {
-    name: /Page two report/,
-  })
+  // Keyboard navigation: Enter on the focused button, with no click.
+  await userEvent.keyboard('{Enter}')
+  // A role query over the 25-row page is slow under load; wait on the
+  // cheap text query, then check the accessible link once.
+  await screen.findByText('Page two report')
+  const secondPageLink = screen.getByRole('link', { name: /Page two report/ })
   expect(secondPageLink).toHaveAttribute(
     'href',
     '/follow-ups/fu-26?bucket=needs_approval&page=2',
   )
   expect(screen.getByText('Page 2 of 2')).toBeInTheDocument()
   fireEvent.click(screen.getByRole('button', { name: /Delivery problem/ }))
-  const bucketLink = await screen.findByRole('link', {
-    name: /Failed delivery/,
-  })
+  await screen.findByText('Failed delivery')
+  const bucketLink = screen.getByRole('link', { name: /Failed delivery/ })
   expect(bucketLink).toHaveAttribute(
     'href',
     '/follow-ups/fu-d?bucket=delivery_problem',

@@ -13,7 +13,7 @@ from django.utils import timezone
 
 from accounts.models import Invitation, Membership, PasswordReset, Workspace
 from accounts.tokens import issue_token
-from connections.models import Connection, ExternalIdentity
+from connections.models import AllowedChannel, Connection, ExternalIdentity
 from feedback.models import Activity, FollowUp, Problem, Report, ReportNotificationOperation
 from feedback.reports import submit_report
 from feedback.submissions import ReportSubmission, SourceSnapshot
@@ -30,6 +30,9 @@ class Command(BaseCommand):
         slug = "e2e-test"
         workspace, _ = Workspace.objects.get_or_create(slug=slug, defaults={"name": "E2E Test"})
         Activity.objects.filter(workspace=workspace).delete()
+        # The picker hides already-allowed channels, so a run cut off after
+        # "Allow channel" would break the settings spec until this clears.
+        AllowedChannel.objects.filter(connection__workspace=workspace).delete()
         ReportNotificationOperation.objects.filter(workspace=workspace).delete()
         FollowUp.objects.filter(workspace=workspace).delete()
         Report.objects.filter(workspace=workspace).delete()
