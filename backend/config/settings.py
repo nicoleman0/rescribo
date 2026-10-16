@@ -4,11 +4,12 @@ import environ
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
+from config.env_file import read_env_file
 from integrations.github_app.private_key import load_private_key
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 env = environ.Env(DJANGO_DEBUG=(bool, False))
-environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
+read_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = env("DJANGO_SECRET_KEY")
 DEBUG = env("DJANGO_DEBUG")
