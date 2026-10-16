@@ -134,7 +134,15 @@ test.describe('Report triage', () => {
     await openProblem(page, secondProblem)
     const confirm = page.getByRole('button', { name: 'Confirm fix applies' })
     await expect(confirm).toHaveCount(1)
+    // The button reads "Recording…" while the CSRF and confirm requests run,
+    // so its count drops before the confirmation is saved.
+    const confirmed = page.waitForResponse(
+      (response) =>
+        response.url().includes('/confirm-fix-applies/') &&
+        response.request().method() === 'POST',
+    )
     await confirm.click()
+    expect((await confirmed).ok()).toBe(true)
     await expect(confirm).toHaveCount(0)
     await page.reload()
     await expect(linkedReports(page).getByRole('listitem')).toHaveCount(2)
