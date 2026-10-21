@@ -8,18 +8,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Rescribo</title>
     <script id="theme-boot">
-      // Sets the theme before first paint. Mirrors readPreference and resolveTheme in src/lib/theme.ts.
+      // Sets the theme and palette before first paint. Mirrors readPreference, resolveTheme,
+      // and readPalette in src/lib/theme.ts. Keep the keys and the palette list in step with it.
       ;(function () {
         var theme = null
+        var palette = null
         try {
           theme = localStorage.getItem('rescribo-theme')
+          palette = localStorage.getItem('rescribo-palette')
         } catch (e) {}
-        if (!theme || theme === 'system') {
+        if (theme !== 'light' && theme !== 'dark') {
           theme = matchMedia('(prefers-color-scheme: dark)').matches
             ? 'dark'
             : 'light'
         }
         document.documentElement.dataset.theme = theme
+        document.documentElement.dataset.palette =
+          ['forest', 'autumn', 'sky'].indexOf(palette) >= 0 ? palette : 'indigo'
       })()
     </script>
   </head>

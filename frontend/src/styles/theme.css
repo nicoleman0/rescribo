@@ -29,11 +29,7 @@
   --stagger-step: 22ms;
 
   color-scheme: light;
-  /* Palette: the surface, border, text, and brand tokens derive from these. */
-  --brand-hue: 278;
-  --brand-chroma: 0.184;
-  --neutral-tint: 0.004;
-
+  /* The palette variables come from the palette blocks below. */
   --background: oklch(0.986 var(--neutral-tint) var(--brand-hue));
   --sidebar: oklch(0.968 var(--neutral-tint) var(--brand-hue));
   --card: oklch(1 0 0);
@@ -59,11 +55,11 @@
   );
   --input: oklch(0.921 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --selected: oklch(0.945 calc(var(--neutral-tint) * 2) var(--brand-hue));
-  --primary: oklch(0.541 var(--brand-chroma) var(--brand-hue));
+  --primary: oklch(var(--brand-lightness) var(--brand-chroma) var(--brand-hue));
   --primary-foreground: oklch(1 0 0);
   --destructive: #b42318;
   --destructive-foreground: oklch(1 0 0);
-  --ring: oklch(0.541 var(--brand-chroma) var(--brand-hue));
+  --ring: oklch(var(--brand-lightness) var(--brand-chroma) var(--brand-hue));
 
   /* Status tones: background, text, and dot. Fixed: they do not follow the palette. */
   --tone-neutral: #f0f0f4;
@@ -96,9 +92,6 @@
 /* Each theme is one block that sets the palette variables and redefines every colour token. */
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --brand-hue: 281;
-  --brand-chroma: 0.152;
-  --neutral-tint: 0.008;
 
   --background: oklch(0.172 var(--neutral-tint) var(--brand-hue));
   --sidebar: oklch(0.192 var(--neutral-tint) var(--brand-hue));
@@ -119,7 +112,7 @@
   --accent-foreground: oklch(0.943 var(--neutral-tint) var(--brand-hue));
   --input: oklch(0.331 calc(var(--neutral-tint) * 2) var(--brand-hue));
   --selected: oklch(0.268 calc(var(--neutral-tint) * 5) var(--brand-hue));
-  --primary: oklch(0.685 var(--brand-chroma) var(--brand-hue));
+  --primary: oklch(var(--brand-lightness) var(--brand-chroma) var(--brand-hue));
   --primary-foreground: oklch(
     0.177 calc(var(--neutral-tint) * 2) var(--brand-hue)
   );
@@ -127,7 +120,7 @@
   --destructive-foreground: oklch(
     0.177 calc(var(--neutral-tint) * 2) var(--brand-hue)
   );
-  --ring: oklch(0.685 var(--brand-chroma) var(--brand-hue));
+  --ring: oklch(var(--brand-lightness) var(--brand-chroma) var(--brand-hue));
 
   --tone-neutral: #24242d;
   --tone-neutral-foreground: #b8b8c5;
@@ -153,6 +146,72 @@
     0 4px 16px rgb(0 0 0 / 0.45), 0 0 0 1px var(--border),
     inset 0 1px 0 rgb(255 255 255 / 0.03);
   --elevation-3: 0 16px 40px rgb(0 0 0 / 0.6), 0 0 0 1px var(--input);
+}
+
+/* Palettes: each sets hue, chroma, lightness (of --primary and --ring), and neutral tint.
+   Selectors also match an element inside the page that carries data-palette, for swatches. */
+:root,
+:root [data-palette='indigo'] {
+  --brand-hue: 278;
+  --brand-chroma: 0.184;
+  --brand-lightness: 0.541;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'],
+:root[data-theme='dark'] [data-palette='indigo'] {
+  --brand-hue: 281;
+  --brand-chroma: 0.152;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
+:root[data-palette='forest'],
+:root [data-palette='forest'] {
+  --brand-hue: 182;
+  --brand-chroma: 0.091;
+  --brand-lightness: 0.513;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='forest'],
+:root[data-theme='dark'] [data-palette='forest'] {
+  --brand-hue: 182;
+  --brand-chroma: 0.105;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
+:root[data-palette='autumn'],
+:root [data-palette='autumn'] {
+  --brand-hue: 355;
+  --brand-chroma: 0.12;
+  --brand-lightness: 0.539;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='autumn'],
+:root[data-theme='dark'] [data-palette='autumn'] {
+  --brand-hue: 355;
+  --brand-chroma: 0.13;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
+:root[data-palette='sky'],
+:root [data-palette='sky'] {
+  --brand-hue: 230;
+  --brand-chroma: 0.095;
+  --brand-lightness: 0.515;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='sky'],
+:root[data-theme='dark'] [data-palette='sky'] {
+  --brand-hue: 230;
+  --brand-chroma: 0.105;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
 }
 
 @theme inline {
@@ -215,6 +274,13 @@
   :root {
     --font-size-base: 15px;
   }
+}
+
+/* Paints an element with its own data-palette brand colour in the current theme. */
+@utility palette-swatch {
+  background-color: oklch(
+    var(--brand-lightness) var(--brand-chroma) var(--brand-hue)
+  );
 }
 
 @utility surface-raised {

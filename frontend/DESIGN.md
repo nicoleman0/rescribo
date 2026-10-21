@@ -35,12 +35,27 @@ To add a theme, add its token block and its name to `THEMES` in
 
 ## Palette
 
-Each theme block sets three palette variables: `--brand-hue`, `--brand-chroma`,
-and `--neutral-tint`. The surface, border, text, and brand tokens are OKLCH
-values built from them. Each token keeps its own lightness, and a neutral
-token takes a whole-number multiple of the tint. Status tones and
-`--destructive` are fixed hex values and do not follow the palette.
+A palette sets four variables: `--brand-hue`, `--brand-chroma`,
+`--brand-lightness`, and `--neutral-tint`. The surface, border, text, and
+brand tokens are OKLCH values built from them. Each token keeps its own
+lightness, and a neutral token takes a whole-number multiple of the tint.
+`--brand-lightness` is the lightness of `--primary` and `--ring`. Status tones
+and `--destructive` are fixed hex values and do not follow the palette.
 `e2e/theme-tokens.spec.ts` pins the default palette to its original colours.
+
+Palettes are `indigo` (the default), `forest`, `autumn`, and `sky`
+(`PALETTES` in `src/lib/theme.ts`). Each has a light block and a dark block in
+`styles/theme.css`. A block's selector matches `<html>` and any element inside
+it that carries `data-palette`, so `palette-swatch` can paint a swatch from the
+same values. The choice is a second preference beside the theme, saved under
+`PALETTE_STORAGE_KEY` and applied before first paint by `index.html`.
+
+To add a palette:
+
+- Add its name to `PALETTES` and to the list in `index.html`.
+- Add a light and a dark block to `theme.css` that set all four variables.
+- Keep its hue clear of the status hues, so it does not read as a status.
+- Run `task e2e`. The contrast test checks every palette in both themes.
 
 ## Status tones
 
@@ -115,7 +130,7 @@ that owns the draft when a recoverable request fails.
 
 - Do use semantic token classes and shared state components.
 - Do keep primary actions short and name the result of the action.
-- Do not add a second palette, inline colour, or per-screen loading pattern.
+- Do not add a palette outside the Palette section, an inline colour, or a per-screen loading pattern.
 - Do not build product workflow UI in the shell or gallery.
 
 ## Follow-ups and settings

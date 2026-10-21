@@ -96,3 +96,91 @@ for (const [index, theme] of (['light', 'dark'] as const).entries()) {
     expect(wrong).toEqual([])
   })
 }
+
+// Contrast across every palette. The pairs and thresholds are in the add-colour-palettes design.
+const PALETTES = ['indigo', 'forest', 'autumn', 'sky'] as const
+const SURFACES = [
+  '--background',
+  '--sidebar',
+  '--card',
+  '--raised',
+  '--raised-muted',
+  '--muted',
+  '--selected',
+]
+const PAIRS: { on: string; over: string[]; min: number }[] = [
+  ...['--foreground', '--muted-foreground', '--primary'].map((on) => ({
+    on,
+    over: SURFACES,
+    min: 4.5,
+  })),
+  { on: '--card-foreground', over: ['--card'], min: 4.5 },
+  { on: '--secondary-foreground', over: ['--secondary'], min: 4.5 },
+  { on: '--accent-foreground', over: ['--accent'], min: 4.5 },
+  { on: '--primary-foreground', over: ['--primary'], min: 4.5 },
+  { on: '--destructive-foreground', over: ['--destructive'], min: 4.5 },
+  { on: '--ring', over: ['--background', '--card', '--raised'], min: 3 },
+]
+
+const luminance = ([red, green, blue]: number[]) => {
+  const [r, g, b] = [red, green, blue].map((value) => {
+    const unit = value / 255
+    return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+const contrast = (a: number[], b: number[]) => {
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (light + 0.05) / (dark + 0.05)
+}
+
+for (const palette of PALETTES) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`${palette} ${theme} meets contrast thresholds`, async ({ page }) => {
+      await page.addInitScript((value) => {
+        localStorage.setItem('rescribo-palette', value)
+      }, palette)
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto('/sign-in')
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-palette',
+        palette,
+      )
+
+      const tokens = [
+        ...new Set(PAIRS.flatMap(({ on, over }) => [on, ...over])),
+      ]
+      const painted = await page.evaluate((names) => {
+        const probe = document.createElement('div')
+        document.body.append(probe)
+        const canvas = document.createElement('canvas')
+        canvas.width = canvas.height = 1
+        const context = canvas.getContext('2d', { willReadFrequently: true })!
+        const result: Record<string, number[]> = {}
+        for (const token of names) {
+          probe.style.backgroundColor = `var(${token})`
+          context.clearRect(0, 0, 1, 1)
+          context.fillStyle = getComputedStyle(probe).backgroundColor
+          context.fillRect(0, 0, 1, 1)
+          result[token] = [...context.getImageData(0, 0, 1, 1).data]
+        }
+        probe.remove()
+        return result
+      }, tokens)
+
+      const failures = PAIRS.flatMap(({ on, over, min }) =>
+        over.flatMap((surface) => {
+          const ratio = contrast(painted[on], painted[surface])
+          return ratio >= min
+            ? []
+            : [
+                `${palette} ${theme}: ${on} on ${surface} is ${ratio.toFixed(2)}:1, needs ${min}:1`,
+              ]
+        }),
+      )
+      expect(failures).toEqual([])
+    })
+  }
+}

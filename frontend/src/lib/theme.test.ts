@@ -3,12 +3,17 @@ import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import {
-  THEMES,
+  PALETTES,
+  PALETTE_STORAGE_KEY,
   THEME_STORAGE_KEY,
+  THEMES,
+  readPalette,
   readPreference,
   resolveTheme,
+  setPalette,
   setPreference,
   startTheme,
+  usePalettePreference,
   useThemePreference,
 } from './theme'
 
@@ -23,6 +28,7 @@ beforeEach(() => {
   changeListeners = []
   localStorage.clear()
   delete document.documentElement.dataset.theme
+  delete document.documentElement.dataset.palette
   vi.stubGlobal('matchMedia', (query: string) => ({
     get matches() {
       return query === '(prefers-color-scheme: dark)' && systemDark
@@ -36,6 +42,13 @@ beforeEach(() => {
 afterEach(() => {
   vi.restoreAllMocks()
 })
+
+const runBoot = () => {
+  const html = readFileSync('index.html', 'utf8')
+  const boot = html.match(/<script id="theme-boot">([\s\S]*?)<\/script>/)?.[1]
+  expect(boot).toBeTruthy()
+  new Function(boot!)()
+}
 
 const setSystemDark = (dark: boolean) => {
   systemDark = dark
@@ -119,10 +132,48 @@ test('every theme block defines every colour token the light theme does', () => 
   }
 })
 
-test('every theme block sets the palette variables', () => {
-  const paletteVariables = ['--brand-hue', '--brand-chroma', '--neutral-tint']
+const escapeRegExp = (text: string) =>
+  text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// The selector list that opens a palette block, as written in theme.css.
+const paletteSelector = (palette: string, theme: string) => {
+  const root = theme === 'dark' ? ":root[data-theme='dark']" : ':root'
+  const own =
+    palette === 'indigo'
+      ? root
+      : theme === 'dark'
+        ? ":root[data-theme='dark'][data-palette='" + palette + "']"
+        : ":root[data-palette='" + palette + "']"
+  const inner = `${root} [data-palette='${palette}']`
+  return new RegExp(
+    `^${escapeRegExp(own)},\\n${escapeRegExp(inner)} \\{([^}]*)\\}`,
+    'm',
+  )
+}
+
+test('every palette has a light and a dark block that set all four variables', () => {
+  const paletteVariables = [
+    '--brand-hue',
+    '--brand-chroma',
+    '--brand-lightness',
+    '--neutral-tint',
+  ]
+  for (const palette of PALETTES) {
+    for (const theme of THEMES) {
+      const tokens = block(paletteSelector(palette, theme))
+      expect(
+        paletteVariables.filter((token) => !tokens.has(token)),
+        `${palette} ${theme}`,
+      ).toEqual([])
+    }
+  }
+})
+
+test('palette variables live only in palette blocks', () => {
   for (const tokens of themeBlocks()) {
-    expect(paletteVariables.filter((token) => !tokens.has(token))).toEqual([])
+    expect([...tokens.keys()].filter((t) => t.startsWith('--brand-'))).toEqual(
+      [],
+    )
   }
 })
 
@@ -138,20 +189,67 @@ test('status tones and destructive are fixed values', () => {
   }
 })
 
-test.each([null, 'light', 'dark', 'system'])(
-  'the index.html boot script agrees with the module for %s',
+test('falls back to indigo for a missing or unknown stored palette', () => {
+  expect(readPalette()).toBe('indigo')
+  localStorage.setItem(PALETTE_STORAGE_KEY, 'neon')
+  expect(readPalette()).toBe('indigo')
+  localStorage.setItem(PALETTE_STORAGE_KEY, 'forest')
+  expect(readPalette()).toBe('forest')
+})
+
+test('stores a palette, removes the key for indigo, and applies it', () => {
+  setPalette('sky')
+  expect(localStorage.getItem(PALETTE_STORAGE_KEY)).toBe('sky')
+  expect(document.documentElement.dataset.palette).toBe('sky')
+  setPalette('indigo')
+  expect(localStorage.getItem(PALETTE_STORAGE_KEY)).toBeNull()
+  expect(document.documentElement.dataset.palette).toBe('indigo')
+})
+
+test('follows a palette change from another tab', () => {
+  const stop = startTheme()
+  expect(document.documentElement.dataset.palette).toBe('indigo')
+  localStorage.setItem(PALETTE_STORAGE_KEY, 'autumn')
+  window.dispatchEvent(
+    new StorageEvent('storage', { key: PALETTE_STORAGE_KEY }),
+  )
+  expect(document.documentElement.dataset.palette).toBe('autumn')
+  stop()
+})
+
+test('keeps the palette for the page when storage is blocked', () => {
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+    throw new Error('blocked')
+  })
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    throw new Error('blocked')
+  })
+  const { result } = renderHook(() => usePalettePreference())
+  act(() => result.current[1]('forest'))
+  expect(result.current[0]).toBe('forest')
+  expect(document.documentElement.dataset.palette).toBe('forest')
+})
+
+test.each([null, 'light', 'dark', 'system', 'sepia'])(
+  'the index.html boot script agrees with the module for theme %s',
   (stored) => {
-    const html = readFileSync('index.html', 'utf8')
-    const boot = html.match(/<script id="theme-boot">([\s\S]*?)<\/script>/)?.[1]
-    expect(boot).toBeTruthy()
     for (const dark of [false, true]) {
       systemDark = dark
       localStorage.clear()
       if (stored) localStorage.setItem(THEME_STORAGE_KEY, stored)
-      new Function(boot!)()
+      runBoot()
       expect(document.documentElement.dataset.theme).toBe(
         resolveTheme(readPreference()),
       )
     }
+  },
+)
+
+test.each([null, ...PALETTES, 'neon'])(
+  'the index.html boot script agrees with the module for palette %s',
+  (stored) => {
+    if (stored) localStorage.setItem(PALETTE_STORAGE_KEY, stored)
+    runBoot()
+    expect(document.documentElement.dataset.palette).toBe(readPalette())
   },
 )
