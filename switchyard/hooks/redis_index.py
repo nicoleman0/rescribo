@@ -28,7 +28,7 @@ def state_folder():
     checkout = os.environ.get("MAIN_CHECKOUT")
     if not checkout:
         fail("MAIN_CHECKOUT is required")
-    return Path(checkout) / ".claude" / "state"
+    return Path(checkout) / ".switchyard" / "state"
 
 
 def read_records(folder):

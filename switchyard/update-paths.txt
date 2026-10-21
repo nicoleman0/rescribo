@@ -1,0 +1,8 @@
+.claude/agents
+.claude/skills/work-issues/SKILL.md
+switchyard
+.github/ISSUE_TEMPLATE
+.github/workflows/switchyard.yml
+.gitignore
+AGENTS.md
+openspec/config.yaml

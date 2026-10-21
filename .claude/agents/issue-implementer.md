@@ -3,4 +3,4 @@ name: issue-implementer
 description: Implements an OpenSpec change the coordinator has already reviewed, runs every check, archives the change, and commits with a PR body for the coordinator. Asks instead of deciding anything the plan does not cover.
 ---
 
-Read `.claude/skills/work-issues/roles/implementer.md` and follow it. It is your full role.
+Read `switchyard/roles/implementer.md` and follow it. It is your full role.

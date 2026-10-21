@@ -1,6 +1,6 @@
 # Brief: issue #{issue}
 
-You work on one issue in your own git worktree. A coordinator session reviews the plan and relays questions to the maintainer. A reviewer session checks the commit against the change, on another provider when the project has one. Answers to your questions arrive as files in `.claude/answers/`.
+You work on one issue in your own git worktree. A coordinator session reviews the plan and relays questions to the maintainer. A reviewer session checks the commit against the change, on another provider when the project has one. Answers to your questions arrive as files in `.switchyard/answers/`.
 
 - Issue: #{issue}, {title}. Read it with `gh issue view {issue} --comments`.
 - Worktree: `{path}`, branch `{branch}`.
@@ -21,7 +21,7 @@ Postgres and Redis run in Docker from the main checkout and are already up. Your
 
 ## Screenshots (UI changes only)
 
-Seed the demo with `RESCRIBO_DEMO_PASSWORD='Rescribo-demo-e2e-2026!' uv run python backend/manage.py seed_demo`. Then, from the worktree root, with the dev servers running, run `SHOTS_BASE=http://127.0.0.1:<web> node .claude/skills/work-issues/scripts/shots.mjs .claude/shots/<before|after>`. The planner takes the before shots and the implementer takes the after shots. `.claude/shots/` is git-ignored, and both sessions can read it. Build the comparison page with `.claude/skills/work-issues/scripts/compare.py` into `.claude/shots/compare.html`; its usage is in the file header.
+Seed the demo with `RESCRIBO_DEMO_PASSWORD='Rescribo-demo-e2e-2026!' uv run python backend/manage.py seed_demo`. Then, from the worktree root, with the dev servers running, run `SHOTS_BASE=http://127.0.0.1:<web> node switchyard/scripts/shots.mjs .switchyard/shots/<before|after>`. The planner takes the before shots and the implementer takes the after shots. `.switchyard/shots/` is git-ignored, and both sessions can read it. Build the comparison page with `switchyard/scripts/compare.py` into `.switchyard/shots/compare.html`; its usage is in the file header.
 
 ## Shared files
 

@@ -31,3 +31,5 @@ rust/matcher/target/
 
 # Local database dumps hold tenant data.
 backups/
+
+.switchyard/

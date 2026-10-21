@@ -10,7 +10,7 @@ branch=${2:?branch name required}
 repo=$(git rev-parse --show-toplevel)
 cd "$repo"
 base=$(git symbolic-ref --short HEAD)
-hook=.claude/skills/work-issues/hooks/worktree-up.sh
+hook=switchyard/hooks/worktree-up.sh
 
 if [ "${HERDR_ENV:-}" = 1 ]; then
   created=$(herdr worktree create --cwd "$repo" --branch "$branch" --base "$base" \
@@ -36,7 +36,7 @@ if [ "${HERDR_ENV:-}" = 1 ]; then
 else
   state_args+=(runner=headless)
 fi
-python3 .claude/skills/work-issues/scripts/state.py "${state_args[@]}"
+python3 switchyard/scripts/state.py "${state_args[@]}"
 
 if [ -x "$hook" ]; then
   ISSUE=$issue BRANCH=$branch WORKTREE=$path MAIN_CHECKOUT=$repo "$hook"

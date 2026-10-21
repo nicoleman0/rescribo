@@ -4,7 +4,7 @@
 # BRANCH, WORKTREE, and MAIN_CHECKOUT set.
 set -euo pipefail
 
-redis_index=$(python3 "$MAIN_CHECKOUT/.claude/skills/work-issues/hooks/redis_index.py" held "$ISSUE")
+redis_index=$(python3 "$MAIN_CHECKOUT/switchyard/hooks/redis_index.py" held "$ISSUE")
 if [ -n "$redis_index" ] && [ -f "$WORKTREE/.env" ]; then
   env_index=$(python3 - "$WORKTREE/.env" <<'EOF'
 import re

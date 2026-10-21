@@ -19,9 +19,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_SOURCE = "https://github.com/nicoleman0/switchyard.git"
-VERSION_PATH = ".claude/skills/work-issues/VERSION"
-PROJECT_OWNED = {".claude/skills/work-issues/routing.md"}
-PATHS_PATH = ".claude/skills/work-issues/update-paths.txt"
+VERSION_PATH = "switchyard/VERSION"
+LEGACY_ROOT = ".claude/skills/work-issues"
+LEGACY_VERSION_PATH = f"{LEGACY_ROOT}/VERSION"
+LEGACY_STATE_ROOT = ".claude/state"
+PROJECT_OWNED = {"switchyard/routing.md"}
+PATHS_PATH = "switchyard/update-paths.txt"
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
 AGENTS_PATH = "AGENTS.md"
 AGENTS_SECTIONS = ("Workflow", "Writing")
@@ -72,7 +75,7 @@ def tree_entries(git_dir: Path, tag: str, paths: list[str]) -> dict[str, tuple[i
 def read_update_paths(git_dir: Path, target: str) -> list[str]:
     result = git("--git-dir", str(git_dir), "show", f"{target}:{PATHS_PATH}", check=False)
     if result.returncode:
-        raise Refusal(f"{target} has no {PATHS_PATH}; update from a release that includes the update path")
+        raise Refusal(f"{target} predates the switchyard/ layout; run that release's own updater")
     paths: list[str] = []
     for line in result.stdout.decode().splitlines():
         path = line.split("#", 1)[0].strip()
@@ -340,10 +343,10 @@ def rules_block(text: str, path: str) -> tuple[list[tuple[str, str | None, int]]
 
 
 def install_gitignore_merge(release: bytes, local: bytes | None) -> tuple[bytes | None, str | None]:
-    """Add the release's `.claude` lines; existing lines are never rewritten."""
+    """Add the release's `.switchyard` line; existing lines are never rewritten."""
     release_text = file_text(GITIGNORE_PATH, release, release=True)
     patterns = [line.rstrip() for line in release_text.split("\n")
-                if ".claude" in line and not line.lstrip().startswith("#")]
+                if ".switchyard" in line and not line.lstrip().startswith("#")]
     if local is None:
         if not patterns:
             return None, None
@@ -452,17 +455,32 @@ def run() -> int:
             raise Refusal("tracked files have uncommitted changes; commit or stash them before updating")
 
         validate_parent_paths(project_root, VERSION_PATH)
-        version_file = project_root / VERSION_PATH
+        validate_parent_paths(project_root, LEGACY_VERSION_PATH)
+        new_version_file = project_root / VERSION_PATH
+        legacy_version_file = project_root / LEGACY_VERSION_PATH
+        try:
+            new_version_file.lstat()
+            new_version_exists = True
+        except FileNotFoundError:
+            new_version_exists = False
+        try:
+            legacy_version_file.lstat()
+            legacy_version_exists = True
+        except FileNotFoundError:
+            legacy_version_exists = False
+        if new_version_exists and legacy_version_exists:
+            raise Refusal(f"both {VERSION_PATH} and {LEGACY_VERSION_PATH} exist")
+        version_file = legacy_version_file if legacy_version_exists else new_version_file
         try:
             version_info = version_file.lstat()
         except FileNotFoundError:
             stored = None
         else:
             if not stat.S_ISREG(version_info.st_mode):
-                raise Refusal(f"{VERSION_PATH} is not a regular local file")
+                raise Refusal(f"{version_file.relative_to(project_root)} is not a regular local file")
             stored = version_file.read_text().strip()
         if args.install and stored is not None:
-            raise Refusal(f"{VERSION_PATH} already names {stored}; run the updater without --install")
+            raise Refusal(f"{version_file.relative_to(project_root)} already names {stored}; run the updater without --install")
         raw_base = args.base or stored
 
         openspec_existed = (project_root / "openspec").is_dir()
@@ -545,21 +563,59 @@ def run() -> int:
                         merge_mode = None if local_content is not None else mode
                         actions.append(Action(path, status, content, merge_mode))
             else:
-                base_tree = selected_entries(tree_entries(bare, base, paths), paths)
+                legacy_base = git("--git-dir", str(bare), "cat-file", "-e",
+                                  f"{base}:switchyard/update-paths.txt", check=False).returncode != 0
+                if legacy_base:
+                    new_root = project_root / "switchyard"
+                    if new_root.is_symlink() or (new_root.exists() and not new_root.is_dir()):
+                        raise Refusal("switchyard/ is not a real directory; resolve the partial migration first")
+                    occupied = [path for path in new_root.rglob("*")
+                                if path.is_file() or path.is_symlink()] if new_root.exists() else []
+                    if occupied:
+                        raise Refusal("legacy install already has files under switchyard/; resolve the partial migration first")
+                    state_dir = project_root / LEGACY_STATE_ROOT
+                    issues = sorted(path.stem for path in state_dir.glob("*.json")) if state_dir.is_dir() else []
+                    if issues:
+                        raise Refusal(f"issues still have records in {LEGACY_STATE_ROOT}: {', '.join(issues)}; finish or tear them down first")
+                    print("Moving the workflow from .claude/skills/work-issues/ to switchyard/")
+                    base_roots = [*paths, LEGACY_ROOT]
+                    raw_base_tree = selected_entries(tree_entries(bare, base, base_roots), base_roots)
+                    base_tree = {}
+                    for old_path, item in raw_base_tree.items():
+                        if old_path == LEGACY_VERSION_PATH:
+                            continue
+                        if old_path.startswith(LEGACY_ROOT + "/"):
+                            base_tree["switchyard/" + old_path[len(LEGACY_ROOT) + 1:]] = item
+                        else:
+                            base_tree[old_path] = item
+                else:
+                    base_tree = selected_entries(tree_entries(bare, base, paths), paths)
                 all_paths = sorted(set(base_tree) | set(target_tree))
                 for path in all_paths:
                     base_item = base_tree.get(path)
                     target_item = target_tree.get(path)
+                    local_path = (f"{LEGACY_ROOT}/{path[len('switchyard/'):]}"
+                                  if legacy_base and path.startswith("switchyard/") else path)
                     if path in PROJECT_OWNED:
-                        local_content, _ = local_file(project_root, path)
-                        if target_item is not None and local_content is None:
+                        local_content, local_mode = local_file(project_root, local_path)
+                        if legacy_base and local_content is not None:
+                            actions.append(Action(path, "moved", local_content, local_mode))
+                        elif target_item is not None and local_content is None:
                             actions.append(Action(path, "added", target_item[1], target_item[0]))
                         continue
                     base_content = base_item[1] if base_item else None
                     target_content = target_item[1] if target_item else None
+                    if legacy_base and path == f"{LEGACY_ROOT}/SKILL.md":
+                        local_content, local_mode = None, None
+                    else:
+                        local_content, local_mode = local_file(project_root, local_path)
                     if base_item == target_item:
+                        if legacy_base and local_content is not None and target_item is not None:
+                            if local_content == target_item[1] and local_mode == target_item[0]:
+                                actions.append(Action(path, "updated", target_item[1], target_item[0]))
+                            else:
+                                actions.append(Action(path, "moved", local_content, local_mode))
                         continue
-                    local_content, local_mode = local_file(project_root, path)
                     target_mode_changed = target_item is not None and local_content is not None and local_mode != target_item[0] and (
                         base_item is None or base_item[0] != target_item[0]
                     )
@@ -580,7 +636,10 @@ def run() -> int:
                     elif local_content is None and base_item is not None and target_item is not None:
                         actions.append(Action(path, "kept", None, None))
                     elif target_item is None and local_content != base_content:
-                        actions.append(Action(path, "kept", None, None))
+                        if legacy_base:
+                            actions.append(Action(path, "kept", local_content, local_mode))
+                        else:
+                            actions.append(Action(path, "kept", None, None))
                     else:
                         merged, conflict = merge_content(path, local_content, base_content, target_content,
                                                          base_label, target_label)
@@ -590,10 +649,24 @@ def run() -> int:
                             mode = local_mode or (target_item[0] if target_item else base_item[0])
                         actions.append(Action(path, "conflict" if conflict else "merged", merged, mode))
 
+            if not args.install and legacy_base:
+                tracked = git("ls-files", "-z", LEGACY_ROOT, cwd=project_root).stdout.decode().split("\0")
+                selected_old = {path for path in tracked if path}
+                base_old = {path for path in tree_entries(bare, base, [LEGACY_ROOT])
+                            if path != LEGACY_VERSION_PATH}
+                for old_path in sorted(selected_old - base_old):
+                    if old_path in (f"{LEGACY_ROOT}/SKILL.md", LEGACY_VERSION_PATH):
+                        continue
+                    content, mode = local_file(project_root, old_path)
+                    new_path = "switchyard/" + old_path[len(LEGACY_ROOT) + 1:]
+                    if content is not None and not any(action.path == new_path for action in actions):
+                        actions.append(Action(new_path, "moved", content, mode))
+            for action in actions:
+                local_file(project_root, action.path)
             for action in actions:
                 full_path = project_root / action.path
                 if action.status == "removed":
-                    full_path.unlink()
+                    full_path.unlink(missing_ok=True)
                 elif action.content is not None:
                     full_path.parent.mkdir(parents=True, exist_ok=True)
                     full_path.write_bytes(action.content)
@@ -602,6 +675,22 @@ def run() -> int:
                 if action.status:
                     counts[action.status] = counts.get(action.status, 0) + 1
                     print(f"{action.status}: {action.path}")
+            if not args.install and legacy_base:
+                tracked = git("ls-files", "-z", LEGACY_ROOT, cwd=project_root).stdout.decode().split("\0")
+                for old_path in filter(None, tracked):
+                    if old_path == f"{LEGACY_ROOT}/SKILL.md":
+                        continue
+                    (project_root / old_path).unlink(missing_ok=True)
+                if legacy_version_file.exists():
+                    legacy_version_file.unlink()
+                legacy_folder = project_root / LEGACY_ROOT
+                for folder in sorted(legacy_folder.rglob("*"), key=lambda item: len(item.parts), reverse=True):
+                    if folder.is_dir():
+                        try:
+                            folder.rmdir()
+                        except OSError:
+                            pass
+            version_file = project_root / VERSION_PATH
             version_file.parent.mkdir(parents=True, exist_ok=True)
             version_file.write_text(target_label + "\n")
             for status in ("added", "updated", "removed", "merged", "conflict", "kept"):

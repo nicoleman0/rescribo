@@ -11,13 +11,14 @@ import unittest
 from pathlib import Path
 
 SCRIPT = Path(__file__).with_name("update-switchyard.py").resolve()
-VERSION = ".claude/skills/work-issues/VERSION"
-ROUTING = ".claude/skills/work-issues/routing.md"
-PATHS = ".claude/skills/work-issues/update-paths.txt"
-UPDATER = ".claude/skills/work-issues/scripts/update-switchyard.py"
+VERSION = "switchyard/VERSION"
+ROUTING = "switchyard/routing.md"
+PATHS = "switchyard/update-paths.txt"
+UPDATER = "switchyard/scripts/update-switchyard.py"
 COVERED = [
     ".claude/agents",
-    ".claude/skills/work-issues",
+    ".claude/skills/work-issues/SKILL.md",
+    "switchyard",
     ".github/ISSUE_TEMPLATE",
     ".github/workflows/switchyard.yml",
     ".gitignore",
@@ -47,12 +48,12 @@ RELEASE_CONFIG = (
 )
 RELEASE_GITIGNORE = (
     b"node_modules/\n\n"
-    b"# Briefs, answers, screenshots, and PR bodies stay local to each worktree.\n"
-    b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n"
+    b".switchyard/\n"
 )
 DEFAULT_FILES = {
     ".claude/agents/worker.md": b"worker v1\n",
-    ".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nlast line\n",
+    ".claude/skills/work-issues/SKILL.md": b"---\nname: work-issues\n---\nStub\n",
+    "switchyard/workflow.txt": b"first line\nstable line\nlast line\n",
     ".github/ISSUE_TEMPLATE/issue.yml": b"issue\n",
     ".github/workflows/switchyard.yml": b"ci v1\n",
     ".gitignore": RELEASE_GITIGNORE,
@@ -83,6 +84,11 @@ class UpdateSwitchyardTests(unittest.TestCase):
 
     def tearDown(self) -> None:
         self.temporary.cleanup()
+
+    def test_shipped_update_paths_names_the_claude_stub(self) -> None:
+        shipped = Path(__file__).parents[2] / PATHS
+        self.assertEqual(shipped.read_text().splitlines(), COVERED)
+        self.assertIn(".claude/skills/work-issues/SKILL.md", shipped.read_text().splitlines())
 
     def git(self, repo: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[bytes]:
         result = subprocess.run(["git", *args], cwd=repo, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -122,6 +128,51 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.commit(self.source, "target")
         self.tag(self.source, "v0.2.0")
 
+    def make_legacy_and_new_releases(self) -> tuple[dict[str, bytes], dict[str, bytes]]:
+        """Build a 0.6.0-shaped base and a new-layout target with both compat files."""
+        for tracked in self.git(self.source, "ls-files", "-z").stdout.decode().split("\0"):
+            if tracked:
+                (self.source / tracked).unlink(missing_ok=True)
+        legacy_root = ".claude/skills/work-issues"
+        legacy_files = {}
+        for path, content in DEFAULT_FILES.items():
+            if path == VERSION:
+                destination = f"{legacy_root}/VERSION"
+            elif path == PATHS:
+                destination = f"{legacy_root}/update-paths.txt"
+                content = (legacy_root + "\n").encode()
+            elif path.startswith("switchyard/"):
+                destination = f"{legacy_root}/{path.removeprefix('switchyard/') }".strip()
+            else:
+                destination = path
+            legacy_files[destination] = content
+        legacy_files[f"{legacy_root}/SKILL.md"] = b"---\nname: work-issues\n---\nLegacy workflow\n"
+        legacy_files[f"{legacy_root}/routing.md"] = b"# Project routing\n"
+        legacy_files[f"{legacy_root}/roles/planner.md"] = b"first line\nstable line\nlast line\n"
+        legacy_files[f"{legacy_root}/stable.txt"] = b"release content\n"
+        legacy_files[f"{legacy_root}/scripts/deleted-upstream.txt"] = b"release content\n"
+        self.write_files(self.source, legacy_files)
+        self.commit(self.source, "legacy release")
+        self.tag(self.source, "v0.6.0")
+
+        for tracked in self.git(self.source, "ls-files", "-z").stdout.decode().split("\0"):
+            if tracked:
+                (self.source / tracked).unlink(missing_ok=True)
+        target_files = dict(DEFAULT_FILES)
+        target_files[VERSION] = b"0.7.0\n"
+        target_files[".claude/skills/work-issues/SKILL.md"] = b"---\nname: work-issues\n---\nCurrent stub\n"
+        target_files[".claude/skills/work-issues/update-paths.txt"] = (
+            b"# Old updater guard\n../ Switchyard moved the workflow.\n")
+        target_files["switchyard/SKILL.md"] = b"Current workflow\n"
+        target_files["switchyard/workflow.txt"] = b"first line\nstable line\nnew last line\n"
+        target_files["switchyard/routing.md"] = b"# Release routing\n"
+        target_files["switchyard/roles/planner.md"] = b"first line\nstable line\nnew last line\n"
+        target_files["switchyard/stable.txt"] = b"release content\n"
+        self.write_files(self.source, target_files)
+        self.commit(self.source, "new-layout release")
+        self.tag(self.source, "v0.7.0")
+        return legacy_files, target_files
+
     def make_project(self, *, files: dict[str, bytes] | None = None, version: bytes | None = b"0.1.0\n",
                      own_tag: bool = False, sparse: bool = False) -> None:
         self.init_repo(self.project)
@@ -156,14 +207,14 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertEqual(status, b"")
 
     def test_unedited_file_updates_and_version_names_target(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nnew last line\n"})
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nnew last line\n"})
         self.make_project()
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(),
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(),
                          b"first line\nstable line\nnew last line\n")
         self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
-        self.assertIn(b"updated: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertIn(b"updated: switchyard/workflow.txt", result.stdout)
 
     def test_project_owned_routing_is_never_updated_or_removed(self) -> None:
         self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
@@ -211,14 +262,14 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
         self.commit(self.source, "add routing base")
         self.git(self.source, "tag", "-f", "v0.1.0")
-        self.make_target({ROUTING: b"example v2\n", ".claude/skills/work-issues/workflow.txt": b"new content\n"})
+        self.make_target({ROUTING: b"example v2\n", "switchyard/workflow.txt": b"new content\n"})
         files = {k: v for k, v in DEFAULT_FILES.items() if k not in ("outside.txt", ROUTING)}
         self.make_project(files=files)
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertEqual((self.project / ROUTING).read_bytes(), b"example v2\n")
         self.assertIn(("added: " + ROUTING).encode(), result.stdout)
-        self.assertIn(b"updated: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertIn(b"updated: switchyard/workflow.txt", result.stdout)
 
     def test_project_owned_routing_added_in_new_release_does_not_conflict(self) -> None:
         (self.source / ROUTING).unlink(missing_ok=True)
@@ -234,24 +285,24 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertNotIn(("conflict: " + ROUTING).encode(), result.stdout)
 
     def test_independent_edits_merge(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nupstream last\n"})
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nupstream last\n"})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
-                                 ".claude/skills/work-issues/workflow.txt": b"local first\nstable line\nlast line\n"})
+                                 "switchyard/workflow.txt": b"local first\nstable line\nlast line\n"})
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertIn(b"local first\nstable line\nupstream last\n", (self.project / ".claude/skills/work-issues/workflow.txt").read_bytes())
-        self.assertIn(b"merged: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertIn(b"local first\nstable line\nupstream last\n", (self.project / "switchyard/workflow.txt").read_bytes())
+        self.assertIn(b"merged: switchyard/workflow.txt", result.stdout)
 
     def test_same_line_conflict_has_both_sides_and_base(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"upstream\nstable line\nlast line\n"})
+        self.make_target({"switchyard/workflow.txt": b"upstream\nstable line\nlast line\n"})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
-                                 ".claude/skills/work-issues/workflow.txt": b"local\nstable line\nlast line\n"})
+                                 "switchyard/workflow.txt": b"local\nstable line\nlast line\n"})
         result = self.run_update()
         self.assertEqual(result.returncode, 1)
-        text = (self.project / ".claude/skills/work-issues/workflow.txt").read_text()
+        text = (self.project / "switchyard/workflow.txt").read_text()
         for marker in ("<<<<<<< yours", "||||||| switchyard 0.1.0", "=======", ">>>>>>> switchyard 0.2.0", "local", "upstream"):
             self.assertIn(marker, text)
-        self.assertIn(b"conflict: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertIn(b"conflict: switchyard/workflow.txt", result.stdout)
 
     def test_multiple_conflict_regions_are_reported_as_conflict(self) -> None:
         base = "\n".join(chr(ord("a") + index) for index in range(10)) + "\n"
@@ -269,7 +320,7 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertEqual((self.project / "AGENTS.md").read_bytes().count(b"<<<<<<< yours"), 2)
 
     def test_upstream_mode_only_change_updates_unedited_and_edited_files(self) -> None:
-        target = self.source / ".claude/skills/work-issues/workflow.txt"
+        target = self.source / "switchyard/workflow.txt"
         target.chmod(0o755)
         self.commit(self.source, "make workflow executable")
         self.tag(self.source, "v0.2.0")
@@ -279,60 +330,60 @@ class UpdateSwitchyardTests(unittest.TestCase):
                     self.project = self.root / "edited-project"
                 files = {key: value for key, value in DEFAULT_FILES.items() if key != "outside.txt"}
                 if edited:
-                    files[".claude/skills/work-issues/workflow.txt"] = b"local content\n"
+                    files["switchyard/workflow.txt"] = b"local content\n"
                 self.make_project(files=files)
                 result = self.run_update()
                 self.assertEqual(result.returncode, 0, result.stderr.decode())
-                self.assertTrue(os.access(self.project / ".claude/skills/work-issues/workflow.txt", os.X_OK))
-                self.assertIn(b"updated: .claude/skills/work-issues/workflow.txt", result.stdout)
-                expected = b"local content\n" if edited else DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"]
-                self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(), expected)
+                self.assertTrue(os.access(self.project / "switchyard/workflow.txt", os.X_OK))
+                self.assertIn(b"updated: switchyard/workflow.txt", result.stdout)
+                expected = b"local content\n" if edited else DEFAULT_FILES["switchyard/workflow.txt"]
+                self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), expected)
 
     def test_both_sides_add_same_path_conflicts(self) -> None:
-        self.make_target({".claude/skills/work-issues/new.txt": b"upstream\n"})
+        self.make_target({"switchyard/new.txt": b"upstream\n"})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
-                                 ".claude/skills/work-issues/new.txt": b"local\n"})
+                                 "switchyard/new.txt": b"local\n"})
         result = self.run_update()
         self.assertEqual(result.returncode, 1)
-        self.assertIn(b"conflict: .claude/skills/work-issues/new.txt", result.stdout)
-        self.assertIn(b"local", (self.project / ".claude/skills/work-issues/new.txt").read_bytes())
-        self.assertIn(b"upstream", (self.project / ".claude/skills/work-issues/new.txt").read_bytes())
+        self.assertIn(b"conflict: switchyard/new.txt", result.stdout)
+        self.assertIn(b"local", (self.project / "switchyard/new.txt").read_bytes())
+        self.assertIn(b"upstream", (self.project / "switchyard/new.txt").read_bytes())
 
     def test_unedited_upstream_deletion_removes_file(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": None})
+        self.make_target({"switchyard/workflow.txt": None})
         self.make_project()
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertFalse((self.project / ".claude/skills/work-issues/workflow.txt").exists())
-        self.assertIn(b"removed: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertFalse((self.project / "switchyard/workflow.txt").exists())
+        self.assertIn(b"removed: switchyard/workflow.txt", result.stdout)
 
     def test_locally_edited_upstream_deletion_is_kept(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": None})
+        self.make_target({"switchyard/workflow.txt": None})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
-                                 ".claude/skills/work-issues/workflow.txt": b"local edit\n"})
+                                 "switchyard/workflow.txt": b"local edit\n"})
         result = self.run_update()
         self.assertEqual(result.returncode, 1)
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(), b"local edit\n")
-        self.assertIn(b"kept: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), b"local edit\n")
+        self.assertIn(b"kept: switchyard/workflow.txt", result.stdout)
 
     def test_locally_deleted_upstream_edit_is_kept(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"upstream edit\n"})
+        self.make_target({"switchyard/workflow.txt": b"upstream edit\n"})
         self.make_project()
-        (self.project / ".claude/skills/work-issues/workflow.txt").unlink()
+        (self.project / "switchyard/workflow.txt").unlink()
         self.commit(self.project, "delete locally")
         result = self.run_update()
         self.assertEqual(result.returncode, 1)
-        self.assertFalse((self.project / ".claude/skills/work-issues/workflow.txt").exists())
-        self.assertIn(b"kept: .claude/skills/work-issues/workflow.txt", result.stdout)
+        self.assertFalse((self.project / "switchyard/workflow.txt").exists())
+        self.assertIn(b"kept: switchyard/workflow.txt", result.stdout)
 
     def test_unchanged_files_outside_paths_and_second_run(self) -> None:
         self.make_target({"outside.txt": b"outside v2\n"})
         local = b"my project edit\n"
         self.make_project(files={**DEFAULT_FILES,
-                                 ".claude/skills/work-issues/workflow.txt": local})
+                                 "switchyard/workflow.txt": local})
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(), local)
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), local)
         self.assertEqual((self.project / "outside.txt").read_bytes(), b"outside v1\n")
         self.commit(self.project, "accept update")
         again = self.run_update()
@@ -340,28 +391,28 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertIn(b"Already at 0.2.0", again.stdout)
 
     def test_modes_follow_new_and_merged_upstream_modes(self) -> None:
-        new_file = self.source / ".claude/skills/work-issues/new-exec.sh"
+        new_file = self.source / "switchyard/new-exec.sh"
         new_file.write_text("#!/bin/sh\n")
         new_file.chmod(0o755)
-        self.make_target({".claude/skills/work-issues/workflow.txt":
+        self.make_target({"switchyard/workflow.txt":
                           b"first line\nstable line\nupstream last\n"})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
-                                 ".claude/skills/work-issues/workflow.txt":
+                                 "switchyard/workflow.txt":
                                  b"local first\nstable line\nlast line\n"})
-        edited = self.project / ".claude/skills/work-issues/workflow.txt"
+        edited = self.project / "switchyard/workflow.txt"
         edited.chmod(0o755)
         self.git(self.project, "add", str(edited.relative_to(self.project)))
         self.git(self.project, "commit", "-qm", "make edited hook executable")
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertTrue(os.access(self.project / ".claude/skills/work-issues/new-exec.sh", os.X_OK))
+        self.assertTrue(os.access(self.project / "switchyard/new-exec.sh", os.X_OK))
         self.assertTrue(os.access(edited, os.X_OK))
         self.assertIn(b"local first\nstable line\nupstream last\n", edited.read_bytes())
 
     def test_sparse_existing_repo_is_not_populated(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nupdated\n"})
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nupdated\n"})
         self.make_project(files={".claude/agents/local.md": b"agent\n",
-                                 ".claude/skills/work-issues/workflow.txt": DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"],
+                                 "switchyard/workflow.txt": DEFAULT_FILES["switchyard/workflow.txt"],
                                  PATHS: DEFAULT_FILES[PATHS]}, sparse=True)
         result = self.run_update()
         self.assertEqual(result.returncode, 0, result.stderr.decode())
@@ -388,7 +439,7 @@ class UpdateSwitchyardTests(unittest.TestCase):
     def test_dirty_project_and_non_repo_are_refused(self) -> None:
         self.make_target()
         self.make_project()
-        (self.project / ".claude/skills/work-issues/workflow.txt").write_text("dirty\n")
+        (self.project / "switchyard/workflow.txt").write_text("dirty\n")
         result = self.run_update()
         self.assertEqual(result.returncode, 2)
         self.assertIn(b"uncommitted changes", result.stderr)
@@ -412,14 +463,162 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.tag(self.source, "v0.3.0")
         self.make_project()
         result = self.run_update("--to", "0.3.0")
-        self.assert_refused_clean(result, "has no")
+        self.assert_refused_clean(result, "predates the switchyard/ layout")
+
+    def make_legacy_project(self, legacy_files: dict[str, bytes], *, role_edit: bytes | None = None) -> None:
+        legacy_root = ".claude/skills/work-issues"
+        files = {path: content for path, content in legacy_files.items()
+                 if path not in ("outside.txt", f"{legacy_root}/VERSION")}
+        if role_edit is not None:
+            files[f"{legacy_root}/roles/planner.md"] = role_edit
+        self.make_project(files=files, version=None)
+        (self.project / f"{legacy_root}/VERSION").write_text("0.6.0\n")
+        self.git(self.project, "add", "-A")
+        self.git(self.project, "commit", "-qm", "legacy install")
+
+    def test_legacy_migration_moves_and_merges_files(self) -> None:
+        legacy_files, _ = self.make_legacy_and_new_releases()
+        self.make_legacy_project(legacy_files,
+                                 role_edit=b"local first\nstable line\nlast line\n")
+        legacy_root = self.project / ".claude/skills/work-issues"
+        added_script = legacy_root / "scripts/project-added.sh"
+        added_script.parent.mkdir(parents=True, exist_ok=True)
+        added_script.write_bytes(b"#!/bin/sh\necho local\n")
+        added_script.chmod(0o755)
+        self.git(self.project, "add", "-A")
+        self.git(self.project, "commit", "-qm", "project customization")
+        (legacy_root / "stable.txt").write_text("local edit\n")
+        (legacy_root / "scripts/deleted-upstream.txt").write_text("local version\n")
+        self.git(self.project, "add", "-A")
+        self.git(self.project, "commit", "-qm", "extra local edits")
+        untracked = legacy_root / "untracked.txt"
+        untracked.write_text("leave me\n")
+        routing = (legacy_root / "routing.md").read_bytes()
+
+        result = self.run_update("--to", "0.7.0")
+        self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
+        self.assertTrue(result.stdout.decode().startswith(
+            "Moving the workflow from .claude/skills/work-issues/ to switchyard/"))
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(),
+                         b"first line\nstable line\nnew last line\n")
+        self.assertEqual((self.project / "switchyard/roles/planner.md").read_bytes(),
+                         b"local first\nstable line\nnew last line\n")
+        self.assertEqual((self.project / "switchyard/routing.md").read_bytes(), routing)
+        moved_script = self.project / "switchyard/scripts/project-added.sh"
+        self.assertEqual(moved_script.read_bytes(), b"#!/bin/sh\necho local\n")
+        self.assertTrue(os.access(moved_script, os.X_OK))
+        self.assertEqual((self.project / "switchyard/stable.txt").read_text(), "local edit\n")
+        self.assertEqual((self.project / "switchyard/scripts/deleted-upstream.txt").read_text(),
+                         "local version\n")
+        self.assertTrue(untracked.exists())
+        self.assertEqual(sorted(path.name for path in legacy_root.iterdir()), ["SKILL.md", "untracked.txt"])
+        self.assertEqual((legacy_root / "SKILL.md").read_bytes(),
+                         (self.source / ".claude/skills/work-issues/SKILL.md").read_bytes())
+        self.assertEqual((self.project / VERSION).read_text(), "0.7.0\n")
+        self.assertFalse((legacy_root / "VERSION").exists())
+        self.git(self.project, "add", "-A")
+        self.git(self.project, "commit", "-qm", "migration applied")
+        second = self.run_update("--to", "0.7.0")
+        self.assertEqual(second.returncode, 0, second.stdout.decode() + second.stderr.decode())
+        self.assertIn(b"Already at 0.7.0", second.stdout)
+
+    def test_legacy_migration_keeps_conflict_at_new_path(self) -> None:
+        legacy_files, _ = self.make_legacy_and_new_releases()
+        self.make_legacy_project(legacy_files,
+                                 role_edit=b"local first\nstable line\nlast line\n")
+        role = self.project / ".claude/skills/work-issues/roles/planner.md"
+        role.write_bytes(b"first line\nstable line\nlocal last line\n")
+        self.git(self.project, "add", "-A")
+        self.git(self.project, "commit", "-qm", "same line edit")
+        result = self.run_update("--to", "0.7.0")
+        self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
+        merged = (self.project / "switchyard/roles/planner.md").read_text()
+        self.assertIn("<<<<<<< yours", merged)
+        self.assertIn("local last line", merged)
+        self.assertIn("new last line", merged)
+        self.assertFalse(role.exists())
+
+    def test_new_layout_to_new_layout_does_not_migrate_compat_files(self) -> None:
+        compat = ".claude/skills/work-issues/update-paths.txt"
+        self.source.joinpath(compat).write_bytes(b"compat base\n")
+        self.source.joinpath(".claude/skills/work-issues/SKILL.md").parent.mkdir(parents=True, exist_ok=True)
+        self.source.joinpath(".claude/skills/work-issues/SKILL.md").write_bytes(b"same stub\n")
+        self.commit(self.source, "add compat files to base")
+        self.git(self.source, "tag", "-f", "v0.1.0")
+        self.make_target({
+            "switchyard/workflow.txt": b"first line\nstable line\nnext release\n",
+            compat: b"compat target\n",
+            ".claude/skills/work-issues/SKILL.md": b"same stub\n",
+        })
+        self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                                 compat: b"local compat\n",
+                                 ".claude/skills/work-issues/SKILL.md": b"local stub\n"})
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertEqual((self.project / compat).read_bytes(), b"local compat\n")
+        self.assertEqual((self.project / ".claude/skills/work-issues/SKILL.md").read_bytes(), b"local stub\n")
+        self.assertNotIn(b".claude/skills/work-issues/SKILL.md", result.stdout)
+        self.assertNotIn(b".claude/skills/work-issues/update-paths.txt", result.stdout)
+        self.assertFalse((self.project / "switchyard/workflow.txt").read_bytes().endswith(b"last line\n"))
+
+    def test_legacy_migration_refuses_partial_layout_and_active_records(self) -> None:
+        legacy_files, _ = self.make_legacy_and_new_releases()
+        self.make_legacy_project(legacy_files)
+        partial = self.project / "switchyard/partial.txt"
+        partial.parent.mkdir()
+        partial.write_text("keep\n")
+        before = partial.read_bytes()
+        status_before = self.git(self.project, "status", "--porcelain").stdout
+        result = self.run_update("--to", "0.7.0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"already has files under switchyard/", result.stderr)
+        self.assertEqual(partial.read_bytes(), before)
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, status_before)
+
+        shutil.rmtree(self.project / "switchyard")
+        record = self.project / ".claude/state/59.json"
+        record.parent.mkdir(parents=True)
+        record.write_text('{"issue":"59"}\n')
+        status_before = self.git(self.project, "status", "--porcelain").stdout
+        result = self.run_update("--to", "0.7.0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"issues still have records", result.stderr)
+        self.assertIn(b"59", result.stderr)
+        self.assertTrue(record.exists())
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, status_before)
+
+    def test_legacy_version_fallback_and_ambiguous_versions(self) -> None:
+        legacy_files, _ = self.make_legacy_and_new_releases()
+        self.make_legacy_project(legacy_files)
+        result = self.run_update("--to", "0.7.0")
+        self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
+        self.assertEqual((self.project / VERSION).read_text(), "0.7.0\n")
+
+        self.project = self.root / "both-version-project"
+        self.make_project(files={f".claude/skills/work-issues/VERSION": b"0.6.0\n"})
+        result = self.run_update("--to", "0.7.0")
+        self.assert_refused_clean(result, "both switchyard/VERSION and .claude/skills/work-issues/VERSION exist")
+
+    def test_install_refuses_legacy_version_with_its_path(self) -> None:
+        self.make_target()
+        self.make_project(files={".claude/skills/work-issues/VERSION": b"0.6.0\n"}, version=None)
+        result = self.run_update("--install")
+        self.assert_refused_clean(result, ".claude/skills/work-issues/VERSION already names 0.6.0")
+
+    def test_compat_paths_line_stops_old_updaters(self) -> None:
+        compat = Path(__file__).parents[2] / ".claude/skills/work-issues/update-paths.txt"
+        lines = compat.read_text().splitlines()
+        paths = [line for line in lines if line.strip() and not line.lstrip().startswith("#")]
+        self.assertEqual(len(paths), 1)
+        self.assertIn("..", Path(paths[0]).parts)
+        self.assertNotIn("#", paths[0])
 
     def test_local_directory_and_symlink_are_refused(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"changed\n"})
+        self.make_target({"switchyard/workflow.txt": b"changed\n"})
         for kind in ("directory", "symlink"):
             with self.subTest(kind=kind):
                 self.make_project()
-                path = self.project / ".claude/skills/work-issues/workflow.txt"
+                path = self.project / "switchyard/workflow.txt"
                 path.unlink()
                 if kind == "directory":
                     path.mkdir()
@@ -433,33 +632,33 @@ class UpdateSwitchyardTests(unittest.TestCase):
                 shutil.rmtree(self.project)
 
     def test_symlinked_parent_is_refused(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"changed\n"})
+        self.make_target({"switchyard/workflow.txt": b"changed\n"})
         self.make_project()
-        claude = self.project / ".claude"
-        saved = self.root / "claude-directory"
-        claude.rename(saved)
-        claude.symlink_to(saved, target_is_directory=True)
+        workflow = self.project / "switchyard"
+        saved = self.root / "workflow-directory"
+        workflow.rename(saved)
+        workflow.symlink_to(saved, target_is_directory=True)
         self.commit(self.project, "replace workflow directory with symlink")
         result = self.run_update()
         self.assertEqual(result.returncode, 2)
         self.assertIn(b"not a real directory", result.stderr)
-        self.assertEqual((saved / "skills/work-issues/workflow.txt").read_bytes(),
-                         DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"])
+        self.assertEqual((saved / "workflow.txt").read_bytes(),
+                         DEFAULT_FILES["switchyard/workflow.txt"])
 
     def test_binary_merge_refuses_before_writing_other_files(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"other changed\n",
+        self.make_target({"switchyard/workflow.txt": b"other changed\n",
                           ".claude/agents/worker.md": b"\0upstream\n"})
         self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
                                  ".claude/agents/worker.md": b"\0local\n"})
-        before = (self.project / ".claude/skills/work-issues/workflow.txt").read_bytes()
+        before = (self.project / "switchyard/workflow.txt").read_bytes()
         result = self.run_update()
         self.assertEqual(result.returncode, 2)
         self.assertIn(b"cannot merge", result.stderr)
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(), before)
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), before)
         self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
 
     def test_version_prefixes_and_project_tags_are_unchanged(self) -> None:
-        self.make_target({".claude/skills/work-issues/workflow.txt": b"first line\nstable line\nupdated\n"})
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nupdated\n"})
         self.make_project(own_tag=True)
         other = self.root / "project-without-v"
         subprocess.run(["git", "clone", "--quiet", str(self.project), str(other)], check=True,
@@ -472,12 +671,12 @@ class UpdateSwitchyardTests(unittest.TestCase):
         after = self.git(self.project, "for-each-ref", "--format=%(refname):%(objectname)").stdout
         self.assertEqual(before, after)
         expected = b"first line\nstable line\nupdated\n"
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(), expected)
-        self.assertEqual((other / ".claude/skills/work-issues/workflow.txt").read_bytes(), expected)
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), expected)
+        self.assertEqual((other / "switchyard/workflow.txt").read_bytes(), expected)
 
     def test_non_regular_upstream_entry_is_refused(self) -> None:
         self.make_target()
-        link = self.source / ".claude/skills/work-issues/link"
+        link = self.source / "switchyard/link"
         link.symlink_to("workflow.txt")
         self.commit(self.source, "symlink")
         self.tag(self.source, "v0.3.0")
@@ -492,16 +691,16 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.make_project(files={"README.md": b"mine\n"}, version=None)
         result = self.run_update("--install")
         self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
-        for path in (".claude/agents/worker.md", ".claude/skills/work-issues/workflow.txt", PATHS,
+        for path in (".claude/agents/worker.md", "switchyard/workflow.txt", PATHS,
                      ".github/ISSUE_TEMPLATE/issue.yml", ".github/workflows/switchyard.yml",
                      "AGENTS.md", ".gitignore", "openspec/config.yaml"):
             self.assertIn(("added: " + path).encode(), result.stdout, path)
-        self.assertIn(b"added: 8", result.stdout)
+        self.assertIn(b"added: 9", result.stdout)
         self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
         self.assertEqual((self.project / "README.md").read_bytes(), b"mine\n")
         self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
         self.assertEqual((self.project / ".gitignore").read_bytes(),
-                         b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+                         b".switchyard/\n")
         self.assertEqual((self.project / "openspec/config.yaml").read_bytes(),
                          b"schema: spec-driven\n\n"
                          b"rules:\n"
@@ -539,7 +738,7 @@ class UpdateSwitchyardTests(unittest.TestCase):
         self.assertIn(b"merged: openspec/config.yaml", result.stdout)
         self.assertIn(b"merged: AGENTS.md", result.stdout)
         self.assertEqual((self.project / ".gitignore").read_bytes(),
-                         b"node_modules/\n.env\n.claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+                         b"node_modules/\n.env\n.switchyard/\n")
         self.assertEqual((self.project / "openspec/config.yaml").read_bytes(),
                          b"schema: spec-driven\n"
                          b"context: |\n"
@@ -561,12 +760,12 @@ class UpdateSwitchyardTests(unittest.TestCase):
 
     def test_install_gitignore_adds_only_missing_lines(self) -> None:
         self.make_target()
-        self.make_project(files={".gitignore": b".claude/*\n"}, version=None)
+        self.make_project(files={".gitignore": b".env\n"}, version=None)
         result = self.run_update("--install")
         self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
         self.assertIn(b"merged: .gitignore", result.stdout)
         self.assertEqual((self.project / ".gitignore").read_bytes(),
-                         b".claude/*\n!.claude/skills/\n!.claude/commands/\n!.claude/agents/\n")
+                         b".env\n.switchyard/\n")
 
     def test_install_agents_conflict_keeps_local_content(self) -> None:
         self.make_target()
@@ -623,23 +822,23 @@ class UpdateSwitchyardTests(unittest.TestCase):
     def test_install_existing_ordinary_file_conflicts(self) -> None:
         self.make_target()
         self.make_project(files={"README.md": b"mine\n",
-                                 ".claude/skills/work-issues/workflow.txt": b"local hook\n"}, version=None)
+                                 "switchyard/workflow.txt": b"local hook\n"}, version=None)
         result = self.run_update("--install")
         self.assertEqual(result.returncode, 1, result.stdout.decode() + result.stderr.decode())
-        self.assertIn(b"conflict: .claude/skills/work-issues/workflow.txt", result.stdout)
-        text = (self.project / ".claude/skills/work-issues/workflow.txt").read_bytes()
+        self.assertIn(b"conflict: switchyard/workflow.txt", result.stdout)
+        text = (self.project / "switchyard/workflow.txt").read_bytes()
         for marker in (b"<<<<<<< yours", b"local hook", b"first line", b">>>>>>> switchyard 0.2.0"):
             self.assertIn(marker, text)
 
     def test_install_identical_ordinary_file_is_silent(self) -> None:
         self.make_target()
-        self.make_project(files={".claude/skills/work-issues/workflow.txt":
-                                 DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"]}, version=None)
+        self.make_project(files={"switchyard/workflow.txt":
+                                 DEFAULT_FILES["switchyard/workflow.txt"]}, version=None)
         result = self.run_update("--install")
         self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
         self.assertNotIn(b"workflow.txt", result.stdout)
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(),
-                         DEFAULT_FILES[".claude/skills/work-issues/workflow.txt"])
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(),
+                         DEFAULT_FILES["switchyard/workflow.txt"])
 
     def test_install_refusals(self) -> None:
         self.make_target()
@@ -686,7 +885,7 @@ class UpdateSwitchyardTests(unittest.TestCase):
         result = self.run_update("--install", "--to", "0.1.0")
         self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())
         self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
-        self.assertEqual((self.project / ".claude/skills/work-issues/workflow.txt").read_bytes(),
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(),
                          b"first line\nstable line\nlast line\n")
         self.assertEqual((self.project / "AGENTS.md").read_bytes(), RELEASE_AGENTS)
         self.project = self.root / "versionless-project"
@@ -701,7 +900,7 @@ class UpdateSwitchyardTests(unittest.TestCase):
         subprocess.run(["git", "clone", "--quiet", str(self.source), str(clone)], check=True,
                        env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         result = subprocess.run(
-            ["python3", "../switchyard/.claude/skills/work-issues/scripts/update-switchyard.py",
+            ["python3", "../switchyard/switchyard/scripts/update-switchyard.py",
              "--install", "--source", "../switchyard"],
             cwd=self.project, env=self.env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.assertEqual(result.returncode, 0, result.stdout.decode() + result.stderr.decode())

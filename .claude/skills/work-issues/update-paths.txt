@@ -1,7 +1,2 @@
-.claude/agents
-.claude/skills/work-issues
-.github/ISSUE_TEMPLATE
-.github/workflows/switchyard.yml
-.gitignore
-AGENTS.md
-openspec/config.yaml
+# Read by Switchyard 0.6.0 and older updaters. Keep it.
+../ Switchyard moved the workflow to switchyard/. Update once with the new updater from a Switchyard checkout. See "Take a later release" in its README.
