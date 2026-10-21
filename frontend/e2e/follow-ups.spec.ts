@@ -117,16 +117,15 @@ test.describe('Follow-ups', () => {
     const marker = `Recipient ${Date.now()}`
     const title = await confirmFix(page, marker)
     await openFollowUp(page, title)
-    const recipient = detail(page).getByRole('combobox', { name: 'Recipient' })
+    await detail(page)
+      .getByRole('combobox', { name: /^Recipient:/ })
+      .click()
     await expect(
-      recipient
-        .locator('option')
-        .filter({ hasText: '(no Slack link)' })
-        .first(),
-    ).toBeDisabled()
+      page.getByRole('option').filter({ hasText: '(no Slack link)' }).first(),
+    ).toHaveAttribute('aria-disabled', 'true')
     await expect(
-      recipient.locator('option', { hasText: 'Owner' }).first(),
-    ).toBeEnabled()
+      page.getByRole('option', { name: /^Owner/ }).first(),
+    ).not.toHaveAttribute('aria-disabled', 'true')
   })
 
   test('delivers an approved fix to Slack and records the customer outcome', async ({

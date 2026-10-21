@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
+import { stubPickerDom } from '@/components/member-picker/test-support'
 import type { ProblemListItem } from '@/api/problems'
 import type { ReportDetail } from '@/api/reports'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
@@ -104,6 +105,9 @@ const accept =
   }
 
 const triage = () => screen.getByRole('region', { name: 'Triage' })
+const findTriage = () => screen.findByRole('region', { name: 'Triage' })
+
+beforeEach(stubPickerDom)
 
 test('offers actions that match the report state', async () => {
   stubReport(report)
@@ -436,21 +440,83 @@ test('shows the current report on a stale assignment and retries only on request
     },
   })
   renderWorkspaceRoutes(routes, '/inbox/rep-1')
-  await screen.findByRole('option', { name: 'Ada Lovelace' })
-  const select = within(triage()).getByLabelText('Assignee')
-  fireEvent.change(select, { target: { value: 'mem-2' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Save assignee' }))
+  const trigger = await within(await findTriage()).findByRole('combobox', {
+    name: 'Assignee: Unassigned',
+  })
+  await userEvent.click(trigger)
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Ada Lovelace' }),
+  )
   expect(
     await screen.findByText('The assignee was not changed'),
   ).toBeInTheDocument()
   expect(screen.getByText(/changed while you were working/)).toBeInTheDocument()
-  // The detail now shows the other member's decision; the draft is kept.
   expect(await screen.findByText('v5')).toBeInTheDocument()
-  expect(select).toHaveValue('mem-2')
+  // The failed save leaves the picker open, and the page shows the other
+  // member's decision.
+  expect(screen.getByRole('listbox')).toBeInTheDocument()
+  expect(
+    within(triage()).getByRole('combobox', { name: 'Assignee: Grace Hopper' }),
+  ).toBeInTheDocument()
   expect(sent).toHaveLength(1)
-  fireEvent.click(screen.getByRole('button', { name: 'Save assignee' }))
+  await userEvent.click(screen.getByRole('option', { name: 'Ada Lovelace' }))
   await waitFor(() => expect(sent).toHaveLength(2))
   expect(sent[1].body).toEqual({ expected_version: 5, assignee_id: 'mem-2' })
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+})
+
+test('shows the cancelled-notification warning before the member chooses', async () => {
+  stubReport(report, {})
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  await within(await findTriage()).findByRole('combobox', {
+    name: 'Assignee: Unassigned',
+  })
+  const warning = /cancels any unsent employee notification/
+  expect(within(triage()).getByText(warning)).toBeVisible()
+  await userEvent.click(
+    within(triage()).getByRole('combobox', { name: 'Assignee: Unassigned' }),
+  )
+  expect(await screen.findAllByText(warning)).toHaveLength(2)
+  expect(
+    screen.queryByRole('button', { name: 'Save assignee' }),
+  ).not.toBeInTheDocument()
+})
+
+test('shows a new assignee before the save returns and restores it on failure', async () => {
+  let release: () => void = () => {}
+  const { sent } = stubReport(report, {
+    assign: async () => {
+      await new Promise<void>((resolve) => (release = resolve))
+      return json({ detail: 'Unavailable' }, 503)
+    },
+  })
+  renderWorkspaceRoutes(routes, '/inbox/rep-1')
+  await userEvent.click(
+    await within(await findTriage()).findByRole('combobox', {
+      name: 'Assignee: Unassigned',
+    }),
+  )
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Ada Lovelace' }),
+  )
+  expect(
+    await within(await findTriage()).findByRole('combobox', {
+      name: 'Assignee: Ada Lovelace',
+    }),
+  ).toBeInTheDocument()
+  // A second choice is blocked while the save runs.
+  expect(screen.getByRole('option', { name: 'Grace Hopper' })).toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
+  release()
+  expect(
+    await screen.findByText('The assignee was not changed'),
+  ).toBeInTheDocument()
+  expect(
+    within(triage()).getByRole('combobox', { name: 'Assignee: Unassigned' }),
+  ).toBeInTheDocument()
+  expect(sent).toHaveLength(1)
 })
 
 test('keeps the new problem draft on network and field errors', async () => {

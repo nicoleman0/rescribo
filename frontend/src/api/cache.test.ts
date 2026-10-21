@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 import { expect, test } from 'vitest'
-import { applyProblem, applyReport } from './cache'
+import { applyProblem, applyReport, patchReport } from './cache'
 import { problemKeys, type ProblemDetail } from './problems'
 import { reportKeys, type ReportDetail } from './reports'
 
@@ -64,4 +64,28 @@ test('a report change updates its copy in cached problem report pages', () => {
   expect(
     client.getQueryData<{ results: ReportDetail[] }>(key)?.results,
   ).toEqual([fresh, other])
+})
+
+test('patchReport rewrites every report copy and undo restores them', () => {
+  const client = new QueryClient()
+  const report = { id: 'rep-1', version: 1, title: 'a' } as ReportDetail
+  const other = { id: 'rep-2', version: 1, title: 'b' } as ReportDetail
+  const pageKey = problemKeys.reports('ws-1', 'p', 1)
+  client.setQueryData(reportKeys.detail('ws-1', 'rep-1'), report)
+  client.setQueryData(pageKey, { results: [report, other] })
+  const undo = patchReport(client, 'ws-1', 'rep-1', (r) => ({
+    ...r,
+    title: 'z',
+  }))
+  expect(client.getQueryData(reportKeys.detail('ws-1', 'rep-1'))).toMatchObject(
+    { title: 'z' },
+  )
+  expect(client.getQueryData(pageKey)).toEqual({
+    results: [{ ...report, title: 'z' }, other],
+  })
+  undo()
+  expect(client.getQueryData(reportKeys.detail('ws-1', 'rep-1'))).toEqual(
+    report,
+  )
+  expect(client.getQueryData(pageKey)).toEqual({ results: [report, other] })
 })

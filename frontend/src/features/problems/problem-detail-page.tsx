@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   assignProblemOwner,
   confirmProblemFix,
@@ -25,7 +26,7 @@ import {
   useWorkspace,
 } from '@/components/auth/use-workspace'
 import { fieldError } from '@/components/forms/field-error'
-import { Field, SelectField, TextareaField } from '@/components/forms/field'
+import { Field, TextareaField } from '@/components/forms/field'
 import { PageTitle } from '@/components/layout/page-title'
 import { ActionError } from '@/components/states/action-error'
 import {
@@ -54,6 +55,10 @@ import {
   ProblemStateBadge,
 } from './problem-state'
 import { GitHubIssueSection } from './github-issue-section'
+import {
+  MemberPicker,
+  MemberPickerError,
+} from '@/components/member-picker/member-picker'
 import { ReportAssigneeEditor } from './report-assignee-editor'
 import { ReleasePicker } from './release-picker'
 import { useProblemMutation } from './use-problem-mutation'
@@ -530,58 +535,7 @@ function OwnerCard({
   workspaceId: string
   problem: ProblemDetail
 }) {
-  const id = useId()
-  const [editing, setEditing] = useState(false)
-  return (
-    <div className={problemCard}>
-      <div className="flex items-center justify-between gap-2">
-        <h2 className={problemCardHeading}>Owner</h2>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-
-          aria-expanded={editing}
-          aria-controls={editing ? id : undefined}
-          aria-label={editing ? 'Cancel changing the owner' : 'Change owner'}
-          onClick={() => setEditing(!editing)}
-        >
-          {editing ? 'Cancel' : 'Change'}
-        </Button>
-      </div>
-      {editing ? (
-        <div id={id}>
-          <OwnerForm
-            workspaceId={workspaceId}
-            problem={problem}
-            onSaved={() => setEditing(false)}
-          />
-        </div>
-      ) : (
-        <p className={!problem.owner ? 'text-muted-foreground' : ''}>
-          {problem.owner ? memberName(problem.owner) : 'No owner'}
-        </p>
-      )}
-    </div>
-  )
-}
-
-function OwnerForm({
-  workspaceId,
-  problem,
-  onSaved,
-}: {
-  workspaceId: string
-  problem: ProblemDetail
-  onSaved: () => void
-}) {
-  const id = useId()
   const members = useMembers(workspaceId)
-  const saved = problem.owner?.id ?? ''
-  // Follow the server value until the member picks one; keep their pick
-  // through failures and conflicts.
-  const [choice, setChoice] = useState<string | null>(null)
-  const owner = choice ?? saved
   const mutation = useProblemMutation(
     workspaceId,
     (ownerId: string) =>
@@ -589,60 +543,45 @@ function OwnerForm({
         expected_version: problem.version,
         owner_id: ownerId || null,
       }),
-    () => {
-      setChoice(null)
-      onSaved()
+    (saved) =>
+      toast.success(
+        saved.owner ? `Owner set to ${memberName(saved.owner)}` : 'No owner',
+      ),
+    {
+      problemId: problem.id,
+      patch: (copy, ownerId) => ({
+        ...copy,
+        owner: ownerId
+          ? (members.data?.find((member) => member.id === ownerId) ??
+            (copy.owner?.id === ownerId ? copy.owner : null))
+          : null,
+      }),
     },
   )
-  const current = problem.owner
-  const currentIsListed =
-    !current || members.data?.some((member) => member.id === current.id)
-
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    mutation.mutate(owner)
-  }
-
   return (
-    <form className="grid gap-2" onSubmit={submit} noValidate>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-40 flex-1">
-          <SelectField
-            id={`${id}-owner`}
-            label="Owner"
-            value={owner}
-            disabled={mutation.isPending}
-            error={fieldError(mutation.error, 'owner_id')}
-            onChange={(event) => setChoice(event.target.value)}
-          >
-            <option value="">No owner</option>
-            {members.data?.map((member) => (
-              <option key={member.id} value={member.id}>
-                {memberName(member)}
-              </option>
-            ))}
-            {currentIsListed ? null : (
-              <option value={current.id}>{memberName(current)}</option>
-            )}
-          </SelectField>
-        </div>
-        <Button
-          type="submit"
-          variant="outline"
-          className="h-9"
-          disabled={mutation.isPending || owner === saved}
-        >
-          {mutation.isPending ? 'Saving…' : 'Save owner'}
-        </Button>
-      </div>
-      {mutation.isError ? (
-        <ActionError
-          error={mutation.error}
-          title="The owner was not changed"
-          record="problem"
-        />
-      ) : null}
-    </form>
+    <div className={problemCard}>
+      <h2 className={problemCardHeading}>Owner</h2>
+      <MemberPicker
+        label="Owner"
+        value={problem.owner?.id ?? ''}
+        current={problem.owner}
+        members={members}
+        emptyLabel="No owner"
+        pending={mutation.isPending}
+        triggerVariant="ghost"
+        triggerClassName="w-fit max-w-full"
+        onChoose={(ownerId) => mutation.mutateAsync(ownerId)}
+        onClose={() => mutation.reset()}
+        error={
+          <MemberPickerError
+            error={mutation.error}
+            field="owner_id"
+            title="The owner was not changed"
+            record="problem"
+          />
+        }
+      />
+    </div>
   )
 }
 

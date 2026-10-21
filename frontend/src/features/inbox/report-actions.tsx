@@ -1,4 +1,5 @@
 import { useId, useRef, useState, type FormEvent, type RefObject } from 'react'
+import { toast } from 'sonner'
 import type { ProblemListItem } from '@/api/problems'
 import {
   assignReport,
@@ -9,9 +10,12 @@ import {
 } from '@/api/reports'
 import { fieldError } from '@/components/forms/field-error'
 import { Field, SelectField, TextareaField } from '@/components/forms/field'
+import {
+  MemberPicker,
+  MemberPickerError,
+} from '@/components/member-picker/member-picker'
 import { ConfirmPanel } from '@/components/confirm/confirm-panel'
 import { ActionError } from '@/components/states/action-error'
-import { ErrorState } from '@/components/states/async-states'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { ProblemPicker } from '@/features/problems/problem-picker'
@@ -69,26 +73,29 @@ export function ReportTriage({
         report={report}
         onDone={() => heading.current?.focus()}
       />
-      <AssignReportForm workspaceId={workspaceId} report={report} />
+      <ReportAssigneePicker workspaceId={workspaceId} report={report} />
     </section>
   )
 }
 
-/** Assign or clear the member responsible for a report. */
-export function AssignReportForm({
+const assigneeWarning =
+  'A new assignee cancels any unsent employee notification prepared for this report. It does not notify anyone or record customer contact.'
+
+/** Assign or clear the member responsible for a report. Saves on choice.
+ * `ghost` reads as text, for a row; `outline` stands alone with its warning
+ * under it. The warning is also in the open picker, before the choice. */
+export function ReportAssigneePicker({
   workspaceId,
   report,
+  variant = 'outline',
+  triggerClassName,
 }: {
   workspaceId: string
   report: ReportDetail
+  variant?: 'outline' | 'ghost'
+  triggerClassName?: string
 }) {
-  const id = useId()
   const members = useMembers(workspaceId)
-  const saved = report.assignee?.id ?? ''
-  // Follow the server value until the member picks one; keep their pick
-  // through failures and conflicts.
-  const [choice, setChoice] = useState<string | null>(null)
-  const assignee = choice ?? saved
   const mutation = useReportMutation(
     workspaceId,
     (assigneeId: string) =>
@@ -96,69 +103,53 @@ export function AssignReportForm({
         expected_version: report.version,
         assignee_id: assigneeId || null,
       }),
-    () => setChoice(null),
+    (saved) =>
+      toast.success(
+        saved.assignee
+          ? `Assigned to ${memberName(saved.assignee)}`
+          : 'Unassigned',
+      ),
+    {
+      reportId: report.id,
+      patch: (copy, assigneeId) => ({
+        ...copy,
+        assignee: assigneeId
+          ? (members.data?.find((member) => member.id === assigneeId) ??
+            (copy.assignee?.id === assigneeId ? copy.assignee : null))
+          : null,
+      }),
+    },
   )
-  const current = report.assignee
-  const currentIsListed =
-    !current || members.data?.some((member) => member.id === current.id)
-
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    mutation.mutate(assignee)
-  }
-
-  return (
-    <form className="grid gap-2" onSubmit={submit} noValidate>
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-48 flex-1">
-          <SelectField
-            id={`${id}-assignee`}
-            label="Assignee"
-            value={assignee}
-            disabled={mutation.isPending}
-            error={fieldError(mutation.error, 'assignee_id')}
-            onChange={(event) => setChoice(event.target.value)}
-          >
-            <option value="">Unassigned</option>
-            {members.data?.map((member) => (
-              <option key={member.id} value={member.id}>
-                {memberName(member)}
-              </option>
-            ))}
-            {currentIsListed ? null : (
-              <option value={current.id}>{memberName(current)}</option>
-            )}
-          </SelectField>
-        </div>
-        <Button
-          type="submit"
-          variant="outline"
-          className="h-9"
-          disabled={mutation.isPending || assignee === saved}
-        >
-          {mutation.isPending ? 'Saving…' : 'Save assignee'}
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        A new assignee cancels any unsent employee notification prepared for
-        this report. It does not notify anyone or record customer contact.
-      </p>
-      {members.isError ? (
-        <ErrorState
-          title="Could not load members"
-          description="Retry to update the assignee choices."
-          onRetry={() => void members.refetch()}
-          isRetrying={members.isFetching}
-        />
-      ) : null}
-      {mutation.isError ? (
-        <ActionError
+  const picker = (
+    <MemberPicker
+      label={variant === 'ghost' ? `Assignee for ${report.title}` : 'Assignee'}
+      value={report.assignee?.id ?? ''}
+      current={report.assignee}
+      members={members}
+      emptyLabel="Unassigned"
+      note={assigneeWarning}
+      pending={mutation.isPending}
+      triggerVariant={variant}
+      triggerClassName={triggerClassName}
+      onChoose={(assigneeId) => mutation.mutateAsync(assigneeId)}
+      onClose={() => mutation.reset()}
+      error={
+        <MemberPickerError
           error={mutation.error}
+          field="assignee_id"
           title="The assignee was not changed"
           record="report"
         />
-      ) : null}
-    </form>
+      }
+    />
+  )
+  if (variant === 'ghost') return picker
+  return (
+    <div className="grid justify-items-start gap-2">
+      <span className="text-sm font-medium">Assignee</span>
+      {picker}
+      <p className="text-xs text-muted-foreground">{assigneeWarning}</p>
+    </div>
   )
 }
 

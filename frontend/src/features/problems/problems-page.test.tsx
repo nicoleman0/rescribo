@@ -1,6 +1,8 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { QueryClient } from '@tanstack/react-query'
-import { expect, test } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, expect, test } from 'vitest'
+import { stubPickerDom } from '@/components/member-picker/test-support'
 import type {
   ProblemActivity,
   ProblemDetail,
@@ -96,6 +98,8 @@ const listRoutes = [{ path: '/problems', element: <ProblemsPage /> }]
 const detailRoutes = [
   { path: '/problems/:problemId', element: <ProblemDetailPage /> },
 ]
+
+beforeEach(stubPickerDom)
 
 test('lists problems with owner, state, count, and review flag, and searches', async () => {
   const queries: string[] = []
@@ -272,12 +276,16 @@ test('shows compact linked reports and a readable activity history', async () =>
   expect(row).toHaveTextContent('Linked')
   expect(row).toHaveTextContent('Acme')
   expect(row).toHaveTextContent('Slack message by Sam')
-  expect(row).toHaveTextContent('Assignee: Unassigned')
+  expect(
+    within(row).getByRole('combobox', {
+      name: 'Assignee for Acme cannot export: Unassigned',
+    }),
+  ).toBeInTheDocument()
   // The captured message and its link stay on the report page.
   expect(row).not.toHaveTextContent('Export is broken')
   expect(within(row).getAllByRole('link')).toHaveLength(1)
   expect(screen.queryByRole('region', { name: 'Provenance' })).toBeNull()
-  expect(within(row).queryByLabelText('Assignee')).toBeNull()
+  expect(within(row).queryByRole('listbox')).toBeNull()
 
   const history = await screen.findByRole('list', { name: 'Problem activity' })
   const entries = within(history).getAllByRole('listitem')
@@ -532,7 +540,7 @@ test('groups a batch of links into one entry that lists each report', async () =
   }
 })
 
-test('changes the owner on demand and keeps the form open after a failed save', async () => {
+test('sets the owner by choosing and keeps the picker open after a failed save', async () => {
   document.cookie = 'csrftoken=csrf-token'
   const server = { problem: detail, saves: 0 }
   stubApi({
@@ -549,31 +557,54 @@ test('changes the owner on demand and keeps the form open after a failed save', 
     },
   })
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
-  expect(await screen.findByText('No owner')).toBeInTheDocument()
-  const change = screen.getByRole('button', { name: 'Change owner' })
-  fireEvent.click(change)
-  expect(change).toHaveAttribute('aria-expanded', 'true')
-  const select = screen.getByLabelText('Owner')
-  await within(select).findByRole('option', { name: 'Ada Lovelace' })
-  fireEvent.change(select, { target: { value: 'mem-2' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Save owner' }))
+  const trigger = await screen.findByRole('combobox', {
+    name: 'Owner: No owner',
+  })
+  await userEvent.click(trigger)
+  expect(trigger).toHaveAttribute('aria-expanded', 'true')
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Ada Lovelace' }),
+  )
   expect(
     await screen.findByText('The owner was not changed'),
   ).toBeInTheDocument()
-  expect(screen.getByLabelText('Owner')).toHaveValue('mem-2')
+  // The failed save restores the owner and leaves the picker open.
+  expect(
+    screen.getByRole('combobox', { name: 'Owner: No owner' }),
+  ).toBeVisible()
+  expect(screen.getByRole('listbox')).toBeInTheDocument()
 
-  fireEvent.click(screen.getByRole('button', { name: 'Save owner' }))
-  await waitFor(() =>
-    expect(screen.queryByLabelText('Owner')).not.toBeInTheDocument(),
-  )
-  expect(screen.getByText('Ada Lovelace')).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Change owner' })).toHaveAttribute(
-    'aria-expanded',
-    'false',
-  )
+  await userEvent.click(screen.getByRole('option', { name: 'Ada Lovelace' }))
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+  expect(
+    screen.getByRole('combobox', { name: 'Owner: Ada Lovelace' }),
+  ).toBeInTheDocument()
 })
 
-test('reassigns a linked report from its row and keeps a failed save open until Done', async () => {
+test('clears the owner with the No owner choice', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  const bodies: unknown[] = []
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`GET ${base}/members/`]: () => json([ada]),
+    [`GET ${base}/problems/prob-1/`]: () => json({ ...detail, owner: ada }),
+    [`GET ${base}/problems/prob-1/reports/`]: () => page([linkedReport]),
+    [`GET ${base}/problems/prob-1/activity/`]: () => page([]),
+    [`POST ${base}/problems/prob-1/assign-owner/`]: (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)))
+      return json({ ...detail, owner: null, version: 3 })
+    },
+  })
+  renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Owner: Ada Lovelace' }),
+  )
+  await userEvent.click(await screen.findByRole('option', { name: 'No owner' }))
+  await waitFor(() => expect(bodies).toHaveLength(1))
+  expect(bodies[0]).toMatchObject({ owner_id: null })
+})
+
+test('reassigns a linked report from its row and keeps a failed save open', async () => {
   document.cookie = 'csrftoken=csrf-token'
   const server = { report: linkedReport, saves: 0 }
   stubApi({
@@ -591,36 +622,28 @@ test('reassigns a linked report from its row and keeps a failed save open until 
   })
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
   const reports = await screen.findByRole('list', { name: 'Linked reports' })
-  const change = within(reports).getByRole('button', {
-    name: 'Change the assignee for Acme cannot export',
-  })
-  fireEvent.click(change)
-  const select = within(reports).getByLabelText('Assignee')
-  await within(select).findByRole('option', { name: 'Ada Lovelace' })
-  fireEvent.change(select, { target: { value: 'mem-2' } })
-  fireEvent.click(
-    within(reports).getByRole('button', { name: 'Save assignee' }),
-  )
-  expect(
-    await within(reports).findByText('The assignee was not changed'),
-  ).toBeInTheDocument()
-  expect(within(reports).getByLabelText('Assignee')).toHaveValue('mem-2')
-
-  fireEvent.click(
-    within(reports).getByRole('button', { name: 'Save assignee' }),
-  )
-  expect(
-    await within(reports).findByText('Ada Lovelace', { selector: 'span' }),
-  ).toBeInTheDocument()
-  // Closing is the member's choice, so the form stays until Done.
-  expect(within(reports).getByLabelText('Assignee')).toHaveValue('mem-2')
-  fireEvent.click(
-    within(reports).getByRole('button', {
-      name: 'Done changing the assignee for Acme cannot export',
+  await userEvent.click(
+    within(reports).getByRole('combobox', {
+      name: 'Assignee for Acme cannot export: Unassigned',
     }),
   )
-  expect(within(reports).queryByLabelText('Assignee')).toBeNull()
-  expect(within(reports).getByRole('listitem')).toHaveTextContent(
-    'Assignee: Ada Lovelace',
+  // The warning is visible before anyone is chosen.
+  expect(
+    await screen.findByText(/cancels any unsent employee notification/),
+  ).toBeVisible()
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Ada Lovelace' }),
   )
+  expect(
+    await screen.findByText('The assignee was not changed'),
+  ).toBeInTheDocument()
+  expect(screen.getByRole('listbox')).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('option', { name: 'Ada Lovelace' }))
+  await waitFor(() => expect(screen.queryByRole('listbox')).toBeNull())
+  expect(
+    within(reports).getByRole('combobox', {
+      name: 'Assignee for Acme cannot export: Ada Lovelace',
+    }),
+  ).toBeInTheDocument()
 })

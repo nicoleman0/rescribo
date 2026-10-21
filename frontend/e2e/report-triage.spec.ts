@@ -190,22 +190,38 @@ test.describe('Report triage', () => {
     await expect(activity(page)).toContainText(slackTitle)
     await expect(activity(page)).toContainText(manualTitle)
 
-    // Assign, then reassign, from problem detail; both survive a reload.
-    await manualItem
-      .getByRole('button', { name: `Change the assignee for ${manualTitle}` })
-      .click()
-    const assignee = manualItem.getByLabel('Assignee', { exact: true })
-    await assignee.selectOption({ label: 'Member' })
-    await manualItem.getByRole('button', { name: 'Save assignee' }).click()
+    // Assign, then reassign, from problem detail by choosing; both survive a
+    // reload. The first toast is checked with reduced motion on.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    const assigneeTrigger = manualItem.getByRole('combobox', {
+      name: new RegExp(`^Assignee for ${manualTitle}`),
+    })
+    await assigneeTrigger.click()
     await expect(
-      manualItem.getByRole('button', { name: 'Save assignee' }),
-    ).toBeDisabled()
+      page.getByText(/cancels any unsent employee notification/).first(),
+    ).toBeVisible()
+    await page
+      .getByRole('option', { name: 'Member', exact: true })
+      .first()
+      .click()
+    await expect(assigneeTrigger).toHaveAccessibleName(/: Member$/)
+    const toast = page.locator('[data-sonner-toast]').first()
+    await expect(toast).toContainText('Assigned to Member')
+    expect(
+      await toast.evaluate((element) => ({
+        running: element.getAnimations().length,
+        transition: getComputedStyle(element).transitionDuration,
+      })),
+    ).toEqual({ running: 0, transition: '0s' })
     await expect(activity(page)).toContainText(
       `assigned ${manualTitle} to Member`,
     )
-    // The member list order is not defined, so reassign by label, not index.
-    await assignee.selectOption({ label: 'Owner' })
-    await manualItem.getByRole('button', { name: 'Save assignee' }).click()
+    // The member list order is not defined, so choose by name, not index.
+    await assigneeTrigger.click()
+    await page
+      .getByRole('option', { name: 'Owner', exact: true })
+      .first()
+      .click()
     await expect(activity(page)).toContainText(
       `assigned ${manualTitle} to Owner`,
     )
@@ -215,7 +231,7 @@ test.describe('Report triage', () => {
       linkedReports(page)
         .getByRole('listitem')
         .filter({ hasText: manualTitle }),
-    ).toContainText('Assignee: Owner')
+    ).toContainText('Owner')
     await expect(
       linkedReports(page).getByRole('listitem').filter({ hasText: slackTitle }),
     ).toContainText('Slack message by Synthetic Author')
@@ -422,18 +438,17 @@ test.describe('Report triage', () => {
         'document.documentElement.scrollWidth > window.innerWidth',
       )
     expect(await overflow()).toBe(false)
-    await page.getByRole('button', { name: 'Change owner' }).click()
-    await page
-      .getByRole('button', { name: `Change the assignee for ${title}` })
-      .click()
-    for (const name of [
-      'Edit title and summary',
-      'Cancel changing the owner',
-      'Save owner',
-      `Done changing the assignee for ${title}`,
-      'Save assignee',
-    ]) {
+    for (const name of ['Edit title and summary']) {
       await expectTouchTarget(page.getByRole('button', { name }).first())
+    }
+    for (const name of [/^Owner:/, new RegExp(`^Assignee for ${title}`)]) {
+      const trigger = page.getByRole('combobox', { name })
+      await expectTouchTarget(trigger)
+      await trigger.click()
+      await expectTouchTarget(page.getByRole('option').first())
+      expect(await overflow()).toBe(false)
+      await page.keyboard.press('Escape')
+      await expect(trigger).toBeFocused()
     }
     expect(await overflow()).toBe(false)
     await page.getByRole('link', { name: title }).last().click()
