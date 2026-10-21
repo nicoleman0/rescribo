@@ -316,6 +316,11 @@ test('the demo explains that integrations are disabled', async () => {
     expect(notice).toHaveTextContent('Nothing is sent to Slack or GitHub.')
     expect(await screen.findAllByText('Disabled in demo')).toHaveLength(2)
     expect(screen.queryByText('UDEMO')).not.toBeInTheDocument()
+    render('/settings/slack-account')
+    expect(
+      await screen.findByText(/Your Slack account is linked/),
+    ).toBeVisible()
+    expect(screen.queryByText('UDEMO')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Unlink Slack account' }),
     ).not.toBeInTheDocument()

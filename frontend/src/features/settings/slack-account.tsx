@@ -12,8 +12,8 @@ import {
   ReadyState,
 } from '@/components/states/async-states'
 import { useSettingsAction } from './use-settings-action'
-import { formatTime } from '@/features/inbox/report-format'
-import { formatDate } from '@/features/inbox/report-format'
+import { formatDate, formatTime } from '@/features/inbox/report-format'
+import { TechnicalDetails } from './technical-details'
 
 /** The signed-in member's own Slack link. Slack redeems the code, never this page. */
 export function SlackAccount({
@@ -61,10 +61,7 @@ export function SlackAccount({
                   : ''}
               </p>
               {owner ? (
-                <details className="text-sm">
-                  <summary className="w-fit cursor-pointer py-2">
-                    Technical details
-                  </summary>
+                <TechnicalDetails>
                   <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2">
                     <dt className="text-muted-foreground">Slack user ID</dt>
                     <dd className="break-words font-mono">
@@ -75,7 +72,7 @@ export function SlackAccount({
                       {identity.data.team_id || 'None'}
                     </dd>
                   </dl>
-                </details>
+                </TechnicalDetails>
               ) : null}
               {demo ? null : (
                 <Button

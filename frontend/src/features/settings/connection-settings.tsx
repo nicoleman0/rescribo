@@ -14,6 +14,7 @@ import { ConfirmAction } from './confirm-action'
 import { ConnectionStatusBadge } from './connection-status'
 import { useSettingsAction } from './use-settings-action'
 import { AllowedChannels } from './allowed-channels'
+import { TechnicalDetails } from './technical-details'
 
 export function ConnectionSettings({
   workspaceId,
@@ -95,15 +96,7 @@ export function ConnectionSettings({
                 ) : null}
               </dl>
               {owner ? (
-                <details className="text-sm">
-                  <summary
-                    className={cn(
-                      'w-fit cursor-pointer rounded-control py-2',
-                      touchTarget,
-                    )}
-                  >
-                    Technical details
-                  </summary>
+                <TechnicalDetails>
                   <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2">
                     <dt className="text-muted-foreground">Provider ID</dt>
                     <dd className="break-words font-mono">
@@ -136,7 +129,7 @@ export function ConnectionSettings({
                       {connection.error_code || 'None'}
                     </dd>
                   </dl>
-                </details>
+                </TechnicalDetails>
               ) : null}
               <JobCounts provider={name} operations={connection.operations} />
               {connection.error_code ? (
