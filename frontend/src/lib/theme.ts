@@ -9,20 +9,41 @@ export type ThemePreference = Theme | 'system'
 export const THEME_STORAGE_KEY = 'rescribo-theme'
 const darkQuery = '(prefers-color-scheme: dark)'
 
-const isPreference = (value: unknown): value is ThemePreference =>
-  value === 'system' || THEMES.includes(value as Theme)
-
-// Holds the choice for this page load when storage is blocked.
-let unsaved: ThemePreference | null = null
-
-export function readPreference(): ThemePreference {
-  try {
-    const stored = localStorage.getItem(THEME_STORAGE_KEY)
-    return isPreference(stored) ? stored : 'system'
-  } catch {
-    return unsaved ?? 'system'
+/** A browser-saved choice. The default is stored as no key at all. */
+function createStore<T extends string>(
+  key: string,
+  values: readonly T[],
+  fallback: T,
+) {
+  // Holds the choice for this page load when storage is blocked.
+  let unsaved: T | null = null
+  return {
+    read(): T {
+      try {
+        const stored = localStorage.getItem(key)
+        return values.includes(stored as T) ? (stored as T) : fallback
+      } catch {
+        return unsaved ?? fallback
+      }
+    },
+    write(value: T) {
+      try {
+        if (value === fallback) localStorage.removeItem(key)
+        else localStorage.setItem(key, value)
+      } catch {
+        unsaved = value
+      }
+    },
   }
 }
+
+const themeStore = createStore<ThemePreference>(
+  THEME_STORAGE_KEY,
+  [...THEMES, 'system'],
+  'system',
+)
+
+export const readPreference = themeStore.read
 
 export function resolveTheme(preference: ThemePreference): Theme {
   if (preference !== 'system') return preference
@@ -40,12 +61,7 @@ const notify = () => {
 }
 
 export function setPreference(preference: ThemePreference) {
-  try {
-    if (preference === 'system') localStorage.removeItem(THEME_STORAGE_KEY)
-    else localStorage.setItem(THEME_STORAGE_KEY, preference)
-  } catch {
-    unsaved = preference
-  }
+  themeStore.write(preference)
   notify()
 }
 
