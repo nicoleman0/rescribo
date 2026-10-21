@@ -18,7 +18,7 @@ class RedisIndexTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
-        self.state = self.root / ".claude" / "state"
+        self.state = self.root / ".switchyard" / "state"
         self.state.mkdir(parents=True)
         self.env = {**os.environ, "MAIN_CHECKOUT": str(self.root)}
 
@@ -97,12 +97,12 @@ class RedisIndexTests(unittest.TestCase):
         self.assertEqual(overflow.returncode, 1)
 
     def test_hooks_write_and_flush_the_recorded_index(self):
-        hook_dir = self.root / ".claude" / "skills" / "work-issues" / "hooks"
+        hook_dir = self.root / "switchyard" / "hooks"
         hook_dir.mkdir(parents=True)
         for name in ("redis_index.py", "worktree-up.sh", "worktree-down.sh"):
             shutil.copy2(HOOK_DIR / name, hook_dir / name)
-        (self.root / ".claude" / "skills" / "work-issues" / "scripts").mkdir(parents=True)
-        shutil.copy2(SCRIPTS_DIR / "state.py", self.root / ".claude" / "skills" / "work-issues" / "scripts" / "state.py")
+        (self.root / "switchyard" / "scripts").mkdir(parents=True)
+        shutil.copy2(SCRIPTS_DIR / "state.py", self.root / "switchyard" / "scripts" / "state.py")
         (self.root / ".env").write_text(
             "RESCRIBO_DATABASE_URL=postgresql://u:p@localhost/db\n"
             "RESCRIBO_REDIS_URL=redis://localhost:6379/0\n"

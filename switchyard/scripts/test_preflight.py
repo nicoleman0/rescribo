@@ -213,7 +213,7 @@ class PreflightTests(unittest.TestCase):
 
     def test_edited_project_section_does_not_warn(self):
         self.add_base("claude", "codex", "magick", "herdr")
-        self.write_agents("Checks: python3 -m unittest discover -s .claude/skills/work-issues/scripts -p 'test_*.py'.")
+        self.write_agents("Checks: python3 -m unittest discover -s switchyard/scripts -p 'test_*.py'.")
         result = self.run_check(providers=("claude", "codex"))
         self.assertEqual(result.returncode, 0)
         self.assertNotIn("AGENTS.md Project", result.stdout)

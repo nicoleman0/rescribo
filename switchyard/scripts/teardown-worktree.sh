@@ -23,7 +23,7 @@ branch=${2:?branch name required}
 [ $# -eq 2 ] || { echo "Usage: teardown-worktree.sh [--abandon] <issue-number> <branch>" >&2; exit 2; }
 repo=$(git rev-parse --show-toplevel)
 cd "$repo"
-hook=.claude/skills/work-issues/hooks/worktree-down.sh
+hook=switchyard/hooks/worktree-down.sh
 
 path=$(git worktree list --porcelain | awk -v ref="branch refs/heads/$branch" '
   /^worktree / { path = substr($0, 10) }
@@ -96,7 +96,7 @@ else
   status=$?
   [ "$status" -eq 2 ] || exit "$status"
 fi
-python3 .claude/skills/work-issues/scripts/state.py rm "$issue"
+python3 switchyard/scripts/state.py rm "$issue"
 if [ -n "$push_failed" ]; then
   if [ "$push_failed" = exists ]; then
     echo "Failed to delete remote branch $branch on origin: it still exists." >&2

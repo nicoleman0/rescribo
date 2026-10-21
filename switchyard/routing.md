@@ -27,7 +27,7 @@ A provider is named after its CLI command. To add one, add a Providers row and a
 | claude | agent | `/exit` | `claude -p --session-id <session> <flags> "<prompt>"` | `claude -p --resume <session> <flags> "<prompt>"` |
 | codex | agent | `/exit` | `codex exec <flags> "<prompt>"` | `codex exec resume --last <flags> "<prompt>"` |
 | opencode | turns | | `opencode run <flags> --session ses_<session> "<prompt>"` | the same command |
-| pi | agent | `/quit` | `pi -p <flags> --session .claude/sessions/<session>.jsonl "<prompt>"` | the same command |
+| pi | agent | `/quit` | `pi -p <flags> --session .switchyard/sessions/<session>.jsonl "<prompt>"` | the same command |
 
 The runner files explain these columns and placeholders.
 
@@ -55,7 +55,7 @@ Run as coordinator: Claude Code and Codex in regular use, and opencode in the pr
 
 ### Coordinator notes
 
-- **claude:** Start `claude` from the main checkout, inside Herdr if you use it. Set the values from the `claude` row of the Coordinator table at startup with `claude --model <model> --effort <level>`. The coordinator needs write access to the worktree folder named in the selected runner file. Claude Code permission prompts can request access, but merge only after the maintainer explicitly approves in the coordinator conversation. On headless, run each worker turn in the background with the Bash tool's background mode (`run_in_background`); a foreground command stops after 10 minutes, and Claude Code re-invokes the session when the background command exits. When Claude Code reports that the command exited, read the newest log in `<path>/.claude/turns/`. In Herdr, run `scripts/wait-agents.sh` in the background so the session resumes when it returns.
+- **claude:** Start `claude` from the main checkout, inside Herdr if you use it. Set the values from the `claude` row of the Coordinator table at startup with `claude --model <model> --effort <level>`. The coordinator needs write access to the worktree folder named in the selected runner file. Claude Code permission prompts can request access, but merge only after the maintainer explicitly approves in the coordinator conversation. On headless, run each worker turn in the background with the Bash tool's background mode (`run_in_background`); a foreground command stops after 10 minutes, and Claude Code re-invokes the session when the background command exits. When Claude Code reports that the command exited, read the newest log in `<path>/.switchyard/turns/`. In Herdr, run `scripts/wait-agents.sh` in the background so the session resumes when it returns.
 - **codex:** `codex -p coordinator` layers `~/.codex/coordinator.config.toml` over the user config. The file lives outside the repo, so create it once:
 
   ```toml
@@ -63,7 +63,7 @@ Run as coordinator: Claude Code and Codex in regular use, and opencode in the pr
   approvals_reviewer = "user"
   ```
 
-  Copy the values from the `codex` row of the Coordinator table in `.claude/skills/work-issues/routing.md`. Add `model = "<Coordinator table model>"` only when that Model cell is not empty.
+  Copy the values from the `codex` row of the Coordinator table in `switchyard/routing.md`. Add `model = "<Coordinator table model>"` only when that Model cell is not empty.
 
   `approvals_reviewer = "user"` sends approval requests to the maintainer, as Claude's permission prompts do. Without it they go to Codex's automatic reviewer, which decides case by case and has refused pushes. Workers keep `--approve-for-me`.
 

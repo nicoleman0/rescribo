@@ -16,13 +16,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Lint shell scripts
-        run: git ls-files -z '.claude/skills/work-issues/*.sh' | xargs -0 shellcheck
+        run: git ls-files -z 'switchyard/*.sh' | xargs -0 shellcheck
       - name: Compile Python scripts
-        run: git ls-files -z '.claude/skills/work-issues/*.py' | xargs -0 python3 -m py_compile
+        run: git ls-files -z 'switchyard/*.py' | xargs -0 python3 -m py_compile
       - name: Check JavaScript syntax
-        run: git ls-files -z '.claude/skills/work-issues/*.mjs' | xargs -0 -n 1 node --check
+        run: git ls-files -z 'switchyard/*.mjs' | xargs -0 -n 1 node --check
       - name: Test the scripts
-        run: python3 -m unittest discover -s .claude/skills/work-issues/scripts -p 'test_*.py'
+        run: python3 -m unittest discover -s switchyard/scripts -p 'test_*.py'
       - name: Check release version
         if: github.repository == 'nicoleman0/switchyard'
         run: |
@@ -30,7 +30,7 @@ jobs:
           import re
           from pathlib import Path
 
-          version = Path('.claude/skills/work-issues/VERSION').read_text().strip()
+          version = Path('switchyard/VERSION').read_text().strip()
           changelog = Path('CHANGELOG.md').read_text()
           releases = re.findall(r'^## \[(\d+\.\d+\.\d+)\] - ', changelog, re.MULTILINE)
           if not releases:

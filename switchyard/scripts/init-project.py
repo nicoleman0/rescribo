@@ -26,6 +26,7 @@ DELETED_PATHS = [
     Path("docs/switchyard.svg"),
     Path("docs/social-preview.png"),
     Path("docs/pixelart.py"),
+    Path(".claude/skills/work-issues/update-paths.txt"),
 ]
 TEMPLATE_HEADING = "# Switchyard"
 BANNER_TARGET = "(docs/switchyard.svg)"

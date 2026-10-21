@@ -1,7 +1,7 @@
 // Captures the seeded demo workspace in light and dark at 1280px and 390px.
 // From the worktree root, with the dev servers on <web>:
 //   RESCRIBO_DEMO_PASSWORD='Rescribo-demo-e2e-2026!' uv run python backend/manage.py seed_demo
-//   SHOTS_BASE=http://127.0.0.1:<web> node .claude/skills/work-issues/scripts/shots.mjs <out-dir>
+//   SHOTS_BASE=http://127.0.0.1:<web> node switchyard/scripts/shots.mjs <out-dir>
 // If a change renames a landmark this script waits for, edit it in that change.
 import { createRequire } from 'node:module'
 import { mkdirSync } from 'node:fs'

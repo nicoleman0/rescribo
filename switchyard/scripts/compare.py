@@ -1,6 +1,6 @@
 """Build a before/after comparison page from two screenshot folders.
 
-Usage: python3 .claude/skills/work-issues/scripts/compare.py spec.json out.html
+Usage: python3 switchyard/scripts/compare.py spec.json out.html
 spec.json: {"before": dir, "after": dir, "title": str, "heading": str,
             "intro": str, "meta": str,
             "screens": [[shot-name, caption, note], ...]}

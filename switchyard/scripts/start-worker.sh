@@ -42,7 +42,29 @@ if [ "$runner" = headless ] || [ "$turns" = 1 ]; then
   session=$(python3 -c 'import uuid; print(uuid.uuid4())')
 elif [ "$runner" = herdr ]; then
   worker="$role-$issue"
-  herdr agent start "$worker" --kind "$backend" --pane "$pane" -- "$@" >/dev/null
+  start_error=$(mktemp)
+  if herdr agent start "$worker" --kind "$backend" --pane "$pane" -- "$@" >/dev/null 2>"$start_error"; then
+    rm -f "$start_error"
+  else
+    start_status=$?
+    start_code=$(python3 - "$start_error" <<'PY'
+import json
+import sys
+try:
+    with open(sys.argv[1]) as stream:
+        print(json.load(stream).get("error", {}).get("code", ""))
+except (OSError, ValueError):
+    print("")
+PY
+)
+    if [ "$start_code" != agent_not_ready ]; then
+      cat "$start_error" >&2
+      rm -f "$start_error"
+      exit "$start_status"
+    fi
+    rm -f "$start_error"
+    startup_blocked=1
+  fi
 fi
 
 python3 "$state" set "$issue" "role=$role" "backend=$backend" "worker=$worker" "session=$session" ${extra[@]+"${extra[@]}"}
@@ -50,3 +72,8 @@ printf 'path=%s\n' "$path"
 [ -z "$pane" ] || printf 'pane=%s\n' "$pane"
 [ -z "$worker" ] || printf 'name=%s\n' "$worker"
 [ -z "$session" ] || printf 'session=%s\n' "$session"
+if [ "${startup_blocked:-0}" = 1 ]; then
+  printf 'status=blocked\n'
+  echo "Issue $issue: agent is blocked at startup. Read it and clear the screen before prompting; see the provider notes in switchyard/routing.md." >&2
+  exit 3
+fi

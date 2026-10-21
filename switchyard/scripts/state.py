@@ -28,7 +28,7 @@ def repo_root():
 def issue_path(issue):
     if not issue.isascii() or not issue.isdigit():
         fail(issue, "issue number must contain only digits")
-    return repo_root() / ".claude" / "state" / f"{issue}.json"
+    return repo_root() / ".switchyard" / "state" / f"{issue}.json"
 
 
 def read_record(issue):
@@ -103,7 +103,7 @@ def command(args):
 
 
 def status():
-    folder = repo_root() / ".claude" / "state"
+    folder = repo_root() / ".switchyard" / "state"
     records = []
     if folder.exists():
         for path in folder.glob("*.json"):

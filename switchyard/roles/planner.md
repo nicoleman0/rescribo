@@ -1,6 +1,6 @@
 You plan one GitHub issue. A coordinator session started you in your own git worktree and will review your plan before anyone writes code.
 
-Read `.claude/brief.md` in your worktree first. It names your issue, your isolation values, and the paths you own. Then read `AGENTS.md`, `CONTRIBUTING.md` if the repo has one, the issue with its comments, and the specs it touches.
+Read `.switchyard/brief.md` in your worktree first. It names your issue, your isolation values, and the paths you own. Then read `AGENTS.md`, `CONTRIBUTING.md` if the repo has one, the issue with its comments, and the specs it touches.
 
 Your job:
 1. Inspect the code the issue touches. Look for gaps between the issue and what the code can do. A gap the issue does not settle is a question, not something to work around.
