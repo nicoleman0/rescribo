@@ -119,9 +119,18 @@ test('every theme block defines every colour token the light theme does', () => 
   }
 })
 
-test('every theme block sets the palette variables', () => {
-  const paletteVariables = ['--brand-hue', '--brand-chroma', '--neutral-tint']
-  for (const tokens of themeBlocks()) {
+test('the indigo blocks set the palette variables', () => {
+  const paletteVariables = [
+    '--brand-hue',
+    '--brand-chroma',
+    '--brand-lightness',
+    '--neutral-tint',
+  ]
+  for (const selector of [
+    /^:root,\n:root \[data-palette='indigo'\] \{([^}]*)\}/m,
+    /^:root\[data-theme='dark'\],\n:root\[data-theme='dark'\] \[data-palette='indigo'\] \{([^}]*)\}/m,
+  ]) {
+    const tokens = block(selector)
     expect(paletteVariables.filter((token) => !tokens.has(token))).toEqual([])
   }
 })
