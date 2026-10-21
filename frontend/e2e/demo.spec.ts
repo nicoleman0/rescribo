@@ -49,10 +49,11 @@ test('the demo visitor sees labelled, simulated data', async ({ page }) => {
   await expect(page.getByLabel('Demo workspace')).toBeVisible()
   await expect(page.getByText('Sent (simulated)').first()).toBeVisible()
 
-  await page.goto('/settings')
+  await page.goto('/settings/connections')
   await expect(
     page.getByRole('note').getByText('Integrations are disabled in the demo'),
   ).toBeVisible()
+  await page.goto('/settings/workspace')
   await expect(
     page.getByRole('button', { name: 'Delete workspace' }),
   ).not.toBeVisible()

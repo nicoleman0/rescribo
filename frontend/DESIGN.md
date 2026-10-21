@@ -145,6 +145,10 @@ that owns the draft when a recoverable request fails.
 - The result of a connection check shows beside its button as one status
   line with the time to the second. A failure replaces it in the same place.
 
+- Settings sections have their own URLs and a section nav. Connection facts
+  use plain terms; owners get raw values in a collapsed `Technical details`
+  disclosure built with `<details>`.
+
 ## Inbox
 
 - Ungroup and Dismiss open a confirm step in place of the triage actions. Focus goes to its title, and Cancel returns it to the button.

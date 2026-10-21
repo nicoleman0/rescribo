@@ -200,7 +200,7 @@ class CallbackView(OwnerWorkspaceView):
         except providers.PROVIDER_ERRORS as error:
             safe = providers.safe_provider_error(error)
             return Response({"detail": safe.detail, "reason": safe.code}, status=400)
-        return HttpResponseRedirect("/settings")
+        return HttpResponseRedirect("/settings/connections")
 
 
 class DisconnectView(OwnerWorkspaceView):

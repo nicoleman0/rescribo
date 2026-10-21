@@ -1,23 +1,59 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render as rtlRender,
+  screen,
+  within,
+} from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import {
-  json,
-  renderWorkspaceRoutes,
-  stubApi,
-  testMembership,
-} from '@/test/render'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { WorkspaceProvider } from '@/components/auth/workspace-provider'
+import { LocationProbe } from '@/test/location-probe'
+import { formatDate } from '@/features/inbox/report-format'
+import { json, stubApi, testMembership } from '@/test/render'
 import { SettingsPage } from './settings-page'
+import {
+  AppearanceSection,
+  ConnectionsSection,
+  MembersSection,
+  SlackAccountSection,
+  WorkspaceSection,
+} from './settings-sections'
 
 const base = '/api/workspaces/ws-1/'
 const unlinked = {
   [`GET ${base}slack/identity/`]: () =>
     json({ linked: false, team_id: '', user_id: '', linked_at: null }),
 }
-function render() {
-  return renderWorkspaceRoutes(
-    [{ path: '/settings', element: <SettingsPage /> }],
-    '/settings',
+function render(path = '/settings/connections') {
+  return rtlRender(
+    <QueryClientProvider
+      client={
+        new QueryClient({
+          defaultOptions: {
+            queries: { retry: false },
+            mutations: { retry: false },
+          },
+        })
+      }
+    >
+      <WorkspaceProvider membership={testMembership}>
+        <MemoryRouter initialEntries={[path]}>
+          <Routes>
+            <Route path="/settings" element={<SettingsPage />}>
+              <Route index element={<Navigate replace to="appearance" />} />
+              <Route path="appearance" element={<AppearanceSection />} />
+              <Route path="members" element={<MembersSection />} />
+              <Route path="connections" element={<ConnectionsSection />} />
+              <Route path="slack-account" element={<SlackAccountSection />} />
+              <Route path="workspace" element={<WorkspaceSection />} />
+            </Route>
+          </Routes>
+          <LocationProbe />
+        </MemoryRouter>
+      </WorkspaceProvider>
+    </QueryClientProvider>,
   )
 }
 function owner() {
@@ -53,9 +89,64 @@ test('members see connections but no owner controls', async () => {
   ).toBe(false)
 })
 
+test('the settings navigation marks the section and filters owner sections', async () => {
+  owner()
+  render('/settings/appearance')
+  const nav = screen.getByRole('navigation', { name: 'Settings sections' })
+  expect(within(nav).getAllByRole('link')).toHaveLength(5)
+  expect(within(nav).getByRole('link', { name: 'Appearance' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
+  testMembership.role = 'member'
+  render('/settings/workspace')
+  const memberNav = screen
+    .getAllByRole('navigation', { name: 'Settings sections' })
+    .at(-1)!
+  expect(within(memberNav).getAllByRole('link')).toHaveLength(3)
+  expect(
+    within(memberNav).queryByRole('link', { name: 'Members' }),
+  ).not.toBeInTheDocument()
+  expect(
+    await screen.findAllByText(
+      'Workspace owners manage invitations, members, connections and deletion.',
+    ),
+  ).toHaveLength(1)
+  expect(
+    screen.queryByRole('button', { name: 'Delete workspace' }),
+  ).not.toBeInTheDocument()
+})
+
+test.each(['/settings/members', '/settings/workspace'])(
+  'a member opening %s sees the owner note without controls',
+  async (path) => {
+    testMembership.role = 'member'
+    render(path)
+    expect(
+      await screen.findByText(
+        'Workspace owners manage invitations, members, connections and deletion.',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByLabelText('Invite email')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Delete workspace' }),
+    ).not.toBeInTheDocument()
+  },
+)
+
+test('opening /settings redirects to the Appearance section', async () => {
+  testMembership.role = 'member'
+  stubApi({ ...unlinked })
+  render('/settings')
+  expect(await screen.findByRole('group', { name: 'Theme' })).toBeVisible()
+  expect(screen.getByTestId('location')).toHaveTextContent(
+    '/settings/appearance',
+  )
+})
+
 test('workspace deletion requires the exact slug and cancellation makes no request', async () => {
   const fetch = owner()
-  render()
+  render('/settings/workspace')
   const user = userEvent.setup()
   await user.click(
     await screen.findByRole('button', { name: 'Delete workspace' }),
@@ -96,7 +187,7 @@ test('invitation failure preserves the entered email', async () => {
     [`POST ${base}invitations/`]: () =>
       json({ detail: 'Try again later.', reason: 'throttled' }, 429),
   })
-  render()
+  render('/settings/members')
   const user = userEvent.setup()
   await user.type(
     await screen.findByLabelText('Invite email'),
@@ -151,7 +242,7 @@ test('a member generates a Slack linking code and sees the link once made', asyn
     [`POST ${base}slack/link-code/`]: () =>
       json({ code: 'code-123', expires_at: '2026-10-01T10:05:00Z' }),
   })
-  render()
+  render('/settings/slack-account')
   const user = userEvent.setup()
   await user.click(
     await screen.findByRole('button', { name: 'Generate linking code' }),
@@ -161,15 +252,39 @@ test('a member generates a Slack linking code and sees the link once made', asyn
   expect(screen.queryByText(/Submit customer feedback/)).not.toBeInTheDocument()
   linked = true
   await user.click(screen.getByRole('button', { name: 'Generate a new code' }))
-  expect(await screen.findByText(/Linked to Slack user/)).toBeVisible()
+  expect(await screen.findByText(/Your Slack account is linked/)).toBeVisible()
+  expect(screen.getByText(/Linked since/)).toBeVisible()
+  expect(screen.queryByText('U1')).not.toBeInTheDocument()
   expect(
     fetch.mock.calls.filter(([, init]) => init?.method === 'POST'),
   ).toHaveLength(2)
 })
 
+test('an owner can expand Slack account technical details', async () => {
+  testMembership.role = 'owner'
+  stubApi({
+    [`GET ${base}connections/`]: () => json([slackConnection]),
+    [`GET ${base}slack/identity/`]: () =>
+      json({
+        linked: true,
+        team_id: 'T1',
+        user_id: 'U1',
+        linked_at: '2026-10-01T10:00:00Z',
+      }),
+    [`GET ${base}channels/`]: () => json({ channels: [], truncated: false }),
+  })
+  render('/settings/slack-account')
+  expect(await screen.findByText(/Your Slack account is linked/)).toBeVisible()
+  const details = screen.getByText('Technical details').closest('details')!
+  expect(details).not.toHaveAttribute('open')
+  await userEvent.click(within(details).getByText('Technical details'))
+  expect(within(details).getByText('U1')).toBeVisible()
+  expect(within(details).getByText('T1')).toBeVisible()
+})
+
 test('linking is unavailable until Slack is connected', async () => {
   stubApi({ ...unlinked, [`GET ${base}connections/`]: () => json([]) })
-  render()
+  render('/settings/slack-account')
   expect(
     await screen.findByText(/Slack is not connected to this workspace/),
   ).toBeVisible()
@@ -195,12 +310,17 @@ test('the demo explains that integrations are disabled', async () => {
           { ...slackConnection, provider: 'github', identity: 'demo' },
         ]),
     })
-    render()
+    render('/settings/connections')
     const notice = await screen.findByRole('note')
     expect(notice).toHaveTextContent('Integrations are disabled in the demo')
     expect(notice).toHaveTextContent('Nothing is sent to Slack or GitHub.')
     expect(await screen.findAllByText('Disabled in demo')).toHaveLength(2)
-    expect(await screen.findByText('UDEMO')).toBeVisible()
+    expect(screen.queryByText('UDEMO')).not.toBeInTheDocument()
+    render('/settings/slack-account')
+    expect(
+      await screen.findByText(/Your Slack account is linked/),
+    ).toBeVisible()
+    expect(screen.queryByText('UDEMO')).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Unlink Slack account' }),
     ).not.toBeInTheDocument()
@@ -220,7 +340,7 @@ test('a member picks a theme that applies at once and is saved', async () => {
     removeEventListener: () => undefined,
   }))
   localStorage.clear()
-  render()
+  render('/settings/appearance')
   const theme = screen.getByRole('group', { name: 'Theme' })
   expect(within(theme).getByRole('radio', { name: 'System' })).toBeChecked()
   await userEvent.click(within(theme).getByRole('radio', { name: 'Dark' }))
@@ -238,6 +358,7 @@ test('each integration is a card with its status, repository, and job counts', a
         {
           ...slackConnection,
           status: 'error',
+          last_success_at: '2026-10-01T10:00:00Z',
           error_code: 'token_revoked',
           error_detail: 'Reconnect Slack.',
         },
@@ -259,12 +380,21 @@ test('each integration is a card with its status, repository, and job counts', a
     'danger',
   )
   expect(within(slack).getByText('Reconnect Slack.')).toBeVisible()
+  expect(within(slack).getByText('Slack workspace')).toBeVisible()
+  expect(within(slack).getByText('Acme')).toBeVisible()
+  expect(
+    within(slack).getByText(formatDate('2026-10-01T10:00:00Z')),
+  ).toBeVisible()
+  expect(within(slack).queryByText('T1')).not.toBeInTheDocument()
   const github = screen.getByRole('region', { name: 'GitHub' })
   expect(within(github).getByText('Connected')).toHaveAttribute(
     'data-tone',
     'success',
   )
   expect(within(github).getByText('acme/web')).toBeVisible()
+  expect(within(github).getByText('Private')).toBeVisible()
+  expect(within(github).getByText('GitHub account')).toBeVisible()
+  expect(within(github).getAllByText('Not yet')).toHaveLength(2)
   const jobs = within(github).getByRole('group', { name: 'Jobs' })
   const count = (label: string) =>
     within(jobs).getByText(label).nextElementSibling
@@ -272,6 +402,60 @@ test('each integration is a card with its status, repository, and job counts', a
   expect(count('Running')).toHaveTextContent('1')
   expect(count('Failed')).toHaveTextContent('3')
   expect(count('Uncertain')).toHaveTextContent('4')
+})
+
+test('owners can expand technical details while members cannot see them', async () => {
+  testMembership.role = 'owner'
+  stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () =>
+      json([
+        {
+          ...slackConnection,
+          scopes: ['commands'],
+          last_success_at: '2026-10-01T10:00:00Z',
+          error_code: 'missing_scope',
+        },
+        {
+          ...slackConnection,
+          provider: 'github',
+          external_id: '42',
+          repository: 'acme/web',
+          visibility: 'private',
+        },
+      ]),
+    [`GET ${base}memberships/`]: () => json([]),
+    [`GET ${base}invitations/`]: () => json([]),
+    [`GET ${base}channels/`]: () => json({ channels: [], truncated: false }),
+  })
+  const ownerView = render()
+  const slack = await screen.findByRole('region', { name: 'Slack' })
+  const details = within(slack)
+    .getByText('Technical details')
+    .closest('details')!
+  expect(details).not.toHaveAttribute('open')
+  await userEvent.click(within(details).getByText('Technical details'))
+  expect(within(details).getByText('T1')).toBeVisible()
+  expect(within(details).getByText('commands')).toBeVisible()
+  expect(within(details).getByText('missing_scope')).toBeVisible()
+  const github = screen.getByRole('region', { name: 'GitHub' })
+  const githubDetails = within(github)
+    .getByText('Technical details')
+    .closest('details')!
+  await userEvent.click(within(githubDetails).getByText('Technical details'))
+  expect(within(githubDetails).getByText('42')).toBeVisible()
+  expect(
+    within(githubDetails).getByText('Last issue sync').nextElementSibling,
+  ).toHaveTextContent('None')
+  ownerView.unmount()
+  testMembership.role = 'member'
+  stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json([slackConnection]),
+  })
+  render()
+  expect(await screen.findByRole('region', { name: 'Slack' })).toBeVisible()
+  expect(screen.queryByText('Technical details')).not.toBeInTheDocument()
 })
 
 test('a provider that was never connected reads not connected', async () => {

@@ -55,8 +55,14 @@ for (const scheme of ['light', 'dark']) {
     await shot('follow-up-page')
     await page.goto(base + '/follow-ups?bucket=completed')
     await shot('follow-ups-completed')
-    await page.goto(base + '/settings')
-    await shot('settings')
+    for (const [slug, name] of [
+      ['appearance', 'settings-appearance'],
+      ['connections', 'settings-connections'],
+      ['slack-account', 'settings-slack-account'],
+    ]) {
+      await page.goto(`${base}/settings/${slug}`)
+      await shot(name)
+    }
     if (vp === 'desktop') {
       await page.goto(base + '/dev/ui')
       await shot('gallery', false)

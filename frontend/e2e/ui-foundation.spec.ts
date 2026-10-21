@@ -174,7 +174,7 @@ test.describe('UI foundation', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
-    await page.goto('/settings')
+    await page.goto('/settings/members')
     await expect(
       page.getByRole('heading', { name: 'Members and invitations' }),
     ).toBeVisible()

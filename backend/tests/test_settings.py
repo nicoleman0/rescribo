@@ -431,7 +431,9 @@ def test_oauth_state_bound_to_session_and_single_use(client: Client, actor: Memb
             "credential": "ciphertext",
         },
     ):
-        assert client.get(callback).status_code == 302
+        completed = client.get(callback)
+        assert completed.status_code == 302
+        assert completed["Location"] == "/settings/connections"
         assert client.get(callback).status_code == 400
     assert Connection.objects.get().external_id == "T1"
 

@@ -23,7 +23,7 @@ test.each([
   ['/inbox/new', 'New report'],
   ['/problems', 'Problems'],
   ['/follow-ups', 'Follow-ups'],
-  ['/settings', 'Settings'],
+  ['/settings/appearance', 'Appearance'],
   ['/dev/ui', 'UI gallery'],
 ])('shows the current section for %s', (path, label) => {
   render(
@@ -37,6 +37,24 @@ test.each([
     screen.getByRole('navigation', { name: 'Breadcrumb' }),
   ).toBeInTheDocument()
   expect(screen.getByText(label)).toHaveAttribute('aria-current', 'page')
+})
+
+test('settings section breadcrumb links to Settings', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/settings/connections']}>
+        <Breadcrumbs />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  const breadcrumb = screen.getByRole('navigation', { name: 'Breadcrumb' })
+  expect(
+    within(breadcrumb).getByRole('link', { name: 'Settings' }),
+  ).toHaveAttribute('href', '/settings')
+  expect(within(breadcrumb).getByText('Connections')).toHaveAttribute(
+    'aria-current',
+    'page',
+  )
 })
 
 test('the new report breadcrumb links to Inbox', () => {

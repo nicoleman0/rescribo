@@ -1,4 +1,11 @@
 import { SettingsPage } from '@/features/settings/settings-page'
+import {
+  AppearanceSection,
+  ConnectionsSection,
+  MembersSection,
+  SlackAccountSection,
+  WorkspaceSection,
+} from '@/features/settings/settings-sections'
 import { lazy, Suspense } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from '@/components/layout/app-shell'
@@ -45,7 +52,14 @@ export default function App() {
           <Route path="inbox" element={<InboxPage />} />
           <Route path="inbox/new" element={<ManualReportPage />} />
           <Route path="inbox/:reportId" element={<InboxPage />} />
-          <Route path="settings" element={<SettingsPage />} />
+          <Route path="settings" element={<SettingsPage />}>
+            <Route index element={<Navigate replace to="appearance" />} />
+            <Route path="appearance" element={<AppearanceSection />} />
+            <Route path="members" element={<MembersSection />} />
+            <Route path="connections" element={<ConnectionsSection />} />
+            <Route path="slack-account" element={<SlackAccountSection />} />
+            <Route path="workspace" element={<WorkspaceSection />} />
+          </Route>
           <Route path="problems" element={<ProblemsPage />} />
           <Route path="problems/:problemId" element={<ProblemDetailPage />} />
           <Route path="follow-ups" element={<FollowUpsPage />} />
