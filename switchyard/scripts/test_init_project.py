@@ -19,7 +19,6 @@ DELETED = [
     "docs/switchyard.svg",
     "docs/social-preview.png",
     "docs/pixelart.py",
-    ".claude/skills/work-issues/update-paths.txt",
 ]
 README_CONTENT = """# Switchyard: an agent coordination framework
 
@@ -55,7 +54,6 @@ TEMPLATE_FILES = {
     "docs/switchyard.svg": b"<svg></svg>\n",
     "docs/social-preview.png": b"png\n",
     "docs/pixelart.py": b"print('banner')\n",
-    ".claude/skills/work-issues/update-paths.txt": b"compat\n",
     CHART: b"<svg></svg>\n",
 }
 
