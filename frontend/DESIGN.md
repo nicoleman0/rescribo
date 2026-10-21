@@ -248,3 +248,18 @@ colours and shadows and applies no animated transition.
 - `src/components/markdown/markdown.tsx` is the shared Markdown renderer. It shows raw HTML as text, never loads images, and activates only `http`, `https`, and `mailto` links.
 - `headingOffset` raises heading levels to fit the surrounding page hierarchy, capped at `h6`.
 - The renderer loads on demand and falls back to plain text while loading or if its chunk fails.
+
+## Toasts
+
+- `Toaster` is mounted once in `main.tsx`. Call `toast.success` from a mutation's `onSuccess`.
+- A toast confirms a save that had no separate confirm step, such as a choice in a member picker. It names the result in one line: "Assigned to Ana".
+- Failures, warnings, and anything the member must act on stay inline where they acted. No error toasts.
+- A toast uses elevation 3, closes by itself, is announced politely, and never takes focus. On phones it sits bottom centre above the bottom navigation. Reduced motion turns its movement off.
+
+## Member picker
+
+- `components/member-picker/member-picker.tsx` is the one way to choose a member for a saved field: report assignee, problem owner, follow-up recipient. Callers do not build their own select and save button.
+- A choice saves at once. The new value shows before the save returns and rolls back if it fails.
+- A failed save keeps the picker open with its error inside. Closing clears the error.
+- Warnings about what the choice cancels go in the picker's `note`, so they show before the choice.
+- The trigger is a combobox. Use the ghost variant where the value reads as text in a row or card, and outline when it stands alone.

@@ -1,6 +1,7 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { expect, test } from 'vitest'
+import { beforeEach, expect, test } from 'vitest'
+import { stubPickerDom } from '@/components/member-picker/test-support'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import {
   ada,
@@ -10,6 +11,8 @@ import {
   grace,
   routes,
 } from './follow-up-detail.fixtures'
+
+beforeEach(stubPickerDom)
 
 test('lets an owner change the recipient', async () => {
   document.cookie = 'csrftoken=csrf-token'
@@ -29,11 +32,12 @@ test('lets an owner change the recipient', async () => {
     },
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  await screen.findByRole('option', { name: 'Ada Lovelace' })
-  fireEvent.change(screen.getByRole('combobox', { name: 'Recipient' }), {
-    target: { value: grace.id },
-  })
-  fireEvent.click(screen.getByRole('button', { name: 'Change recipient' }))
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
+  )
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Grace Hopper' }),
+  )
   await waitFor(() => expect(sent.at(-1)?.path).toBe('recipient'))
   expect(sent.at(-1)?.body).toEqual({ new_recipient_id: grace.id })
 })
@@ -47,12 +51,16 @@ test('shows unlinked recipients disabled and keeps an unlinked current recipient
       json([{ ...ada, has_slack_link: false }, grace]),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
+  )
   const current = await screen.findByRole('option', {
     name: 'Ada Lovelace (no Slack link)',
   })
-  expect(current).toBeEnabled()
-  const linked = screen.getByRole('option', { name: 'Grace Hopper' })
-  expect(linked).toBeEnabled()
+  expect(current).not.toHaveAttribute('aria-disabled', 'true')
+  expect(
+    screen.getByRole('option', { name: 'Grace Hopper' }),
+  ).not.toHaveAttribute('aria-disabled', 'true')
 })
 
 test('shows the server reason and refetches members after a recipient refusal', async () => {
@@ -78,20 +86,20 @@ test('shows the server reason and refetches members after a recipient refusal', 
       ),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  const select = await screen.findByRole('combobox', { name: 'Recipient' })
-  await screen.findByRole('option', { name: 'Grace Hopper' })
-  await userEvent.selectOptions(select, grace.id)
-  expect(select).toHaveValue(grace.id)
-  fireEvent.click(screen.getByRole('button', { name: 'Change recipient' }))
-  expect(await screen.findByText(detailText)).toBeInTheDocument()
-  expect(screen.getByText('The recipient was not changed')).toBeInTheDocument()
-  expect(screen.getByRole('combobox', { name: 'Recipient' })).toHaveValue(
-    grace.id,
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
   )
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Grace Hopper' }),
+  )
+  // The message shows inside the open picker.
+  expect(await screen.findByText(detailText)).toBeVisible()
+  expect(screen.getByText('The recipient was not changed')).toBeInTheDocument()
+  expect(screen.getByRole('listbox')).toBeInTheDocument()
   await waitFor(() => expect(directoryReads).toBeGreaterThan(1))
 })
 
-test('shows an invalid recipient under the select', async () => {
+test('shows an invalid recipient in the picker', async () => {
   document.cookie = 'csrftoken=csrf-token'
   stubApi({
     [csrfPath]: () => new Response(null, { status: 204 }),
@@ -108,9 +116,12 @@ test('shows an invalid recipient under the select', async () => {
       ),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  const select = await screen.findByRole('combobox', { name: 'Recipient' })
-  fireEvent.change(select, { target: { value: grace.id } })
-  fireEvent.click(screen.getByRole('button', { name: 'Change recipient' }))
+  await userEvent.click(
+    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
+  )
+  await userEvent.click(
+    await screen.findByRole('option', { name: 'Grace Hopper' }),
+  )
   expect(
     await screen.findByText('Choose an active record in this workspace.'),
   ).toBeInTheDocument()
