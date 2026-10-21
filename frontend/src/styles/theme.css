@@ -166,6 +166,54 @@
   --neutral-tint: 0.008;
 }
 
+:root[data-palette='forest'],
+:root [data-palette='forest'] {
+  --brand-hue: 182;
+  --brand-chroma: 0.091;
+  --brand-lightness: 0.513;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='forest'],
+:root[data-theme='dark'] [data-palette='forest'] {
+  --brand-hue: 182;
+  --brand-chroma: 0.105;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
+:root[data-palette='autumn'],
+:root [data-palette='autumn'] {
+  --brand-hue: 355;
+  --brand-chroma: 0.12;
+  --brand-lightness: 0.539;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='autumn'],
+:root[data-theme='dark'] [data-palette='autumn'] {
+  --brand-hue: 355;
+  --brand-chroma: 0.13;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
+:root[data-palette='sky'],
+:root [data-palette='sky'] {
+  --brand-hue: 230;
+  --brand-chroma: 0.095;
+  --brand-lightness: 0.515;
+  --neutral-tint: 0.004;
+}
+
+:root[data-theme='dark'][data-palette='sky'],
+:root[data-theme='dark'] [data-palette='sky'] {
+  --brand-hue: 230;
+  --brand-chroma: 0.105;
+  --brand-lightness: 0.685;
+  --neutral-tint: 0.008;
+}
+
 @theme inline {
   --font-sans: var(--font-ui);
   --font-mono: var(--font-code);
@@ -226,6 +274,13 @@
   :root {
     --font-size-base: 15px;
   }
+}
+
+/* Paints an element with its own data-palette brand colour in the current theme. */
+@utility palette-swatch {
+  background-color: oklch(
+    var(--brand-lightness) var(--brand-chroma) var(--brand-hue)
+  );
 }
 
 @utility surface-raised {

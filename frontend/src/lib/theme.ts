@@ -5,6 +5,13 @@ export const THEMES = ['light', 'dark'] as const
 export type Theme = (typeof THEMES)[number]
 export type ThemePreference = Theme | 'system'
 
+// Each palette needs light and dark [data-palette] blocks in styles/theme.css.
+export const PALETTES = ['indigo', 'forest', 'autumn', 'sky'] as const
+export type Palette = (typeof PALETTES)[number]
+
+// index.html repeats this key and the palette list to set the palette before first paint.
+export const PALETTE_STORAGE_KEY = 'rescribo-palette'
+
 // index.html repeats this key and the system rule to set the theme before first paint.
 export const THEME_STORAGE_KEY = 'rescribo-theme'
 const darkQuery = '(prefers-color-scheme: dark)'
@@ -45,13 +52,23 @@ const themeStore = createStore<ThemePreference>(
 
 export const readPreference = themeStore.read
 
+const paletteStore = createStore<Palette>(
+  PALETTE_STORAGE_KEY,
+  PALETTES,
+  'indigo',
+)
+
+export const readPalette = paletteStore.read
+
 export function resolveTheme(preference: ThemePreference): Theme {
   if (preference !== 'system') return preference
   return window.matchMedia(darkQuery).matches ? 'dark' : 'light'
 }
 
 function apply() {
-  document.documentElement.dataset.theme = resolveTheme(readPreference())
+  const { dataset } = document.documentElement
+  dataset.theme = resolveTheme(readPreference())
+  dataset.palette = readPalette()
 }
 
 const listeners = new Set<() => void>()
@@ -65,12 +82,18 @@ export function setPreference(preference: ThemePreference) {
   notify()
 }
 
-/** Applies the saved theme and follows system and other-tab changes. */
+export function setPalette(palette: Palette) {
+  paletteStore.write(palette)
+  notify()
+}
+
+/** Applies the saved theme and palette and follows system and other-tab changes. */
 export function startTheme() {
   apply()
   const media = window.matchMedia(darkQuery)
   const onStorage = (event: StorageEvent) => {
-    if (event.key === THEME_STORAGE_KEY) notify()
+    if (event.key === THEME_STORAGE_KEY || event.key === PALETTE_STORAGE_KEY)
+      notify()
   }
   media.addEventListener('change', notify)
   window.addEventListener('storage', onStorage)
@@ -88,4 +111,9 @@ const subscribe = (listener: () => void) => {
 export function useThemePreference() {
   const preference = useSyncExternalStore(subscribe, readPreference)
   return [preference, setPreference] as const
+}
+
+export function usePalettePreference() {
+  const palette = useSyncExternalStore(subscribe, readPalette)
+  return [palette, setPalette] as const
 }
