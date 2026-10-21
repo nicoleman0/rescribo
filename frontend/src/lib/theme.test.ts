@@ -138,7 +138,7 @@ test('status tones and destructive are fixed values', () => {
   }
 })
 
-test.each([null, 'light', 'dark', 'system'])(
+test.each([null, 'light', 'dark', 'system', 'sepia'])(
   'the index.html boot script agrees with the module for %s',
   (stored) => {
     const html = readFileSync('index.html', 'utf8')
