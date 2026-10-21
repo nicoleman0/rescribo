@@ -54,55 +54,90 @@ export function ConnectionSettings({
           {connection ? (
             <>
               <dl className="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2 text-sm">
-                <dt className="text-muted-foreground">Identity</dt>
+                <dt className="text-muted-foreground">
+                  {provider === 'slack' ? 'Slack workspace' : 'GitHub account'}
+                </dt>
                 <dd className="break-words">
                   {connection.identity || 'Not connected'}
-                  {connection.external_id ? (
-                    <span className="ml-1.5 font-mono text-xs text-muted-foreground">
-                      {connection.external_id}
-                    </span>
-                  ) : null}
                 </dd>
                 {provider === 'github' ? (
                   <>
                     <dt className="text-muted-foreground">Repository</dt>
                     <dd className="break-words">
-                      {connection.repository ? (
-                        <span className="font-mono text-xs">
-                          {connection.repository}
-                        </span>
-                      ) : (
-                        'None'
-                      )}
+                      {connection.repository || 'None'}
                       {connection.visibility ? (
-                        <span className="ml-1.5 text-muted-foreground capitalize">
-                          {connection.visibility}
+                        <span className="ml-1.5 text-muted-foreground">
+                          {connection.visibility === 'private'
+                            ? 'Private'
+                            : 'Public'}
                         </span>
                       ) : null}
                     </dd>
                   </>
                 ) : null}
-                <dt className="text-muted-foreground">Scopes</dt>
-                <dd className="break-words">
-                  {connection.scopes.join(', ') || 'None'}
-                </dd>
-                <dt className="text-muted-foreground">Last API success</dt>
+                <dt className="text-muted-foreground">Last reached {name}</dt>
                 <dd>
                   {connection.last_success_at
                     ? formatDate(connection.last_success_at)
-                    : 'Never'}
+                    : 'Not yet'}
                 </dd>
                 {provider === 'github' ? (
                   <>
-                    <dt className="text-muted-foreground">Last issue sync</dt>
+                    <dt className="text-muted-foreground">
+                      Issues last synced
+                    </dt>
                     <dd>
                       {connection.last_reconciled_at
                         ? formatDate(connection.last_reconciled_at)
-                        : 'Never'}
+                        : 'Not yet'}
                     </dd>
                   </>
                 ) : null}
               </dl>
+              {owner ? (
+                <details className="text-sm">
+                  <summary
+                    className={cn(
+                      'w-fit cursor-pointer rounded-control py-2',
+                      touchTarget,
+                    )}
+                  >
+                    Technical details
+                  </summary>
+                  <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2">
+                    <dt className="text-muted-foreground">Provider ID</dt>
+                    <dd className="break-words font-mono">
+                      {connection.external_id || 'None'}
+                    </dd>
+                    <dt className="text-muted-foreground">Scopes</dt>
+                    <dd className="break-words font-mono">
+                      {connection.scopes.join(', ') || 'None'}
+                    </dd>
+                    <dt className="text-muted-foreground">Last API success</dt>
+                    <dd>
+                      {connection.last_success_at
+                        ? formatDate(connection.last_success_at)
+                        : 'None'}
+                    </dd>
+                    {provider === 'github' ? (
+                      <>
+                        <dt className="text-muted-foreground">
+                          Last issue sync
+                        </dt>
+                        <dd>
+                          {connection.last_reconciled_at
+                            ? formatDate(connection.last_reconciled_at)
+                            : 'None'}
+                        </dd>
+                      </>
+                    ) : null}
+                    <dt className="text-muted-foreground">Error code</dt>
+                    <dd className="break-words font-mono">
+                      {connection.error_code || 'None'}
+                    </dd>
+                  </dl>
+                </details>
+              ) : null}
               <JobCounts provider={name} operations={connection.operations} />
               {connection.error_code ? (
                 <ErrorState

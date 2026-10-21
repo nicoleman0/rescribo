@@ -13,14 +13,17 @@ import {
 } from '@/components/states/async-states'
 import { useSettingsAction } from './use-settings-action'
 import { formatTime } from '@/features/inbox/report-format'
+import { formatDate } from '@/features/inbox/report-format'
 
 /** The signed-in member's own Slack link. Slack redeems the code, never this page. */
 export function SlackAccount({
   workspaceId,
+  owner,
   connected,
   demo,
 }: {
   workspaceId: string
+  owner: boolean
   connected: boolean
   demo: boolean
 }) {
@@ -52,10 +55,28 @@ export function SlackAccount({
           {identity.data.linked ? (
             <>
               <p className="text-sm">
-                Linked to Slack user{' '}
-                <span className="font-mono">{identity.data.user_id}</span> in
-                team <span className="font-mono">{identity.data.team_id}</span>.
+                Your Slack account is linked.
+                {identity.data.linked_at
+                  ? ` Linked since ${formatDate(identity.data.linked_at)}.`
+                  : ''}
               </p>
+              {owner ? (
+                <details className="text-sm">
+                  <summary className="w-fit cursor-pointer py-2">
+                    Technical details
+                  </summary>
+                  <dl className="mt-2 grid grid-cols-[7rem_minmax(0,1fr)] gap-x-3 gap-y-2">
+                    <dt className="text-muted-foreground">Slack user ID</dt>
+                    <dd className="break-words font-mono">
+                      {identity.data.user_id || 'None'}
+                    </dd>
+                    <dt className="text-muted-foreground">Slack team ID</dt>
+                    <dd className="break-words font-mono">
+                      {identity.data.team_id || 'None'}
+                    </dd>
+                  </dl>
+                </details>
+              ) : null}
               {demo ? null : (
                 <Button
                   variant="outline"

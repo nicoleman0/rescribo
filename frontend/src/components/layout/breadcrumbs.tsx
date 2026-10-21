@@ -3,6 +3,7 @@ import { matchPath, Link, useLocation } from 'react-router-dom'
 import { getProblem, problemKeys } from '@/api/problems'
 import { getFollowUp, followUpKeys } from '@/api/follow-ups'
 import { useOptionalWorkspace } from '@/components/auth/use-workspace'
+import { settingsSections } from '@/features/settings/sections'
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -21,7 +22,6 @@ const paths = [
   ['/follow-ups/:followUpId/page', 'Follow-ups', 'follow-up'],
   ['/follow-ups/:followUpId', 'Follow-ups'],
   ['/follow-ups', 'Follow-ups'],
-  ['/settings', 'Settings'],
   ['/dev/ui', 'UI gallery'],
 ] as const
 
@@ -33,6 +33,10 @@ export function Breadcrumbs() {
   const followUpMatch = matchPath('/follow-ups/:followUpId/page', pathname)
   const problemId = problemMatch?.params.problemId
   const followUpId = followUpMatch?.params.followUpId
+  const settingsSlug = pathname.match(/^\/settings\/([^/]+)$/)?.[1]
+  const settingsSection = settingsSections.find(
+    ({ slug }) => slug === settingsSlug,
+  )
   const problem = useQuery({
     queryKey:
       problemId && workspaceId
@@ -49,9 +53,26 @@ export function Breadcrumbs() {
     queryFn: () => getFollowUp(workspaceId!, followUpId!),
     enabled: Boolean(followUpId && workspaceId),
   })
-  const selected = paths.find(([path]) =>
-    matchPath({ path, end: true }, pathname),
-  )
+  const selected = settingsSection
+    ? undefined
+    : paths.find(([path]) => matchPath({ path, end: true }, pathname))
+  if (settingsSection) {
+    return (
+      <Breadcrumb aria-label="Breadcrumb">
+        <BreadcrumbList className="min-w-0 flex-nowrap overflow-hidden">
+          <BreadcrumbItem className="shrink-0">
+            <BreadcrumbLink asChild>
+              <Link to="/settings">Settings</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem className="min-w-0">
+            <BreadcrumbPage>{settingsSection.label}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+    )
+  }
   if (!selected) return null
   const [, section, detail] = selected
   const title =

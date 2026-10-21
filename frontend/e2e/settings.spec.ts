@@ -21,8 +21,8 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
   await page.getByLabel('Password').fill(seed.users[9].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
-  await page.goto('/settings')
-  await expect(page).toHaveTitle('Settings · Rescribo')
+  await page.goto('/settings/members')
+  await expect(page).toHaveTitle('Members · Settings · Rescribo')
   await expect(
     page.getByRole('heading', { name: 'Members and invitations' }),
   ).toBeVisible()
@@ -45,7 +45,11 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
   await member.getByLabel('Confirm password').fill('Settings-member-2026!')
   await member.getByRole('button', { name: 'Accept invitation' }).click()
   await expect(member).toHaveURL(/\/inbox$/)
-  await member.goto('/settings')
+  await member.goto('/settings/workspace')
+  const memberNav = member.getByRole('navigation', {
+    name: 'Settings sections',
+  })
+  await expect(memberNav.getByRole('link')).toHaveCount(3)
   await expect(
     member.getByText(
       'Workspace owners manage invitations, members, connections and deletion.',
@@ -55,7 +59,33 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
     member.getByRole('button', { name: 'Delete workspace', exact: true }),
   ).toHaveCount(0)
   await member.close()
-  await page.reload()
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 })
+    for (const [slug, label] of [
+      ['appearance', 'Appearance'],
+      ['members', 'Members'],
+      ['connections', 'Connections'],
+      ['slack-account', 'Slack account'],
+      ['workspace', 'Workspace'],
+    ]) {
+      const nav = page.getByRole('navigation', { name: 'Settings sections' })
+      await nav.getByRole('link', { name: label }).click()
+      await expect(page).toHaveURL(new RegExp(`/settings/${slug}$`))
+      await expect(nav.getByRole('link', { name: label })).toHaveAttribute(
+        'aria-current',
+        'page',
+      )
+      expect(
+        await page.evaluate(
+          'document.documentElement.scrollWidth <= innerWidth',
+        ),
+      ).toBe(true)
+      await expectVisibleControlTouchTargets(page)
+      expect(await axeViolations(page)).toEqual([])
+    }
+  }
+  await page.setViewportSize({ width: 1280, height: 900 })
+  await page.goto('/settings/members')
   await expect(page.getByText('Settings Member', { exact: true })).toBeVisible()
   await expect(await axeViolations(page)).toEqual([])
   await page.screenshot({
@@ -94,7 +124,7 @@ test('owner manages invitations, members and confirmed deletion on desktop and m
     .getByRole('button', { name: 'Delete report', exact: true })
     .click()
   await expect(page).toHaveURL(/\/inbox$/)
-  await page.goto('/settings')
+  await page.goto('/settings/workspace')
   await page
     .getByRole('button', { name: 'Delete workspace', exact: true })
     .click()
@@ -133,7 +163,7 @@ test('a long member email does not overflow settings at 320px', async ({
     await route.fulfill({ response, json: members })
   })
   await page.setViewportSize({ width: 320, height: 740 })
-  await page.goto('/settings')
+  await page.goto('/settings/members')
   await expect(
     page.getByRole('button', { name: /^Remove invite-0000000000000/ }),
   ).toBeVisible()
@@ -156,7 +186,7 @@ test('the Slack connect form passes API validation', async ({ page }) => {
   await page.route('https://slack.com/**', (route) =>
     route.fulfill({ body: 'Slack' }),
   )
-  await page.goto('/settings')
+  await page.goto('/settings/connections')
   const slack = page.getByRole('region', { name: 'Slack', exact: true })
   await slack.locator('form').nth(1).getByRole('checkbox').check()
   const [request] = await Promise.all([
@@ -188,7 +218,7 @@ test('a passing Slack check shows its result beside the button (mocked)', async 
     route.fulfill({ status: 204 }),
   )
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/settings')
+  await page.goto('/settings/connections')
   const slack = page.getByRole('region', { name: 'Slack', exact: true })
   await slack.getByRole('button', { name: 'Check Slack status' }).click()
   await expect(slack.getByRole('status')).toContainText(
@@ -213,7 +243,7 @@ test('an owner allows and removes a Slack channel from the picker', async ({
   await page.getByLabel('Password').fill(seed.users[4].password)
   await page.getByRole('button', { name: 'Sign in' }).click()
   await expect(page).toHaveURL(/\/inbox$/)
-  await page.goto('/settings')
+  await page.goto('/settings/connections')
   const slack = page.getByRole('region', { name: 'Slack', exact: true })
   const channels = slack.getByRole('region', { name: 'Allowed Slack channels' })
   await channels

@@ -66,7 +66,7 @@ export function ReleasePicker({
       {error && reason === 'connection_not_ready' ? (
         <p role="alert">
           Connect GitHub in workspace settings to link a release.{' '}
-          <Link className="underline" to="/settings">
+          <Link className="underline" to="/settings/connections">
             Open settings
           </Link>
         </p>

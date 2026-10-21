@@ -129,4 +129,10 @@ test.each([
   expect(
     await screen.findByText((text) => text.includes(message)),
   ).toBeVisible()
+  if (reason === 'connection_not_ready') {
+    expect(screen.getByRole('link', { name: 'Open settings' })).toHaveAttribute(
+      'href',
+      '/settings/connections',
+    )
+  }
 })

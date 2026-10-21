@@ -413,7 +413,7 @@ function ConnectionGuidance() {
       </p>
       <Link
         className="w-fit text-primary underline underline-offset-4"
-        to="/settings"
+        to="/settings/connections"
       >
         Open workspace settings
       </Link>

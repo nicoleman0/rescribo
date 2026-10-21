@@ -143,6 +143,36 @@ test('shows the exact persisted preview and posts only after explicit approval',
   ).toBeInTheDocument()
 })
 
+test('connection guidance opens the Connections settings section', async () => {
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    [`POST ${base}/preview/`]: () =>
+      json(
+        {
+          detail: 'Connect GitHub.',
+          reason: 'connection_not_ready',
+          field_errors: {},
+        },
+        409,
+      ),
+  })
+  renderWorkspaceRoutes(
+    [
+      {
+        path: '/problems/prob-1',
+        element: <GitHubIssueCreate workspaceId="ws-1" problem={problem} />,
+      },
+    ],
+    '/problems/prob-1',
+  )
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Create GitHub issue' }),
+  )
+  expect(
+    await screen.findByRole('link', { name: 'Open workspace settings' }),
+  ).toHaveAttribute('href', '/settings/connections')
+})
+
 test('renders Markdown and explains GitHub mention behavior', async () => {
   stubApi({
     'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
