@@ -2,13 +2,14 @@ import { expect, test } from '@playwright/test'
 import { saveSeedSession, seedSessionPath } from './seed-session.js'
 
 const commandInputSession = seedSessionPath('command-input-focus')
+const OWNER = 2
 
 test.beforeAll(async ({ browser }, info) => {
   await saveSeedSession(
     browser,
     info.project.use.baseURL,
     commandInputSession,
-    2,
+    OWNER,
   )
 })
 
@@ -212,6 +213,22 @@ async function expectCommandInputRing(
   await expect
     .poll(() => input.evaluate((element) => element.matches(':focus-visible')))
     .toBe(true)
+  const ringColor = await input.evaluate((element) => {
+    const probe = document.createElement('div')
+    probe.style.outlineColor = 'var(--ring)'
+    element.ownerDocument.body.append(probe)
+    const color = getComputedStyle(probe).outlineColor
+    probe.remove()
+    return color
+  })
+  await expect
+    .poll(() =>
+      input.evaluate((element) => {
+        const group = element.closest('[data-slot=input-group]')!
+        return getComputedStyle(group).outlineColor
+      }),
+    )
+    .toBe(ringColor)
   const style = await input.evaluate((element) => {
     const group = element.closest('[data-slot=input-group]')!
     const groupStyle = getComputedStyle(group)
