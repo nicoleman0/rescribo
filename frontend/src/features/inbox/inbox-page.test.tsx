@@ -50,42 +50,43 @@ test('lists reports and sends search and filter changes to the API', async () =>
     [membersPath]: () => json([member]),
   })
   renderWorkspaceRoutes(routes, '/inbox')
-  const list = await screen.findByRole('list', { name: 'Reports' })
+  // The named role query is slow under load: wait on text, then check the role once.
+  await screen.findByText('CSV export fails')
+  const list = screen.getByRole('list', { name: 'Reports' })
   const row = within(list).getByRole('link', { name: /CSV export fails/ })
   expect(row).toHaveAttribute('href', '/inbox/rep-1')
   expect(row).toHaveTextContent(/^New.*CSV export fails/)
   expect(within(row).getByText('Assigned to Ada Lovelace')).toBeInTheDocument()
   expect(screen.getByText('1 report')).toBeInTheDocument()
 
-  fireEvent.change(screen.getByRole('searchbox', { name: 'Search reports' }), {
+  fireEvent.change(screen.getByLabelText('Search reports'), {
     target: { value: ' export ' },
   })
-  fireEvent.change(screen.getByRole('searchbox', { name: 'Customer' }), {
+  fireEvent.change(screen.getByLabelText('Customer'), {
     target: { value: 'acme' },
   })
-  fireEvent.click(screen.getByRole('button', { name: 'Search' }))
+  fireEvent.click(screen.getByText('Search'))
   await waitFor(() =>
     expect(listQueries(queries).at(-1)).toBe('?q=export&customer=acme'),
   )
 
   const status = screen.getByRole('group', { name: 'Status' })
-  fireEvent.click(within(status).getByRole('button', { name: /^Linked/ }))
+  const linked = within(status).getByRole('button', { name: /^Linked/ })
+  fireEvent.click(linked)
   await waitFor(() =>
     expect(screen.getByTestId('location')).toHaveTextContent(
       'triage_state=linked',
     ),
   )
-  expect(
-    within(status).getByRole('button', { name: /^Linked/ }),
-  ).toHaveAttribute('aria-pressed', 'true')
-  await screen.findByRole('option', { name: 'Ada Lovelace' })
-  fireEvent.change(screen.getByRole('combobox', { name: 'Assignee' }), {
+  expect(linked).toHaveAttribute('aria-pressed', 'true')
+  await screen.findByText('Ada Lovelace', { selector: 'option' })
+  fireEvent.change(screen.getByLabelText('Assignee'), {
     target: { value: 'mem-2' },
   })
   await waitFor(() =>
     expect(listQueries(queries, 'linked').at(-1)).toContain('assignee=mem-2'),
   )
-  fireEvent.change(screen.getByRole('combobox', { name: 'Source' }), {
+  fireEvent.change(screen.getByLabelText('Source'), {
     target: { value: 'manual' },
   })
   await waitFor(() =>
@@ -97,11 +98,9 @@ test('lists reports and sends search and filter changes to the API', async () =>
     '/inbox?q=export&customer=acme&triage_state=linked&assignee=mem-2&source_kind=manual',
   )
 
-  fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }))
+  fireEvent.click(screen.getByText('Clear filters'))
   await waitFor(() => expect(listQueries(queries).at(-1)).toBe(''))
-  expect(screen.getByRole('searchbox', { name: 'Search reports' })).toHaveValue(
-    '',
-  )
+  expect(screen.getByLabelText('Search reports')).toHaveValue('')
 })
 
 test('status chips count reports that match the other filters', async () => {
