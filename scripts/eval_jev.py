@@ -9,10 +9,10 @@ API: https://openrouter.ai/docs/guides/community/jev-tutorial
 
 import argparse
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
-import environ
 import httpx
 
 from eval_baseline import REPOSITORY_ROOT, RESULTS
@@ -26,6 +26,9 @@ from eval_matcher import (
     retrieval,
 )
 from live_check import required_environment
+
+sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+from env_file import read_env_file  # noqa: E402
 
 DECISIONS_URL = "https://openrouter.ai/api/alpha/decisions"
 # Pinned; the -latest alias would change under a recorded result.
@@ -187,7 +190,7 @@ def main() -> None:
     )
     if not arguments.yes:
         return
-    environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
+    read_env_file(REPOSITORY_ROOT / ".env")
     with httpx.Client(timeout=60) as client:
         result = run(
             batches, pools, arguments.run, client, required_environment("OPENROUTER_API_KEY")

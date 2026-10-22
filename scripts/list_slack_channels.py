@@ -8,7 +8,6 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import environ
 from slack_sdk import WebClient
 
 from live_check import required_environment
@@ -16,12 +15,13 @@ from live_check import required_environment
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 
+from env_file import read_env_file  # noqa: E402
 from integrations.slack.channel_directory import (  # noqa: E402
     MAX_LISTED_CHANNELS,
     collect_member_channels,
 )
 
-environ.Env.read_env(REPOSITORY_ROOT / ".env.slack-feasibility", overwrite=False)
+read_env_file(REPOSITORY_ROOT / ".env.slack-feasibility")
 
 
 def list_channels(client: WebClient) -> tuple[list[dict[str, Any]], bool]:

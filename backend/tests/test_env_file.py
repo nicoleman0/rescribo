@@ -105,3 +105,16 @@ def test_filter_is_removed_after_reading(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setattr(environ.Env, "ENVIRON", {})
     read_env_file(write_env_file(tmp_path))
     assert logging.getLogger("environ.environ").filters == []
+
+
+def test_only_the_helper_reads_env_files() -> None:
+    root = Path(__file__).resolve().parents[2]
+    helper = root / "backend" / "env_file.py"
+    tests = root / "backend" / "tests"
+    offenders = [
+        str(path.relative_to(root))
+        for folder in (root / "scripts", root / "backend")
+        for path in sorted(folder.rglob("*.py"))
+        if path != helper and tests not in path.parents and "read_env(" in path.read_text()
+    ]
+    assert not offenders, f"Use env_file.read_env_file, which redacts invalid lines: {offenders}"

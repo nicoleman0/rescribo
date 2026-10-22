@@ -11,14 +11,14 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlencode, urlparse
 
-import environ
 import httpx
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+from env_file import read_env_file  # noqa: E402
 
-environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
-environ.Env.read_env(REPOSITORY_ROOT / ".env.github-feasibility", overwrite=False)
+read_env_file(REPOSITORY_ROOT / ".env")
+read_env_file(REPOSITORY_ROOT / ".env.github-feasibility")
 
 from integrations.github_app import (  # noqa: E402
     GitHubAppClient,
