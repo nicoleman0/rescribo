@@ -21,7 +21,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import environ
 import psycopg
 
 from eval_baseline import REPOSITORY_ROOT, RESULTS, retrieve_all
@@ -30,6 +29,7 @@ from live_check import required_environment
 
 sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
 
+from env_file import read_env_file  # noqa: E402
 from matching.contract import (  # noqa: E402
     CONTRACT_VERSION,
     Candidate,
@@ -251,7 +251,7 @@ def gates(cases: list[Case], rust: dict[str, Any], run: RustRun, exam: bool) -> 
 
 
 def load_pools(batches: list[Batch]) -> dict[str, list[str]]:
-    environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
+    read_env_file(REPOSITORY_ROOT / ".env")
     pools: dict[str, list[str]] = {}
     with psycopg.connect(required_environment("RESCRIBO_DATABASE_URL")) as connection:
         for batch in batches:

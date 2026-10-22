@@ -7,11 +7,11 @@ so an agent running it does not see exam text.
 """
 
 import argparse
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from string import Template
 
-import environ
 import httpx
 
 from eval_cases import (
@@ -33,6 +33,9 @@ from eval_label import render_case
 from live_check import required_environment
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+from env_file import read_env_file  # noqa: E402
+
 PROMPT = EVAL_ROOT / "reviewer" / "prompt.md"
 SYSTEM = "You are a careful reviewer. Reply with one JSON object and nothing else."
 
@@ -87,7 +90,7 @@ def main() -> None:
         "--model", required=True, help="OpenRouter id; not Claude, Jev, or the generator"
     )
     arguments = parser.parse_args()
-    environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
+    read_env_file(REPOSITORY_ROOT / ".env")
     usage: list[int] = []
     with httpx.Client(timeout=300) as client:
         complete = openrouter(

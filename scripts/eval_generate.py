@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import secrets
+import sys
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -16,13 +17,15 @@ from pathlib import Path
 from string import Template
 from typing import Any
 
-import environ
 import httpx
 
 from eval_cases import EVAL_ROOT, EXCLUDED_MODEL, CaseKind, Split, batch_directory, parse_batch
 from live_check import required_environment
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+from env_file import read_env_file  # noqa: E402
+
 PROMPTS = EVAL_ROOT / "prompts"
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 PER_PROBLEM_KINDS = [
@@ -243,7 +246,7 @@ def main() -> None:
     if directory.exists():
         parser.error(f"{directory} already exists; regenerate under a new batch id")
 
-    environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
+    read_env_file(REPOSITORY_ROOT / ".env")
     usage: list[int] = []
     with httpx.Client(timeout=300) as client:
         complete = openrouter(

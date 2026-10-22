@@ -7,17 +7,20 @@ eval/matching/results/. `--preliminary` prints them for an unreviewed batch with
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-import environ
 import psycopg
 
 from eval_cases import EVAL_ROOT, Batch, Case, is_usable, load_batch
 from live_check import required_environment
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPOSITORY_ROOT / "backend"))
+from env_file import read_env_file  # noqa: E402
+
 RESULTS = EVAL_ROOT / "results"
 POOL_SIZE = 10
 
@@ -125,7 +128,7 @@ def main() -> None:
     if not arguments.preliminary and not is_usable(arguments.batch_id):
         parser.error(f"{arguments.batch_id} has not passed its spot-check (task eval:label)")
     batch = load_batch(arguments.batch_id)
-    environ.Env.read_env(REPOSITORY_ROOT / ".env", overwrite=False)
+    read_env_file(REPOSITORY_ROOT / ".env")
     with psycopg.connect(required_environment("RESCRIBO_DATABASE_URL")) as connection:
         pools = retrieve_all(connection, batch)
         server = connection.info.parameter_status("server_version")
