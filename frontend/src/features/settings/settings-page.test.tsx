@@ -78,7 +78,9 @@ test('members see connections but no owner controls', async () => {
     [`GET ${base}connections/`]: () => json([]),
   })
   render()
-  expect(await screen.findByRole('heading', { name: 'GitHub' })).toBeVisible()
+  // The named role query is slow under load: wait on text, then check the role once.
+  await screen.findByText('GitHub', { selector: 'h2' })
+  expect(screen.getByRole('heading', { name: 'GitHub' })).toBeVisible()
   expect(
     screen.queryByRole('button', { name: 'Delete workspace' }),
   ).not.toBeInTheDocument()
