@@ -55,7 +55,7 @@ The other `outline-none`/`outline-hidden` elements are not buttons or links (dia
 
 ### `input-group.tsx`
 
-Replace `border-ring`, `ring-3`, and `ring-ring/50` on the control-focus variant with `focus-ring`. Keep the `in-data-[slot=combobox-content]` overrides unchanged.
+Replace `border-ring`, `ring-3`, and `ring-ring/50` on the control-focus variant with `focus-ring`. Keep the `in-data-[slot=combobox-content]` overrides unchanged. Gate `transition-colors` with `motion-safe:` so focused input groups do not fade under reduced motion, as required by `web-interface/spec.md:349` and `:671`.
 
 ### Command inputs
 
