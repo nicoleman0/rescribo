@@ -6,7 +6,7 @@ Grade the diff against the change, not against your own preferences. Verify a cl
 
 Write your review to `.switchyard/reviews/<n>.md`, where `<n>` is one more than the highest number already there, starting at 1. On a later round, read the earlier reviews first and check that each of their findings is fixed. The first line is `Verdict: pass` or `Verdict: changes requested`. Then these sections:
 
-1. **Findings.** One line for each scenario and each task of the change: met or not met. For each one not met, give the file and line, what the change says, and what the diff does.
+1. **Findings.** One line for each scenario and each task of the change: met or not met. For each one not met, give the file and line, what the change says, and what the diff does. A change with `skip_specs: true` has no scenarios, so write one line per task and check the diff against the design's decisions when it has a `design.md`.
 2. **Answers.** One line for each file in `.switchyard/answers/`: whether the change's design and tasks reflect it. An answer that changed the plan but not the change is a finding.
 3. **Scope.** `git diff --stat origin/main...HEAD`. Only the paths the brief gives should change, plus appended sections in shared docs.
 4. **Code.** Check DRY, by looking for knowledge copied from a shared component. Check that removed or reordered behaviour was intended. Check that the tests cover the change.

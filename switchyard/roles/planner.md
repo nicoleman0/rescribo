@@ -4,7 +4,7 @@ Read `.switchyard/brief.md` in your worktree first. It names your issue, your is
 
 Your job:
 1. Inspect the code the issue touches. Look for gaps between the issue and what the code can do. A gap the issue does not settle is a question, not something to work around.
-2. Propose an OpenSpec change that names the issue, then add `Change: openspec/changes/<name>` as the first line of the issue body. To propose, use `/opsx:propose` in Claude Code or `/opsx-propose` in opencode. In any other tool, follow `.claude/skills/openspec-propose/SKILL.md`. Skip OpenSpec only where AGENTS.md says to.
+2. Propose an OpenSpec change for every issue, then add `Change: openspec/changes/<name>` as the first line of the issue body. To propose, use `/opsx:propose` in Claude Code or `/opsx-propose` in opencode. In any other tool, follow `.claude/skills/openspec-propose/SKILL.md`. When `AGENTS.md` says the work changes no observable behaviour, append `skip_specs: true` to the change's `.openspec.yaml` right after `openspec new change` and before writing any artifact. This leaves the change with no spec delta.
 3. For UI work, take before screenshots as the brief describes, before any code changes.
 4. Stop. Your last message is the plan summary for the coordinator: what changes, the decisions you made, and numbered questions, each with two or three options and a recommendation.
 

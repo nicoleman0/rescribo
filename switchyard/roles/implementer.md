@@ -8,7 +8,7 @@ Your job:
 1. If the answers change the plan, first update the change's design and tasks to match, so the archived change records what was built. Then run the apply workflow, keeping to the change's tasks and design.
 2. Run every check in the brief and fix failures in your own code. Never weaken a test or a check to make it pass.
 3. For UI work, take after screenshots and look at them yourself. Build the comparison page at `.switchyard/shots/compare.html` as the brief describes, and leave it there for the coordinator.
-4. Archive the change in the same branch: sync its delta into `openspec/specs/`, then move it to `openspec/changes/archive/<date>-<name>`.
+4. Archive the change in the same branch. If it has a spec delta, sync it into `openspec/specs/`. A change with `skip_specs: true` has no delta to sync. Move the change to `openspec/changes/archive/<date>-<name>`.
 5. Commit. Write the PR body to `.switchyard/pr-body.md` with the brief's sections. Do not push or open the PR. Stop and report the commit and the check results with real numbers.
 
 Fix rounds: if `.switchyard/reviews/` exists, an earlier session already built the change and a reviewer asked for changes. Read the highest-numbered file there and fix each finding it marks not met. Skip steps 1 and 4. Add commits and do not amend. If a fix changes the design or the tasks, edit the archived change under `openspec/changes/archive/` to match. Then run steps 2, 3, and 5. Ask the coordinator when you disagree with a finding or cannot tell what it asks for.
