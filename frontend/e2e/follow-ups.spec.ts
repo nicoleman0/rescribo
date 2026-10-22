@@ -280,7 +280,7 @@ test.describe('Follow-ups', () => {
     await page.getByRole('link', { name: 'Back to follow-ups' }).click()
     await expect(page).toHaveURL(/\/follow-ups\?bucket=needs_approval$/)
     await expect(
-      page.getByRole('heading', { level: 1, name: 'Follow-ups' }),
+      page.getByRole('heading', { level: 1, name: 'Follow-ups', exact: true }),
     ).toBeVisible()
     await expect(
       page.getByRole('navigation', { name: 'Follow-up buckets' }),
