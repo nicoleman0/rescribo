@@ -13,12 +13,14 @@
 - [x] 2.6 List rows: `report-list.tsx`, `problems-page.tsx`, `follow-ups-page.tsx` (row): replace `focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset` with `focus-visible:focus-ring-inset`. `problem-picker.tsx`: replace the `has-focus-visible:` ring classes with `has-focus-visible:focus-ring-inset`.
 - [x] 2.7 Segmented options: `status-chips.tsx` and `follow-ups-page.tsx` (tabs): replace `focus-visible:ring-3 focus-visible:ring-ring/50` with `focus-visible:focus-ring-inset`. `theme-settings.tsx`: replace the `has-focus-visible:` ring classes with `has-focus-visible:focus-ring-inset`.
 - [x] 2.8 Verify: `grep -rn "ring-ring/" frontend/src` returns nothing outside test files. In the dev server, Tab through Inbox (chips, rows), Problems (rows, picker), Follow-ups (tabs, rows), Settings (theme, palette), the member picker, and the sign-in form, in light and dark. Each focused element shows one solid ring and none is cut off.
+- [x] 2.9 In `command.tsx`, make the `CommandInput` input group apply `focus-ring-inset` when its `data-slot="command-input"` is focus-visible. Keep `outline-hidden` on the input. Both the member picker and command palette use this component. The command surface and palette dialog clip overflow, so use the inset outline.
 
 ## 3. Checks and docs
 
 - [x] 3.1 `frontend/e2e/theme-tokens.spec.ts`: hold `--ring` to 3:1 over the full `SURFACES` list. Verify: test passes for all palettes and themes.
 - [x] 3.2 Same file: add a test that tabs to the email input and the submit button on `/sign-in` and asserts a solid 2px outline whose painted colour equals the painted `--ring` at full alpha, and no `ring-ring/50` box-shadow. Wait out the `press` transition before reading styles. Verify: the test fails on `main` and passes on this branch.
 - [x] 3.3 Add a short Focus section to `frontend/DESIGN.md`: one indicator, the two utilities and when to use each, the base-layer rule for buttons and links. Do not reword other sections.
+- [x] 3.4 In `frontend/e2e/theme-tokens.spec.ts`, verify the member picker and command palette inputs draw one fully opaque 2px inset `--ring` outline in light and dark themes.
 
 ## 4. Repository checks
 

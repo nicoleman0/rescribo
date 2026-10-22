@@ -7,7 +7,9 @@ Delivers #225. Focus halos use `ring-ring/50`, the ring token at 50% opacity. In
 - Add one shared focus style: a 2px solid `--ring` outline, as the utilities `focus-ring` (outside the element) and `focus-ring-inset` (inside it).
 - Move the global `button`/`a` focus rule into the base layer and build it from `focus-ring`, so component classes can replace it instead of stacking on it.
 - Replace `ring-ring/50` in all 13 files with `focus-ring` or `focus-ring-inset`. Buttons and badges lose the `border-ring` focus border and the halo.
+- Apply `focus-ring-inset` to command inputs in the member picker and command palette.
 - Extend the `--ring` contrast check to every surface a ring can sit on, and add a check that a focused input and button draw the solid `--ring` colour.
+- Verify both command inputs draw the same solid ring in light and dark themes.
 - Add a short Focus section to `frontend/DESIGN.md`.
 
 ## Capabilities
@@ -24,6 +26,7 @@ None. The existing requirement "Readable text in every palette" already sets 3:1
 
 - `frontend/src/styles/theme.css`, `frontend/src/index.css`.
 - `frontend/src/components/ui/`: `button.tsx`, `badge.tsx`, `input.tsx`, `textarea.tsx`, `native-select.tsx`, `input-group.tsx`.
+- `frontend/src/components/ui/command.tsx`.
 - `frontend/src/components/layout/app-shell.tsx`.
 - `frontend/src/features/`: `inbox/report-list.tsx`, `inbox/status-chips.tsx`, `problems/problems-page.tsx`, `problems/problem-picker.tsx`, `follow-ups/follow-ups-page.tsx`, `settings/theme-settings.tsx`.
 - `frontend/e2e/theme-tokens.spec.ts`, `frontend/DESIGN.md`.

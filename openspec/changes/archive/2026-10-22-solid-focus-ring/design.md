@@ -16,7 +16,6 @@ See proposal.md for the problem. Facts that shape the approach, checked in the r
 **Non-Goals:**
 - The `aria-invalid` destructive ring (`ring-destructive/20`).
 - Focus styles that are already solid: sidebar items, the skip link, `<main>`, inline links, menu and command items (these use a background change).
-- The member picker's search input. It draws no focus ring at all, because `CommandPrimitive.Input` lacks the `data-slot` that `input-group.tsx` watches. That is a separate gap.
 - Test files under `frontend/src` (#220).
 
 ## Decisions
@@ -56,13 +55,20 @@ The other `outline-none`/`outline-hidden` elements are not buttons or links (dia
 
 ### `input-group.tsx`
 
-Replace `border-ring`, `ring-3`, and `ring-ring/50` on the control-focus variant with `focus-ring`. The `in-data-[slot=combobox-content]` overrides stay as they are; there is no combobox in the app.
+Replace `border-ring`, `ring-3`, and `ring-ring/50` on the control-focus variant with `focus-ring`. Keep the `in-data-[slot=combobox-content]` overrides unchanged.
+
+### Command inputs
+
+`CommandInput` wraps `CommandPrimitive.Input` in an `InputGroup`. Its input uses `data-slot="command-input"` and keeps `outline-hidden`, so the generic input-group control selector does not match it. Add a command-input focus selector to this `InputGroup` and apply `focus-ring-inset`.
+
+The command surface clips overflow. The command palette dialog also clips overflow. An inset outline stays inside the input group in both the member picker popover and the command palette dialog. `CommandInput` is shared, so both inputs use the same indicator.
 
 ### Checks
 
 In `frontend/e2e/theme-tokens.spec.ts`:
 - Hold `--ring` to 3:1 over the full `SURFACES` list. Inset rings sit on `--muted` (hover) and `--selected`; the wordmark link sits on `--sidebar`.
 - On `/sign-in`, Tab to the email input and to the submit button. Assert each has a solid 2px outline whose painted colour equals the painted `--ring`, at full alpha. This is what ties the #203 token check to what is drawn.
+- In the member picker and command palette, focus the command input in light and dark themes. Assert the input group draws one 2px inset outline in the fully opaque `--ring` colour.
 
 ### Spec
 
@@ -70,6 +76,6 @@ In `frontend/e2e/theme-tokens.spec.ts`:
 
 ## Risks / Trade-offs
 
-- [The outer ring is 4px outside the control and can be cut by a parent with overflow] → Clipped places use `focus-ring-inset`. The implementer tabs through Inbox, Problems, Follow-ups, Settings, and the member picker in both themes and notes any cut ring.
+- [The outer ring is 4px outside the control and can be cut by a parent with overflow] → Clipped places use `focus-ring-inset`. The implementer tabs through Inbox, Problems, Follow-ups, Settings, the member picker, and command palette in both themes and notes any cut ring.
 - [Inputs change from a soft halo to a ring with a gap] → It is the same look as buttons now. Before and after shots cannot show focus; the PR says so.
 - [A later shadcn registry update to `button.tsx` or `badge.tsx` brings the halo back] → The DESIGN.md Focus section names the rule, and the e2e check on the sign-in button fails if the button draws something else.
