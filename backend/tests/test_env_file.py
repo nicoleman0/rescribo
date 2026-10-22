@@ -6,7 +6,7 @@ from pathlib import Path
 import environ
 import pytest
 
-from config.env_file import read_env_file
+from env_file import read_env_file
 
 ENV_TEXT = (
     "GOOD=kept\n"
@@ -54,8 +54,9 @@ def test_redacted_warning_reaches_stderr_without_logging_config(tmp_path: Path) 
             sys.executable,
             "-c",
             "from pathlib import Path; import sys; "
-            "from config.env_file import read_env_file; "
-            "read_env_file(Path(sys.argv[1]))",
+            "from env_file import read_env_file; "
+            "read_env_file(Path(sys.argv[1])); "
+            "assert 'config' not in sys.modules and 'celery' not in sys.modules",
             str(path),
         ],
         cwd=backend,
