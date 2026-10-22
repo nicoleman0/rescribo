@@ -361,6 +361,16 @@
   }
 }
 
+@utility focus-ring {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+@utility focus-ring-inset {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
 @utility press {
   @media (prefers-reduced-motion: no-preference) {
     transition-property:

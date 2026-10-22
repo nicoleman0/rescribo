@@ -179,7 +179,7 @@ function ShellContents({
               <Link
                 to="/inbox"
                 aria-label="rescribo, go to inbox"
-                className="rounded-control focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="rounded-control focus-visible:focus-ring"
               >
                 <Wordmark />
               </Link>

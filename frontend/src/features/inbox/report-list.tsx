@@ -49,7 +49,7 @@ export function ReportList({
                   to={`/inbox/${report.id}${search}`}
                   aria-current={report.id === selectedId ? 'page' : undefined}
                   className={cn(
-                    'relative grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset @2xl:grid-cols-[5.5rem_minmax(0,1fr)_10rem_auto_7rem] @2xl:py-0',
+                    'relative grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_auto] items-center gap-x-3 px-4 py-2 outline-none hover:bg-muted focus-visible:focus-ring-inset @2xl:grid-cols-[5.5rem_minmax(0,1fr)_10rem_auto_7rem] @2xl:py-0',
                     report.id === selectedId &&
                       'bg-selected before:absolute before:inset-y-2 before:left-0 before:w-0.5 before:rounded-pill before:bg-primary',
                   )}

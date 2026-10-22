@@ -178,7 +178,7 @@ function TabButton({
         aria-pressed={active}
         onClick={onClick}
         className={cn(
-          'inline-flex min-h-8 items-center gap-2 rounded-control px-3 text-sm whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+          'inline-flex min-h-8 items-center gap-2 rounded-control px-3 text-sm whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring-inset',
           touchTarget,
           active && 'bg-card font-medium text-foreground shadow-elevation-1',
         )}
@@ -327,7 +327,7 @@ function FollowUpRow({
         to={`/follow-ups/${followUp.id}${search}`}
         aria-current={followUp.id === selectedId ? 'page' : undefined}
         className={cn(
-          'grid gap-2 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset md:grid-cols-[minmax(0,1fr)_13rem] md:items-center md:gap-4',
+          'grid gap-2 px-4 py-3 outline-none hover:bg-muted focus-visible:focus-ring-inset md:grid-cols-[minmax(0,1fr)_13rem] md:items-center md:gap-4',
           followUp.id === selectedId && 'bg-selected',
         )}
       >

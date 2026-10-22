@@ -223,7 +223,7 @@ function ProblemList({ page }: { page: ProblemPage }) {
         <li key={problem.id}>
           <Link
             to={`/problems/${problem.id}`}
-            className="grid gap-1.5 px-4 py-3 outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-inset"
+            className="grid gap-1.5 px-4 py-3 outline-none hover:bg-muted focus-visible:focus-ring-inset"
           >
             <span className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
               <span className="min-w-0 grow basis-48 font-medium break-words">

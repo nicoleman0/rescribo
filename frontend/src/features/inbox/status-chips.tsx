@@ -53,7 +53,7 @@ export function StatusChips({
               aria-pressed={active}
               onClick={() => onChange(chip.value ?? '')}
               className={cn(
-                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-sm whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50',
+                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control px-2.5 text-sm whitespace-nowrap text-muted-foreground outline-none hover:text-foreground focus-visible:focus-ring-inset',
                 touchTarget,
                 active &&
                   'bg-card font-medium text-foreground shadow-elevation-1',

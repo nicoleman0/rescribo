@@ -119,7 +119,7 @@ const PAIRS: { on: string; over: string[]; min: number }[] = [
   { on: '--accent-foreground', over: ['--accent'], min: 4.5 },
   { on: '--primary-foreground', over: ['--primary'], min: 4.5 },
   { on: '--destructive-foreground', over: ['--destructive'], min: 4.5 },
-  { on: '--ring', over: ['--background', '--card', '--raised'], min: 3 },
+  { on: '--ring', over: SURFACES, min: 3 },
 ]
 
 const luminance = ([red, green, blue]: number[]) => {
@@ -128,6 +128,63 @@ const luminance = ([red, green, blue]: number[]) => {
     return unit <= 0.04045 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4
   })
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+for (const palette of PALETTES) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`${palette} ${theme} focused sign-in controls draw the ring token`, async ({
+      page,
+    }) => {
+      await page.addInitScript((value) => {
+        localStorage.setItem('rescribo-palette', value)
+      }, palette)
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto('/sign-in')
+
+      const email = page.getByLabel('Email')
+      const submit = page.getByRole('button', { name: 'Sign in' })
+      await page.keyboard.press('Tab')
+      await expect(email).toBeFocused()
+
+      for (const control of [email, submit]) {
+        if (control === submit) {
+          await page.keyboard.press('Tab')
+          await page.keyboard.press('Tab')
+          await expect(submit).toBeFocused()
+        }
+        await page.waitForTimeout(120)
+        const style = await control.evaluate((element) => {
+          const computed = getComputedStyle(element)
+          const ringProbe = document.createElement('canvas')
+          const context = ringProbe.getContext('2d')!
+          context.fillStyle = getComputedStyle(document.documentElement)
+            .getPropertyValue('--ring')
+            .trim()
+          context.fillRect(0, 0, 1, 1)
+          return {
+            outlineStyle: computed.outlineStyle,
+            outlineWidth: computed.outlineWidth,
+            outlineOffset: computed.outlineOffset,
+            outlineColor: computed.outlineColor,
+            ring: [...context.getImageData(0, 0, 1, 1).data],
+            boxShadow: computed.boxShadow,
+          }
+        })
+        const outlinePixel = await page.evaluate((color) => {
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')!
+          context.fillStyle = color
+          context.fillRect(0, 0, 1, 1)
+          return [...context.getImageData(0, 0, 1, 1).data]
+        }, style.outlineColor)
+        expect(style.outlineStyle).toBe('solid')
+        expect(style.outlineWidth).toBe('2px')
+        expect(outlinePixel).toEqual(style.ring)
+        expect(style.outlineOffset).toBe('2px')
+        expect(style.boxShadow).toBe('none')
+      }
+    })
+  }
 }
 
 const contrast = (a: number[], b: number[]) => {
