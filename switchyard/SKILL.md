@@ -82,6 +82,7 @@ Run `scripts/preflight.sh <provider>...` first, passing the provider names in `r
 4. **Review the plan.**
    - Read the change on disk: the proposal, the design, the spec delta, and the tasks. The planner's last message is only its list of questions.
    - Check the change against the code and the specs. Verify any claim it makes about the code or the data before you rely on it.
+   - A change with `skip_specs: true` has no spec delta. Check that the planner set the flag only when the work changes no observable behaviour.
    - Answer what you can.
    - Bring product decisions to the maintainer: anything that changes behaviour the issue does not settle, or that reaches past the paths the issue owns.
    - Write the answers to `<path>/.switchyard/answers/plan.md`.
