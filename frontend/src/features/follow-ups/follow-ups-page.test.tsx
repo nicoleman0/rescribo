@@ -75,6 +75,7 @@ const detailResponse = () =>
     created_at: '2026-09-20T10:00:00Z',
     updated_at: '2026-09-20T10:00:00Z',
     history: [],
+    can_record_outcome: true,
   })
 
 test('lists follow-ups and switches buckets in the URL', async () => {

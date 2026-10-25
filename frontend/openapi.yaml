@@ -4571,7 +4571,11 @@ components:
           format: date-time
         history:
           readOnly: true
+        can_record_outcome:
+          type: boolean
+          readOnly: true
       required:
+      - can_record_outcome
       - created_at
       - history
       - id

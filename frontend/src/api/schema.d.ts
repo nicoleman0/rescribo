@@ -1466,6 +1466,7 @@ export interface components {
             /** Format: date-time */
             updated_at: string;
             readonly history: unknown;
+            readonly can_record_outcome: boolean;
         };
         FollowUpListItem: {
             /** Format: uuid */

@@ -12,7 +12,7 @@ from rest_framework import serializers
 from accounts.models import Membership
 from accounts.views import ErrorSerializer
 from connections.errors import ERROR_DETAILS
-from feedback.follow_ups import BUCKETS
+from feedback.follow_ups import BUCKETS, can_record_outcome
 from feedback.inbox import InboxFilters
 from feedback.models import (
     Activity,
@@ -670,6 +670,7 @@ class FollowUpDetailSerializer(serializers.Serializer):
     created_at = serializers.DateTimeField()
     updated_at = serializers.DateTimeField()
     history = serializers.SerializerMethodField()
+    can_record_outcome = serializers.SerializerMethodField()
 
     def get_notification(self, follow_up: FollowUp) -> Any:
         from feedback.follow_ups import current_notification
@@ -684,6 +685,11 @@ class FollowUpDetailSerializer(serializers.Serializer):
             follow_up_history(workspace_id=follow_up.workspace_id, follow_up=follow_up)[:50],
             many=True,
         ).data
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_can_record_outcome(self, follow_up: FollowUp) -> bool:
+        # No fallback: a view that forgets the actor should fail, not answer wrongly.
+        return can_record_outcome(actor=self.context["actor"], report=follow_up.report)
 
 
 class FollowUpNotificationEditSerializer(serializers.Serializer):
