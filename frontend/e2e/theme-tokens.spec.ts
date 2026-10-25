@@ -1,4 +1,17 @@
 import { expect, test } from '@playwright/test'
+import { saveSeedSession, seedSessionPath } from './seed-session.js'
+
+const commandInputSession = seedSessionPath('command-input-focus')
+const OWNER = 2
+
+test.beforeAll(async ({ browser }, info) => {
+  await saveSeedSession(
+    browser,
+    info.project.use.baseURL,
+    commandInputSession,
+    OWNER,
+  )
+})
 
 // The raw-colour check keeps literals in theme.css; this table is the one deliberate copy.
 // Each token's colour before the palette variables existed for issue 197: [light, dark].
@@ -119,7 +132,7 @@ const PAIRS: { on: string; over: string[]; min: number }[] = [
   { on: '--accent-foreground', over: ['--accent'], min: 4.5 },
   { on: '--primary-foreground', over: ['--primary'], min: 4.5 },
   { on: '--destructive-foreground', over: ['--destructive'], min: 4.5 },
-  { on: '--ring', over: ['--background', '--card', '--raised'], min: 3 },
+  { on: '--ring', over: SURFACES, min: 3 },
 ]
 
 const luminance = ([red, green, blue]: number[]) => {
@@ -130,9 +143,165 @@ const luminance = ([red, green, blue]: number[]) => {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
+for (const palette of PALETTES) {
+  for (const theme of ['light', 'dark'] as const) {
+    test(`${palette} ${theme} focused sign-in controls draw the ring token`, async ({
+      page,
+    }) => {
+      await page.addInitScript((value) => {
+        localStorage.setItem('rescribo-palette', value)
+      }, palette)
+      await page.emulateMedia({ colorScheme: theme })
+      await page.goto('/sign-in')
+
+      const email = page.getByLabel('Email')
+      const submit = page.getByRole('button', { name: 'Sign in' })
+      await page.keyboard.press('Tab')
+      await expect(email).toBeFocused()
+
+      for (const control of [email, submit]) {
+        if (control === submit) {
+          await page.keyboard.press('Tab')
+          await page.keyboard.press('Tab')
+          await expect(submit).toBeFocused()
+        }
+        await page.waitForTimeout(120)
+        const style = await control.evaluate((element) => {
+          const computed = getComputedStyle(element)
+          const ringProbe = document.createElement('canvas')
+          const context = ringProbe.getContext('2d')!
+          context.fillStyle = getComputedStyle(document.documentElement)
+            .getPropertyValue('--ring')
+            .trim()
+          context.fillRect(0, 0, 1, 1)
+          return {
+            outlineStyle: computed.outlineStyle,
+            outlineWidth: computed.outlineWidth,
+            outlineOffset: computed.outlineOffset,
+            outlineColor: computed.outlineColor,
+            ring: [...context.getImageData(0, 0, 1, 1).data],
+            boxShadow: computed.boxShadow,
+          }
+        })
+        const outlinePixel = await page.evaluate((color) => {
+          const canvas = document.createElement('canvas')
+          const context = canvas.getContext('2d')!
+          context.fillStyle = color
+          context.fillRect(0, 0, 1, 1)
+          return [...context.getImageData(0, 0, 1, 1).data]
+        }, style.outlineColor)
+        expect(style.outlineStyle).toBe('solid')
+        expect(style.outlineWidth).toBe('2px')
+        expect(outlinePixel).toEqual(style.ring)
+        expect(style.outlineOffset).toBe('2px')
+        expect(style.boxShadow).toBe('none')
+      }
+    })
+  }
+}
+
 const contrast = (a: number[], b: number[]) => {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x)
   return (light + 0.05) / (dark + 0.05)
+}
+
+async function expectCommandInputRing(
+  page: import('@playwright/test').Page,
+  input: import('@playwright/test').Locator,
+) {
+  await expect(input).toBeFocused()
+  await expect
+    .poll(() => input.evaluate((element) => element.matches(':focus-visible')))
+    .toBe(true)
+  const ringColor = await input.evaluate((element) => {
+    const probe = document.createElement('div')
+    probe.style.outlineColor = 'var(--ring)'
+    element.ownerDocument.body.append(probe)
+    const color = getComputedStyle(probe).outlineColor
+    probe.remove()
+    return color
+  })
+  await expect
+    .poll(() =>
+      input.evaluate((element) => {
+        const group = element.closest('[data-slot=input-group]')!
+        return getComputedStyle(group).outlineColor
+      }),
+    )
+    .toBe(ringColor)
+  const style = await input.evaluate((element) => {
+    const group = element.closest('[data-slot=input-group]')!
+    const groupStyle = getComputedStyle(group)
+    const inputStyle = getComputedStyle(element)
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')!
+    context.fillStyle = groupStyle.getPropertyValue('--ring').trim()
+    context.fillRect(0, 0, 1, 1)
+    return {
+      outlineStyle: groupStyle.outlineStyle,
+      outlineWidth: groupStyle.outlineWidth,
+      outlineOffset: groupStyle.outlineOffset,
+      outlineColor: groupStyle.outlineColor,
+      ring: [...context.getImageData(0, 0, 1, 1).data],
+      boxShadowAlphas: [
+        ...groupStyle.boxShadow.matchAll(/rgba?\(([^)]+)\)/g),
+      ].map((match) => {
+        const channels = match[1].split(',').map((channel) => channel.trim())
+        return channels.length === 4 ? Number(channels[3]) : 1
+      }),
+      inputOutlineStyle: inputStyle.outlineStyle,
+    }
+  })
+  const outlinePixel = await page.evaluate((color) => {
+    const canvas = document.createElement('canvas')
+    const context = canvas.getContext('2d')!
+    context.fillStyle = color
+    context.fillRect(0, 0, 1, 1)
+    return [...context.getImageData(0, 0, 1, 1).data]
+  }, style.outlineColor)
+  expect(style.outlineStyle).toBe('solid')
+  expect(style.outlineWidth).toBe('2px')
+  expect(style.outlineOffset).toBe('-2px')
+  expect(style.boxShadowAlphas.every((alpha) => alpha === 0)).toBe(true)
+  expect(outlinePixel, JSON.stringify({ style, outlinePixel })).toEqual(
+    style.ring,
+  )
+  expect(style.ring[3]).toBe(255)
+  expect(style.inputOutlineStyle).toBe('none')
+}
+
+for (const theme of ['light', 'dark'] as const) {
+  test(`${theme} member picker and command palette inputs draw one inset ring`, async ({
+    browser,
+  }, info) => {
+    const context = await browser.newContext({
+      baseURL: String(info.project.use.baseURL),
+      storageState: commandInputSession,
+    })
+    const page = await context.newPage()
+    await page.emulateMedia({ colorScheme: theme })
+    const title = `Command input focus ${theme} ${Date.now()}`
+    try {
+      await page.goto('/inbox/new')
+      await page.getByLabel('Title').fill(title)
+      await page.getByRole('button', { name: 'Create report' }).click()
+      await expect(page).toHaveURL(/\/inbox\/[0-9a-f-]+$/)
+
+      const assignee = page.getByRole('combobox', { name: /^Assignee:/ })
+      await assignee.click()
+      const memberInput = page.getByPlaceholder('Search members')
+      await expectCommandInputRing(page, memberInput)
+
+      await page.keyboard.press('Escape')
+      await page.keyboard.press('Control+k')
+      const palette = page.getByRole('dialog', { name: 'Command palette' })
+      const paletteInput = palette.getByRole('combobox')
+      await expectCommandInputRing(page, paletteInput)
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    } finally {
+      await context.close()
+    }
+  })
 }
 
 for (const palette of PALETTES) {

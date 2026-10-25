@@ -136,7 +136,7 @@ export function ProblemPicker({
                   <li key={problem.id}>
                     <label
                       className={cn(
-                        'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-3 py-2.5 hover:bg-muted has-checked:bg-selected has-focus-visible:ring-3 has-focus-visible:ring-ring/50 has-focus-visible:ring-inset',
+                        'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-start gap-3 px-3 py-2.5 hover:bg-muted has-checked:bg-selected has-focus-visible:focus-ring-inset',
                         touchTarget,
                       )}
                     >
