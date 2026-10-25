@@ -9,7 +9,7 @@
 - A session asked to deliver issues is the coordinator when it can read `AGENTS.md` and run the skill's scripts: read `switchyard/SKILL.md` and follow it.
 - For issues delivered through `work-issues`, always make an OpenSpec change. When no observable behaviour changes, such as bugs where code diverges from the spec, tooling, infrastructure, or refactors, set `skip_specs: true` in its `.openspec.yaml`. A hand-made PR outside the skill may use an issue and PR with no change.
 - Run `npx @fission-ai/openspec validate --all --strict` when specs or changes are edited.
-- The workflow files follow [Switchyard](https://github.com/nicoleman0/switchyard); `switchyard/VERSION` names the release. Take a later release with `python3 switchyard/scripts/update-switchyard.py` on a new branch. Rescribo's own parts are `hooks/`, `routing.md`, the Isolation, Screenshots, and Shared files sections of `brief-template.md`, and `scripts/shots.mjs`. Send any other change to the skill upstream first.
+- The workflow files follow [Switchyard](https://github.com/nicoleman0/switchyard); `switchyard/VERSION` names the release. Take a later release with `npx create-switchyard@latest update` on a new branch. Rescribo's own parts are `hooks/`, `routing.md`, the Isolation, Screenshots, and Shared files sections of `brief-template.md`, and `scripts/shots.mjs`. Send any other change to the skill upstream first.
 
 ## Project
 

@@ -20,17 +20,33 @@ spec = json.loads(Path(sys.argv[1]).read_text())
 tmp = Path(tempfile.mkdtemp())
 
 
+def image_tool() -> str:
+    if shutil.which("sips"):
+        return "sips"
+    if shutil.which("magick"):
+        return "magick"
+    # ImageMagick 6 has no magick command. Both IM 6 and IM 7 print ImageMagick here.
+    convert = shutil.which("convert")
+    if convert:
+        result = subprocess.run([convert, "-version"], capture_output=True, text=True, check=False)
+        # Windows ships a convert.exe that converts FAT volumes to NTFS.
+        if "ImageMagick" in result.stdout:
+            return "convert"
+    sys.exit("compare.py needs sips (macOS) or ImageMagick (magick or convert) to shrink the screenshots")
+
+
+tool = image_tool()
+
+
 def img(directory: str, name: str) -> str:
     src = Path(directory) / f"{name}.png"
     out = tmp / f"{Path(directory).name}-{name}.jpg"
     width = "390" if "phone" in name else "1100"
-    if shutil.which("sips"):
+    if tool == "sips":
         command = ["sips", "-s", "format", "jpeg", "-s", "formatOptions", "62",
                    "--resampleWidth", width, str(src), "--out", str(out)]
-    elif shutil.which("magick"):
-        command = ["magick", str(src), "-resize", f"{width}x", "-quality", "62", str(out)]
     else:
-        sys.exit("compare.py needs sips (macOS) or ImageMagick (magick) to shrink the screenshots")
+        command = [tool, str(src), "-resize", f"{width}x", "-quality", "62", str(out)]
     subprocess.run(command, check=True, capture_output=True)
     return "data:image/jpeg;base64," + base64.b64encode(out.read_bytes()).decode()
 

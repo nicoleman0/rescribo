@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Project hook: drop the issue's database and flush its Redis index.
-# Runs from the main checkout before the worktree is removed, with ISSUE,
-# BRANCH, WORKTREE, and MAIN_CHECKOUT set.
+# Runs from the main checkout; the worktree folder may already be gone.
+# ISSUE, BRANCH, WORKTREE, and MAIN_CHECKOUT are set.
 set -euo pipefail
 
 redis_index=$(python3 "$MAIN_CHECKOUT/switchyard/hooks/redis_index.py" held "$ISSUE")

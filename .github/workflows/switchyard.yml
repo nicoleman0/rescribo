@@ -15,6 +15,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+      - name: Compile Python scripts on Python 3.10
+        run: git ls-files -z 'switchyard/*.py' | xargs -0 python3 -m py_compile
+      - name: Test the scripts on Python 3.10
+        run: python3 -m unittest discover -s switchyard/scripts -p 'test_*.py'
+      - uses: actions/setup-python@v7
+        with:
+          # '3.x' resolves to the newest stable Python 3, never a pre-release.
+          python-version: '3.x'
+          # Without this, the runner's cached Python wins over a newer release.
+          check-latest: true
       - name: Lint shell scripts
         run: git ls-files -z 'switchyard/*.sh' | xargs -0 shellcheck
       - name: Compile Python scripts
@@ -27,6 +40,7 @@ jobs:
         if: github.repository == 'nicoleman0/switchyard'
         run: |
           python3 - <<'PY'
+          import json
           import re
           from pathlib import Path
 
@@ -38,6 +52,16 @@ jobs:
           if version != releases[0]:
               raise SystemExit(f'VERSION is {version}; newest release heading is {releases[0]}')
           print(f'VERSION matches newest release: {version}')
+          package = json.loads(Path('create-switchyard/package.json').read_text())['version']
+          if package != version:
+              raise SystemExit(f'create-switchyard/package.json is {package}; VERSION is {version}')
+          print(f'create-switchyard matches: {package}')
           PY
+      - name: Test the npm installer
+        if: github.repository == 'nicoleman0/switchyard'
+        # The package bundles every release from v0.7.0, read from their tags.
+        run: |
+          git fetch --no-tags --depth=1 origin '+refs/tags/v*:refs/tags/v*'
+          npm test --prefix create-switchyard
       - name: Validate OpenSpec
         run: npx --yes @fission-ai/openspec validate --all --strict
