@@ -55,7 +55,10 @@ TEMPLATE_FILES = {
     "docs/social-preview.png": b"png\n",
     "docs/pixelart.py": b"print('banner')\n",
     CHART: b"<svg></svg>\n",
+    "create-switchyard/package.json": b"{}\n",
+    "create-switchyard/bin/create-switchyard.mjs": b"// bin\n",
 }
+PACKAGE = "create-switchyard"
 
 
 class InitProjectTests(unittest.TestCase):
@@ -117,6 +120,41 @@ class InitProjectTests(unittest.TestCase):
         self.assertIn("Project section of AGENTS.md", result.stdout)
         self.assertIn("no commits", result.stdout)
 
+    def test_deletes_the_package_folder(self):
+        self.fresh_project()
+        result = self.run_init()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse((self.project / PACKAGE).exists())
+        self.assertIn(f"deleted   {PACKAGE}\n", result.stdout)
+
+    def test_uncommitted_change_under_the_package_keeps_it(self):
+        self.fresh_project()
+        (self.project / PACKAGE / "package.json").write_text('{"edited": true}\n')
+        result = self.run_init()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"skipped   {PACKAGE} (uncommitted changes)", result.stdout)
+        self.assertTrue((self.project / PACKAGE / "package.json").exists())
+
+    def test_new_untracked_file_under_the_package_keeps_it(self):
+        self.fresh_project()
+        (self.project / PACKAGE / "notes.md").write_text("mine\n")
+        result = self.run_init()
+        self.assertIn(f"skipped   {PACKAGE} (uncommitted changes)", result.stdout)
+        self.assertTrue((self.project / PACKAGE / "notes.md").exists())
+
+    def test_ignored_build_output_does_not_block_the_package_delete(self):
+        self.write_template()
+        (self.project / PACKAGE / ".gitignore").write_text("dist/\n")
+        self.git("init", "-q")
+        self.git("add", "-A")
+        self.git("commit", "-qm", "template")
+        (self.project / PACKAGE / "dist").mkdir()
+        (self.project / PACKAGE / "dist" / "release.bundle").write_bytes(b"x")
+        result = self.run_init()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(f"deleted   {PACKAGE}\n", result.stdout)
+        self.assertFalse((self.project / PACKAGE).exists())
+
     def test_rerun_skips_absent_and_keeps_the_moved_guide(self):
         self.fresh_project()
         self.assertEqual(self.run_init().returncode, 0)
@@ -128,6 +166,7 @@ class InitProjectTests(unittest.TestCase):
         self.assertIn(f"skipped   README.md ({GUIDE} already exists)", result.stdout)
         for name in DELETED:
             self.assertIn(f"skipped   {name} (absent)", result.stdout)
+        self.assertIn(f"skipped   {PACKAGE} (absent)", result.stdout)
         self.assertEqual(guide_before, (self.project / GUIDE).read_bytes())
 
     def test_existing_destination_is_not_overwritten(self):

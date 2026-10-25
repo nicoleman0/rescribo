@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
+import re
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 
@@ -14,6 +18,7 @@ SCRIPT = Path(__file__).with_name("update-switchyard.py").resolve()
 VERSION = "switchyard/VERSION"
 ROUTING = "switchyard/routing.md"
 PATHS = "switchyard/update-paths.txt"
+CHANGELOG = "CHANGELOG.md"
 UPDATER = "switchyard/scripts/update-switchyard.py"
 COVERED = [
     ".claude/agents",
@@ -25,6 +30,7 @@ COVERED = [
     "AGENTS.md",
     "openspec/config.yaml",
 ]
+UNDO_HEADER = b"To undo this run before you stage or commit, run:\n"
 INIT_COMMAND = "npx @fission-ai/openspec init --tools claude,codex,opencode"
 RELEASE_AGENTS = (
     b"# Working in this repository\n\n"
@@ -62,6 +68,13 @@ DEFAULT_FILES = {
     VERSION: b"0.1.0\n",
     PATHS: ("\n".join(COVERED) + "\n").encode(),
     "outside.txt": b"outside v1\n",
+    CHANGELOG: (
+        b"# Changelog\n\n"
+        b"## [Unreleased]\n\n- upcoming\n\n"
+        b"## [0.2.0] - 2026-10-11\n\n- second release\n\n"
+        b"## [0.1.0] - 2026-10-10\n\n- first release\n\n"
+        b"[Unreleased]: https://example.test/compare\n"
+    ),
 }
 
 
@@ -155,6 +168,126 @@ class UpdateSwitchyardTests(unittest.TestCase):
                               cwd=cwd or self.project, env=env,
                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    def run_check(self, *args: str) -> subprocess.CompletedProcess[bytes]:
+        return self.run_update("--check", *args)
+
+    def test_check_reports_current_behind_and_newer_versions(self) -> None:
+        self.make_project()
+        current = self.run_check()
+        self.assertEqual(current.returncode, 0, current.stderr.decode())
+        self.assertIn(b"0.1.0 is the newest release", current.stdout)
+
+        self.make_target()
+        behind = self.run_check()
+        self.assertEqual(behind.returncode, 3)
+        self.assertIn(b"0.1.0", behind.stdout)
+        self.assertIn(b"0.2.0", behind.stdout)
+        self.assertIn(b"npm init switchyard@latest update", behind.stdout)
+
+        (self.project / VERSION).write_text("0.3.0\n")
+        newer = self.run_check()
+        self.assertEqual(newer.returncode, 0)
+        self.assertIn(b"0.3.0 is newer than the newest release, 0.2.0", newer.stdout)
+
+    def test_check_refuses_missing_or_malformed_version(self) -> None:
+        self.make_project(version=None)
+        missing = self.run_check()
+        self.assertEqual(missing.returncode, 2)
+        self.assertIn(b"no VERSION found; nothing to compare", missing.stderr)
+
+        (self.project / VERSION).write_text("latest\n")
+        malformed = self.run_check()
+        self.assertEqual(malformed.returncode, 2)
+        self.assertIn(b"invalid VERSION", malformed.stderr)
+
+    def test_check_refuses_update_options(self) -> None:
+        self.make_project()
+        for option in (("--install",), ("--from", "0.1.0"), ("--to", "0.1.0"), ("--dry-run",)):
+            with self.subTest(option=option):
+                result = self.run_check(*option)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"--check cannot be combined", result.stderr)
+
+    def test_help_lists_check_flag(self) -> None:
+        result = subprocess.run(["python3", str(SCRIPT), "--help"], stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, check=False)
+        self.assertEqual(result.returncode, 0)
+        self.assertIn(b"--check", result.stdout)
+        self.assertIn(b"nothing", result.stdout)
+
+    def test_check_allows_dirty_tree_without_writing(self) -> None:
+        self.make_project()
+        (self.project / "local.txt").write_text("dirty\n")
+        before = self.git(self.project, "status", "--porcelain", "--untracked-files=all").stdout
+        result = self.run_check()
+        after = self.git(self.project, "status", "--porcelain", "--untracked-files=all").stdout
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(after, before)
+
+    def test_check_refuses_outside_git_work_tree(self) -> None:
+        outside = self.root / "outside-check"
+        outside.mkdir()
+        result = self.run_update("--check", cwd=outside)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"inside a git work tree", result.stderr)
+
+    def test_check_reports_unreachable_source_and_empty_releases(self) -> None:
+        self.make_project()
+        unreachable = self.run_check("--source", str(self.root / "missing-source"))
+        self.assertEqual(unreachable.returncode, 4)
+        self.assertIn(b"could not reach", unreachable.stderr)
+
+        empty = self.root / "empty-source"
+        self.init_repo(empty)
+        self.commit(empty, "no tags")
+        no_releases = self.run_check("--source", str(empty))
+        self.assertEqual(no_releases.returncode, 2)
+        self.assertIn(b"source has no release tags", no_releases.stderr)
+
+    def test_remote_release_timeout_kills_git_process_group(self) -> None:
+        module_spec = importlib.util.spec_from_file_location("update_switchyard", SCRIPT)
+        module = importlib.util.module_from_spec(module_spec)
+        sys.modules[module_spec.name] = module
+        try:
+            module_spec.loader.exec_module(module)
+        finally:
+            del sys.modules[module_spec.name]
+        git_bin = self.root / "slow-bin"
+        git_bin.mkdir()
+        stub = git_bin / "git"
+        stub.write_text("#!/bin/sh\nsleep 30\n")
+        stub.chmod(0o755)
+        started = time.monotonic()
+        previous_path = os.environ.get("PATH", "")
+        os.environ["PATH"] = str(git_bin) + os.pathsep + previous_path
+        try:
+            releases, reason = module.remote_releases("unused", 0.5)
+        finally:
+            os.environ["PATH"] = previous_path
+        self.assertIsNone(releases)
+        self.assertIn("timed out after 0.5s", reason)
+        self.assertLess(time.monotonic() - started, 5)
+
+    def before_undo(self, stdout: bytes) -> bytes:
+        """The output of a real run without its undo block."""
+        match = re.search(rb"Not undone: |\n" + re.escape(UNDO_HEADER), stdout)
+        return stdout if match is None else stdout[:match.start()]
+
+    def undo_commands(self, stdout: bytes) -> str:
+        self.assertIn(UNDO_HEADER, stdout)
+        return stdout.split(UNDO_HEADER, 1)[1].decode()
+
+    def snapshot(self) -> tuple[bytes, list[str]]:
+        dirs = sorted(path.relative_to(self.project).as_posix() for path in self.project.rglob("*")
+                      if path.is_dir() and ".git" not in path.relative_to(self.project).parts)
+        return self.git(self.project, "status", "--porcelain", "--untracked-files=all").stdout, dirs
+
+    def assert_undo_restores(self, result: subprocess.CompletedProcess[bytes], before: tuple[bytes, list[str]]) -> None:
+        undo = subprocess.run(["sh", "-c", self.undo_commands(result.stdout)], cwd=self.project,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.assertEqual(undo.returncode, 0, undo.stderr.decode())
+        self.assertEqual(self.snapshot(), before)
+
     def assert_refused_clean(self, result: subprocess.CompletedProcess[bytes], message: str) -> None:
         self.assertEqual(result.returncode, 2, result.stdout.decode() + result.stderr.decode())
         self.assertIn(message, result.stderr.decode())
@@ -170,6 +303,266 @@ class UpdateSwitchyardTests(unittest.TestCase):
                          b"first line\nstable line\nnew last line\n")
         self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
         self.assertIn(b"updated: switchyard/workflow.txt", result.stdout)
+
+    def test_undo_restores_updated_removed_and_added_files(self) -> None:
+        self.make_target({".github/workflows/switchyard.yml": b"ci v2\n",
+                          "switchyard/workflow.txt": None,
+                          "switchyard/sub/new file.txt": b"new\n",
+                          "switchyard/it's new.txt": b"quote\n"})
+        self.make_project()
+        before = self.snapshot()
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        commands = self.undo_commands(result.stdout)
+        self.assertIn("git restore -- ", commands)
+        self.assertIn("'switchyard/sub/new file.txt'", commands)
+        self.assertIn("rmdir -- switchyard/sub", commands)
+        self.assertNotIn("#", commands)
+        self.assert_undo_restores(result, before)
+        self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
+
+    def test_undo_deletes_version_when_project_had_none(self) -> None:
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nnew last line\n"})
+        self.make_project(version=None)
+        before = self.snapshot()
+        result = self.run_update("--from", "0.1.0")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn("rm -- ", self.undo_commands(result.stdout))
+        self.assertIn(VERSION, self.undo_commands(result.stdout))
+        self.assert_undo_restores(result, before)
+        self.assertFalse((self.project / VERSION).exists())
+
+    def test_undo_after_install_into_empty_repo_leaves_nothing(self) -> None:
+        self.make_target()
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+        before = self.snapshot()
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assert_undo_restores(result, before)
+        again = self.run_update("--install")
+        self.assertEqual(again.returncode, 0, again.stderr.decode())
+        self.assertIn(("Next: run " + INIT_COMMAND).encode(), again.stdout)
+
+    def test_undo_after_install_restores_tracked_agents_file(self) -> None:
+        self.make_target()
+        self.make_project(files={"AGENTS.md": b"# Mine\n\nrules\n"}, version=None)
+        before = self.snapshot()
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertNotEqual((self.project / "AGENTS.md").read_bytes(), b"# Mine\n\nrules\n")
+        self.assertIn("git restore -- AGENTS.md", self.undo_commands(result.stdout))
+        self.assert_undo_restores(result, before)
+        self.assertEqual((self.project / "AGENTS.md").read_bytes(), b"# Mine\n\nrules\n")
+
+    def test_conflict_run_prints_undo_and_exits_one(self) -> None:
+        self.make_target({"switchyard/workflow.txt": b"upstream\nstable line\nlast line\n"})
+        files = {**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                 "switchyard/workflow.txt": b"local\nstable line\nlast line\n"}
+        self.make_project(files=files)
+        before = self.snapshot()
+        result = self.run_update()
+        self.assertEqual(result.returncode, 1, result.stderr.decode())
+        self.assertIn(b"conflict: switchyard/workflow.txt", result.stdout)
+        self.assert_undo_restores(result, before)
+
+    def test_untracked_merged_file_is_not_undone(self) -> None:
+        self.make_target()
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+        (self.project / "AGENTS.md").write_bytes(b"# Mine\n\nrules\n")
+        result = self.run_update("--install")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        note = b"Not undone: AGENTS.md was not tracked by git; restore it by hand."
+        self.assertIn(note, result.stdout)
+        self.assertLess(result.stdout.index(note), result.stdout.index(UNDO_HEADER))
+        self.assertNotIn("AGENTS.md", self.undo_commands(result.stdout))
+
+    def test_already_at_prints_no_undo(self) -> None:
+        self.make_target()
+        self.make_project(version=b"0.2.0\n")
+        self.assertNotIn(UNDO_HEADER, self.run_update().stdout)
+
+    @unittest.skipIf(hasattr(os, "geteuid") and os.geteuid() == 0, "root ignores directory permissions")
+    def test_failed_write_prints_undo_for_finished_writes_and_exits_two(self) -> None:
+        self.make_target({"switchyard/a/new.txt": b"new\n",
+                          "switchyard/b.txt": b"b v2\n",
+                          "switchyard/z/locked.txt": b"locked\n"})
+        self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                                 "switchyard/b.txt": b"b v1\n", "switchyard/z/keep.txt": b"keep\n"})
+        self.source.joinpath("switchyard/b.txt").write_bytes(b"b v2\n")
+        locked = self.project / "switchyard/z"
+        before = self.snapshot()
+        locked.chmod(0o555)
+        try:
+            result = self.run_update("--from", "0.1.0")
+        finally:
+            locked.chmod(0o755)
+        self.assertEqual(result.returncode, 2, result.stdout.decode())
+        self.assertIn("update-switchyard:", result.stderr.decode())
+        self.assertEqual((self.project / VERSION).read_text(), "0.1.0\n")
+        commands = self.undo_commands(result.stdout)
+        for name in ("switchyard/b.txt", "switchyard/a/new.txt", "rmdir -- switchyard/a"):
+            self.assertIn(name, commands)
+        self.assertNotIn("locked.txt", commands)
+        self.assert_undo_restores(result, before)
+
+    def test_release_notes_cover_selected_releases_newest_first(self) -> None:
+        self.make_target()
+        self.make_project()
+        result = self.run_update()
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(b"Release notes, 0.1.0 to 0.2.0:\n\n## [0.2.0]", result.stdout)
+        self.assertNotIn(b"## [0.1.0]", result.stdout)
+        self.assertNotIn(b"Unreleased", result.stdout)
+        self.assertNotIn(b"[Unreleased]:", result.stdout)
+        self.assertEqual((self.project / CHANGELOG).read_bytes(), DEFAULT_FILES[CHANGELOG])
+
+    def test_release_notes_order_and_target_limit(self) -> None:
+        self.make_target()
+        self.source.joinpath(CHANGELOG).write_bytes(
+            DEFAULT_FILES[CHANGELOG].replace(
+                b"## [Unreleased]",
+                b"## [0.3.0] - 2026-10-24\n\n- third release\n\n## [Unreleased]",
+            )
+        )
+        self.commit(self.source, "third release")
+        self.tag(self.source, "v0.3.0")
+        self.make_project()
+        result = self.run_update("--to", "0.3.0")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertLess(result.stdout.index(b"## [0.3.0]"), result.stdout.index(b"## [0.2.0]"))
+        self.assertNotIn(b"## [0.1.0]", result.stdout)
+
+        other = self.root / "project-to-0.2.0"
+        self.project = other
+        self.make_project()
+        result = self.run_update("--to", "0.2.0")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(b"## [0.2.0]", result.stdout)
+        self.assertNotIn(b"## [0.3.0]", result.stdout)
+
+    def test_release_notes_are_in_dry_run_before_final_line(self) -> None:
+        self.make_target()
+        self.make_project()
+        dry_run = self.run_update("--dry-run")
+        self.assertEqual(dry_run.returncode, 0, dry_run.stderr.decode())
+        self.assertIn(b"Release notes, 0.1.0 to 0.2.0:", dry_run.stdout)
+        self.assertTrue(dry_run.stdout.endswith(b"Dry run: nothing was written.\n"))
+        real_run = self.run_update()
+        self.assertEqual(real_run.returncode, 0, real_run.stderr.decode())
+        self.assertEqual(dry_run.stdout, self.before_undo(real_run.stdout) + b"Dry run: nothing was written.\n")
+        self.assertNotIn(UNDO_HEADER, dry_run.stdout)
+
+    def test_already_at_has_no_release_notes_and_install_has_no_release_notes(self) -> None:
+        self.make_target()
+        self.make_project(version=b"0.2.0\n")
+        already = self.run_update()
+        self.assertEqual(already.stdout, b"Already at 0.2.0\n")
+
+        install_project = self.root / "install-project"
+        self.project = install_project
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+        installed = self.run_update("--install")
+        self.assertEqual(installed.returncode, 0, installed.stderr.decode())
+        self.assertNotIn(b"Release notes", installed.stdout)
+        self.assertFalse((self.project / CHANGELOG).exists())
+
+    def test_unavailable_release_notes_do_not_change_update_status(self) -> None:
+        cases = (
+            ("missing", None, b"has no CHANGELOG.md", 0),
+            ("unknown heading", b"## [0.2.0] - date\n\n## Foo\n", b"unknown heading: ## Foo", 0),
+            ("missing target section", b"## [Unreleased]\n\n## [0.1.0] - date\n", b"has no 0.2.0 section", 0),
+            ("non-UTF-8", b"\xff", b"is not UTF-8", 0),
+        )
+        for name, changelog, reason, expected_status in cases:
+            with self.subTest(name=name):
+                shutil.rmtree(self.source)
+                self.init_repo(self.source)
+                self.write_files(self.source, DEFAULT_FILES)
+                self.commit(self.source, "base")
+                self.tag(self.source, "v0.1.0")
+                self.project = self.root / f"project-{name.replace(' ', '-')}"
+                changes = {CHANGELOG: changelog}
+                self.make_target(changes)
+                self.make_project()
+                result = self.run_update()
+                self.assertEqual(result.returncode, expected_status, result.stderr.decode())
+                self.assertEqual(result.stdout.count(b"Release notes unavailable:"), 1)
+                self.assertIn(reason, result.stdout)
+                self.assertEqual((self.project / VERSION).read_text(), "0.2.0\n")
+
+    def test_unavailable_release_notes_preserve_conflict_status(self) -> None:
+        self.make_target({CHANGELOG: None,
+                          "switchyard/workflow.txt": b"upstream\nstable line\nlast line\n"})
+        self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                                 "switchyard/workflow.txt": b"local\nstable line\nlast line\n"})
+        result = self.run_update()
+        self.assertEqual(result.returncode, 1, result.stderr.decode())
+        self.assertIn(b"Release notes unavailable:", result.stdout)
+        self.assertIn(b"conflict: switchyard/workflow.txt", result.stdout)
+
+    def test_dry_run_reports_conflict_without_writing(self) -> None:
+        self.make_target({"switchyard/workflow.txt": b"upstream\nstable line\nlast line\n",
+                          ".github/workflows/switchyard.yml": b"ci v2\n"})
+        files = {**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                 "switchyard/workflow.txt": b"local\nstable line\nlast line\n"}
+        self.make_project(files=files)
+
+        dry_run = self.run_update("--dry-run")
+        self.assertEqual(dry_run.returncode, 1, dry_run.stderr.decode())
+        self.assertTrue(dry_run.stdout.endswith(b"Dry run: nothing was written.\n"))
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, b"")
+        self.assertEqual((self.project / VERSION).read_bytes(), b"0.1.0\n")
+
+        real_run = self.run_update()
+        self.assertEqual(real_run.returncode, 1, real_run.stderr.decode())
+        self.assertEqual(dry_run.stdout, self.before_undo(real_run.stdout) + b"Dry run: nothing was written.\n")
+        self.assertNotIn(UNDO_HEADER, dry_run.stdout)
+
+    def test_clean_dry_run_exits_zero(self) -> None:
+        self.make_target({"switchyard/workflow.txt": b"first line\nstable line\nnew last line\n"})
+        self.make_project()
+        result = self.run_update("--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertTrue(result.stdout.endswith(b"Dry run: nothing was written.\n"))
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, b"")
+        self.assertEqual((self.project / VERSION).read_bytes(), b"0.1.0\n")
+
+    def test_dry_run_already_at_target_reports_only_current_release(self) -> None:
+        self.make_target()
+        self.make_project(version=b"0.2.0\n")
+
+        result = self.run_update("--dry-run")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertEqual(result.stdout, b"Already at 0.2.0\n")
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, b"")
+        self.assertEqual((self.project / VERSION).read_bytes(), b"0.2.0\n")
+
+    def test_dry_run_refuses_dirty_project_without_writing(self) -> None:
+        self.make_target()
+        self.make_project()
+        workflow = self.project / "switchyard/workflow.txt"
+        workflow.write_bytes(b"dirty\n")
+        before = workflow.read_bytes()
+        result = self.run_update("--dry-run")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"uncommitted changes", result.stderr)
+        self.assertEqual(workflow.read_bytes(), before)
+        self.assertEqual((self.project / VERSION).read_bytes(), b"0.1.0\n")
+
+    def test_dry_run_binary_merge_refuses_without_writing(self) -> None:
+        self.make_target({"switchyard/workflow.txt": b"other changed\n",
+                          ".claude/agents/worker.md": b"\0upstream\n"})
+        self.make_project(files={**{k: v for k, v in DEFAULT_FILES.items() if k != "outside.txt"},
+                                 ".claude/agents/worker.md": b"\0local\n"})
+        before = self.git(self.project, "status", "--porcelain").stdout
+        workflow = (self.project / "switchyard/workflow.txt").read_bytes()
+        result = self.run_update("--dry-run")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"cannot merge", result.stderr)
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, before)
+        self.assertEqual((self.project / "switchyard/workflow.txt").read_bytes(), workflow)
+        self.assertEqual((self.project / VERSION).read_bytes(), b"0.1.0\n")
 
     def test_project_owned_routing_is_never_updated_or_removed(self) -> None:
         self.source.joinpath(ROUTING).write_bytes(b"example v1\n")
@@ -528,6 +921,25 @@ class UpdateSwitchyardTests(unittest.TestCase):
         after = self.run_update()
         self.assertEqual(after.returncode, 0, after.stdout.decode() + after.stderr.decode())
         self.assertIn(b"Already at 0.2.0", after.stdout)
+
+    def test_install_dry_run_reports_without_creating_files(self) -> None:
+        self.make_target()
+        self.make_project(files={"README.md": b"mine\n"}, version=None)
+
+        dry_run = self.run_update("--install", "--dry-run")
+        self.assertEqual(dry_run.returncode, 0, dry_run.stdout.decode() + dry_run.stderr.decode())
+        self.assertTrue(dry_run.stdout.endswith(b"Dry run: nothing was written.\n"))
+        self.assertEqual(self.git(self.project, "status", "--porcelain").stdout, b"")
+        self.assertFalse((self.project / VERSION).exists())
+        self.assertEqual(sorted(path.relative_to(self.project).as_posix()
+                                for path in self.project.rglob("*")
+                                if path.is_file() and ".git" not in path.relative_to(self.project).parts),
+                         ["README.md"])
+
+        real_run = self.run_update("--install")
+        self.assertEqual(real_run.returncode, 0, real_run.stderr.decode())
+        self.assertEqual(dry_run.stdout, self.before_undo(real_run.stdout) + b"Dry run: nothing was written.\n")
+        self.assertNotIn(UNDO_HEADER, dry_run.stdout)
 
     def test_install_merges_own_files(self) -> None:
         self.make_target()

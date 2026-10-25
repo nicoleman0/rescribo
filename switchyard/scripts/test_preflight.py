@@ -1,10 +1,13 @@
 from pathlib import Path
+import json
 import subprocess
+import sys
 import tempfile
 import unittest
 
 
 SCRIPT = Path(__file__).with_name("preflight.sh").resolve()
+COMPARE = Path(__file__).with_name("compare.py").resolve()
 PLACEHOLDER = "Replace this section with your project's rules. Agents read it on every task."
 
 
@@ -25,6 +28,21 @@ class PreflightTests(unittest.TestCase):
         path.write_text("#!/bin/sh\n" + body)
         path.chmod(0o755)
         return path
+
+    def add_image_stub(self, name, is_im):  # type: (str, bool) -> None
+        version = ""
+        if name == "convert":
+            # convert is only trusted when -version says ImageMagick.
+            version = 'if [ "$1" = "-version" ]; then\n' \
+                      '  echo "Version: ImageMagick 6.9.12-98 Q16 x86_64"\n' \
+                      '  exit 0\n' \
+                      'fi\n'
+            if not is_im:
+                version = 'if [ "$1" = "-version" ]; then\n  echo "not image magick"\n  exit 4\nfi\n'
+        # Stubs log the name and create their last argument, so compare.py sees output.
+        self.add(name, version + 'echo "$0" >> "$TOOL_LOG"\n'
+                                 'for arg in "$@"; do :; done\n'
+                                 ': > "$arg"\n')
 
     def run_check(self, extra_env=None, providers=(), cwd=None):
         env = {
@@ -68,6 +86,10 @@ class PreflightTests(unittest.TestCase):
         for name in ("git", "python3", "node", "npx", "gh", *extra):
             if name == "node":
                 self.add(name, 'exit "${NODE_PLAYWRIGHT_STATUS:-0}"\n')
+            elif name == "python3":
+                self.add(name, 'if [ -n "${CHECK_LOG:-}" ]; then printf "%s\\n" "$@" > "$CHECK_LOG"; fi\n'
+                                'printf "%s" "${CHECK_OUTPUT:-}"\n'
+                                'exit "${CHECK_STATUS:-0}"\n')
             elif name == "gh":
                 self.add(name, 'exit "${GH_AUTH_STATUS:-0}"\n')
             else:
@@ -84,6 +106,39 @@ class PreflightTests(unittest.TestCase):
         result = self.run_check()
         self.assertEqual(result.returncode, 1)
         self.assertIn("MISSING  git: not installed. Install Git with your system package manager.", result.stdout)
+
+    def test_switchyard_release_check_statuses_and_updater_path(self):
+        self.add_base("claude", "magick", "herdr")
+        log = self.root / "python-args"
+        result = self.run_check({"CHECK_LOG": str(log)})
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("ok       Switchyard release", result.stdout)
+        args = log.read_text().splitlines()
+        self.assertEqual(args[-1], "--check")
+        self.assertEqual(Path(args[0]), SCRIPT.with_name("update-switchyard.py"))
+
+        result = self.run_check({"CHECK_LOG": str(log), "CHECK_STATUS": "3",
+                                 "CHECK_OUTPUT": "0.1.0 is behind the newest release, 0.2.0"})
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("warn     Switchyard release: 0.1.0 is behind the newest release, 0.2.0", result.stdout)
+        self.assertIn("0 missing", result.stdout)
+        self.assertEqual(sum("Switchyard release:" in line for line in result.stdout.splitlines()), 1)
+
+        result = self.run_check({"CHECK_LOG": str(log), "CHECK_STATUS": "4",
+                                 "CHECK_OUTPUT": "could not reach source"})
+        self.assertNotIn("Switchyard release", result.stdout)
+        self.assertNotIn("Switchyard release", result.stderr)
+
+        result = self.run_check({"CHECK_LOG": str(log), "CHECK_STATUS": "2",
+                                 "CHECK_OUTPUT": "no VERSION found"})
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("warn     Switchyard release: could not check. no VERSION found", result.stdout)
+
+    def test_switchyard_release_check_is_skipped_without_python(self):
+        self.add_base("claude", "magick", "herdr")
+        (self.bin / "python3").unlink()
+        result = self.run_check()
+        self.assertNotIn("Switchyard release", result.stdout)
 
     def test_each_required_tool_has_a_fix_message(self):
         cases = (
@@ -142,6 +197,66 @@ class PreflightTests(unittest.TestCase):
                 result = self.run_check()
                 self.assertNotIn("warn     Image tool:", result.stdout)
                 (self.bin / image_tool).unlink()
+        self.add_image_stub("convert", True)
+        result = self.run_check()
+        self.assertNotIn("warn     Image tool:", result.stdout)
+        (self.bin / "convert").unlink()
+        self.add_image_stub("convert", False)
+        result = self.run_check()
+        self.assertIn("warn     Image tool:", result.stdout)
+
+    def run_compare(self):
+        before = self.root / "before"
+        after = self.root / "after"
+        for directory in (before, after):
+            directory.mkdir(exist_ok=True)
+            (directory / "home-desktop.png").touch()
+        spec = self.root / "spec.json"
+        spec.write_text(json.dumps({
+            "before": str(before), "after": str(after), "title": "t",
+            "heading": "h", "intro": "i", "meta": "m",
+            "screens": [["home-desktop", "", ""]],
+        }))
+        return subprocess.run(
+            [sys.executable, str(COMPARE), str(spec), str(self.root / "out.html")],
+            check=False, capture_output=True, text=True,
+            env={"PATH": str(self.bin), "TOOL_LOG": str(self.root / "tool.log"), "HOME": str(self.home)},
+        )
+
+    def test_compare_and_preflight_agree_on_the_image_tool(self):
+        # "convert!" marks a non-ImageMagick convert stub. The table is the
+        # only place the two scripts' rule cases live.
+        for stubs, expected in (
+            ("sips,magick,convert", "sips"),
+            ("magick,convert", "magick"),
+            ("convert", "convert"),
+            ("convert!", ""),
+            ("", ""),
+        ):
+            with self.subTest(stubs=stubs):
+                # Reset first, so a failing case leaves no state that breaks the next one.
+                for path in self.bin.iterdir():
+                    path.unlink()
+                for stray in ("tool.log", "out.html", "spec.json"):
+                    (self.root / stray).unlink(missing_ok=True)
+                self.add_base("claude")
+                for name in [s for s in stubs.split(",") if s]:
+                    self.add_image_stub(name.rstrip("!"), not name.endswith("!"))
+                preflight = self.run_check()
+                compare = self.run_compare()
+                self.assertEqual(
+                    "ok       Image tool" in preflight.stdout, compare.returncode == 0,
+                    preflight.stdout + compare.stderr,
+                )
+                self.assertEqual(expected, self.tool_log_name())
+
+    def tool_log_name(self):  # type: () -> str
+        # The agreed tool when exactly one ran, or "" when none did.
+        log = self.root / "tool.log"
+        if not log.exists():
+            return ""
+        names = {Path(line).name for line in log.read_text().splitlines()}
+        return next(iter(names)) if len(names) == 1 else ""
 
     def test_playwright_probe_and_missing_node_warning(self):
         self.add_base("claude", "magick", "herdr")

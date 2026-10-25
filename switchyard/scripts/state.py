@@ -9,9 +9,9 @@ import sys
 import tempfile
 
 
-def fail(issue, message):
+def fail(issue, message, status=1):
     print(f"Issue {issue}: {message}", file=sys.stderr)
-    raise SystemExit(1)
+    raise SystemExit(status)
 
 
 def repo_root():
@@ -36,7 +36,7 @@ def read_record(issue):
     try:
         return json.loads(path.read_text())
     except FileNotFoundError:
-        fail(issue, "no record. Run setup-worktree.sh, or state.py init")
+        fail(issue, "no record. Run setup-worktree.sh, or state.py init", 3)
     except (OSError, json.JSONDecodeError) as exc:
         fail(issue, f"cannot read record: {exc}")
 

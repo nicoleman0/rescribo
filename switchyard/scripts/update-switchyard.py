@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import shlex
+import signal
 import stat
 import subprocess
 import sys
@@ -19,14 +21,19 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_SOURCE = "https://github.com/nicoleman0/switchyard.git"
+CHECK_TIMEOUT = 10
 VERSION_PATH = "switchyard/VERSION"
 PROJECT_OWNED = {"switchyard/routing.md"}
 PATHS_PATH = "switchyard/update-paths.txt"
+CHANGELOG_PATH = "CHANGELOG.md"
 VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+CHANGELOG_RELEASE_RE = re.compile(r"^## \[(\d+\.\d+\.\d+)\] - ")
+CHANGELOG_LINK_RE = re.compile(r"^\[[^\]]+\]: ")
 AGENTS_PATH = "AGENTS.md"
 AGENTS_SECTIONS = ("Workflow", "Writing")
 GITIGNORE_PATH = ".gitignore"
 CONFIG_PATH = "openspec/config.yaml"
+UNDO_HEADER = "To undo this run before you stage or commit, run:"
 INIT_COMMAND = "npx @fission-ai/openspec init --tools claude,codex,opencode"
 
 
@@ -42,15 +49,110 @@ def git(*args: str, cwd: Path | None = None, check: bool = True) -> subprocess.C
     return result
 
 
+def find_project_root() -> Path:
+    result = git("rev-parse", "--show-toplevel", check=False)
+    if result.returncode:
+        raise Refusal("run this command inside a git work tree")
+    return Path(os.fsdecode(result.stdout.strip()))
+
+
 def release_tuple(value: str) -> tuple[int, int, int] | None:
     match = VERSION_RE.fullmatch(value)
     return tuple(map(int, match.groups())) if match else None
 
 
+def release_tags(names: list[str]) -> list[str]:
+    tags = [name for name in names if release_tuple(name) is not None]
+    return sorted(tags, key=lambda tag: release_tuple(tag) or (0, 0, 0))
+
+
 def list_releases(git_dir: Path) -> list[str]:
     result = git("--git-dir", str(git_dir), "tag", "--list", "v*", check=False)
-    tags = [line.decode() for line in result.stdout.splitlines() if release_tuple(line.decode()) is not None]
-    return sorted(tags, key=lambda tag: release_tuple(tag) or (0, 0, 0))
+    return release_tags([line.decode() for line in result.stdout.splitlines()])
+
+
+def read_version(project_root: Path) -> str | None:
+    validate_parent_paths(project_root, VERSION_PATH)
+    version_file = project_root / VERSION_PATH
+    try:
+        version_info = version_file.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(version_info.st_mode):
+        raise Refusal(f"{version_file.relative_to(project_root)} is not a regular local file")
+    return version_file.read_text().strip()
+
+
+def remote_releases(source: str, timeout: float) -> tuple[list[str] | None, str | None]:
+    env = os.environ.copy()
+    env["GIT_TERMINAL_PROMPT"] = "0"
+    try:
+        process = subprocess.Popen(
+            ["git", "ls-remote", "--tags", "--refs", source, "v*"],
+            stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            env=env, start_new_session=True,
+        )
+    except OSError as error:
+        return None, str(error)
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.communicate()
+        return None, f"timed out after {timeout:g}s"
+    if process.returncode:
+        return None, stderr.decode(errors="replace").strip() or f"git exited {process.returncode}"
+    names = [line.split(b"\t", 1)[1].decode(errors="replace").removeprefix("refs/tags/")
+             for line in stdout.splitlines() if b"\trefs/tags/" in line]
+    return release_tags(names), None
+
+
+def release_notes(content: bytes | None, base: tuple[int, int, int], target: tuple[int, int, int],
+                  target_tag: str) -> tuple[str | None, str | None]:
+    """Return release sections newer than base, or a reason notes are unavailable."""
+    if content is None:
+        return None, f"{target_tag} has no {CHANGELOG_PATH}"
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        return None, f"{CHANGELOG_PATH} in {target_tag} is not UTF-8"
+
+    lines = text.splitlines()
+    sections: list[tuple[tuple[int, int, int], list[str]]] = []
+    current_version: tuple[int, int, int] | None = None
+    current_lines: list[str] = []
+    target_found = False
+
+    def finish_section() -> None:
+        if current_version is not None:
+            sections.append((current_version, current_lines.copy()))
+
+    for line in lines:
+        if line.startswith("## "):
+            finish_section()
+            match = CHANGELOG_RELEASE_RE.match(line)
+            if line == "## [Unreleased]":
+                current_version = None
+                current_lines = []
+            elif match:
+                current_version = release_tuple(match.group(1))
+                current_lines = [line]
+                if current_version == target:
+                    target_found = True
+            else:
+                return None, f"{CHANGELOG_PATH} in {target_tag} has an unknown heading: {line}"
+            continue
+        if CHANGELOG_LINK_RE.match(line):
+            break
+        if current_version is not None:
+            current_lines.append(line)
+    finish_section()
+
+    target_label = ".".join(map(str, target))
+    if not target_found:
+        return None, f"{CHANGELOG_PATH} in {target_tag} has no {target_label} section"
+    selected = ["\n".join(section).rstrip() for version, section in sections if base < version <= target]
+    return "\n\n".join(selected), None
 
 
 def tree_entries(git_dir: Path, tag: str, paths: list[str]) -> dict[str, tuple[int, bytes]]:
@@ -431,6 +533,48 @@ def install_config_merge(release: bytes, local: bytes | None) -> tuple[bytes | N
     return "\n".join(final_lines).encode("utf-8"), "merged"
 
 
+@dataclass
+class Undo:
+    path: str
+    kind: str  # restore, delete, or untracked
+    dirs: list[str]  # parent directories the run creates for this path
+
+
+def plan_undo(root: Path, actions: list[Action], version_existed: bool) -> list[Undo]:
+    """One entry per write, in write order, VERSION last. Call before writing."""
+    writes = [(a.path, a.status) for a in actions if a.status == "removed" or a.content is not None]
+    paths = [path for path, _ in writes] + [VERSION_PATH]
+    listed = git("--literal-pathspecs", "ls-files", "-z", "--", *paths, cwd=root).stdout
+    tracked = {os.fsdecode(item) for item in listed.split(b"\0") if item}
+    entries = []
+    for path, status in writes + [(VERSION_PATH, None if version_existed else "added")]:
+        if status == "added":
+            dirs = []
+            parent = Path(path).parent
+            while parent.parts and not (root / parent).exists():
+                dirs.append(parent.as_posix())
+                parent = parent.parent
+            entries.append(Undo(path, "delete", dirs))
+        else:
+            entries.append(Undo(path, "restore" if path in tracked else "untracked", []))
+    return entries
+
+
+def undo_block(root: Path, entries: list[Undo]) -> str:
+    """Shell commands that undo the entries, filtered by what is on disk now."""
+    restore = [e.path for e in entries if e.kind == "restore"]
+    delete = [e.path for e in entries if e.kind == "delete" and os.path.lexists(root / e.path)]
+    dirs = sorted({d for e in entries for d in e.dirs if (root / d).is_dir()},
+                  key=lambda d: (-len(Path(d).parts), d))
+    lines = [f"Not undone: {shlex.quote(e.path)} was not tracked by git; restore it by hand."
+             for e in entries if e.kind == "untracked"]
+    commands = [f"{name} -- {' '.join(shlex.quote(p) for p in group)}"
+                for name, group in (("git restore", restore), ("rm", delete), ("rmdir", dirs)) if group]
+    if commands:
+        lines += ["", UNDO_HEADER, *commands]
+    return "\n".join(lines)
+
+
 def run() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", default=DEFAULT_SOURCE, help="Switchyard repository or local clone")
@@ -438,29 +582,52 @@ def run() -> int:
     parser.add_argument("--to", dest="target", help="target release; defaults to newest release")
     parser.add_argument("--install", action="store_true",
                         help="install the workflow into a repository that has no VERSION file")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="print the report without writing any file")
+    parser.add_argument("--check", action="store_true",
+                        help="report whether VERSION is behind the newest release; writes nothing")
     args = parser.parse_args()
 
     try:
+        if args.check:
+            if args.install or args.base or args.target or args.dry_run:
+                raise Refusal("--check cannot be combined with --install, --from, --to, or --dry-run")
+            project_root = find_project_root()
+            stored = read_version(project_root)
+            if stored is None:
+                raise Refusal("no VERSION found; nothing to compare")
+            current = release_tuple(stored)
+            if current is None:
+                raise Refusal(f"invalid VERSION {stored!r}; use X.Y.Z or vX.Y.Z")
+            releases, reason = remote_releases(args.source, CHECK_TIMEOUT)
+            if releases is None:
+                print(f"update-switchyard: could not reach {args.source}: {reason}", file=sys.stderr)
+                return 4
+            if not releases:
+                raise Refusal("source has no release tags")
+            newest = release_tuple(releases[-1])
+            assert newest is not None
+            current_label = ".".join(map(str, current))
+            newest_label = ".".join(map(str, newest))
+            if current < newest:
+                print(f"{current_label} is behind the newest release, {newest_label}. "
+                      "Update with: npm init switchyard@latest update")
+                return 3
+            if current == newest:
+                print(f"{current_label} is the newest release")
+            else:
+                print(f"{current_label} is newer than the newest release, {newest_label}")
+            return 0
+
         if args.install and args.base:
             raise Refusal("--install starts from nothing; it does not take --from")
-        root_result = git("rev-parse", "--show-toplevel", check=False)
-        if root_result.returncode:
-            raise Refusal("run this command inside a git work tree")
-        project_root = Path(os.fsdecode(root_result.stdout.strip()))
+        project_root = find_project_root()
         dirty = git("status", "--porcelain", "--untracked-files=no", cwd=project_root).stdout
         if dirty:
             raise Refusal("tracked files have uncommitted changes; commit or stash them before updating")
 
-        validate_parent_paths(project_root, VERSION_PATH)
         version_file = project_root / VERSION_PATH
-        try:
-            version_info = version_file.lstat()
-        except FileNotFoundError:
-            stored = None
-        else:
-            if not stat.S_ISREG(version_info.st_mode):
-                raise Refusal(f"{version_file.relative_to(project_root)} is not a regular local file")
-            stored = version_file.read_text().strip()
+        stored = read_version(project_root)
         if args.install and stored is not None:
             raise Refusal(f"{version_file.relative_to(project_root)} already names {stored}; run the updater without --install")
         raw_base = args.base or stored
@@ -514,6 +681,17 @@ def run() -> int:
             for listed in paths:
                 if not any(covers(path, [listed]) for path in target_tree):
                     raise Refusal(f"path {listed} from {PATHS_PATH} is missing in {target}")
+
+            notes: str | None = None
+            notes_reason: str | None = None
+            if not args.install:
+                changelog = git("--git-dir", str(bare), "show", f"{target}:{CHANGELOG_PATH}", check=False)
+                notes, notes_reason = release_notes(
+                    changelog.stdout if changelog.returncode == 0 else None,
+                    base_version,
+                    target_version,
+                    target,
+                )
 
             actions: list[Action] = []
             counts: dict[str, int] = {}
@@ -595,21 +773,33 @@ def run() -> int:
 
             for action in actions:
                 local_file(project_root, action.path)
-            for action in actions:
-                full_path = project_root / action.path
-                if action.status == "removed":
-                    full_path.unlink(missing_ok=True)
-                elif action.content is not None:
-                    full_path.parent.mkdir(parents=True, exist_ok=True)
-                    full_path.write_bytes(action.content)
-                    if action.mode is not None:
-                        full_path.chmod(0o755 if action.mode == 0o100755 else 0o644)
-                if action.status:
-                    counts[action.status] = counts.get(action.status, 0) + 1
-                    print(f"{action.status}: {action.path}")
-            version_file = project_root / VERSION_PATH
-            version_file.parent.mkdir(parents=True, exist_ok=True)
-            version_file.write_text(target_label + "\n")
+            undo = plan_undo(project_root, actions, stored is not None)
+            started = 0
+            try:
+                for action in actions:
+                    full_path = project_root / action.path
+                    if not args.dry_run and (action.status == "removed" or action.content is not None):
+                        started += 1
+                        if action.status == "removed":
+                            full_path.unlink(missing_ok=True)
+                        elif action.content is not None:
+                            full_path.parent.mkdir(parents=True, exist_ok=True)
+                            full_path.write_bytes(action.content)
+                            if action.mode is not None:
+                                full_path.chmod(0o755 if action.mode == 0o100755 else 0o644)
+                    if action.status:
+                        counts[action.status] = counts.get(action.status, 0) + 1
+                        print(f"{action.status}: {action.path}")
+                version_file = project_root / VERSION_PATH
+                if not args.dry_run:
+                    started += 1
+                    version_file.parent.mkdir(parents=True, exist_ok=True)
+                    version_file.write_text(target_label + "\n")
+            except OSError:
+                block = undo_block(project_root, undo[:started])
+                if block:
+                    print(block)
+                raise
             for status in ("added", "updated", "removed", "merged", "conflict", "kept"):
                 if counts.get(status):
                     print(f"{status}: {counts[status]}")
@@ -618,6 +808,17 @@ def run() -> int:
                     print(f"Next: run {INIT_COMMAND} in this repository")
                 if agents_existed:
                     print("Next: list the project's checks in AGENTS.md")
+            elif notes_reason:
+                print(f"\nRelease notes unavailable: {notes_reason}")
+            else:
+                print(f"\nRelease notes, {base_label} to {target_label}:\n")
+                print(notes or "")
+            if args.dry_run:
+                print("Dry run: nothing was written.")
+            else:
+                block = undo_block(project_root, undo)
+                if block:
+                    print(block)
             return 1 if counts.get("conflict") or counts.get("kept") else 0
     except (OSError, Refusal) as error:
         print(f"update-switchyard: {error}", file=sys.stderr)

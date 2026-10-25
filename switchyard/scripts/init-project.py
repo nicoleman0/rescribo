@@ -2,7 +2,7 @@
 """Initialize a project freshly made from Switchyard.
 
 Moves the workflow guide to docs/WORKFLOW.md and deletes Switchyard-only
-files, including locally edited ones: a committed copy stays in git history.
+files and the create-switchyard folder, including locally edited ones: a committed copy stays in git history.
 Skips listed paths with uncommitted changes, because git could not restore
 those, stops before any change when the directory has no git work tree
 or when the guide does not start with Switchyard's heading, and never commits.
@@ -27,6 +27,9 @@ DELETED_PATHS = [
     Path("docs/social-preview.png"),
     Path("docs/pixelart.py"),
 ]
+# Deleted whole. A rebuild recreates ignored output, so only tracked or
+# untracked-but-not-ignored changes block the delete.
+DELETED_DIRS = [Path("create-switchyard")]
 TEMPLATE_HEADING = "# Switchyard"
 BANNER_TARGET = "(docs/switchyard.svg)"
 CHART_REF = "(docs/workflow.svg)"
@@ -80,7 +83,7 @@ def verify_template(root: Path) -> None:
 
 
 def changed_paths(root: Path) -> set[str]:
-    listed = [README, *DELETED_PATHS]
+    listed = [README, *DELETED_PATHS, *DELETED_DIRS]
     result = subprocess.run(
         ["git", "status", "--porcelain", "-uall", "--", *(str(p) for p in listed)],
         cwd=root,
@@ -97,6 +100,11 @@ def changed_paths(root: Path) -> set[str]:
             path = path.strip('"')
         changed.add(path)
     return changed
+
+
+def is_changed(path: Path, changed: set[str]) -> bool:
+    prefix = f"{path}/"
+    return any(c == str(path) or c.startswith(prefix) for c in changed)
 
 
 def edit_guide(text: str) -> str:
@@ -160,6 +168,15 @@ def main() -> None:
             print(f"skipped   {path} ({reason})")
         else:
             path.unlink()
+            print(f"deleted   {path}")
+
+    for path in DELETED_DIRS:
+        if not path.exists():
+            print(f"skipped   {path} (absent)")
+        elif is_changed(path, changed):
+            print(f"skipped   {path} (uncommitted changes)")
+        else:
+            shutil.rmtree(path)
             print(f"deleted   {path}")
 
     if CHART.exists():
