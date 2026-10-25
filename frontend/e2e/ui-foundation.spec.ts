@@ -26,7 +26,7 @@ test.describe('UI foundation', () => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await page.goto('/follow-ups')
     await expect(
-      page.getByRole('heading', { name: 'Follow-ups' }),
+      page.getByRole('heading', { name: 'Follow-ups', exact: true }),
     ).toBeVisible()
     await expect(page.getByRole('link', { name: 'Settings' })).toBeVisible()
   })
