@@ -4,7 +4,7 @@ import environ
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
-from config.env_file import read_env_file
+from env_file import read_env_file
 from integrations.github_app.private_key import load_private_key
 
 BASE_DIR = Path(__file__).resolve().parents[2]
