@@ -80,7 +80,7 @@ def _allowed_outcome_states(*, from_state: str) -> tuple[str, ...]:
     return RECORDABLE_STATES.get(FollowUp.ContactState(from_state), ())
 
 
-def _can_record_outcome(*, actor: Membership, report: Report) -> bool:
+def can_record_outcome(*, actor: Membership, report: Report) -> bool:
     """The assigned member, the original submitter, or any owner may record an outcome."""
     if actor.role == Membership.Role.OWNER:
         return True
@@ -679,7 +679,7 @@ def record_outcome(
         if next_state not in allowed:
             raise InvalidTransition(action="record_outcome", from_state=follow_up.contact_state)
         if slack_team_id is None:
-            authorized = _can_record_outcome(actor=actor, report=report)
+            authorized = can_record_outcome(actor=actor, report=report)
         else:
             identity = (
                 ExternalIdentity.objects.select_for_update()
