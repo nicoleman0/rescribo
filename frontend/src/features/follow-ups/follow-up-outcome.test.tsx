@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { FollowUpDetail } from '@/api/follow-ups'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
@@ -13,6 +14,7 @@ import {
   routes,
   stubDetail,
 } from './follow-up-detail.fixtures'
+import { ContactSection } from './follow-up-outcome'
 
 test.each(['/follow-ups/fu-1', '/follow-ups/fu-1/page'])(
   'shows customer contact before a message is prepared at %s',
@@ -326,4 +328,80 @@ test('keeps the note when another member changed the outcome first', async () =>
     note: 'Left a voicemail',
     expected_version: 2,
   })
+})
+
+const mayNotRecord =
+  "Only an owner, the report's assignee, or its submitter can record customer contact."
+
+// A member who is not an owner, so the owner correction form never shows.
+function renderContactForMember(followUp: FollowUpDetail) {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <ContactSection workspaceId="ws-1" followUp={followUp} isOwner={false} />
+    </QueryClientProvider>,
+  )
+}
+
+test.each(['pending', 'contacted'] as const)(
+  'shows who can record instead of the form to other members at %s',
+  (state) => {
+    renderContactForMember({
+      ...outcomeDetail(state, 1),
+      can_record_outcome: false,
+    })
+    expect(screen.getByText(mayNotRecord)).toBeVisible()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  },
+)
+
+test('shows no form or line to other members once the outcome is final', () => {
+  renderContactForMember({
+    ...outcomeDetail('confirmed', 2),
+    can_record_outcome: false,
+  })
+  expect(screen.getByText('Outcome: Confirmed.')).toBeVisible()
+  expect(screen.queryByText(mayNotRecord)).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button')).not.toBeInTheDocument()
+})
+
+test('shows the form and no line to members who may record', async () => {
+  stubDetail({ can_record_outcome: true })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  expect(
+    await screen.findByRole('combobox', { name: 'Record outcome' }),
+  ).toBeVisible()
+  expect(screen.queryByText(mayNotRecord)).not.toBeInTheDocument()
+})
+
+test('replaces the form with the line when a stale page is refused', async () => {
+  document.cookie = 'csrftoken=csrf-token'
+  const bodies: unknown[] = []
+  let current = outcomeDetail('pending', 1)
+  stubApi({
+    [csrfPath]: () => new Response(null, { status: 204 }),
+    [`GET ${base}/`]: () => json(current),
+    [`POST ${base}/outcome/`]: (_url, init) => {
+      bodies.push(JSON.parse(String(init?.body)))
+      // The member lost the right to record after the page loaded.
+      current = { ...outcomeDetail('pending', 1), can_record_outcome: false }
+      return json(
+        {
+          detail: 'This action is not available.',
+          reason: 'invalid_transition',
+          current,
+        },
+        409,
+      )
+    },
+    'GET /api/workspaces/ws-1/members/': () => json([ada, grace]),
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  fireEvent.click(await screen.findByRole('button', { name: 'Record outcome' }))
+  expect(await screen.findByText(mayNotRecord)).toBeVisible()
+  expect(bodies).toHaveLength(1)
+  expect(
+    screen.queryByRole('combobox', { name: 'Record outcome' }),
+  ).not.toBeInTheDocument()
 })

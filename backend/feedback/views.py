@@ -769,7 +769,9 @@ class FollowUpDetailView(WorkspaceView):
             follow_up = get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
         except NotFound:
             raise exceptions.NotFound() from None
-        return Response(FollowUpDetailSerializer(follow_up).data)
+        return Response(
+            FollowUpDetailSerializer(follow_up, context={"actor": self.membership}).data
+        )
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -782,13 +784,21 @@ class FollowUpNotificationDraftView(WorkspaceView):
             draft_notification(actor=self.membership, follow_up_id=follow_up_id)
         except FeedbackError as error:
             return feedback_error_response(error, current=self._current(follow_up_id))
-        return Response(FollowUpDetailSerializer(self._current_row(follow_up_id)).data)
+        return Response(
+            FollowUpDetailSerializer(
+                self._current_row(follow_up_id), context={"actor": self.membership}
+            ).data
+        )
 
     def _current_row(self, follow_up_id: UUID) -> FollowUp:
         return get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
 
     def _current(self, follow_up_id: UUID) -> Callable[[], Any]:
-        return lambda: FollowUpDetailSerializer(self._current_row(follow_up_id)).data
+        return lambda: (
+            FollowUpDetailSerializer(
+                self._current_row(follow_up_id), context={"actor": self.membership}
+            ).data
+        )
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -810,13 +820,21 @@ class FollowUpNotificationEditView(WorkspaceView):
             )
         except FeedbackError as error:
             return feedback_error_response(error, current=self._current(follow_up_id))
-        return Response(FollowUpDetailSerializer(self._current_row(follow_up_id)).data)
+        return Response(
+            FollowUpDetailSerializer(
+                self._current_row(follow_up_id), context={"actor": self.membership}
+            ).data
+        )
 
     def _current_row(self, follow_up_id: UUID) -> FollowUp:
         return get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
 
     def _current(self, follow_up_id: UUID) -> Callable[[], Any]:
-        return lambda: FollowUpDetailSerializer(self._current_row(follow_up_id)).data
+        return lambda: (
+            FollowUpDetailSerializer(
+                self._current_row(follow_up_id), context={"actor": self.membership}
+            ).data
+        )
 
 
 @method_decorator(csrf_protect, name="dispatch")
@@ -839,18 +857,23 @@ class FollowUpNotificationApproveView(WorkspaceView):
 
             def current() -> Any:
                 return FollowUpDetailSerializer(
-                    get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+                    get_follow_up(actor=self.membership, follow_up_id=follow_up_id),
+                    context={"actor": self.membership},
                 ).data
 
             return feedback_error_response(error, current=current)
         follow_up = get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
-        return Response(FollowUpDetailSerializer(follow_up).data, status=202)
+        return Response(
+            FollowUpDetailSerializer(follow_up, context={"actor": self.membership}).data,
+            status=202,
+        )
 
 
 class FollowUpNotificationActionView(WorkspaceView):
     def current(self, follow_up_id: UUID) -> Any:
         return FollowUpDetailSerializer(
-            get_follow_up(actor=self.membership, follow_up_id=follow_up_id)
+            get_follow_up(actor=self.membership, follow_up_id=follow_up_id),
+            context={"actor": self.membership},
         ).data
 
 
@@ -919,7 +942,9 @@ class FollowUpNotificationCancelView(FollowUpNotificationActionView):
 
 
 def _follow_up_current(actor: Membership, follow_up_id: UUID) -> Any:
-    return FollowUpDetailSerializer(get_follow_up(actor=actor, follow_up_id=follow_up_id)).data
+    return FollowUpDetailSerializer(
+        get_follow_up(actor=actor, follow_up_id=follow_up_id), context={"actor": actor}
+    ).data
 
 
 def _follow_up_current_callable(actor: Membership, follow_up_id: UUID) -> Callable[[], Any]:

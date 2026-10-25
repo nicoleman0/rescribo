@@ -836,6 +836,59 @@ def test_outcome_endpoint_round_trip(client: Client, owner: Membership) -> None:
     assert payload["outcome"]["state"] == FollowUp.ContactState.CONTACTED
 
 
+def _shared_follow_up(owner: Membership) -> tuple[FollowUp, dict[str, Membership]]:
+    """A follow-up whose report a member submitted and another member is assigned."""
+    members = {
+        role: make_membership(
+            workspace=owner.workspace, user=make_user(email=f"{role}@example.test")
+        )
+        for role in ("submitter", "assignee", "other")
+    }
+    members["owner"] = owner
+    problem = make_problem(actor=owner, title="Shared")
+    report = make_report(actor=members["submitter"], title="Shared case")
+    report = assign_report(
+        actor=owner, report_id=report.pk, expected_version=1, assignee_id=members["assignee"].pk
+    )
+    report = link_report(
+        actor=owner, report_id=report.pk, expected_version=2, problem_id=problem.pk
+    )
+    confirm_fix(
+        actor=owner, problem_id=problem.pk, expected_version=1, fix_note="Fixed.", fix_version="1.0"
+    )
+    return report.follow_ups.get(), members
+
+
+@pytest.mark.parametrize(
+    ("role", "expected"),
+    [("owner", True), ("assignee", True), ("submitter", True), ("other", False)],
+)
+def test_detail_says_whether_the_viewer_may_record(
+    client: Client, owner: Membership, role: str, expected: bool
+) -> None:
+    follow_up, members = _shared_follow_up(owner)
+    viewer = members[role]
+    assert viewer.role == (Membership.Role.OWNER if role == "owner" else Membership.Role.MEMBER)
+    sign_in(client, viewer)
+    response = client.get(api(viewer, f"follow-ups/{follow_up.pk}/"))
+    assert response.status_code == 200
+    assert response.json()["can_record_outcome"] is expected
+
+
+def test_other_member_outcome_is_still_refused(client: Client, owner: Membership) -> None:
+    follow_up, members = _shared_follow_up(owner)
+    sign_in(client, members["other"])
+    response = post_json(
+        client,
+        _outcome_url(owner, follow_up.pk),
+        {"state": FollowUp.ContactState.CONTACTED, "expected_version": 1},
+    )
+    assert response.status_code == 409
+    assert response.json()["current"]["can_record_outcome"] is False
+    follow_up.refresh_from_db()
+    assert follow_up.contact_state == FollowUp.ContactState.PENDING
+
+
 def test_outcome_endpoint_returns_409_on_version_mismatch(
     client: Client, owner: Membership
 ) -> None:
