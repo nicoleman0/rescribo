@@ -14,6 +14,20 @@ import {
 
 beforeEach(stubPickerDom)
 
+// The named role queries are slow under load: wait on label or text, then
+// check the role once.
+async function openPicker() {
+  const picker = await screen.findByLabelText('Recipient: Ada Lovelace')
+  expect(picker).toBe(
+    screen.getByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
+  )
+  return picker
+}
+async function option(name: string, text = name) {
+  await screen.findByText(text)
+  return screen.getByRole('option', { name })
+}
+
 test('lets an owner change the recipient', async () => {
   document.cookie = 'csrftoken=csrf-token'
   const sent: { path: string; body: Record<string, unknown> }[] = []
@@ -32,12 +46,8 @@ test('lets an owner change the recipient', async () => {
     },
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  await userEvent.click(
-    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
-  )
-  await userEvent.click(
-    await screen.findByRole('option', { name: 'Grace Hopper' }),
-  )
+  await userEvent.click(await openPicker())
+  await userEvent.click(await option('Grace Hopper'))
   await waitFor(() => expect(sent.at(-1)?.path).toBe('recipient'))
   expect(sent.at(-1)?.body).toEqual({ new_recipient_id: grace.id })
 })
@@ -51,16 +61,16 @@ test('shows unlinked recipients disabled and keeps an unlinked current recipient
       json([{ ...ada, has_slack_link: false }, grace]),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  await userEvent.click(
-    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
+  await userEvent.click(await openPicker())
+  const current = await option(
+    'Ada Lovelace (no Slack link)',
+    '(no Slack link)',
   )
-  const current = await screen.findByRole('option', {
-    name: 'Ada Lovelace (no Slack link)',
-  })
   expect(current).not.toHaveAttribute('aria-disabled', 'true')
-  expect(
-    screen.getByRole('option', { name: 'Grace Hopper' }),
-  ).not.toHaveAttribute('aria-disabled', 'true')
+  expect(await option('Grace Hopper')).not.toHaveAttribute(
+    'aria-disabled',
+    'true',
+  )
 })
 
 test('shows the server reason and refetches members after a recipient refusal', async () => {
@@ -86,12 +96,8 @@ test('shows the server reason and refetches members after a recipient refusal', 
       ),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  await userEvent.click(
-    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
-  )
-  await userEvent.click(
-    await screen.findByRole('option', { name: 'Grace Hopper' }),
-  )
+  await userEvent.click(await openPicker())
+  await userEvent.click(await option('Grace Hopper'))
   // The message shows inside the open picker.
   expect(await screen.findByText(detailText)).toBeVisible()
   expect(screen.getByText('The recipient was not changed')).toBeInTheDocument()
@@ -116,12 +122,8 @@ test('shows an invalid recipient in the picker', async () => {
       ),
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
-  await userEvent.click(
-    await screen.findByRole('combobox', { name: 'Recipient: Ada Lovelace' }),
-  )
-  await userEvent.click(
-    await screen.findByRole('option', { name: 'Grace Hopper' }),
-  )
+  await userEvent.click(await openPicker())
+  await userEvent.click(await option('Grace Hopper'))
   expect(
     await screen.findByText('Choose an active record in this workspace.'),
   ).toBeInTheDocument()

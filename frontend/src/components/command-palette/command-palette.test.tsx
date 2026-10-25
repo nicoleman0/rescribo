@@ -88,7 +88,12 @@ function renderPalette(path = '/inbox') {
   )
 }
 
-const dialog = () => screen.findByRole('dialog', { name: 'Command palette' })
+// The named role queries are slow under load: wait on the placeholder or on
+// text, then check the role once.
+async function dialog() {
+  await screen.findByPlaceholderText('Search screens, reports, and problems')
+  return screen.getByRole('dialog', { name: 'Command palette' })
+}
 const location = () => screen.getByTestId('location').textContent
 
 beforeEach(() => {
@@ -195,19 +200,18 @@ test('shows at most five rows per group and opens a report or a problem', async 
   await user.keyboard('{Control>}k{/Control}')
   await dialog()
   await user.keyboard('login')
-  const reports = await screen.findAllByRole('option', {
-    name: /Login report/,
-  })
-  expect(reports).toHaveLength(5)
+  await within(await dialog()).findAllByText(/Login report/)
+  expect(screen.getAllByRole('option', { name: /Login report/ })).toHaveLength(
+    5,
+  )
   await user.click(screen.getByRole('option', { name: /Login loop/ }))
   expect(location()).toBe('/problems/p-1')
 
   await user.keyboard('{Control>}k{/Control}')
   await dialog()
   await user.keyboard('login')
-  await user.click(
-    await screen.findByRole('option', { name: /Login report 2/ }),
-  )
+  await within(await dialog()).findByText(/Login report 2/)
+  await user.click(screen.getByRole('option', { name: /Login report 2/ }))
   expect(location()).toBe('/inbox/r-2')
 })
 
@@ -236,16 +240,18 @@ test('a failed report search offers a retry and repeats only that search', async
   await user.keyboard('{Control>}k{/Control}')
   await dialog()
   await user.keyboard('late')
-  const retry = await screen.findByRole('option', {
+  await within(await dialog()).findByText(
+    'Reports could not be searched. Retry',
+  )
+  const retry = screen.getByRole('option', {
     name: 'Reports could not be searched. Retry',
   })
   expect(screen.getByRole('option', { name: 'Late problem' })).toBeVisible()
   expect(searches).toHaveLength(2)
 
   await user.click(retry)
-  expect(
-    await screen.findByRole('option', { name: 'Late report' }),
-  ).toBeVisible()
+  await within(await dialog()).findByText('Late report')
+  expect(screen.getByRole('option', { name: 'Late report' })).toBeVisible()
   expect(searches).toHaveLength(3)
   expect(searches[2]).toContain('/reports/')
   expect(screen.getByRole('dialog')).toBeInTheDocument()
