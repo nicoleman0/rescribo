@@ -61,6 +61,8 @@ import {
 } from '@/components/member-picker/member-picker'
 import { ReportAssigneeEditor } from './report-assignee-editor'
 import { ReleasePicker } from './release-picker'
+import { DeclineProblemForm, ProblemStatusCard } from './problem-status'
+import { canMarkProblemNotPlanned } from './problem-state'
 import { useProblemMutation } from './use-problem-mutation'
 
 const PROBLEM_REFRESH_MS = 30_000
@@ -256,6 +258,7 @@ function ProblemBody({
         {/* First in the DOM so phones show the fix and owner before the
             report list; wide screens move it to the side column. */}
         <div className="grid min-w-0 gap-4 lg:col-start-2 lg:row-start-1">
+          <ProblemStatusCard workspaceId={workspaceId} problem={problem} />
           <FixCard workspaceId={workspaceId} problem={problem} />
           <GitHubIssueSection workspaceId={workspaceId} problem={problem} />
           <OwnerCard workspaceId={workspaceId} problem={problem} />
@@ -395,7 +398,9 @@ function ProblemHeader({
   return (
     <header className="grid gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <ProblemStateBadge state={problem.state} />
+        {problem.state === 'fix_available' ? (
+          <ProblemStateBadge state={problem.state} />
+        ) : null}
         <NoReportsBadge problem={problem} />
         {problem.needs_review ? <NeedsReviewBadge /> : null}
         <span className="font-mono text-[11px] text-muted-foreground">
@@ -593,6 +598,7 @@ function LinkedReports({
   problem: ProblemDetail
 }) {
   const [page, setPage] = useState(1)
+  const [declining, setDeclining] = useState(false)
   const reports = useQuery({
     queryKey: problemKeys.reports(workspaceId, problem.id, page),
     queryFn: () => listProblemReports(workspaceId, problem.id, page),
@@ -612,10 +618,24 @@ function LinkedReports({
         />
       ) : null}
       {reports.isSuccess && reports.data.count === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No reports are linked. The problem and its history are kept. Link a
-          report from the Inbox.
-        </p>
+        <div className="grid justify-items-start gap-3 text-sm text-muted-foreground">
+          <p>
+            No reports are linked. The problem and its history are kept. Link a
+            report from the Inbox.
+          </p>
+          {declining ? (
+            <DeclineProblemForm
+              workspaceId={workspaceId}
+              problem={problem}
+              onCancel={() => setDeclining(false)}
+              onSuccess={() => setDeclining(false)}
+            />
+          ) : canMarkProblemNotPlanned(problem) ? (
+            <Button variant="outline" onClick={() => setDeclining(true)}>
+              Mark not planned
+            </Button>
+          ) : null}
+        </div>
       ) : null}
       {reports.isSuccess && reports.data.count > 0 ? (
         <ReadyState

@@ -13,6 +13,7 @@ const problem: ProblemDetail = {
   owner: null,
   report_count: 1,
   needs_review: false,
+  not_planned_reason: '',
   resolution_revision: 0,
   fix_note: '',
   fix_version: '',

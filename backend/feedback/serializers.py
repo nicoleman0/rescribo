@@ -26,6 +26,7 @@ from feedback.models import (
 )
 from feedback.problem_reads import ActivityReferences
 from feedback.submissions import ReportSubmission
+from feedback.transitions import PROBLEM_TRANSITIONS
 from matching.models import MatchRun
 from operations.models import ExternalOperation
 
@@ -298,6 +299,7 @@ class ProblemDetailSerializer(ProblemIssueSerializer):
     updated_at = serializers.DateTimeField()
     current_create_operation = serializers.SerializerMethodField()
     fix_release = serializers.SerializerMethodField(required=False)
+    not_planned_reason = serializers.CharField()
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
@@ -429,6 +431,11 @@ class UnlinkFixReleaseSerializer(VersionedSerializer):
 
 class MarkReviewedSerializer(VersionedSerializer):
     pass
+
+
+class ProblemStateChangeSerializer(VersionedSerializer):
+    action = serializers.ChoiceField(choices=tuple(PROBLEM_TRANSITIONS))
+    reason = serializers.CharField(max_length=2000, required=False, allow_blank=True)
 
 
 class LinkReportSerializer(VersionedSerializer):

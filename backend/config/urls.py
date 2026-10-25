@@ -66,6 +66,7 @@ from feedback.views import (
     ProblemMarkReviewedView,
     ProblemOwnerView,
     ProblemReportListView,
+    ProblemStateChangeView,
     ReportAssignView,
     ReportConfirmFixAppliesView,
     ReportCreateProblemView,
@@ -333,6 +334,11 @@ urlpatterns = [
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/mark-reviewed/",
         ProblemMarkReviewedView.as_view(),
         name="problem-mark-reviewed",
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/state/",
+        ProblemStateChangeView.as_view(),
+        name="problem-state",
     ),
     path(
         "api/workspaces/<uuid:workspace_id>/problems/<uuid:problem_id>/issue/link/",
