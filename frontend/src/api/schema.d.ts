@@ -898,6 +898,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/problems/{problem_id}/state/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Run one problem use case and return the updated problem. */
+        post: operations["workspaces_problems_state_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/releases/": {
         parameters: {
             query?: never;
@@ -1909,6 +1926,7 @@ export interface components {
             updated_at: string;
             readonly current_create_operation: components["schemas"]["ExternalOperation"] | null;
             fix_release?: components["schemas"]["FixRelease"] | null;
+            not_planned_reason: string;
         };
         ProblemEdit: {
             expected_version: number;
@@ -1933,6 +1951,19 @@ export interface components {
             /** Format: uuid */
             owner_id: string | null;
         };
+        ProblemStateChange: {
+            expected_version: number;
+            action: components["schemas"]["ProblemStateChangeActionEnum"];
+            reason?: string;
+        };
+        /**
+         * @description * `start` - start
+         *     * `stop` - stop
+         *     * `decline` - decline
+         *     * `reopen` - reopen
+         * @enum {string}
+         */
+        ProblemStateChangeActionEnum: "start" | "stop" | "decline" | "reopen";
         /**
          * @description * `open` - Open
          *     * `in_progress` - In progress
@@ -5007,6 +5038,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_problems_state_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                problem_id: string;
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProblemStateChange"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProblemStateChange"];
+                "multipart/form-data": components["schemas"]["ProblemStateChange"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetail"];
+                };
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemConflict"];
                 };
             };
         };

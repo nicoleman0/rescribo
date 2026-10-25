@@ -16,14 +16,20 @@ export function NoReportsBadge({
   problem: Pick<ProblemListItem, 'state' | 'report_count'>
 }) {
   // Settled problems need no attention when their reports are gone.
-  if (
-    (problem.state !== 'open' && problem.state !== 'in_progress') ||
-    problem.report_count !== 0
-  ) {
+  if (!canMarkProblemNotPlanned(problem)) {
     return null
   }
 
   return <StatusBadge tone="warning">No reports</StatusBadge>
+}
+
+export function canMarkProblemNotPlanned(
+  problem: Pick<ProblemListItem, 'state' | 'report_count'>,
+) {
+  return (
+    (problem.state === 'open' || problem.state === 'in_progress') &&
+    problem.report_count === 0
+  )
 }
 
 export function NeedsReviewBadge() {

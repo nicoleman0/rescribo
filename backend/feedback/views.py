@@ -46,6 +46,7 @@ from feedback.problem_reads import (
 from feedback.problems import (
     ProblemChanges,
     assign_problem_owner,
+    change_problem_state,
     confirm_fix,
     confirm_linked_report_fix,
     mark_problem_reviewed,
@@ -101,6 +102,7 @@ from feedback.serializers import (
     ProblemFilterSerializer,
     ProblemListItemSerializer,
     ProblemOwnerSerializer,
+    ProblemStateChangeSerializer,
     ReleasePageSerializer,
     ReportConflictSerializer,
     ReportDetailSerializer,
@@ -557,6 +559,20 @@ class ProblemMarkReviewedView(ProblemActionView):
             actor=self.membership,
             problem_id=problem_id,
             expected_version=data["expected_version"],
+        )
+
+
+@extend_schema_view(post=problem_action_schema(ProblemStateChangeSerializer))
+class ProblemStateChangeView(ProblemActionView):
+    input_serializer = ProblemStateChangeSerializer
+
+    def perform(self, problem_id: UUID, data: dict[str, Any]) -> Problem:
+        return change_problem_state(
+            actor=self.membership,
+            problem_id=problem_id,
+            expected_version=data["expected_version"],
+            action=data["action"],
+            reason=data.get("reason", ""),
         )
 
 

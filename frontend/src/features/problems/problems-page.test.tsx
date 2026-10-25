@@ -37,6 +37,7 @@ const detail: ProblemDetail = {
   owner: null,
   report_count: 1,
   needs_review: false,
+  not_planned_reason: '',
   resolution_revision: 0,
   fix_note: '',
   fix_version: '',
@@ -239,7 +240,7 @@ function stubDetail(
       return json(server.problem)
     },
   })
-  return { sent }
+  return { sent, server }
 }
 
 test('marks empty problem detail and explains that its history is kept', async () => {
@@ -255,7 +256,65 @@ test('marks empty problem detail and explains that its history is kept', async (
           'No reports are linked. The problem and its history are kept. Link a report from the Inbox.',
     ),
   ).toBeInTheDocument()
+  expect(
+    within(screen.getByRole('region', { name: 'Linked reports' })).getByRole(
+      'button',
+      { name: 'Mark not planned' },
+    ),
+  ).toBeVisible()
 })
+
+test('closes the no-reports decline form when the problem becomes ineligible', async () => {
+  const { server } = stubDetail(
+    { ...detail, state: 'open', report_count: 0 },
+    [],
+  )
+  const { queryClient } = renderWorkspaceRoutes(
+    detailRoutes,
+    '/problems/prob-1',
+  )
+  const section = await screen.findByRole('region', { name: 'Linked reports' })
+  await userEvent.click(
+    await within(section).findByRole('button', { name: 'Mark not planned' }),
+  )
+  expect(
+    await within(section).findByRole('textbox', { name: 'Reason' }),
+  ).toBeVisible()
+
+  server.problem = { ...server.problem, state: 'not_planned', version: 3 }
+  await queryClient.setQueryData(
+    problemKeys.detail('ws-1', 'prob-1'),
+    server.problem,
+  )
+
+  await waitFor(() => {
+    expect(
+      within(section).queryByRole('textbox', { name: 'Reason' }),
+    ).not.toBeInTheDocument()
+  })
+})
+
+test.each([
+  ['open', [linkedReport]],
+  ['fix_available', []],
+] as const)(
+  'does not offer a no-reports decline for %s with the given linked reports',
+  async (state, reports) => {
+    stubDetail({ ...detail, state, report_count: reports.length }, [...reports])
+    renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
+    const section = await screen.findByRole('region', {
+      name: 'Linked reports',
+    })
+    if (reports.length === 0) {
+      await screen.findByText(/No reports are linked/)
+    } else {
+      await screen.findByText(linkedReport.title)
+    }
+    expect(
+      within(section).queryByRole('button', { name: 'Mark not planned' }),
+    ).not.toBeInTheDocument()
+  },
+)
 
 test('shows compact linked reports and a readable activity history', async () => {
   stubDetail()

@@ -148,6 +148,18 @@ export async function markProblemReviewed(
   )
 }
 
+export async function changeProblemState(
+  workspaceId: string,
+  problemId: string,
+  input: Schemas['ProblemStateChange'],
+) {
+  await csrf()
+  return apiRequest<ProblemDetail>(
+    `${problemPath(workspaceId, problemId)}state/`,
+    input,
+  )
+}
+
 /** The current problem sent with a 409, or undefined for other errors. */
 export const conflictingProblem = (error: ApiError) =>
   error.status === 409
