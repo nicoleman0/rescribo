@@ -14,7 +14,7 @@ const options: { value: ThemePreference; label: string }[] = [
 ]
 
 const optionClass = cn(
-  'flex min-h-8 cursor-pointer items-center rounded-control px-3 text-sm text-muted-foreground transition-colors hover:text-foreground has-checked:bg-card has-checked:font-medium has-checked:text-foreground has-checked:shadow-elevation-1 has-focus-visible:focus-ring-inset',
+  'flex min-h-8 cursor-pointer items-center rounded-control px-3 text-sm text-muted-foreground motion-safe:transition-colors hover:text-foreground has-checked:bg-card has-checked:font-medium has-checked:text-foreground has-checked:shadow-elevation-1 has-focus-visible:focus-ring-inset',
   touchTarget,
 )
 

@@ -57,6 +57,8 @@ The other `outline-none`/`outline-hidden` elements are not buttons or links (dia
 
 Replace `border-ring`, `ring-3`, and `ring-ring/50` on the control-focus variant with `focus-ring`. Keep the `in-data-[slot=combobox-content]` overrides unchanged. Gate `transition-colors` with `motion-safe:` so focused input groups do not fade under reduced motion, as required by `web-interface/spec.md:349` and `:671`.
 
+Apply the same gate to color and all-property transitions on other focus targets so their outlines do not animate when reduced motion is preferred.
+
 ### Command inputs
 
 `CommandInput` wraps `CommandPrimitive.Input` in an `InputGroup`. Its input uses `data-slot="command-input"` and keeps `outline-hidden`, so the generic input-group control selector does not match it. Add a command-input focus selector to this `InputGroup` and apply `focus-ring-inset`.

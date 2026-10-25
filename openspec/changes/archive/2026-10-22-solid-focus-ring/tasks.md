@@ -14,6 +14,7 @@
 - [x] 2.7 Segmented options: `status-chips.tsx` and `follow-ups-page.tsx` (tabs): replace `focus-visible:ring-3 focus-visible:ring-ring/50` with `focus-visible:focus-ring-inset`. `theme-settings.tsx`: replace the `has-focus-visible:` ring classes with `has-focus-visible:focus-ring-inset`.
 - [x] 2.8 Verify: `grep -rn "ring-ring/" frontend/src` returns nothing outside test files. In the dev server, Tab through Inbox (chips, rows), Problems (rows, picker), Follow-ups (tabs, rows), Settings (theme, palette), the member picker, and the sign-in form, in light and dark. Each focused element shows one solid ring and none is cut off.
 - [x] 2.9 In `command.tsx`, make the `CommandInput` input group apply `focus-ring-inset` when its `data-slot="command-input"` is focus-visible. Keep `outline-hidden` on the input. Both the member picker and command palette use this component. The command surface and palette dialog clip overflow, so use the inset outline.
+- [x] 2.10 Gate transitions on focus targets with `motion-safe:` so focused outlines do not animate when reduced motion is preferred. Apply this to the Follow-ups tabs, Settings theme options, and badge transition.
 
 ## 3. Checks and docs
 

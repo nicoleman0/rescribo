@@ -184,7 +184,9 @@ that owns the draft when a recoverable request fails.
 Focused controls draw one 2px solid `--ring` outline. Use `focus-ring` outside
 the element and `focus-ring-inset` in clipped or tight containers. The base
 layer applies `focus-ring` to focused buttons and links; component utilities
-can replace it when an inset outline is needed.
+can replace it when an inset outline is needed. Gate color or all-property
+transitions on focus targets with `motion-safe:` so the outline does not
+animate when reduced motion is preferred.
 
 ## Motion
 

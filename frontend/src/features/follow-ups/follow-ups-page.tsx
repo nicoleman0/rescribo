@@ -178,7 +178,7 @@ function TabButton({
         aria-pressed={active}
         onClick={onClick}
         className={cn(
-          'inline-flex min-h-8 items-center gap-2 rounded-control px-3 text-sm whitespace-nowrap text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:focus-ring-inset',
+          'inline-flex min-h-8 items-center gap-2 rounded-control px-3 text-sm whitespace-nowrap text-muted-foreground motion-safe:transition-colors outline-none hover:text-foreground focus-visible:focus-ring-inset',
           touchTarget,
           active && 'bg-card font-medium text-foreground shadow-elevation-1',
         )}
