@@ -240,7 +240,7 @@ function stubDetail(
       return json(server.problem)
     },
   })
-  return { sent }
+  return { sent, server }
 }
 
 test('marks empty problem detail and explains that its history is kept', async () => {
@@ -262,6 +262,36 @@ test('marks empty problem detail and explains that its history is kept', async (
       { name: 'Mark not planned' },
     ),
   ).toBeVisible()
+})
+
+test('closes the no-reports decline form when the problem becomes ineligible', async () => {
+  const { server } = stubDetail(
+    { ...detail, state: 'open', report_count: 0 },
+    [],
+  )
+  const { queryClient } = renderWorkspaceRoutes(
+    detailRoutes,
+    '/problems/prob-1',
+  )
+  const section = await screen.findByRole('region', { name: 'Linked reports' })
+  await userEvent.click(
+    await within(section).findByRole('button', { name: 'Mark not planned' }),
+  )
+  expect(
+    await within(section).findByRole('textbox', { name: 'Reason' }),
+  ).toBeVisible()
+
+  server.problem = { ...server.problem, state: 'not_planned', version: 3 }
+  await queryClient.setQueryData(
+    problemKeys.detail('ws-1', 'prob-1'),
+    server.problem,
+  )
+
+  await waitFor(() => {
+    expect(
+      within(section).queryByRole('textbox', { name: 'Reason' }),
+    ).not.toBeInTheDocument()
+  })
 })
 
 test.each([

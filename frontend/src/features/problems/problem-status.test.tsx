@@ -56,6 +56,45 @@ test.each([
   expect(await screen.findByRole('button', { name: label })).toBeVisible()
 })
 
+test('a later successful action clears the previous action error', async () => {
+  const current = { ...initial, state: 'in_progress' as const, version: 2 }
+  const reopened = { ...initial, state: 'open' as const, version: 3 }
+  let calls = 0
+  stubApi({
+    'GET /api/auth/csrf/': () => new Response(null, { status: 204 }),
+    'POST /api/workspaces/ws-1/problems/prob-1/state/': () => {
+      calls += 1
+      if (calls === 1) {
+        server.problem = current
+        return json(
+          { detail: 'Conflict', reason: 'version_conflict', current },
+          409,
+        )
+      }
+      server.problem = reopened
+      return json(reopened)
+    },
+  })
+  const { queryClient } = renderCard()
+  fireEvent.click(await screen.findByRole('button', { name: 'Start work' }))
+  expect(await screen.findByText('The status was not changed')).toBeVisible()
+  await waitFor(() => {
+    expect(
+      screen.getByRole('button', { name: 'Move back to open' }),
+    ).toBeVisible()
+  })
+
+  fireEvent.click(screen.getByRole('button', { name: 'Move back to open' }))
+  await waitFor(() =>
+    expect(
+      queryClient.getQueryData(problemKeys.detail('ws-1', 'prob-1')),
+    ).toMatchObject({ state: 'open' }),
+  )
+  expect(
+    screen.queryByText('The status was not changed'),
+  ).not.toBeInTheDocument()
+})
+
 test('shows the decline reason and hides the card for a fixed problem', async () => {
   const { unmount } = renderCard({
     ...initial,

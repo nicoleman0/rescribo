@@ -280,5 +280,7 @@ colours and shadows and applies no animated transition.
 ## Problem status
 
 - Problem detail puts the Status card first in the side column. It shows the state, the decline reason when present, and the actions allowed from that state.
+- The detail header keeps the Fix available badge. Other states appear in the Status card only, so desktop does not repeat the state.
 - Decline uses the shared inline `ConfirmPanel` form from both the Status card and the no-reports offer. The form requires a reason and keeps it after a failed save.
+- The no-reports form closes if a cache update makes the problem ineligible for the offer.
 - A successful state change names the new state in a toast and returns focus to the Status heading when the action button disappears.

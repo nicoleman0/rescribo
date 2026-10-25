@@ -39,13 +39,13 @@ export function DeclineProblemForm({
         reason: input.reason,
       }),
     () => {
-      toast.success('Status changed to Not planned')
+      toast.success(`Status changed to ${problemStateLabels.not_planned}`)
       onSuccess?.()
     },
   )
   return (
     <ConfirmPanel
-      title="Mark not planned"
+      title={`Mark ${problemStateLabels.not_planned.toLowerCase()}`}
       description="Give a reason so the team knows why no fix is planned."
       confirmLabel="Mark not planned"
       pendingLabel="Saving…"
@@ -98,43 +98,29 @@ export function ProblemStatusCard({
     toast.success(`Status changed to ${problemStateLabels[saved.state]}`)
     requestAnimationFrame(() => heading.current?.focus())
   }
-  const start = useProblemMutation<void>(
+  const stateChange = useProblemMutation<StateAction>(
     workspaceId,
-    () => runStateAction('start', problem, workspaceId),
-    onSuccess,
-  )
-  const stop = useProblemMutation<void>(
-    workspaceId,
-    () => runStateAction('stop', problem, workspaceId),
-    onSuccess,
-  )
-  const reopen = useProblemMutation<void>(
-    workspaceId,
-    () => runStateAction('reopen', problem, workspaceId),
+    (action) => runStateAction(action, problem, workspaceId),
     onSuccess,
   )
   if (problem.state === 'fix_available') return null
   const actions: Partial<
-    Record<ProblemState, { label: string; run: () => void; pending: boolean }>
+    Record<ProblemState, { label: string; action: StateAction }>
   > = {
     open: {
       label: 'Start work',
-      run: () => start.mutate(undefined),
-      pending: start.isPending,
+      action: 'start',
     },
     in_progress: {
       label: 'Move back to open',
-      run: () => stop.mutate(undefined),
-      pending: stop.isPending,
+      action: 'stop',
     },
     not_planned: {
       label: 'Reopen',
-      run: () => reopen.mutate(undefined),
-      pending: reopen.isPending,
+      action: 'reopen',
     },
   }
   const currentAction = actions[problem.state]
-  const error = start.error ?? stop.error ?? reopen.error
 
   return (
     <section className={problemCard} aria-labelledby="problem-status-heading">
@@ -164,8 +150,11 @@ export function ProblemStatusCard({
         />
       ) : currentAction ? (
         <div className="flex flex-wrap gap-2">
-          <Button disabled={currentAction.pending} onClick={currentAction.run}>
-            {currentAction.pending ? 'Saving…' : currentAction.label}
+          <Button
+            disabled={stateChange.isPending}
+            onClick={() => stateChange.mutate(currentAction.action)}
+          >
+            {stateChange.isPending ? 'Saving…' : currentAction.label}
           </Button>
           {problem.state !== 'not_planned' ? (
             <Button variant="outline" onClick={() => setDeclining(true)}>
@@ -174,9 +163,9 @@ export function ProblemStatusCard({
           ) : null}
         </div>
       ) : null}
-      {error ? (
+      {stateChange.error ? (
         <ActionError
-          error={error}
+          error={stateChange.error}
           title="The status was not changed"
           record="problem"
         />

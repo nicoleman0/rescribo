@@ -590,6 +590,31 @@ function OwnerCard({
   )
 }
 
+function NoReportsDeclineOffer({
+  workspaceId,
+  problem,
+}: {
+  workspaceId: string
+  problem: ProblemDetail
+}) {
+  const [declining, setDeclining] = useState(false)
+  if (declining) {
+    return (
+      <DeclineProblemForm
+        workspaceId={workspaceId}
+        problem={problem}
+        onCancel={() => setDeclining(false)}
+        onSuccess={() => setDeclining(false)}
+      />
+    )
+  }
+  return (
+    <Button variant="outline" onClick={() => setDeclining(true)}>
+      Mark not planned
+    </Button>
+  )
+}
+
 function LinkedReports({
   workspaceId,
   problem,
@@ -598,7 +623,7 @@ function LinkedReports({
   problem: ProblemDetail
 }) {
   const [page, setPage] = useState(1)
-  const [declining, setDeclining] = useState(false)
+  const canDecline = canMarkProblemNotPlanned(problem)
   const reports = useQuery({
     queryKey: problemKeys.reports(workspaceId, problem.id, page),
     queryFn: () => listProblemReports(workspaceId, problem.id, page),
@@ -623,17 +648,11 @@ function LinkedReports({
             No reports are linked. The problem and its history are kept. Link a
             report from the Inbox.
           </p>
-          {declining ? (
-            <DeclineProblemForm
+          {canDecline ? (
+            <NoReportsDeclineOffer
               workspaceId={workspaceId}
               problem={problem}
-              onCancel={() => setDeclining(false)}
-              onSuccess={() => setDeclining(false)}
             />
-          ) : canMarkProblemNotPlanned(problem) ? (
-            <Button variant="outline" onClick={() => setDeclining(true)}>
-              Mark not planned
-            </Button>
           ) : null}
         </div>
       ) : null}

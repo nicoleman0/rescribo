@@ -46,13 +46,15 @@ Start, Move back to open, and Reopen run at once: each is one click to undo. A s
 
 The "Not planned" next-step banner is unchanged. The reason lives in the card next to Reopen.
 
+The state badge stays in the Status card and is removed from the detail header. The header keeps the fix-available badge because that state has no Status card. This avoids repeating the current state on desktop.
+
 Alternative: actions in the next-step banner. Rejected: DESIGN.md says Mark reviewed is the banner's only write action.
 
 ### Shared decline form
 
 `DeclineProblemForm` wraps `ConfirmPanel` with a required `TextareaField` labelled Reason. Confirm stays disabled until the trimmed reason is non-empty. It runs through `useProblemMutation`, so a 409 updates the cached problem. The form owns its draft, so a failed request keeps the typed reason and shows `ActionError`. The reason is not prefilled.
 
-The Status card and the no-reports offer each mount their own instance. The offer sits in the linked reports empty text, shown only when the problem is `open` or `in_progress` and `report_count` is 0, matching `NoReportsBadge`. The condition moves to one exported helper that both use.
+The Status card and the no-reports offer each mount their own instance. The offer sits in the linked reports empty text, shown only when the problem is `open` or `in_progress` and `report_count` is 0, matching `NoReportsBadge`. The condition moves to one exported helper that both use. If a cache update makes the problem ineligible while the offer form is open, the form closes.
 
 Alternative: the offer opens the Status card's form. Rejected: on wide screens the card is in the other column, so focus would jump away from where the member clicked.
 
@@ -62,5 +64,5 @@ State changes are allowed in demo workspaces, like Mark reviewed. They call no e
 
 ## Risks / Trade-offs
 
-- [Two decline forms could be open at once on an empty problem] → Both use the same version. The second submit gets a 409 with the current problem, which the form shows.
+- [Two decline forms could be open at once on an empty problem] → When one changes the problem, a cache update closes the other form.
 - [#183 changes the same views, serializers, and schema files] → Generate the schema on this branch's current base. After #183 merges, the coordinator rebases this branch and regenerates the schema with `task schema`.
