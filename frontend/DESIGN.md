@@ -116,6 +116,7 @@ that owns the draft when a recoverable request fails.
 
 - Desktop uses a sidebar, a flexible content area, and compact 35.75px navigation rows (`min-h-11` at the 13px root size).
 - Mobile keeps all navigation targets at a 44px minimum touch target and moves navigation to a bottom tab bar. `Button`, `Input`, and `NativeSelect` carry the 44px phone minimum themselves; other action controls (chips, tabs, option rows, checkbox labels) use `touchTarget`.
+- A standalone link (not inside a sentence) uses `touchTarget` with `inline-flex items-center` so the minimum applies. A link inside running text is exempt.
 - Controls use the smaller control radius. Cards use the larger card radius. Status badges are pills.
 - AppShell renders "Skip to main content" before the sidebar, so it is the first Tab stop.
 - AppShell keeps Sign out in the user menu. The menu is in the sidebar footer on desktop and the header on phones. The UI gallery shows no Sign out.
