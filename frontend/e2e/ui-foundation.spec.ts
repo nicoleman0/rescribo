@@ -1,14 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { saveSeedSession, seedSessionPath } from './seed-session.js'
+import { readSeed, saveSeedSession, seedSessionPath } from './seed-session.js'
+import { signIn } from './session.js'
 import { demoSessionPath, saveDemoSession } from './demo-session.js'
 import { axeViolations } from './axe.js'
 import { signOut } from './shell.js'
 
-const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
-const seedPath = path.join(authDir, 'seed.json')
 const sessionPath = seedSessionPath('ui-foundation')
 const demoPath = demoSessionPath('shell')
 
@@ -204,14 +200,8 @@ test.describe('UI foundation', () => {
     })
     const page = await context.newPage()
     try {
-      await page.goto('/sign-in')
-      const { users } = JSON.parse(await readFile(seedPath, 'utf8')) as {
-        users: { email: string; password: string }[]
-      }
-      await page.getByRole('textbox', { name: 'Email' }).fill(users[8].email)
-      await page.getByLabel('Password').fill(users[0].password)
-      await page.getByRole('button', { name: 'Sign in' }).click()
-      await expect(page).toHaveURL(/\/inbox$/)
+      const seed = await readSeed()
+      await signIn(page, seed.users[8])
       await page.goto('/inbox')
       await signOut(page)
       await expect(page).toHaveURL(/\/sign-in$/)

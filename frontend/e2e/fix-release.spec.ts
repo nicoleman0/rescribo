@@ -1,23 +1,6 @@
-import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { expect, test } from '@playwright/test'
+import { signInAsSeededOwner } from './seed-session.js'
 import { axeViolations } from './axe.js'
-
-const seedPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/seed.json',
-)
-type Seed = { users: { email: string; password: string }[] }
-
-async function signIn(page: Page) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[2].email)
-  await page.getByLabel('Password').fill(seed.users[2].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-}
 
 test('links, changes, and removes a release on a confirmed fix', async ({
   page,
@@ -117,7 +100,7 @@ test('links, changes, and removes a release on a confirmed fix', async ({
   )
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await signIn(page)
+  await signInAsSeededOwner(page)
   const marker = `Release link report ${Date.now()}`
   await page.getByRole('link', { name: 'New report' }).click()
   await page.getByLabel('Title').fill(marker)
