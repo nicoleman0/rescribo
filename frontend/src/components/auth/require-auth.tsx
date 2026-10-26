@@ -36,7 +36,7 @@ export function RequireAuth() {
     )
   if (!session.data.memberships.length) {
     return (
-      <main>
+      <main className="mx-auto max-w-xl p-6">
         <EmptyState
           level={1}
           title="Workspace access removed"
