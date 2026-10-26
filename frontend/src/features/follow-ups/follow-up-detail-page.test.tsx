@@ -1,6 +1,7 @@
 import { screen } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { FollowUpDetail } from '@/api/follow-ups'
+import { expectOneH1 } from '@/test/headings'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import { FollowUpDetailPage } from './follow-up-detail-page'
 
@@ -65,6 +66,7 @@ test('shows not found and keeps the back link available', async () => {
   })
   renderWorkspaceRoutes(routes, '/follow-ups/fu-1/page')
   expect(await screen.findByText('Follow-up not found')).toBeInTheDocument()
+  expectOneH1('Follow-up not found')
   expect(
     screen.getByRole('link', { name: 'Back to follow-ups' }),
   ).toHaveAttribute('href', '/follow-ups')

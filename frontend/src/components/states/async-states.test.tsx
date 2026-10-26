@@ -32,6 +32,33 @@ test('renders an empty state with its action', () => {
   ).toBeInTheDocument()
 })
 
+test('titles an empty state with a level-2 heading unless told otherwise', () => {
+  const { rerender } = render(
+    <EmptyState title="No reports" description="Reports will appear here." />,
+  )
+  expect(
+    screen.getByRole('heading', { name: 'No reports', level: 2 }),
+  ).toBeInTheDocument()
+  rerender(
+    <EmptyState
+      level={1}
+      title="No reports"
+      description="Reports will appear here."
+    />,
+  )
+  expect(
+    screen.getByRole('heading', { name: 'No reports', level: 1 }),
+  ).toBeInTheDocument()
+  rerender(
+    <QueryState status="empty">
+      <p>Loaded result</p>
+    </QueryState>,
+  )
+  expect(
+    screen.getByRole('heading', { name: 'Nothing here yet', level: 2 }),
+  ).toBeInTheDocument()
+})
+
 test('renders an error with a retry action', async () => {
   const onRetry = vi.fn()
   render(<ErrorState onRetry={onRetry} />)

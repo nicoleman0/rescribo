@@ -76,6 +76,7 @@ export default function App() {
           <main className="grid min-h-svh place-items-center p-6">
             <PageTitle title="Page not found" />
             <EmptyState
+              level={1}
               title="Page not found"
               description="The page you requested does not exist."
             />
