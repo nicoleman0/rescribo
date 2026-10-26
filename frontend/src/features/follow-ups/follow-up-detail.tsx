@@ -101,6 +101,7 @@ export function FollowUpDetailContent({
         : false,
     refetchIntervalInBackground: false,
   })
+  const stateLevel = layout === 'page' ? 1 : 2
   return (
     <FollowUpLayoutContext.Provider value={layout}>
       {layout === 'page' ? (
@@ -109,12 +110,14 @@ export function FollowUpDetailContent({
       {detail.isPending ? <LoadingState label="Loading follow-up" /> : null}
       {detail.isError && (detail.error as ApiError).status === 404 ? (
         <EmptyState
+          level={stateLevel}
           title="Follow-up not found"
           description="It may belong to another workspace, or the link is wrong."
         />
       ) : null}
       {detail.isError && (detail.error as ApiError).status === 403 ? (
         <EmptyState
+          level={stateLevel}
           title="Follow-up access removed"
           description="You no longer have access to this follow-up."
         />

@@ -10,6 +10,7 @@ import type {
 } from '@/api/problems'
 import type { ReportDetail } from '@/api/reports'
 import { problemKeys } from '@/api/problems'
+import { expectOneH1 } from '@/test/headings'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import { ProblemDetailPage } from './problem-detail-page'
 import { ProblemsPage } from './problems-page'
@@ -178,6 +179,10 @@ test('distinguishes no problems, an invalid search, and a failed load', async ()
   })
   const view = renderWorkspaceRoutes(listRoutes, '/problems')
   expect(await screen.findByText('No problems yet')).toBeInTheDocument()
+  expectOneH1('Problems')
+  expect(
+    screen.getByRole('heading', { name: 'No problems yet', level: 2 }),
+  ).toBeInTheDocument()
   view.unmount()
   status = 400
   const invalid = renderWorkspaceRoutes(listRoutes, '/problems?q=x')
@@ -532,6 +537,7 @@ test('reports a missing problem', async () => {
   })
   renderWorkspaceRoutes(detailRoutes, '/problems/prob-1')
   expect(await screen.findByText('Problem not found')).toBeInTheDocument()
+  expectOneH1('Problem not found')
 })
 
 test('shows only the refresh alert when an activity refetch fails with data', async () => {

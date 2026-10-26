@@ -52,15 +52,20 @@ export function RetryButton({
   )
 }
 
+/** Level 2 sits under a page heading. Pass `level={1}` only when the state is
+ * the whole page, so the page keeps a level-1 heading. */
 export function EmptyState({
   title,
   description,
   action,
+  level = 2,
 }: {
   title: string
   description: string
   action?: ReactNode
+  level?: 1 | 2
 }) {
+  const Title = level === 1 ? 'h1' : 'h2'
   return (
     <Card className="border border-dashed border-border bg-transparent shadow-none">
       <CardContent className="grid min-h-56 place-items-center gap-3 p-8 text-center">
@@ -68,7 +73,7 @@ export function EmptyState({
           <Inbox aria-hidden="true" className="size-5" />
         </span>
         <div className="max-w-sm">
-          <h1 className="text-base font-semibold">{title}</h1>
+          <Title className="text-base font-semibold">{title}</Title>
           <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
         {action}

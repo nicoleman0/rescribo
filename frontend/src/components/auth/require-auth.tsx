@@ -36,35 +36,40 @@ export function RequireAuth() {
     )
   if (!session.data.memberships.length) {
     return (
-      <EmptyState
-        title="Workspace access removed"
-        description="You no longer have access to a workspace. Sign out to finish."
-        action={
-          <div className="grid justify-items-center gap-2">
-            {logoutError ? <p role="alert">{logoutError}</p> : null}
-            <Button
-              disabled={logoutPending}
-              onClick={async () => {
-                setLogoutError('')
-                setLogoutPending(true)
-                try {
-                  await logout()
-                  queryClient.clear()
-                  navigate('/sign-in', { replace: true })
-                } catch (error) {
-                  setLogoutError(
-                    error instanceof Error ? error.message : 'Sign out failed.',
-                  )
-                } finally {
-                  setLogoutPending(false)
-                }
-              }}
-            >
-              {logoutPending ? 'Signing out…' : 'Sign out'}
-            </Button>
-          </div>
-        }
-      />
+      <main>
+        <EmptyState
+          level={1}
+          title="Workspace access removed"
+          description="You no longer have access to a workspace. Sign out to finish."
+          action={
+            <div className="grid justify-items-center gap-2">
+              {logoutError ? <p role="alert">{logoutError}</p> : null}
+              <Button
+                disabled={logoutPending}
+                onClick={async () => {
+                  setLogoutError('')
+                  setLogoutPending(true)
+                  try {
+                    await logout()
+                    queryClient.clear()
+                    navigate('/sign-in', { replace: true })
+                  } catch (error) {
+                    setLogoutError(
+                      error instanceof Error
+                        ? error.message
+                        : 'Sign out failed.',
+                    )
+                  } finally {
+                    setLogoutPending(false)
+                  }
+                }}
+              >
+                {logoutPending ? 'Signing out…' : 'Sign out'}
+              </Button>
+            </div>
+          }
+        />
+      </main>
     )
   }
   return (

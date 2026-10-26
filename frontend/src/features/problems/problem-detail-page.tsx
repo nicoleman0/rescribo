@@ -108,12 +108,14 @@ export function ProblemDetailPage() {
       {problem.isPending ? <LoadingState label="Loading problem" /> : null}
       {problem.isError && (problem.error as ApiError).status === 404 ? (
         <EmptyState
+          level={1}
           title="Problem not found"
           description="It may belong to another workspace, or the link is wrong."
         />
       ) : null}
       {problem.isError && (problem.error as ApiError).status === 403 ? (
         <EmptyState
+          level={1}
           title="Problem access removed"
           description="You no longer have access to this problem."
         />

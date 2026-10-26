@@ -1,6 +1,7 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { expect, test } from 'vitest'
 import type { ReportDetail, ReportListItem, ReportPage } from '@/api/reports'
+import { expectOneH1 } from '@/test/headings'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import { InboxPage } from './inbox-page'
 
@@ -185,6 +186,10 @@ test('distinguishes an empty inbox from an empty filtered result', async () => {
   stubApi({ [reportsPath]: () => page([]), [membersPath]: () => json([]) })
   const view = renderWorkspaceRoutes(routes, '/inbox')
   expect(await screen.findByText('No reports yet')).toBeInTheDocument()
+  expectOneH1('Inbox')
+  expect(
+    screen.getByRole('heading', { name: 'No reports yet', level: 2 }),
+  ).toBeInTheDocument()
   expect(screen.getByRole('link', { name: 'New report' })).toHaveAttribute(
     'href',
     '/inbox/new',
@@ -356,6 +361,10 @@ test('shows manual provenance and a missing report', async () => {
   view.unmount()
   renderWorkspaceRoutes(routes, '/inbox/gone')
   expect(await screen.findByText('Report not found')).toBeInTheDocument()
+  expectOneH1('Inbox')
+  expect(
+    screen.getByRole('heading', { name: 'Report not found', level: 2 }),
+  ).toBeInTheDocument()
 })
 
 test('keeps two filter changes made before the inbox re-renders', async () => {

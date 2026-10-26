@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { expect, test, vi } from 'vitest'
+import { expectOneH1 } from '@/test/headings'
 import { RequireAuth } from './require-auth'
 
 function Location() {
@@ -68,5 +69,24 @@ test('redirects only an explicit unauthenticated response', async () => {
   )
   renderAuth()
   expect(await screen.findByText('/sign-in')).toBeVisible()
+  vi.unstubAllGlobals()
+})
+
+test('shows workspace access removed as the page when no membership is left', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ memberships: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    ),
+  )
+  renderAuth()
+  expect(await screen.findByText('Workspace access removed')).toBeVisible()
+  expectOneH1('Workspace access removed')
+  expect(screen.getByRole('main')).toContainElement(
+    screen.getByRole('heading', { name: 'Workspace access removed' }),
+  )
   vi.unstubAllGlobals()
 })

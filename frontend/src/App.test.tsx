@@ -1,6 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { expect, test, vi } from 'vitest'
+import { MemoryRouter } from 'react-router-dom'
+import { expectOneH1 } from '@/test/headings'
+import App from './App'
 import { DevelopmentStatusPage } from './pages/development-status-page'
 
 function renderApp() {
@@ -29,4 +32,15 @@ test('shows an actionable error when the API is down', async () => {
   renderApp()
   expect(await screen.findByText(/Services unavailable/)).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Check again' })).toBeEnabled()
+})
+
+test('shows an unknown path as a page with one level-1 heading', () => {
+  render(
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={['/no/such/page']}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  )
+  expectOneH1('Page not found')
 })

@@ -2,6 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test } from 'vitest'
 import type { FollowUpListItem, FollowUpPage } from '@/api/follow-ups'
+import { expectOneH1 } from '@/test/headings'
 import { json, renderWorkspaceRoutes, stubApi } from '@/test/render'
 import { FollowUpsPage } from './follow-ups-page'
 
@@ -193,6 +194,24 @@ test('shows a generic empty state when the unfiltered list is empty', async () =
   })
   renderWorkspaceRoutes(routes, '/follow-ups')
   expect(await screen.findByText('No follow-ups yet')).toBeInTheDocument()
+  expectOneH1('Follow-ups')
+  expect(
+    screen.getByRole('heading', { name: 'No follow-ups yet', level: 2 }),
+  ).toBeInTheDocument()
+})
+
+test('keeps one page heading when the follow-up panel is not found', async () => {
+  stubApi({
+    [listKey]: listHandler({ '': page([item()]) }),
+    'GET /api/workspaces/ws-1/follow-ups/fu-1/': () =>
+      json({ detail: 'Not found' }, 404),
+  })
+  renderWorkspaceRoutes(routes, '/follow-ups/fu-1')
+  expect(await screen.findByText('Follow-up not found')).toBeInTheDocument()
+  expectOneH1('Follow-ups')
+  expect(
+    screen.getByRole('heading', { name: 'Follow-up not found', level: 2 }),
+  ).toBeInTheDocument()
 })
 
 test('replaces the list with an error state that supports retry', async () => {

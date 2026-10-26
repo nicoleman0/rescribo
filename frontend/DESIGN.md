@@ -285,3 +285,8 @@ colours and shadows and applies no animated transition.
 - Decline uses the shared inline `ConfirmPanel` form from both the Status card and the no-reports offer. The form requires a reason and keeps it after a failed save.
 - The no-reports form closes if a cache update makes the problem ineligible for the offer.
 - A successful state change names the new state in a toast and returns focus to the Status heading when the action button disappears.
+
+## Empty state headings
+
+- `EmptyState` titles itself with an `h2`. Use the default under a page heading: list pages and detail panels.
+- Pass `level={1}` only when the state is the whole page, such as a not-found route or an access gate. The page keeps one `h1`.
