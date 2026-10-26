@@ -1,28 +1,12 @@
 import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { signInAsSeededOwner } from './seed-session.js'
 import { axeViolations } from './axe.js'
 
-const seedPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/seed.json',
-)
-type Seed = { users: { email: string; password: string }[] }
 const operationId = '33333333-3333-4333-8333-333333333333'
 const draftIds = [
   '11111111-1111-4111-8111-111111111111',
   '22222222-2222-4222-8222-222222222222',
 ]
-
-async function signIn(page: Page) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[2].email)
-  await page.getByLabel('Password').fill(seed.users[2].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-}
 
 async function createProblem(page: Page) {
   const title = `Synthetic GitHub issue flow ${Date.now()}`
@@ -116,7 +100,7 @@ test('links to a responsive preview and publishes only after keyboard approval',
   )
 
   await page.setViewportSize({ width: 390, height: 844 })
-  await signIn(page)
+  await signInAsSeededOwner(page)
   await createProblem(page)
   const issueSection = page.getByRole('region', { name: 'GitHub issue' })
   await issueSection
@@ -177,7 +161,7 @@ test('renders a safe Markdown preview at phone width in both themes', async ({
     }),
   )
   await page.setViewportSize({ width: 390, height: 844 })
-  await signIn(page)
+  await signInAsSeededOwner(page)
   await createProblem(page)
   const issueSection = page.getByRole('region', { name: 'GitHub issue' })
   await issueSection

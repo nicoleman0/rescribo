@@ -1,23 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
 import { expectVisibleControlTouchTargets } from './touch-target.js'
 import { signOut } from './shell.js'
-
-const seedPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/seed.json',
-)
-type Seed = {
-  users: { email: string; password: string }[]
-  workspace_id: string
-  expired_invitation_token: string
-}
+import { readSeed } from './seed-session.js'
+import { signIn } from './session.js'
 
 test('owner signs in and signs out', async ({ page }) => {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+  const seed = await readSeed()
   await page.goto('/sign-in')
   await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[1].email)
   await page.getByLabel('Password').fill(seed.users[0].password)
@@ -90,7 +79,7 @@ test('sign-in button matches the email input at desktop width', async ({
 test('expired invitation explains the problem without a password form', async ({
   page,
 }) => {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+  const seed = await readSeed()
   await page.goto(`/invite/${seed.expired_invitation_token}`)
   await expect(page.getByRole('status')).toHaveText(
     'This invitation has expired or is no longer available.',
@@ -115,13 +104,9 @@ test('a member accepts an invitation in a clean browser context', async ({
   page,
   browser,
 }) => {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+  const seed = await readSeed()
   const inviteEmail = `invite-${Date.now()}@example.test`
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[3].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  await signIn(page, seed.users[3])
   await page.evaluate(() => fetch('/api/auth/csrf/'))
   const csrfCookie = (await page.context().cookies()).find(
     (cookie) => cookie.name === 'csrftoken',
@@ -167,12 +152,8 @@ test('an owner issued password reset link works in a clean browser context', asy
   page,
   browser,
 }) => {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[0].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  const seed = await readSeed()
+  await signIn(page, seed.users[0])
   const memberships = await page
     .context()
     .request.get(`/api/workspaces/${seed.workspace_id}/memberships/`)
@@ -220,14 +201,10 @@ test('a removed member accepts a new invitation with their password', async ({
   page,
   browser,
 }) => {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+  const seed = await readSeed()
   const email = `reinvite-${Date.now()}@example.test`
   const password = 'Harbour-Copper-7628!Quilt'
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[3].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  await signIn(page, seed.users[3])
   await page.evaluate(() => fetch('/api/auth/csrf/'))
   const csrfCookie = (await page.context().cookies()).find(
     (cookie) => cookie.name === 'csrftoken',

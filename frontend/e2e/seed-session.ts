@@ -1,13 +1,14 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { authDir, saveSession } from './session.js'
-import type { Browser } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
+import { authDir, saveSession, signIn } from './session.js'
 
 const seedPath = path.join(authDir, 'seed.json')
 
 type Seed = {
   users: { email: string; password: string }[]
   workspace_id: string
+  expired_invitation_token: string
 }
 
 // test.use reads the storageState path at module load, before beforeAll runs.
@@ -17,6 +18,12 @@ export function seedSessionPath(name: string) {
 
 export async function readSeed() {
   return JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+}
+
+export async function signInAsSeededOwner(page: Page) {
+  const seed = await readSeed()
+  // User 2 keeps fixed credentials while other specs change member passwords.
+  await signIn(page, seed.users[2])
 }
 
 export async function saveSeedSession(

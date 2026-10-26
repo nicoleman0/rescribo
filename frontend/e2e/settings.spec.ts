@@ -1,12 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { axeViolations } from './axe.js'
-import { saveSeedSession, seedSessionPath } from './seed-session.js'
+import { readSeed, saveSeedSession, seedSessionPath } from './seed-session.js'
 import { expectVisibleControlTouchTargets } from './touch-target.js'
+import { signIn } from './session.js'
 
-const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 test.describe('Settings owner journey', () => {
   // Tests 4 and 5 need the member and workspace from earlier tests, so serial
   // mode stops at the first failure instead of failing on absent state.
@@ -173,14 +170,8 @@ test.describe('Settings owner journey', () => {
 test('a long member email does not overflow settings at 320px', async ({
   page,
 }) => {
-  const seed = JSON.parse(
-    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
-  ) as { users: { email: string; password: string }[] }
-  await page.goto('/sign-in')
-  await page.getByLabel('Email').fill(seed.users[1].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  const seed = await readSeed()
+  await signIn(page, seed.users[1])
   await page.route('**/api/workspaces/*/memberships/', async (route) => {
     const response = await route.fetch()
     const members = (await response.json()) as { id: string; email: string }[]
@@ -202,14 +193,8 @@ test('a long member email does not overflow settings at 320px', async ({
 })
 
 test('the Slack connect form passes API validation', async ({ page }) => {
-  const seed = JSON.parse(
-    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
-  ) as { users: { email: string; password: string }[] }
-  await page.goto('/sign-in')
-  await page.getByLabel('Email').fill(seed.users[1].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  const seed = await readSeed()
+  await signIn(page, seed.users[1])
   // With Slack credentials the API answers with an authorise URL. Keep the
   // browser off slack.com.
   await page.route('https://slack.com/**', (route) =>
@@ -235,14 +220,8 @@ test('the Slack connect form passes API validation', async ({ page }) => {
 test('a passing Slack check shows its result beside the button (mocked)', async ({
   page,
 }) => {
-  const seed = JSON.parse(
-    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
-  ) as { users: { email: string; password: string }[] }
-  await page.goto('/sign-in')
-  await page.getByLabel('Email').fill(seed.users[1].email)
-  await page.getByLabel('Password').fill(seed.users[0].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  const seed = await readSeed()
+  await signIn(page, seed.users[1])
   await page.route('**/connections/slack/refresh/', (route) =>
     route.fulfill({ status: 204 }),
   )
@@ -263,15 +242,9 @@ test('a passing Slack check shows its result beside the button (mocked)', async 
 test('an owner allows and removes a Slack channel from the picker', async ({
   page,
 }) => {
-  const seed = JSON.parse(
-    await readFile(path.join(authDir, 'seed.json'), 'utf8'),
-  ) as { users: { email: string; password: string }[] }
+  const seed = await readSeed()
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/sign-in')
-  await page.getByLabel('Email').fill(seed.users[4].email)
-  await page.getByLabel('Password').fill(seed.users[4].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
+  await signIn(page, seed.users[4])
   await page.goto('/settings/connections')
   const slack = page.getByRole('region', { name: 'Slack', exact: true })
   const channels = slack.getByRole('region', { name: 'Allowed Slack channels' })

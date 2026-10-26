@@ -1,37 +1,17 @@
 import { AxeBuilder } from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { signInAsSeededOwner } from './seed-session.js'
 import {
   expectTouchTarget,
   expectVisibleControlTouchTargets,
 } from './touch-target.js'
-
-const seedPath = path.join(
-  path.dirname(fileURLToPath(import.meta.url)),
-  '.auth/seed.json',
-)
-type Seed = { users: { email: string; password: string }[] }
 
 // Axe needs settled colours rather than a frame from the content fade.
 test.use({ reducedMotion: 'reduce' })
 
 // The seed command creates this synthetic Slack report in the e2e workspace.
 const seededTitle = 'Synthetic Slack report'
-
-async function signIn(page: Page) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  await page.goto('/sign-in')
-  // Other specs change the member's password, so use an owner whose
-  // credentials stay fixed.
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[2].email)
-  await page.getByLabel('Password').fill(seed.users[2].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-  await expect(page).toHaveTitle('Inbox · Rescribo')
-}
 
 const reportList = (page: Page) => page.getByRole('list', { name: 'Reports' })
 
@@ -55,7 +35,10 @@ async function clearFilters(page: Page) {
 }
 
 test.describe('Inbox', () => {
-  test.beforeEach(async ({ page }) => signIn(page))
+  test.beforeEach(async ({ page }) => {
+    await signInAsSeededOwner(page)
+    await expect(page).toHaveTitle('Inbox · Rescribo')
+  })
 
   test('captures a manual report, then searches and filters the inbox', async ({
     page,
