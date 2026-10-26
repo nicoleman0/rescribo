@@ -696,7 +696,9 @@ class FollowUpDetailSerializer(serializers.Serializer):
     @extend_schema_field(serializers.BooleanField())
     def get_can_record_outcome(self, follow_up: FollowUp) -> bool:
         # No fallback: a view that forgets the actor should fail, not answer wrongly.
-        return can_record_outcome(actor=self.context["actor"], report=follow_up.report)
+        return can_record_outcome(
+            actor=self.context["actor"], follow_up=follow_up, report=follow_up.report
+        )
 
 
 class FollowUpNotificationEditSerializer(serializers.Serializer):

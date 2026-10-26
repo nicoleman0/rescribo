@@ -80,13 +80,16 @@ def _allowed_outcome_states(*, from_state: str) -> tuple[str, ...]:
     return RECORDABLE_STATES.get(FollowUp.ContactState(from_state), ())
 
 
-def can_record_outcome(*, actor: Membership, report: Report) -> bool:
-    """The assigned member, the original submitter, or any owner may record an outcome."""
+def can_record_outcome(*, actor: Membership, follow_up: FollowUp, report: Report) -> bool:
+    """The web app rule: an owner, the assignee, the submitter, or the follow-up's recipient."""
+    assert follow_up.report_id == report.pk, "follow-up and report must belong together"
     if actor.role == Membership.Role.OWNER:
         return True
     if report.assignee_id == actor.pk:
         return True
     if report.submitted_by_id == actor.pk:
+        return True
+    if follow_up.recipient_id == actor.pk:
         return True
     return False
 
@@ -663,7 +666,8 @@ def record_outcome(
 ) -> FollowUp:
     """Record a customer-contact outcome for one follow-up.
 
-    Recording: the assigned member, the original submitter, or an owner.
+    Recording in the web app: an owner, the assigned member, the original
+    submitter, or the follow-up's recipient. In Slack: only the linked recipient.
     Delivery state and contact state are independent; this never changes the
     notification row.
     """
@@ -679,7 +683,7 @@ def record_outcome(
         if next_state not in allowed:
             raise InvalidTransition(action="record_outcome", from_state=follow_up.contact_state)
         if slack_team_id is None:
-            authorized = can_record_outcome(actor=actor, report=report)
+            authorized = can_record_outcome(actor=actor, follow_up=follow_up, report=report)
         else:
             identity = (
                 ExternalIdentity.objects.select_for_update()

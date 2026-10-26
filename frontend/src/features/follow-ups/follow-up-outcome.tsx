@@ -67,8 +67,8 @@ export function ContactSection({
       {!followUp.can_record_outcome &&
       choicesFor(followUp.outcome.state).length ? (
         <p className="text-sm text-muted-foreground">
-          Only an owner, the report&apos;s assignee, or its submitter can record
-          customer contact.
+          Only an owner, the report&apos;s assignee or submitter, or the
+          follow-up&apos;s recipient can record customer contact.
         </p>
       ) : (
         <RecordOutcomeForm

@@ -889,6 +889,94 @@ def test_other_member_outcome_is_still_refused(client: Client, owner: Membership
     assert follow_up.contact_state == FollowUp.ContactState.PENDING
 
 
+def _reassigned_follow_up(owner: Membership) -> tuple[FollowUp, dict[str, Membership]]:
+    """A shared follow-up whose recipient an owner moved to the unrelated member."""
+    follow_up, members = _shared_follow_up(owner)
+    link_slack(members["other"], user_id="U0OTHER")
+    follow_up = change_recipient(
+        actor=owner, follow_up_id=follow_up.pk, new_recipient_id=members["other"].pk
+    )
+    return follow_up, members
+
+
+def _move_recipient_back(owner: Membership, follow_up: FollowUp, to: Membership) -> FollowUp:
+    link_slack(to, user_id="U0BACK")
+    return change_recipient(actor=owner, follow_up_id=follow_up.pk, new_recipient_id=to.pk)
+
+
+def test_reassigned_recipient_can_record_outcome(owner: Membership) -> None:
+    follow_up, members = _reassigned_follow_up(owner)
+    outcome = _record(
+        members["other"],
+        follow_up.pk,
+        FollowUp.ContactState.CONTACTED,
+        expected_version=follow_up.version,
+    )
+    assert outcome.contact_state == FollowUp.ContactState.CONTACTED
+    assert outcome.outcome_by_id == members["other"].pk
+
+
+def test_former_recipient_cannot_record_outcome(owner: Membership) -> None:
+    follow_up, members = _reassigned_follow_up(owner)
+    follow_up = _move_recipient_back(owner, follow_up, members["assignee"])
+    with pytest.raises(InvalidTransition):
+        _record(
+            members["other"],
+            follow_up.pk,
+            FollowUp.ContactState.CONTACTED,
+            expected_version=follow_up.version,
+        )
+    follow_up.refresh_from_db()
+    assert follow_up.contact_state == FollowUp.ContactState.PENDING
+    assert follow_up.outcome_by_id is None
+
+
+def test_detail_follows_the_recipient(client: Client, owner: Membership) -> None:
+    follow_up, members = _reassigned_follow_up(owner)
+    other = members["other"]
+    sign_in(client, other)
+    response = client.get(api(other, f"follow-ups/{follow_up.pk}/"))
+    assert response.status_code == 200
+    assert response.json()["can_record_outcome"] is True
+
+    _move_recipient_back(owner, follow_up, members["assignee"])
+    response = client.get(api(other, f"follow-ups/{follow_up.pk}/"))
+    assert response.status_code == 200
+    assert response.json()["can_record_outcome"] is False
+
+
+def test_reassigned_recipient_outcome_endpoint(client: Client, owner: Membership) -> None:
+    follow_up, members = _reassigned_follow_up(owner)
+    other = members["other"]
+    sign_in(client, other)
+    response = post_json(
+        client,
+        _outcome_url(other, follow_up.pk),
+        {"state": FollowUp.ContactState.CONTACTED, "expected_version": follow_up.version},
+    )
+    assert response.status_code == 200
+    assert response.json()["outcome"]["state"] == FollowUp.ContactState.CONTACTED
+    follow_up.refresh_from_db()
+    assert follow_up.outcome_by_id == other.pk
+
+
+def test_recipient_membership_elsewhere_finds_nothing(client: Client, owner: Membership) -> None:
+    follow_up, members = _reassigned_follow_up(owner)
+    foreign = make_membership(workspace=make_workspace(slug="foreign"), user=members["other"].user)
+    sign_in(client, foreign)
+    response = client.get(api(foreign, f"follow-ups/{follow_up.pk}/"))
+    assert response.status_code == 404
+    response = post_json(
+        client,
+        _outcome_url(foreign, follow_up.pk),
+        {"state": FollowUp.ContactState.CONTACTED, "expected_version": follow_up.version},
+    )
+    assert response.status_code == 404
+    follow_up.refresh_from_db()
+    assert follow_up.contact_state == FollowUp.ContactState.PENDING
+    assert follow_up.outcome_by_id is None
+
+
 def test_outcome_endpoint_returns_409_on_version_mismatch(
     client: Client, owner: Membership
 ) -> None:
