@@ -16,8 +16,8 @@ You work on one issue in your own git worktree. A coordinator session reviews th
 
 Postgres and Redis run in Docker from the main checkout and are already up. Your `.env` already points at your own database and Redis index. They listen on the host ports in `RESCRIBO_DATABASE_URL` and `RESCRIBO_REDIS_URL`, not the defaults 5432 and 6379. Check those before reporting them down.
 - Never run `task services`, `task stop`, or `docker compose`. Never touch ports 8000 or 5173, the main checkout, or another worktree.
-- Dev servers, on the `api` and `web` ports above: `RESCRIBO_SLACK_FAKE_DELIVERY=true uv run python backend/manage.py runserver 127.0.0.1:<api> --noreload`, and from `frontend`, `API_PROXY_TARGET=http://127.0.0.1:<api> npm run dev -- --host 127.0.0.1 --port <web> --strictPort`. Stop them when you finish.
-- Checks: run every check `AGENTS.md` lists. Run e2e as `RESCRIBO_E2E_API_PORT=<api> RESCRIBO_E2E_FRONTEND_PORT=<web> task e2e`. Without those two variables Playwright reuses another checkout's server and tests the wrong code.
+- Dev servers, on the `api` and `web` ports above: `RESCRIBO_DEMO_PASSWORD=<password> RESCRIBO_SLACK_FAKE_DELIVERY=true uv run python backend/manage.py runserver 127.0.0.1:<api> --noreload`, with `<password>` from `frontend/e2e/demo-password.ts`, and from `frontend`, `API_PROXY_TARGET=http://127.0.0.1:<api> npm run dev -- --host 127.0.0.1 --port <web> --strictPort`. Stop them when you finish.
+- Checks: run every check `AGENTS.md` lists. Run e2e as `RESCRIBO_E2E_API_PORT=<api> RESCRIBO_E2E_FRONTEND_PORT=<web> task e2e`. Without those two variables Playwright reuses another checkout's server and tests the wrong code. Playwright reuses your API server when it is already running, so start it with the demo password or demo sign-in fails.
 
 ## Screenshots (UI changes only)
 
