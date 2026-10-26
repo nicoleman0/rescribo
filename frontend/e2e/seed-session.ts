@@ -1,9 +1,8 @@
-import { mkdir, readFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { expect, type Browser } from '@playwright/test'
+import { authDir, saveSession } from './session.js'
+import type { Browser } from '@playwright/test'
 
-const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
 const seedPath = path.join(authDir, 'seed.json')
 
 type Seed = {
@@ -16,29 +15,17 @@ export function seedSessionPath(name: string) {
   return path.join(authDir, `seed-${name}.json`)
 }
 
+export async function readSeed() {
+  return JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+}
+
 export async function saveSeedSession(
   browser: Browser,
   baseURL: string | undefined,
   sessionPath: string,
   userIndex = 1,
 ) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  const page = await browser.newPage({
-    baseURL,
-    storageState: { cookies: [], origins: [] },
-  })
-  try {
-    await page.goto('/sign-in')
-    await page
-      .getByRole('textbox', { name: 'Email' })
-      .fill(seed.users[userIndex].email)
-    await page.getByLabel('Password').fill(seed.users[userIndex].password)
-    await page.getByRole('button', { name: 'Sign in' }).click()
-    await expect(page).toHaveURL(/\/inbox$/)
-    await mkdir(path.dirname(sessionPath), { recursive: true })
-    await page.context().storageState({ path: sessionPath })
-  } finally {
-    await page.close()
-  }
+  const seed = await readSeed()
+  await saveSession(browser, baseURL, sessionPath, seed.users[userIndex])
   return seed
 }

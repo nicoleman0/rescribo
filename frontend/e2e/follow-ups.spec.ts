@@ -1,37 +1,11 @@
-import {
-  expect,
-  test,
-  type Browser,
-  type Locator,
-  type Page,
-} from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { expect, test, type Locator, type Page } from '@playwright/test'
 import { axeViolations } from './axe.js'
+import { saveSeedSession, readSeed, seedSessionPath } from './seed-session.js'
+import { signIn } from './session.js'
 import { expectTouchTarget } from './touch-target.js'
 
-const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
-const seedPath = path.join(authDir, 'seed.json')
-const sessionPath = path.join(authDir, 'follow-ups-owner.json')
-type Seed = { users: { email: string; password: string }[] }
-
 // Sign in once and reuse the session: login is throttled per identity and
-// address. No other spec signs in as this owner or changes its password.
-async function saveSession(browser: Browser, baseURL?: string) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  const page = await browser.newPage({
-    baseURL,
-    storageState: { cookies: [], origins: [] },
-  })
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[5].email)
-  await page.getByLabel('Password').fill(seed.users[5].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-  await page.context().storageState({ path: sessionPath })
-  await page.close()
-}
+// address, and no other spec saves a session for this user.
 
 const list = (page: Page) => page.getByRole('list', { name: 'Follow-ups' })
 const detail = (page: Page) =>
@@ -76,11 +50,7 @@ async function ensureFollowUpOwner(page: Page) {
     signInHeading.or(page.getByRole('heading', { name: 'Inbox' })),
   ).toBeVisible()
   if (await signInHeading.isVisible().catch(() => false)) {
-    const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-    await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[5].email)
-    await page.getByLabel('Password').fill(seed.users[5].password)
-    await page.getByRole('button', { name: 'Sign in' }).click()
-    await expect(page).toHaveURL(/\/inbox$/)
+    await signIn(page, (await readSeed()).users[5])
   }
 }
 
@@ -106,9 +76,14 @@ async function textOverflowsHorizontally(locator: Locator) {
 
 test.describe('Follow-ups', () => {
   test.beforeAll(async ({ browser }, info) =>
-    saveSession(browser, info.project.use.baseURL),
+    saveSeedSession(
+      browser,
+      info.project.use.baseURL,
+      seedSessionPath('follow-ups-owner'),
+      5,
+    ),
   )
-  test.use({ storageState: sessionPath })
+  test.use({ storageState: seedSessionPath('follow-ups-owner') })
 
   test('marks members without Slack links unavailable in the recipient picker', async ({
     page,
@@ -194,16 +169,11 @@ test.describe('Follow-ups', () => {
   test('records an outcome on an unlinked Slack recipient without sending', async ({
     browser,
   }, info) => {
-    const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
+    const seed = await readSeed()
     const memberPage = await browser.newPage({
       baseURL: info.project.use.baseURL as string,
     })
-    await memberPage.goto('/sign-in')
-    await memberPage
-      .getByRole('textbox', { name: 'Email' })
-      .fill(seed.users[7].email)
-    await memberPage.getByLabel('Password').fill(seed.users[7].password)
-    await memberPage.getByRole('button', { name: 'Sign in' }).click()
+    await signIn(memberPage, seed.users[7])
     await expect(memberPage).toHaveURL(/\/inbox$/)
 
     const marker = `Manual journey ${Date.now()}`
