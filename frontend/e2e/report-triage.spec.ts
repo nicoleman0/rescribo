@@ -1,36 +1,14 @@
-import { expect, test, type Browser, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { expect, test, type Page } from '@playwright/test'
 import { axeViolations } from './axe.js'
+import { saveSeedSession, seedSessionPath } from './seed-session.js'
 import { expectTouchTarget } from './touch-target.js'
-
-const authDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '.auth')
-const seedPath = path.join(authDir, 'seed.json')
-const sessionPath = path.join(authDir, 'triage-owner.json')
-type Seed = { users: { email: string; password: string }[] }
 
 // The seed command creates this Slack report for this spec alone, so other
 // specs keep their shared report untouched.
 const slackTitle = 'Synthetic Slack triage report'
 
 // Sign in once and reuse the session: login is throttled per identity and
-// address. No other spec signs in as this owner or changes its password.
-async function saveSession(browser: Browser, baseURL?: string) {
-  const seed = JSON.parse(await readFile(seedPath, 'utf8')) as Seed
-  // Start signed out; test.use would otherwise load the file being created.
-  const page = await browser.newPage({
-    baseURL,
-    storageState: { cookies: [], origins: [] },
-  })
-  await page.goto('/sign-in')
-  await page.getByRole('textbox', { name: 'Email' }).fill(seed.users[4].email)
-  await page.getByLabel('Password').fill(seed.users[4].password)
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page).toHaveURL(/\/inbox$/)
-  await page.context().storageState({ path: sessionPath })
-  await page.close()
-}
+// address, and no other spec saves a session for this user.
 
 const detail = (page: Page) =>
   page.getByRole('region', { name: 'Report detail' })
@@ -90,9 +68,14 @@ async function openProblem(page: Page, title: string) {
 
 test.describe('Report triage', () => {
   test.beforeAll(async ({ browser }, info) =>
-    saveSession(browser, info.project.use.baseURL),
+    saveSeedSession(
+      browser,
+      info.project.use.baseURL,
+      seedSessionPath('triage-owner'),
+      4,
+    ),
   )
-  test.use({ storageState: sessionPath })
+  test.use({ storageState: seedSessionPath('triage-owner') })
 
   test('confirms fixes after moving a report and verifies applicability for a late report', async ({
     page,
