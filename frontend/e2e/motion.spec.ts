@@ -301,4 +301,23 @@ test.describe('Reduced motion', () => {
       await page.mouse.up()
     }
   })
+
+  test('the breadcrumb link draws its outline without a transition', async ({
+    page,
+  }) => {
+    await page.goto('/inbox/new')
+    const link = page
+      .getByRole('navigation', { name: 'Breadcrumb' })
+      .getByRole('link', { name: 'Inbox' })
+    await expect(link).toBeVisible()
+    // Walk the tab order so the link gets keyboard focus and :focus-visible.
+    for (let i = 0; i < 20; i++) {
+      if (await link.evaluate((element) => element.matches(':focus-visible')))
+        break
+      await page.keyboard.press('Tab')
+    }
+    await expect(link).toBeFocused()
+    await expect(link).toHaveCSS('transition-duration', '0s')
+    await expect(link).toHaveCSS('outline-style', 'solid')
+  })
 })
