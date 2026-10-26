@@ -331,7 +331,7 @@ test('keeps the note when another member changed the outcome first', async () =>
 })
 
 const mayNotRecord =
-  "Only an owner, the report's assignee, or its submitter can record customer contact."
+  "Only an owner, the report's assignee or submitter, or the follow-up's recipient can record customer contact."
 
 // A member who is not an owner, so the owner correction form never shows.
 function renderContactForMember(followUp: FollowUpDetail) {
