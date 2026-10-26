@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { axeViolations } from './axe.js'
-import { saveSeedSession, seedSessionPath } from './seed-session.js'
+import { readSeed, saveSeedSession, seedSessionPath } from './seed-session.js'
 import { expectVisibleControlTouchTargets } from './touch-target.js'
-import { readSeed } from './seed-session.js'
 import { signIn } from './session.js'
 
 test.describe('Settings owner journey', () => {
