@@ -1,5 +1,7 @@
 import type { EngineeringIssue } from '@/api/github-issues'
+import { cn } from '@/lib/utils'
 import { formatDate } from '@/features/inbox/report-format'
+import { standaloneLink } from './problem-card'
 import { issueStateLabel } from './problem-format'
 
 const accessLabels: Record<EngineeringIssue['access'], string> = {
@@ -20,7 +22,10 @@ export function GitHubIssueStatus({ issue }: { issue: EngineeringIssue }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <a
-            className="font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring"
+            className={cn(
+              standaloneLink,
+              'font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-ring',
+            )}
             href={issue.url}
             target="_blank"
             rel="noreferrer"

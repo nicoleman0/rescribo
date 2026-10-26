@@ -45,7 +45,7 @@ import { TriageBadge } from '@/features/inbox/triage-badge'
 import { useMembers } from '@/features/inbox/use-members'
 import { cn } from '@/lib/utils'
 import { PageNav } from './page-nav'
-import { problemCard, problemCardHeading } from './problem-card'
+import { problemCard, problemCardHeading, standaloneLink } from './problem-card'
 import { reportCountLabel } from './problem-format'
 import { ProblemActivityList } from './problem-activity'
 import { ProblemNextStep } from './problem-next-step'
@@ -310,7 +310,10 @@ export function FixCard({
       </p>
       {problem.fix_evidence_url ? (
         <a
-          className="w-fit text-primary underline-offset-4 hover:underline"
+          className={cn(
+            standaloneLink,
+            'w-fit text-primary underline-offset-4 hover:underline',
+          )}
           href={problem.fix_evidence_url}
           target="_blank"
           rel="noreferrer"
@@ -322,7 +325,10 @@ export function FixCard({
       {problem.fix_release ? (
         <div className="grid gap-2">
           <a
-            className="w-fit text-primary underline-offset-4 hover:underline"
+            className={cn(
+              standaloneLink,
+              'w-fit text-primary underline-offset-4 hover:underline',
+            )}
             href={problem.fix_release.url}
             target="_blank"
             rel="noreferrer"
@@ -677,7 +683,10 @@ function LinkedReports({
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Link
                       to={`/inbox/${report.id}`}
-                      className="min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline"
+                      className={cn(
+                        standaloneLink,
+                        'min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline',
+                      )}
                     >
                       {report.title}
                     </Link>

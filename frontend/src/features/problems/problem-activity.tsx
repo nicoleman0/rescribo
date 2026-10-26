@@ -16,6 +16,7 @@ import {
   formatDate,
   memberName,
 } from '@/features/inbox/report-format'
+import { touchTarget } from '@/components/layout/touch-target'
 import { cn } from '@/lib/utils'
 import {
   describeUpdate,
@@ -23,6 +24,7 @@ import {
   type ActivityItem,
 } from './activity-format'
 import { PageNav } from './page-nav'
+import { standaloneLink } from './problem-card'
 import {
   countLabel,
   problemStateLabels,
@@ -106,13 +108,15 @@ function ActivityRow({ item }: { item: ActivityItem }) {
         </span>
       ) : (
         <details className="break-words">
-          <summary className="w-fit cursor-pointer">
+          <summary
+            className={cn(touchTarget, 'w-fit cursor-pointer content-center')}
+          >
             <span className="font-medium">{actorName(newest)}</span> linked{' '}
             {reportCountLabel(item.entries.length)}
           </summary>
           <ul className="mt-1 grid gap-1 pl-4">
             {item.entries.map((entry) => (
-              <li key={entry.id}>{reportLink(entry)}</li>
+              <li key={entry.id}>{reportLink(entry, true)}</li>
             ))}
           </ul>
         </details>
@@ -127,12 +131,15 @@ function ActivityRow({ item }: { item: ActivityItem }) {
   )
 }
 
-function reportLink(entry: ProblemActivity): ReactNode {
+function reportLink(entry: ProblemActivity, standalone = false): ReactNode {
   if (!entry.report) return 'a report'
   return (
     <Link
       to={`/inbox/${entry.report.id}`}
-      className="text-primary underline-offset-4 hover:underline"
+      className={cn(
+        standalone && standaloneLink,
+        'text-primary underline-offset-4 hover:underline',
+      )}
     >
       {entry.report.title}
     </Link>

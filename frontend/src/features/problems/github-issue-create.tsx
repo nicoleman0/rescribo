@@ -17,6 +17,8 @@ import { applyProblem } from '@/api/cache'
 import { Link } from 'react-router-dom'
 import { fieldError } from '@/components/forms/field-error'
 import { Markdown } from '@/components/markdown/markdown'
+import { cn } from '@/lib/utils'
+import { standaloneLink } from './problem-card'
 
 export function GitHubIssueCreate({
   workspaceId,
@@ -168,7 +170,7 @@ export function GitHubIssueCreate({
           <p className="font-medium">GitHub issue created.</p>
           {operation.data.remote_url ? (
             <a
-              className="text-sm text-primary underline"
+              className={cn(standaloneLink, 'text-sm text-primary underline')}
               href={operation.data.remote_url}
               target="_blank"
               rel="noreferrer"
@@ -412,7 +414,10 @@ function ConnectionGuidance() {
         Ask a workspace owner to connect the selected repository.
       </p>
       <Link
-        className="w-fit text-primary underline underline-offset-4"
+        className={cn(
+          standaloneLink,
+          'w-fit text-primary underline underline-offset-4',
+        )}
         to="/settings/connections"
       >
         Open workspace settings

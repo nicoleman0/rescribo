@@ -6,6 +6,7 @@ import {
   saveDemoSession,
 } from './demo-session.js'
 import { E2E_DEMO_PASSWORD } from './demo-password.js'
+import { expectTouchTarget } from './touch-target.js'
 
 const sessionPath = demoSessionPath('demo')
 
@@ -86,6 +87,50 @@ test('the demo visitor sees labelled, simulated data', async ({ page }) => {
   // On desktop the badges share the title's first line.
   expect(wideBadge.y).toBeLessThan(wideTitle.y + wideTitle.height)
   expect(wideBadge.x).toBeGreaterThan(wideTitle.x + wideTitle.width)
+})
+
+test('standalone links on problem detail keep a phone touch target', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/problems')
+  await page
+    .getByRole('list', { name: 'Problems' })
+    .getByRole('link', {
+      name: /Password reset emails arrive after the link expires/,
+    })
+    .click()
+  await expect(
+    page.getByRole('heading', {
+      name: 'Password reset emails arrive after the link expires',
+    }),
+  ).toBeVisible()
+
+  const reports = page.getByRole('list', { name: 'Linked reports' })
+  await expect(reports.getByRole('link').first()).toBeVisible()
+  const titles = await reports.getByRole('link').all()
+  expect(titles.length).toBeGreaterThan(1)
+  for (const link of titles) await expectTouchTarget(link)
+
+  const external = page.locator('a[target="_blank"]')
+  expect(await external.count()).toBeGreaterThanOrEqual(2)
+  for (const link of await external.all()) await expectTouchTarget(link)
+
+  const summary = page
+    .getByText(/linked 6 reports/)
+    .locator('xpath=ancestor-or-self::summary')
+  await expectTouchTarget(summary)
+  await summary.click()
+  const revealed = page.locator('details[open] ul a')
+  expect(await revealed.count()).toBe(6)
+  for (const link of await revealed.all()) await expectTouchTarget(link)
+
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true)
 })
 
 test('the demo label stays visible with the sidebar collapsed', async ({
