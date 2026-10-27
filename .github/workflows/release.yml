@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v6
       - name: Check release version
         env:
           GITHUB_REF_NAME: ${{ github.ref_name }}
@@ -95,7 +95,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      # Anonymous Docker Hub pulls are rate limited on shared runners.
+      - uses: docker/login-action@v4
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -146,7 +155,7 @@ jobs:
             repository: rescribo-proxy
     steps:
       - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -169,12 +178,13 @@ jobs:
           TAGS: ${{ steps.meta.outputs.tags }}
         run: |
           set -eu
-          digests=$(find "$RUNNER_TEMP/digests" -maxdepth 1 -type f -printf '%f\n' | sort)
-          test "$(printf '%s\n' "$digests" | wc -l)" -eq 2
-          for tag in $TAGS; do
-            refs=
-            for digest in $digests; do refs="$refs $IMAGE@sha256:$digest"; done
-            docker buildx imagetools create $(printf -- '-t %s ' "$tag") $refs
+          mapfile -t digests < <(find "$RUNNER_TEMP/digests" -maxdepth 1 -type f -printf '%f\n' | sort)
+          mapfile -t tags <<< "$TAGS"
+          test "${#digests[@]}" -eq 2
+          for tag in "${tags[@]}"; do
+            refs=()
+            for digest in "${digests[@]}"; do refs+=("$IMAGE@sha256:$digest"); done
+            docker buildx imagetools create -t "$tag" "${refs[@]}"
           done
 
   build-pr:
@@ -183,6 +193,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
+      # Anonymous Docker Hub pulls are rate limited on shared runners.
+      - uses: docker/login-action@v4
+        if: env.DOCKERHUB_USERNAME != '' && env.DOCKERHUB_TOKEN != ''
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
           context: .

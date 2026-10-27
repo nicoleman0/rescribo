@@ -35,7 +35,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
       target: production
-    image: ghcr.io/nicoleman0/rescribo-backend:0.1.0-rc.1
+    image: ghcr.io/nicoleman0/rescribo-backend:0.1.0
     restart: unless-stopped
     env_file: .env.production
     environment:
@@ -65,7 +65,7 @@ services:
     build:
       context: .
       dockerfile: proxy/Dockerfile
-    image: ghcr.io/nicoleman0/rescribo-proxy:0.1.0-rc.1
+    image: ghcr.io/nicoleman0/rescribo-proxy:0.1.0
     restart: unless-stopped
     environment:
       RESCRIBO_SITE_ADDRESS: ${RESCRIBO_DOMAIN}

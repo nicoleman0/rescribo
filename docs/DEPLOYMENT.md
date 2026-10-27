@@ -11,8 +11,8 @@ It has not yet run on a public domain.
 
 | Service | Image | Role |
 | --- | --- | --- |
-| `proxy` | `ghcr.io/nicoleman0/rescribo-proxy:0.1.0-rc.1` | Caddy. Terminates HTTPS, serves the built frontend, forwards `/api` and `/static`. Only service with published ports. |
-| `backend` | `ghcr.io/nicoleman0/rescribo-backend:0.1.0-rc.1` | gunicorn running Django |
+| `proxy` | `ghcr.io/nicoleman0/rescribo-proxy:0.1.0` | Caddy. Terminates HTTPS, serves the built frontend, forwards `/api` and `/static`. Only service with published ports. |
+| `backend` | `ghcr.io/nicoleman0/rescribo-backend:0.1.0` | gunicorn running Django |
 | `worker`, `scheduler` | same image | Celery worker and beat |
 | `postgres`, `redis` | upstream | Data in named volumes |
 
@@ -25,9 +25,9 @@ It has not yet run on a public domain.
 
 ## First deployment
 
-1. Download `compose.prod.yaml` and `.env.production.example` from the release
-   tag. To build from source, clone that tag and run `task prod-build` before
-   `task prod-up`.
+1. Download `compose.prod.yaml`, `Taskfile.yml`, and
+   `.env.production.example` from the release tag. To build from source, clone
+   that tag and run `task prod-build` before `task prod-up`.
 2. Create the configuration:
 
    ```sh
@@ -84,7 +84,7 @@ Optional: `task prod-manage -- seed_demo` adds the fictitious demo workspace.
 
 | Task | Command |
 | --- | --- |
-| Update | `task prod-backup`, then download `compose.prod.yaml` from the new release tag and run `task prod-up` (pulls, migrates, restarts). For a source build, check out the new tag and run `task prod-build` first. |
+| Update | `task prod-backup`, then download `compose.prod.yaml` and `Taskfile.yml` from the new release tag and run `task prod-up` (pulls, migrates, restarts). For a source build, check out the new tag and run `task prod-build` first. |
 | Stop, keeping data | `task prod-stop` |
 | Logs | `docker compose -f compose.prod.yaml --env-file .env.production logs -f backend worker` |
 | Management command | `task prod-manage -- <command>` |

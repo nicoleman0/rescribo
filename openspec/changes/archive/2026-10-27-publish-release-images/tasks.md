@@ -10,7 +10,7 @@
 
 ## 2. Compose and docs
 
-- [x] 2.1 In `compose.prod.yaml`, set `image: ghcr.io/nicoleman0/rescribo-backend:0.1.0-rc.1` and `image: ghcr.io/nicoleman0/rescribo-proxy:0.1.0-rc.1`, keeping the `build:` sections. Verify: `docker compose -f compose.prod.yaml --env-file <scratch env with POSTGRES_PASSWORD and RESCRIBO_DOMAIN> config` shows both GHCR references and the worker and scheduler inherit the backend image.
+- [x] 2.1 In `compose.prod.yaml`, set `image: ghcr.io/nicoleman0/rescribo-backend:0.1.0` and `image: ghcr.io/nicoleman0/rescribo-proxy:0.1.0`, keeping the `build:` sections. Verify: `docker compose -f compose.prod.yaml --env-file <scratch env with POSTGRES_PASSWORD and RESCRIBO_DOMAIN> config` shows both GHCR references and the worker and scheduler inherit the backend image.
 - [x] 2.2 Drop the `build` step from `prod-up` and add `prod-build`. Verify: `task --list` shows both and `task --dry prod-up` no longer runs `build`.
 - [x] 2.3 Update only the image-related lines in `docs/DEPLOYMENT.md`: the service table's Image column, the "Images build from source" line, the build step wording, and the Update row. Verify: `git diff docs/DEPLOYMENT.md` touches no other section.
 

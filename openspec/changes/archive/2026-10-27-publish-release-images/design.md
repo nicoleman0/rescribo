@@ -11,9 +11,9 @@
 - The repository is public, so GitHub's native arm64 runners are free.
 - `[project] version` in `pyproject.toml` is the version's source of truth
   (#254).
-- The first release candidate uses `0.1.0rc1` in `pyproject.toml` and
-  `0.1.0-rc.1` in both compose image tags. #254 owns the version bump; the
-  coordinator aligns its release checklist before the tag is pushed.
+- On main, `pyproject.toml` and both compose image tags use `0.1.0`. The
+  maintainer changes them to `0.1.0rc1` and `0.1.0-rc.1` before tagging the
+  release candidate, as part of #254's release checklist.
 - The maintainer's `surgite` repo already publishes to GHCR with
   `docker/metadata-action` and `docker/build-push-action`. This follows the
   same pattern.
