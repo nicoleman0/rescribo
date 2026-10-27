@@ -4,7 +4,7 @@ Status: accepted. Issue [#89](https://github.com/nicoleman0/rescribo/issues/89).
 
 Rescribo deploys as one Docker Compose project on one host
 ([`compose.prod.yaml`](../../compose.prod.yaml)). Caddy terminates HTTPS, serves
-the built frontend, and forwards `/api`, `/admin`, and `/static` to gunicorn.
+the built frontend, and forwards `/api` and `/static` to gunicorn.
 The worker and scheduler run from the backend image. PostgreSQL and Redis run
 beside them in named volumes.
 
@@ -19,6 +19,6 @@ setup. Serving the frontend from the proxy keeps Node out of the runtime. Django
 trusts forwarded headers only when `RESCRIBO_NUM_PROXIES` is set, so the
 backend port must stay unpublished.
 
-Open: HSTS, an image update policy for PostgreSQL, Redis, and Caddy, structured
+Open: an image update policy for PostgreSQL, Redis, and Caddy, structured
 logs, and off-host backups. A hosted multi-tenant service is a separate decision
 (#92).

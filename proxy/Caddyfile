@@ -3,7 +3,16 @@
 {$RESCRIBO_SITE_ADDRESS} {
 	encode zstd gzip
 
-	@backend path /api/* /admin /admin/* /static/*
+	# Same values Django sends on API responses, so the frontend gets them too.
+	# No includeSubDomains or preload: those reach beyond this host and are slow to undo.
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy same-origin
+	}
+
+	@backend path /api/* /static/*
 	handle @backend {
 		reverse_proxy backend:8000
 	}

@@ -11,7 +11,7 @@ It has not yet run on a public domain.
 
 | Service | Image | Role |
 | --- | --- | --- |
-| `proxy` | `proxy/Dockerfile` | Caddy. Terminates HTTPS, serves the built frontend, forwards `/api`, `/admin`, `/static`. Only service with published ports. |
+| `proxy` | `proxy/Dockerfile` | Caddy. Terminates HTTPS, serves the built frontend, forwards `/api` and `/static`. Only service with published ports. |
 | `backend` | `backend/Dockerfile`, `production` target | gunicorn running Django |
 | `worker`, `scheduler` | same image | Celery worker and beat |
 | `postgres`, `redis` | upstream | Data in named volumes |
@@ -74,9 +74,9 @@ Optional: `task prod-manage -- seed_demo` adds the fictitious demo workspace.
   `trusted_proxies`.
 - Caddy writes no access log, because provider callbacks carry OAuth codes in
   query strings. Keep it that way if you add logging.
-- HSTS is not set. Once the domain is settled, add
-  `header Strict-Transport-Security "max-age=31536000"` to `proxy/Caddyfile`.
-  Browsers keep this setting until it expires, so changing your mind later is slow.
+- `proxy/Caddyfile` sends `Strict-Transport-Security: max-age=31536000` on every
+  response, without `includeSubDomains` or `preload`. Browsers keep it for a year,
+  so serve the domain over HTTPS for that long or remove the header well before you stop.
 
 ## Operations
 

@@ -96,6 +96,8 @@ CSRF_COOKIE_SECURE = not DEBUG
 SECURE_SSL_REDIRECT = not DEBUG
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
+# proxy/Caddyfile sets HSTS for every response, including the frontend Django never serves.
+SILENCED_SYSTEM_CHECKS = ["security.W004"]
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": ["accounts.authentication.Session401Authentication"],
