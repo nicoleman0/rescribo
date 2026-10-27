@@ -4,7 +4,7 @@ How to cut a Rescribo release. `[project] version` in `pyproject.toml` is the on
 
 ## Checklist
 
-1. On a release branch, set `[project] version` in `pyproject.toml` to the PEP 440 form (`0.1.0rc1` for the candidate) and both image tags in `compose.prod.yaml` to the tag form (`0.1.0-rc.1`).
+1. On a release branch, set `[project] version` in `pyproject.toml` to the PEP 440 candidate form `X.Y.ZrcN` (for example `0.1.0rc1`) and both image tags in `compose.prod.yaml` to the tag form `X.Y.Z-rc.N` (for example `0.1.0-rc.1`).
 2. Move the `## [Unreleased]` entries in `CHANGELOG.md` into a new version section and update the compare links.
 3. Merge, then push the tag `vX.Y.Z-rc.N` from `main`. The image workflow runs on `v*` tags and publishes the candidate images.
 4. Clean-install check: follow the self-hoster quickstart with the candidate images, sign in, open the user menu, and confirm it shows the candidate version.

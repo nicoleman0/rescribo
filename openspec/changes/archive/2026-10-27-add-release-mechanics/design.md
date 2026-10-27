@@ -85,7 +85,7 @@ The template: one-line summary, highlights copied from the changelog section, up
 5. Set the date in the changelog heading, merge, push `vX.Y.Z`.
 6. Publish the GitHub release with notes from the template.
 
-The candidate and final versions must agree across the tag, `pyproject.toml`, and the two image tags in `compose.prod.yaml`: a candidate commits `pyproject.toml` as PEP 440 (`0.1.0rc1`) and the compose tags as `0.1.0-rc.1` before it tags `v0.1.0-rc.1`; a final release sets `0.1.0` in all three before it tags `v0.1.0`. The workflow fails when they disagree. After the first published release, the maintainer makes both GHCR packages public once.
+The candidate and final versions must agree across the tag, `pyproject.toml`, and the two image tags in `compose.prod.yaml`: a candidate commits `pyproject.toml` as PEP 440 (`0.1.0rc1`) and the compose tags as `0.1.0-rc.1` before it tags `v0.1.0-rc.1`; a final release sets `0.1.0` in all three before it tags `v0.1.0`. `docs/RELEASING.md` states the candidate forms in their general shapes (`X.Y.ZrcN`, `X.Y.Z-rc.N`) with the 0.1.0 values as examples. The workflow fails when they disagree. After the first published release, the maintainer makes both GHCR packages public once.
 
 It names the workflow by trigger ("runs on `v*` tags"), not by file contents.
 

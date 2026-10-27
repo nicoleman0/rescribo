@@ -24,7 +24,7 @@ Rescribo is in development. The Slack-to-GitHub-to-follow-up workflow is impleme
 
 Future work currently planned or considered:
 
-- **Teams** workspaces with team-level grouping and assignment.
+- **Microsoft Teams** capture alongside Slack.
 - **Discord** capture alongside Slack.
 - **GitLab** issues alongside GitHub.
 

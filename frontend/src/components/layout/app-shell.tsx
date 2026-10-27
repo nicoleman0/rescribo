@@ -237,7 +237,7 @@ function ShellContents({
               <p role="alert" className="max-w-48 text-xs text-destructive">
                 {signOutError}
               </p>
-            ) : null}{' '}
+            ) : null}
             {!isGallery && session ? (
               <UserMenu
                 phone
