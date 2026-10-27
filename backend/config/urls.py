@@ -25,6 +25,8 @@ from connections.views import (
     ConnectionListView,
     DisconnectView,
     GitHubWebhookView,
+    ModelConnectView,
+    ModelDeploymentView,
     RefreshView,
     ReportDeleteView,
     ReportPermalinkRetryView,
@@ -103,6 +105,14 @@ urlpatterns = [
         name="problem-fix-release-unlink",
     ),
     path("api/workspaces/<uuid:workspace_id>/connections/", ConnectionListView.as_view()),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/model/connect/",
+        ModelConnectView.as_view(),
+    ),
+    path(
+        "api/workspaces/<uuid:workspace_id>/connections/model/deployment/",
+        ModelDeploymentView.as_view(),
+    ),
     path(
         "api/workspaces/<uuid:workspace_id>/connections/<str:provider>/setup/", SetupView.as_view()
     ),

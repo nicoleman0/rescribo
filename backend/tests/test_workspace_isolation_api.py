@@ -177,6 +177,20 @@ ROUTES: dict[str, list[tuple[str, Body]]] = {
         ("post", lambda ids: {"version": 1, "confirmation": "DISCONNECT"})
     ],
     "connections/<str:provider>/refresh/": [("post", lambda ids: {"version": 1})],
+    # A private base URL, so even a request that got through could not leave the machine.
+    "connections/model/connect/": [
+        (
+            "post",
+            lambda ids: {
+                "api_style": "openai",
+                "base_url": "https://127.0.0.1/v1",
+                "model": "m",
+                "api_key": "k",
+                "consent": True,
+            },
+        )
+    ],
+    "connections/model/deployment/": [("get", lambda ids: None)],
     "channels/": [
         ("post", lambda ids: {"version": 1, "channel_id": "C0123", "consent": True}),
     ],

@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { ConfirmAction } from './confirm-action'
 import { ConnectionSettings } from './connection-settings'
 import { MembersSettings } from './members-settings'
+import { ModelProviderSettings } from './model-provider-settings'
 import { SlackAccount } from './slack-account'
 import { ThemeSettings } from './theme-settings'
 
@@ -58,7 +59,8 @@ export function ConnectionsSection() {
         <Alert role="note">
           <AlertTitle>Integrations are disabled in the demo</AlertTitle>
           <AlertDescription>
-            {demoDescription} Connecting Slack or GitHub is not available.
+            {demoDescription} Connecting Slack, GitHub, or a model provider is
+            not available.
           </AlertDescription>
         </Alert>
       ) : null}
@@ -94,6 +96,15 @@ export function ConnectionsSection() {
               )}
             />
           ))}
+          <ModelProviderSettings
+            workspaceId={workspace.id}
+            workspaceName={workspace.name}
+            owner={role === 'owner'}
+            demo={workspace.is_demo}
+            connection={connections.data.find(
+              (item) => item.provider === 'model',
+            )}
+          />
         </ReadyState>
       ) : null}
     </section>

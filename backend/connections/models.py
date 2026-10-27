@@ -13,6 +13,11 @@ class Connection(models.Model):
     class Provider(models.TextChoices):
         SLACK = "slack", "Slack"
         GITHUB = "github", "GitHub"
+        MODEL = "model", "Model provider"
+
+    class ApiStyle(models.TextChoices):
+        OPENAI = "openai", "OpenAI-compatible"
+        ANTHROPIC = "anthropic", "Anthropic"
 
     class Status(models.TextChoices):
         ACTIVE = "active", "Active"
@@ -35,6 +40,11 @@ class Connection(models.Model):
     visibility = models.CharField(max_length=16, blank=True)
     version = models.PositiveIntegerField(default=1)
     binding_revision = models.PositiveIntegerField(default=1)
+    # Model provider only. Blank when the deployment config file sets the provider.
+    api_style = models.CharField(max_length=10, choices=ApiStyle.choices, blank=True)
+    base_url = models.CharField(max_length=500, blank=True)
+    model = models.CharField(max_length=200, blank=True)
+    consented_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [

@@ -298,6 +298,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/connections/model/connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["workspaces_connections_model_connect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/connections/model/deployment/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["workspaces_connections_model_deployment_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/delete/": {
         parameters: {
             query?: never;
@@ -1264,6 +1296,12 @@ export interface components {
          * @enum {string}
          */
         ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "problem.fix_release_linked" | "problem.fix_release_unlinked" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked" | "follow_up.notification_approved" | "follow_up.notification_sent" | "follow_up.notification_failed" | "follow_up.notification_cancelled" | "follow_up.outcome_recorded" | "follow_up.outcome_corrected" | "follow_up.recipient_changed";
+        /**
+         * @description * `openai` - OpenAI-compatible
+         *     * `anthropic` - Anthropic
+         * @enum {string}
+         */
+        ApiStyleEnum: "openai" | "anthropic";
         AppVersion: {
             version: string;
         };
@@ -1321,13 +1359,17 @@ export interface components {
             version: number;
             channels: components["schemas"]["Channel"][];
             operations: components["schemas"]["OperationCounts"];
+            api_style: string;
+            base_url: string;
+            model: string;
         };
         /**
          * @description * `slack` - Slack
          *     * `github` - GitHub
+         *     * `model` - Model provider
          * @enum {string}
          */
-        ConnectionProviderEnum: "slack" | "github";
+        ConnectionProviderEnum: "slack" | "github" | "model";
         /**
          * @description * `active` - Active
          *     * `error` - Needs attention
@@ -1795,6 +1837,24 @@ export interface components {
             email: string;
             full_name: string;
             role: string;
+        };
+        /** @description Blank style, URL and model when the deployment config file sets the provider. */
+        ModelConnect: {
+            /** @default  */
+            api_style: components["schemas"]["ApiStyleEnum"] | components["schemas"]["BlankEnum"];
+            /** @default  */
+            base_url: string;
+            /** @default  */
+            model: string;
+            /** @default  */
+            api_key: string;
+            consent: boolean;
+        };
+        ModelDeployment: {
+            managed: boolean;
+            api_style: string;
+            base_url: string;
+            model: string;
         };
         /** @enum {unknown} */
         NullEnum: null;
@@ -2774,6 +2834,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_connections_model_connect_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelConnect"];
+                "application/x-www-form-urlencoded": components["schemas"]["ModelConnect"];
+                "multipart/form-data": components["schemas"]["ModelConnect"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    workspaces_connections_model_deployment_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelDeployment"];
                 };
             };
         };

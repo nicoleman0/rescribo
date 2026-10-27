@@ -1,0 +1,29 @@
+# Deployment settings. Copy to rescribo.toml, or set RESCRIBO_CONFIG_FILE to its path.
+# Every process checks this file at startup and stops on an error.
+#
+# [model] sets one model provider for every workspace. Settings then shows it
+# locked, and each workspace owner still enables it with consent. Keys never go
+# in this file: api_key_env names the environment variable that holds the key.
+# Only this file may point at http:// or private hosts.
+#
+# Uncomment one block.
+
+# --- OpenAI ---
+# [model]
+# api_style = "openai"
+# base_url = "https://api.openai.com/v1"
+# model = "gpt-5-mini"
+# api_key_env = "OPENAI_API_KEY"
+
+# --- Anthropic ---
+# [model]
+# api_style = "anthropic"
+# base_url = "https://api.anthropic.com"
+# model = "claude-haiku-5-5"
+# api_key_env = "ANTHROPIC_API_KEY"
+
+# --- Ollama ---
+# [model]
+# api_style = "openai"
+# base_url = "http://ollama:11434/v1"
+# model = "llama3.3"

@@ -16,6 +16,11 @@ class SetupError(Exception):
         super().__init__(detail)
 
 
+def known_error(code: str) -> SetupError:
+    """An error whose detail is the stored next step, so the two never drift."""
+    return SetupError(code, ERROR_DETAILS[code])
+
+
 PROVIDER_ERRORS = (
     SetupError,
     GitHubAPIError,
@@ -73,4 +78,24 @@ ERROR_DETAILS = {
     "installation_suspended": (
         "The GitHub App installation is suspended. Unsuspend it in GitHub, then refresh."
     ),
+    "model_auth_rejected": "The provider rejected the API key. Enter a new key and reconnect.",
+    "model_not_found": "The provider does not offer this model. Check the model name.",
+    "model_rate_limited": "The provider asked us to slow down. Wait, then check the status.",
+    "model_request_rejected": (
+        "The provider rejected the request. Check that the model supports JSON schema output."
+    ),
+    "model_no_structured_output": (
+        "The model did not return JSON that matches the schema. "
+        "Use a model that supports JSON schema output."
+    ),
+    "model_refused": "The model refused the request. Try another model.",
+    "endpoint_blocked": (
+        "The base URL must resolve only to public addresses. "
+        "Ask the operator to configure local or private servers."
+    ),
+    "key_required": "Enter an API key. A changed base URL or API style needs a new key.",
+    "deployment_managed": (
+        "This deployment sets the model provider. Enable it with consent; the values are fixed."
+    ),
+    "model_not_connected": "Connect a model provider in workspace settings.",
 }

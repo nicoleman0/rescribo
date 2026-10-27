@@ -265,3 +265,47 @@ test('an owner allows and removes a Slack channel from the picker', async ({
     .click()
   await expect(slack.getByText('No channels allowed yet.')).toBeVisible()
 })
+
+test('an owner sees the model provider form and a private base URL is refused', async ({
+  page,
+}) => {
+  const seed = await readSeed()
+  await signIn(page, seed.users[1])
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/settings/connections')
+  const card = page.getByRole('region', { name: 'Model provider' })
+  await expect(card.getByLabel('Provider', { exact: true })).toBeVisible()
+  await card.getByLabel('Provider', { exact: true }).selectOption('other')
+  await card
+    .getByLabel('Base URL', { exact: true })
+    .fill('https://127.0.0.1/v1')
+  await card.getByLabel('Model', { exact: true }).fill('e2e-model')
+  await card.getByLabel('API key', { exact: true }).fill('sk-e2e-not-a-key')
+  await card.getByRole('checkbox').check()
+  await card.getByRole('button', { name: 'Connect model provider' }).click()
+  await expect(card.getByText(/resolve only to public addresses/)).toBeVisible()
+  await expect(card.getByLabel('API key', { exact: true })).toHaveValue('')
+  expect(
+    await page.evaluate('document.documentElement.scrollWidth <= innerWidth'),
+  ).toBe(true)
+  await expectVisibleControlTouchTargets(page)
+  // The hover colour left by the click fails contrast: issue 273.
+  await page.mouse.move(0, 0)
+  expect(await axeViolations(page)).toEqual([])
+})
+
+test('a member sees the model provider status without a form', async ({
+  page,
+}) => {
+  const seed = await readSeed()
+  // User 6 has its password reset by the accounts spec.
+  await signIn(page, seed.users[7])
+  await page.goto('/settings/connections')
+  const card = page.getByRole('region', { name: 'Model provider' })
+  await expect(
+    card.getByText('Ask a workspace owner to connect a model provider.'),
+  ).toBeVisible()
+  await expect(card.getByRole('textbox')).toHaveCount(0)
+  await expect(card.getByRole('checkbox')).toHaveCount(0)
+  expect(await axeViolations(page)).toEqual([])
+})

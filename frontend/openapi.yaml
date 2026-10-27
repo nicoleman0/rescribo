@@ -653,6 +653,62 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
           description: ''
+  /api/workspaces/{workspace_id}/connections/model/connect/:
+    post:
+      operationId: workspaces_connections_model_connect_create
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModelConnect'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModelConnect'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModelConnect'
+        required: true
+      security:
+      - sessionCookie: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          description: ''
+  /api/workspaces/{workspace_id}/connections/model/deployment/:
+    get:
+      operationId: workspaces_connections_model_deployment_retrieve
+      parameters:
+      - in: path
+        name: workspace_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - workspaces
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModelDeployment'
+          description: ''
   /api/workspaces/{workspace_id}/delete/:
     post:
       operationId: workspaces_delete_create
@@ -4119,6 +4175,14 @@ components:
         * `follow_up.outcome_recorded` - Outcome recorded
         * `follow_up.outcome_corrected` - Outcome corrected
         * `follow_up.recipient_changed` - Recipient changed
+    ApiStyleEnum:
+      enum:
+      - openai
+      - anthropic
+      type: string
+      description: |-
+        * `openai` - OpenAI-compatible
+        * `anthropic` - Anthropic
     AppVersion:
       type: object
       properties:
@@ -4250,7 +4314,15 @@ components:
             $ref: '#/components/schemas/Channel'
         operations:
           $ref: '#/components/schemas/OperationCounts'
+        api_style:
+          type: string
+        base_url:
+          type: string
+        model:
+          type: string
       required:
+      - api_style
+      - base_url
       - channels
       - error_code
       - error_detail
@@ -4258,6 +4330,7 @@ components:
       - identity
       - last_reconciled_at
       - last_success_at
+      - model
       - operations
       - provider
       - repository
@@ -4269,10 +4342,12 @@ components:
       enum:
       - slack
       - github
+      - model
       type: string
       description: |-
         * `slack` - Slack
         * `github` - GitHub
+        * `model` - Model provider
     ConnectionStatusEnum:
       enum:
       - active
@@ -5350,6 +5425,49 @@ components:
       - full_name
       - id
       - role
+    ModelConnect:
+      type: object
+      description: Blank style, URL and model when the deployment config file sets
+        the provider.
+      properties:
+        api_style:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/ApiStyleEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        base_url:
+          type: string
+          default: ''
+          maxLength: 500
+        model:
+          type: string
+          default: ''
+          maxLength: 200
+        api_key:
+          type: string
+          writeOnly: true
+          default: ''
+          maxLength: 2000
+        consent:
+          type: boolean
+      required:
+      - consent
+    ModelDeployment:
+      type: object
+      properties:
+        managed:
+          type: boolean
+        api_style:
+          type: string
+        base_url:
+          type: string
+        model:
+          type: string
+      required:
+      - api_style
+      - base_url
+      - managed
+      - model
     NullEnum:
       enum:
       - null

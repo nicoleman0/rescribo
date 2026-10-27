@@ -271,7 +271,7 @@ export function ConnectionSettings({
 // Seconds, so two checks in the same minute differ.
 const checkTime = new Intl.DateTimeFormat(undefined, { timeStyle: 'medium' })
 
-function CheckResult({
+export function CheckResult({
   name,
   check,
   working,

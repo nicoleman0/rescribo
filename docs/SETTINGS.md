@@ -57,6 +57,51 @@ provider and browser session. State is single-use even if the provider exchange
 fails. Stored Slack tokens use authenticated Fernet encryption. API responses
 never contain provider credentials.
 
+## Model provider
+
+An owner connects one language model provider per workspace in Settings >
+Connections. Pick OpenAI, Anthropic, Google, OpenRouter, or another
+OpenAI-compatible server, then enter the model name and API key. Connecting
+requires consent that conversation and report content from the workspace will
+be sent to that provider. Rescribo then sends a fixed test prompt with no
+workspace content and saves the connection only if the model returns JSON that
+matches the test schema. Members can read the status, API style, base URL, and
+model.
+
+- Base URLs entered in Settings must be public `https://` URLs with no
+  credentials, query, or fragment. Every new connection resolves the host,
+  refuses it if any address is not public, and connects to the checked address.
+  Redirects are not followed.
+- The key is stored with the same Fernet encryption as Slack tokens and never
+  returned by the API. Changing the base URL or provider needs a new key.
+  Changing only the model keeps the stored key.
+- Model calls go through `connections.model_access.model_client`. It refuses
+  the demo workspace and any workspace without an active, consented connection.
+- Outbound model calls ignore `HTTPS_PROXY` and the other proxy variables. A
+  deployment that can reach the internet only through a proxy cannot use a
+  model provider yet.
+
+### Deployment default
+
+An operator can set the provider for every workspace in `rescribo.toml`. Copy
+`rescribo.toml.example` and uncomment one block. The file is read from the
+repository root (`/app/rescribo.toml` in the image), or from the path in
+`RESCRIBO_CONFIG_FILE`. With Compose, mount it into `backend`, `worker`, and
+`scheduler`, for example `./rescribo.toml:/app/rescribo.toml:ro`.
+
+- `api_key_env` names the environment variable that holds the key. The file
+  never holds the key. Omit it for a local server with no key.
+- Only this file may name an `http://` URL or a private host, such as Ollama,
+  LM Studio, or vLLM on the same network.
+- Settings shows the values locked. Each workspace owner still enables the
+  provider with consent and a passing test.
+- Every process checks the file at startup. An unknown key or API style, a
+  missing field, a bad base URL, an unset or empty `api_key_env` variable, or a
+  missing file at an explicit `RESCRIBO_CONFIG_FILE` stops startup with a
+  message naming the file and the problem. The key is never printed.
+- Adding or removing the `[model]` table stops existing workspace connections
+  until an owner connects again, because their consent named another provider.
+
 ## Disconnect and deletion
 
 Disconnect clears stored credentials and the installation binding, removes
@@ -65,6 +110,8 @@ notification operations are cancelled. Uncertain operations remain uncertain
 and become invalidated; sent history and reports remain. Reconnecting does not
 restore approvals. App-wide keys belong to the operator and are not deleted by
 a workspace disconnect. Disconnect does not uninstall a shared upstream App.
+Disconnecting the model provider deletes its key and the workspace's consent.
+It does not cancel notifications.
 
 Report deletion removes the report, snapshot, notification operations and
 report-related activity, leaving only a content-free deletion event. The
@@ -112,5 +159,6 @@ approval at use time. Settings checks do not count as issue reconciliation.
 GitHub operation counts include queued, running, failed, and uncertain issue
 creates. They do not include draft previews.
 
-Automated provider tests mock SDK/API responses. They do not verify a live OAuth
+Model provider tests mock the provider at the HTTP transport; no live model
+call is part of the checks. Automated provider tests mock SDK/API responses. They do not verify a live OAuth
 installation or a live send. Browser tests use a separate synthetic workspace.

@@ -5,7 +5,7 @@
 ```text
 backend/accounts/     Workspaces, memberships, invitations, sessions
 backend/feedback/     Reports, problems, issues, follow-ups, and activity
-backend/connections/  Slack and GitHub connections, capture, and delivery
+backend/connections/  Slack, GitHub, and model provider connections, capture, and delivery
 backend/integrations/ Provider clients, signing, and payload handling
 backend/operations/   Inbound receipts, durable operations, dispatch
 backend/config/       Django settings, routes, ASGI/WSGI, Celery bootstrap
@@ -30,6 +30,7 @@ Add a module when its workflow is implemented, not as a placeholder.
 | Feedback | Reports, problems, state transitions, grouping, resolution, follow-up, and business activity. |
 | Integrations/Slack | OAuth, source validation, shortcuts/modals, Slack payloads, and bot delivery. |
 | Integrations/GitHub | Installation verification, credentials, issue operations, webhooks, and reconciliation. |
+| Integrations/Model | `backend/integrations/model/`: the `rescribo.toml` deployment default, the public-address endpoint guard, OpenAI-compatible and Anthropic JSON clients, and the connection test. `connections/model_access.py` holds `model_client`, the only way a feature reaches a model. See [ADR 0010](adr/0010-model-provider-clients-and-config.md). |
 | Operations | Receipt deduplication, durable operation records, dispatch, recovery, and connection health. |
 | Matching | Rust ranker in `rust/matcher`; Django retrieval, runs, and member decisions in `backend/matching`. See [ADR 0003](adr/0003-local-rust-matcher.md). |
 

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import environ
@@ -6,6 +7,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from env_file import read_env_file
 from integrations.github_app.private_key import load_private_key
+from integrations.model.config import load_deployment_model
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 env = environ.Env(DJANGO_DEBUG=(bool, False))
@@ -204,3 +206,11 @@ RESCRIBO_GITHUB_CLIENT_SECRET = env("RESCRIBO_GITHUB_CLIENT_SECRET", default="")
 RESCRIBO_GITHUB_APP_ID = env("RESCRIBO_GITHUB_APP_ID", default="")
 RESCRIBO_GITHUB_PRIVATE_KEY = load_private_key(env("RESCRIBO_GITHUB_PRIVATE_KEY", default=""))
 RESCRIBO_GITHUB_WEBHOOK_SECRET = env("RESCRIBO_GITHUB_WEBHOOK_SECRET", default="")
+
+# Holds the env var name for the key, never the key: the client reads it at call time.
+RESCRIBO_CONFIG_FILE = env("RESCRIBO_CONFIG_FILE", default="")
+RESCRIBO_MODEL_DEPLOYMENT = load_deployment_model(
+    Path(RESCRIBO_CONFIG_FILE or BASE_DIR / "rescribo.toml"),
+    os.environ,
+    required=bool(RESCRIBO_CONFIG_FILE),
+)
