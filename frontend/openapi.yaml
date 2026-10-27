@@ -413,6 +413,20 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/version/:
+    get:
+      operationId: version_retrieve
+      tags:
+      - version
+      security:
+      - sessionCookie: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppVersion'
+          description: ''
   /api/workspaces/{workspace_id}/channels/:
     get:
       operationId: workspaces_channels_retrieve
@@ -4105,6 +4119,13 @@ components:
         * `follow_up.outcome_recorded` - Outcome recorded
         * `follow_up.outcome_corrected` - Outcome corrected
         * `follow_up.recipient_changed` - Recipient changed
+    AppVersion:
+      type: object
+      properties:
+        version:
+          type: string
+      required:
+      - version
     AssignReport:
       type: object
       properties:

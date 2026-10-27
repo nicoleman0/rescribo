@@ -4,42 +4,30 @@ Notable changes to this project. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+## [0.1.0] - YYYY-MM-DD
+
+First release of Rescribo. Customer feedback captured from Slack or manual entry is triaged into problems, grouped reports are linked to GitHub issues, fixes are confirmed against releases, and employees receive approved follow-up messages.
+
 ### Added
 
-- GitHub issue links, reviewed create previews, durable create operations, signed lifecycle receipts, manual refresh, and scheduled reconciliation for problem detail (#10).
-- GitHub workflow setup and recovery notes in `docs/GITHUB_WORKFLOW.md` (#10).
-- Report triage: link to an existing problem, create a problem and link in one step, move, ungroup, dismiss, restore, and assign or clear the assignee from the Inbox (#9).
-- Problems list with search, owner, status, report count, and review flag. Problem detail with editable title and summary, owner, linked reports with provenance, per-report assignment, and activity (#9).
-- `ReportNotificationOperation` records prepared employee notifications. Reassignment, moves, and ungrouping cancel unsent ones and keep sent history. No production path creates them yet ([ADR 0004](docs/adr/0004-report-notification-cancellation.md), #9).
-- Problem timelines record reports linked, moved, ungrouped, and reassigned, so removal history stays on the problem (#9).
-- Serif wordmark banner and concise product overview in the README; moved local setup instructions to `docs/LOCAL_DEVELOPMENT.md`.
-- Inbox with paginated reports, text and customer search, status/assignee/source filters, and a report detail panel showing provenance, assignee, triage state, and related problem (#6).
-- Manual report capture through the shared report workflow. Unsaved drafts survive failed requests and reloads in the same tab (#6).
-- Workspace report list, detail, and create endpoints, plus a member directory readable by all members (#6).
-- Workspace-scoped report and problem domain with provenance, transitions, row versions, and content-free activity (#38).
-- Workspace accounts and sessions: sign-in, sign-out, invitations, memberships, owner and member roles, and one-use password resets (#37).
-- `task bootstrap-owner` creates the first workspace owner. `task issue-owner-recovery` issues an owner recovery link or sets a password (#37).
-- Sign-in, invitation acceptance, and password reset pages in the frontend (#37).
-- `RESCRIBO_PUBLIC_BASE_URL` and `RESCRIBO_NUM_PROXIES` settings (#37).
-- UI foundation: app shell, design tokens, and shared components (#36).
-- Slack identity verification and follow-up boundary checks (#33).
-- Slack shortcut capture feasibility check and operator scripts (#29, #31).
-- GitHub installation and issue lifecycle feasibility checks (#27, #28).
-- Local development environment with PostgreSQL, Redis, and Celery.
-
-### Changed
-
-- UI foundation shell screenshots now capture the Follow-ups placeholder, because the Inbox and Problems show live data (#6, #9).
-- CI uploads Playwright screenshot differences when the browser checks fail (#6).
-- The custom user model replaces Django's `auth_user`. Existing local databases must be recreated before `task migrate`. See `docs/LOCAL_DEVELOPMENT.md` (#37).
-- Product access now requires an active workspace membership. `is_superuser` alone grants none (#37).
-
-### Fixed
-
-- Stabilized E2E touch-target measurements while preserving the 44px minimum (#137).
-- Retrying a manual report after a lost response returns the original report. Draft submission keys survive same-tab reloads and reset after success or discard (#41).
-- CI logs in to Docker Hub before it starts PostgreSQL and Redis, so the anonymous pull limit no longer fails it (#136).
+- Reports: manual capture with draft preservation, an inbox with text and customer search, status, assignee, and source filters, per-report assignment and editing, conflicting-edit detection, and an activity history.
+- Problems: one problem per recurring feedback, grouping of reports, an editable title and summary, an owner, a lifecycle from report to fix confirmation, linked reports naming where each report came from, directed state changes from problem detail, and a timeline of what was linked, moved, ungrouped, and reassigned, so removal history stays on the problem.
+- GitHub integration: connect a GitHub App with minimal permissions and one selected repository, open or link one GitHub issue per problem with a Markdown create preview, recover when issue creation fails, receive verified webhooks, keep the current issue state accurate with reconciliation, and be prompted to review when a linked issue is closed.
+- Fix releases: choose a release from the connected repository, link it to a confirmed fix, keep a snapshot of the linked release, and replace or remove the link.
+- Slack integration: owner-initiated OAuth installation with minimal bot scopes, verified shortcut requests linked to active members, capture from approved channels with server-side capture context and editable fields, fast acknowledgement, idempotent capture, asynchronous permalinks, account linking, and removal plus revocation.
+- Follow-ups: one deterministic draft per report revision reviewed by a member before sending, delivery to eligible employees with no guessed recipients, uncertain sends held back, recorded customer contact outcomes, and controlled recipient changes that refuse with a named cause.
+- Match suggestions: deterministic ranking of existing problems against a report in the same workspace, with explicit abstention, distinct failure categories, stale results discarded, and a human decision on every suggestion. Suggestions stay off until the evaluation gates pass.
+- Accounts: the first owner bootstrapped with `task bootstrap-owner`, one-use invitations, owner and member roles with the last owner protected, sign-in sessions, access revocation, issue and redeem limits on owner-issued password resets, and owner recovery links.
+- Workspaces: every record belongs to a verified workspace, foreign records are not found, and search, aggregation, references, and credentials are scoped.
+- Demo workspace: seeded demo data, a visible demo label, no real integrations, isolation from private workspaces, and a shared demo sign-in.
+- Web interface: app shell with breadcrumbs, collapsible sidebar, navigation counts, user menu with running version, theme choice with system theme support, readable status in every theme, reduced motion honoured, accessible forms, and a responsive layout for phones.
+- Self-hosting: a Compose production deployment, encrypted GitHub and Slack credentials at rest, no secrets or customer content in logs, short-lived capture contexts, inbound payload retention limits, and documented backup retention with a verified restore.
 
 ### Security
 
-- Owner-issued password resets are limited at issue and redeem time, and a new reset invalidates earlier ones (#37).
+- Owner-issued password resets are limited at issue and redeem time, and a new reset invalidates earlier ones.
+- GitHub and Slack credentials are encrypted and are never logged or exposed, and disconnecting keeps business records.
+- Product access requires an active workspace membership.
+
+[Unreleased]: https://github.com/nicoleman0/rescribo/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/nicoleman0/rescribo/releases/tag/v0.1.0

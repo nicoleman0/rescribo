@@ -10,6 +10,7 @@ import {
 } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { logout, getSession, sessionQueryKey } from '@/api/auth'
+import { getVersion, versionQueryKey } from '@/api/health'
 import { useOptionalWorkspace } from '@/components/auth/use-workspace'
 import { Wordmark } from '@/components/brand/wordmark'
 import { Badge } from '@/components/ui/badge'
@@ -138,6 +139,7 @@ function ShellContents({
   signOut,
   signOutPending,
   signOutError,
+  version,
 }: {
   children?: ReactNode
   isGallery: boolean
@@ -148,6 +150,7 @@ function ShellContents({
   signOut: () => void
   signOutPending: boolean
   signOutError?: string
+  version?: string
 }) {
   const { open, isMobile, toggleSidebar } = useSidebar()
   const [paletteOpen, setPaletteOpen] = useState(false)
@@ -201,6 +204,7 @@ function ShellContents({
                 collapsed={!open}
                 onSignOut={signOut}
                 signOutPending={signOutPending}
+                version={version}
               />
             </SidebarFooter>
           ) : null}
@@ -242,6 +246,7 @@ function ShellContents({
                 isDemo={isDemo}
                 onSignOut={signOut}
                 signOutPending={signOutPending}
+                version={version}
               />
             ) : null}
           </div>
@@ -295,6 +300,15 @@ export function AppShell({ children }: { children?: ReactNode }) {
     },
   })
   const counts = useNavigationCounts(workspaceId)
+  const versionQuery = useQuery({
+    queryKey: versionQueryKey,
+    queryFn: getVersion,
+    enabled: Boolean(sessionQuery.data),
+    retry: false,
+    // The version never changes between reloads; cache it for the session.
+    staleTime: Infinity,
+  })
+  const version = versionQuery.data?.version
   return (
     <TooltipProvider>
       <SidebarProvider
@@ -319,6 +333,7 @@ export function AppShell({ children }: { children?: ReactNode }) {
           signOut={() => signOut.mutate()}
           signOutPending={signOut.isPending}
           signOutError={signOut.isError ? signOut.error.message : undefined}
+          version={version}
         >
           {children}
         </ShellContents>

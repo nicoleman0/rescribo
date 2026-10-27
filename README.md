@@ -20,10 +20,19 @@ Rescribo is being built to help teams turn customer reports into engineering wor
 
 Rescribo is in development. The Slack-to-GitHub-to-follow-up workflow is implemented; the manual end-to-end check (#57) has not run yet. Failure and isolation coverage, retention, and the seeded demo (`task demo-seed`) are done. Local match suggestions stay off until the matcher passes its evaluation gates. Open work is in [`openspec/changes/`](openspec/changes/) and the [milestones](https://github.com/nicoleman0/rescribo/milestones).
 
+## Roadmap
+
+Future work currently planned or considered:
+
+- **Microsoft Teams** capture alongside Slack.
+- **Discord** capture alongside Slack.
+- **GitLab** issues alongside GitHub.
+
 ## Links
 
 - [Product specs](openspec/specs/)
 - [Local development guide](docs/LOCAL_DEVELOPMENT.md)
+- [Release checklist](docs/RELEASING.md)
 - [Walkthrough of the demo](docs/WALKTHROUGH.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Workspace settings and provider setup](docs/SETTINGS.md)

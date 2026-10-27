@@ -107,6 +107,47 @@ test('the user menu holds sign out and the UI gallery has no menu', async () => 
   ).toBeInTheDocument()
 })
 
+test('the user menu shows the version from the API', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const body = String(input).includes('/api/version/')
+        ? { version: '0.1.0' }
+        : session
+      return new Response(JSON.stringify(body), { status: 200 })
+    }),
+  )
+  const user = userEvent.setup()
+  renderShell('/inbox', true)
+  screen
+    .getAllByRole('button', { name: /User menu for Ada Lovelace/ })[0]
+    .focus()
+  await user.keyboard('{Enter}')
+  expect(await screen.findByText('Rescribo 0.1.0')).toBeInTheDocument()
+})
+
+test('a failed version request leaves the menu working without a version line', async () => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input).includes('/api/version/')
+        ? new Response('failed', { status: 500 })
+        : new Response(JSON.stringify(session), { status: 200 }),
+    ),
+  )
+  const user = userEvent.setup()
+  renderShell('/inbox', true)
+  screen
+    .getAllByRole('button', { name: /User menu for Ada Lovelace/ })[0]
+    .focus()
+  await user.keyboard('{Enter}')
+  await screen.findByRole('menuitem', { name: 'Sign out' })
+  await waitFor(() =>
+    expect(screen.queryByText(/Rescribo 0\./)).not.toBeInTheDocument(),
+  )
+  expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument()
+})
+
 test('sign out calls logout and navigates to sign in', async () => {
   const user = userEvent.setup()
   const fetcher = vi.fn(async (input: RequestInfo | URL) => {
@@ -275,7 +316,8 @@ test('does not show count badges when the count request fails', async () => {
   const fetcher = vi.fn(async () => new Response('failed', { status: 500 }))
   vi.stubGlobal('fetch', fetcher)
   renderShell('/inbox', true)
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3))
+  // Three count attempts plus the non-retrying version request.
+  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(4))
   expect(
     document.querySelectorAll('[data-slot="sidebar-menu-badge"]'),
   ).toHaveLength(0)

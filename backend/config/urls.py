@@ -78,7 +78,7 @@ from feedback.views import (
     ReportUnlinkView,
     WorkspaceReleaseListView,
 )
-from health.views import LiveView, ReadyView
+from health.views import LiveView, ReadyView, VersionView
 from matching.views import (
     ReportMatchRetryView,
     ReportMatchView,
@@ -163,6 +163,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/live/", LiveView.as_view(), name="health-live"),
     path("api/health/ready/", ReadyView.as_view(), name="health-ready"),
+    path("api/version/", VersionView.as_view(), name="version"),
     path("api/auth/login/", LoginView.as_view(), name="auth-login"),
     path("api/auth/demo/", DemoOfferView.as_view(), name="auth-demo"),
     path("api/auth/csrf/", CsrfView.as_view(), name="auth-csrf"),
