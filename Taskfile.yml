@@ -297,11 +297,15 @@ tasks:
       - docker compose --profile app down
 
   prod-up:
-    desc: Build, migrate, and start the production stack (docs/DEPLOYMENT.md)
+    desc: Pull, migrate, and start the production stack (docs/DEPLOYMENT.md)
     cmds:
-      - '{{.PROD_COMPOSE}} build'
       - '{{.PROD_COMPOSE}} run --rm backend python backend/manage.py migrate'
       - '{{.PROD_COMPOSE}} up -d --wait'
+
+  prod-build:
+    desc: Build production images from source
+    cmds:
+      - '{{.PROD_COMPOSE}} build'
 
   prod-stop:
     desc: Stop the production stack and keep its data
