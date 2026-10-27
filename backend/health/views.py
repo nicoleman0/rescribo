@@ -8,6 +8,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from health.version import VERSION
+
 
 class HealthSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=["ok", "unavailable"])
@@ -38,3 +40,17 @@ class ReadyView(APIView):
         except DatabaseError, RedisError:
             return Response({"status": "unavailable"}, status=503)
         return Response({"status": "ok"})
+
+
+class VersionSerializer(serializers.Serializer):
+    # connections.views also generates a "Version" component; name this one after the app.
+    version = serializers.CharField()
+
+    class Meta:
+        ref_name = "AppVersion"
+
+
+class VersionView(APIView):
+    @extend_schema(responses=VersionSerializer)
+    def get(self, request: Request) -> Response:
+        return Response({"version": VERSION})

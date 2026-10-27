@@ -246,7 +246,7 @@ colours and shadows and applies no animated transition.
 ## App shell
 
 - Desktop navigation uses a 14rem sidebar that collapses to an icon rail. Its state persists in this browser. Rows use `min-h-11`; phone navigation targets stay at 44px.
-- The user menu shows the member's name and email, theme choice, and Sign out. On phones, an avatar in the header opens the same menu. Demo workspaces show the fictitious data notice in the menu and keep the Demo badge in the header.
+- The user menu shows the member's name and email, theme choice, and Sign out. It also shows the running version as a muted "Rescribo X.Y.Z" line under the email, omitted while the version request loads or fails. On phones, an avatar in the header opens the same menu. Demo workspaces show the fictitious data notice in the menu and keep the Demo badge in the header.
 - Inbox and Follow-ups show counts from their filtered list queries. Zero, loading, and failed counts are hidden, and the count does not change the link name.
 - Breadcrumbs replace the header tagline. Detail pages show their section and record title. The header keeps an empty place for the command palette trigger.
 

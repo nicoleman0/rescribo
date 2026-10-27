@@ -202,6 +202,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/version/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["version_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/channels/": {
         parameters: {
             query?: never;
@@ -1248,6 +1264,9 @@ export interface components {
          * @enum {string}
          */
         ActivityActionEnum: "report.deleted" | "report.created" | "report.updated" | "report.assigned" | "report.linked" | "report.unlinked" | "report.dismissed" | "report.restored" | "problem.created" | "problem.updated" | "problem.state_changed" | "problem.fix_confirmed" | "problem.fix_release_linked" | "problem.fix_release_unlinked" | "engineering_issue.linked" | "engineering_issue.created" | "engineering_issue.unlinked" | "follow_up.notification_approved" | "follow_up.notification_sent" | "follow_up.notification_failed" | "follow_up.notification_cancelled" | "follow_up.outcome_recorded" | "follow_up.outcome_corrected" | "follow_up.recipient_changed";
+        AppVersion: {
+            version: string;
+        };
         AssignReport: {
             expected_version: number;
             /** Format: uuid */
@@ -2522,6 +2541,25 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+        };
+    };
+    version_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppVersion"];
                 };
             };
         };

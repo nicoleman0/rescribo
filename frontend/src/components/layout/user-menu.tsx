@@ -26,6 +26,7 @@ type Props = {
   phone?: boolean
   onSignOut: () => void
   signOutPending?: boolean
+  version?: string
 }
 
 export function UserMenu({
@@ -36,6 +37,7 @@ export function UserMenu({
   phone = false,
   onSignOut,
   signOutPending = false,
+  version,
 }: Props) {
   const [open, setOpen] = useState(false)
   const [preference, setPreference] = useThemePreference()
@@ -83,6 +85,11 @@ export function UserMenu({
           <span className="block truncate font-normal">
             {session.user.email}
           </span>
+          {version ? (
+            <span className="block truncate font-normal text-muted-foreground">
+              Rescribo {version}
+            </span>
+          ) : null}
           {isDemo ? (
             <span className="mt-2 block font-normal">{demoDescription}</span>
           ) : null}

@@ -41,6 +41,35 @@ test('shows identity, theme choices, and sign out in the menu', async () => {
   )
 })
 
+test('shows the version line only when the prop has a version', async () => {
+  const user = userEvent.setup()
+  const view = render(
+    <UserMenu
+      session={session}
+      workspaceName="Northwind"
+      isDemo={false}
+      onSignOut={vi.fn()}
+      version="0.1.0"
+    />,
+  )
+  const trigger = screen.getByRole('button', {
+    name: /User menu for Ada Lovelace/,
+  })
+  trigger.focus()
+  await user.keyboard('{Enter}')
+  expect(await screen.findByText('Rescribo 0.1.0')).toBeInTheDocument()
+  view.rerender(
+    <UserMenu
+      session={session}
+      workspaceName="Northwind"
+      isDemo={false}
+      onSignOut={vi.fn()}
+    />,
+  )
+  expect(screen.queryByText(/Rescribo 0\./)).not.toBeInTheDocument()
+  expect(screen.getByRole('menuitem', { name: 'Sign out' })).toBeInTheDocument()
+})
+
 test('marks the selected theme and calls sign out', async () => {
   const user = userEvent.setup()
   const onSignOut = vi.fn()
