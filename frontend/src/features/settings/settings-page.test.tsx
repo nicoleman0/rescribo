@@ -22,9 +22,13 @@ import {
 } from './settings-sections'
 
 const base = '/api/workspaces/ws-1/'
+const notManaged = () =>
+  json({ managed: false, api_style: '', base_url: '', model: '' })
+// Every Connections render also asks whether the deployment sets the model.
 const unlinked = {
   [`GET ${base}slack/identity/`]: () =>
     json({ linked: false, team_id: '', user_id: '', linked_at: null }),
+  [`GET ${base}connections/model/deployment/`]: notManaged,
 }
 function render(path = '/settings/connections') {
   return rtlRender(
@@ -228,6 +232,9 @@ const slackConnection = {
   version: 1,
   channels: [],
   operations: { queued: 0, running: 0, failed: 0, uncertain: 0 },
+  api_style: '',
+  base_url: '',
+  model: '',
 }
 
 test('a member generates a Slack linking code and sees the link once made', async () => {
@@ -311,12 +318,13 @@ test('the demo explains that integrations are disabled', async () => {
           slackConnection,
           { ...slackConnection, provider: 'github', identity: 'demo' },
         ]),
+      [`GET ${base}connections/model/deployment/`]: notManaged,
     })
     render('/settings/connections')
     const notice = await screen.findByRole('note')
     expect(notice).toHaveTextContent('Integrations are disabled in the demo')
     expect(notice).toHaveTextContent('Nothing is sent to Slack or GitHub.')
-    expect(await screen.findAllByText('Disabled in demo')).toHaveLength(2)
+    expect(await screen.findAllByText('Disabled in demo')).toHaveLength(3)
     expect(screen.queryByText('UDEMO')).not.toBeInTheDocument()
     render('/settings/slack-account')
     expect(
@@ -980,3 +988,185 @@ test.each([
     }
   },
 )
+
+// Model provider
+const modelConnection = {
+  ...slackConnection,
+  provider: 'model',
+  identity: '',
+  external_id: '',
+  api_style: 'anthropic',
+  base_url: 'https://api.anthropic.com',
+  model: 'claude-test',
+  last_success_at: '2026-10-01T10:00:00Z',
+}
+function modelApi(
+  connections: unknown[],
+  extra: Record<string, (url: URL, init?: RequestInit) => Response> = {},
+) {
+  return stubApi({
+    ...unlinked,
+    [`GET ${base}connections/`]: () => json(connections),
+    ...extra,
+  })
+}
+const modelCard = () => screen.findByRole('region', { name: 'Model provider' })
+const connectBodies = (fetch: ReturnType<typeof stubApi>) =>
+  fetch.mock.calls
+    .filter(([input]) => String(input).endsWith('connections/model/connect/'))
+    .map(([, init]) => JSON.parse(String(init?.body)))
+
+test('the model card reads not connected and asks a member to contact an owner', async () => {
+  modelApi([])
+  render()
+  const card = await modelCard()
+  expect(within(card).getByText('Not connected')).toHaveAttribute(
+    'data-tone',
+    'neutral',
+  )
+  expect(
+    within(card).getByText(
+      'Ask a workspace owner to connect a model provider.',
+    ),
+  ).toBeVisible()
+  expect(within(card).queryByRole('textbox')).not.toBeInTheDocument()
+  expect(within(card).queryByRole('checkbox')).not.toBeInTheDocument()
+})
+
+test('an active model card shows its values and no job counts', async () => {
+  modelApi([modelConnection])
+  render()
+  const card = await modelCard()
+  expect(within(card).getByText('Connected')).toHaveAttribute(
+    'data-tone',
+    'success',
+  )
+  expect(within(card).getByText('Anthropic')).toBeVisible()
+  expect(within(card).getByText('https://api.anthropic.com')).toBeVisible()
+  expect(within(card).getByText('claude-test')).toBeVisible()
+  expect(
+    within(card).getByText(formatDate('2026-10-01T10:00:00Z')),
+  ).toBeVisible()
+  expect(within(card).queryByRole('group', { name: 'Jobs' })).toBeNull()
+})
+
+test('a model connection in error shows the next step', async () => {
+  testMembership.role = 'owner'
+  modelApi([
+    {
+      ...modelConnection,
+      status: 'error',
+      error_code: 'model_auth_rejected',
+      error_detail: 'The provider rejected the API key.',
+    },
+  ])
+  render()
+  const card = await modelCard()
+  expect(within(card).getByText('Needs attention')).toBeVisible()
+  expect(
+    within(card).getByText('The provider rejected the API key.'),
+  ).toBeVisible()
+  expect(
+    within(card).getByRole('button', { name: 'Check model provider status' }),
+  ).toBeVisible()
+})
+
+test('picking a named provider fills its base URL, and consent gates connect', async () => {
+  testMembership.role = 'owner'
+  const fetch = modelApi([], {
+    [`POST ${base}connections/model/connect/`]: () =>
+      new Response(null, { status: 204 }),
+  })
+  render()
+  const card = await modelCard()
+  const user = userEvent.setup()
+  const baseUrl = await within(card).findByLabelText('Base URL')
+  expect(baseUrl).toHaveValue('https://api.openai.com/v1')
+  await user.selectOptions(within(card).getByLabelText('Provider'), 'anthropic')
+  expect(baseUrl).toHaveValue('https://api.anthropic.com')
+  await user.type(within(card).getByLabelText('Model'), 'claude-test')
+  const key = within(card).getByLabelText('API key')
+  expect(key).toHaveAttribute('type', 'password')
+  expect(key).toHaveAttribute('autocomplete', 'off')
+  await user.type(key, 'sk-test')
+  const connect = within(card).getByRole('button', {
+    name: 'Connect model provider',
+  })
+  expect(connect).toBeDisabled()
+  await user.click(within(card).getByRole('checkbox'))
+  await user.click(connect)
+  await vi.waitFor(() => expect(connectBodies(fetch)).toHaveLength(1))
+  expect(connectBodies(fetch)[0]).toEqual({
+    api_style: 'anthropic',
+    base_url: 'https://api.anthropic.com',
+    model: 'claude-test',
+    api_key: 'sk-test',
+    consent: true,
+  })
+})
+
+test('a failed connection test keeps the form but clears the key', async () => {
+  testMembership.role = 'owner'
+  modelApi([], {
+    [`POST ${base}connections/model/connect/`]: () =>
+      json(
+        {
+          detail: 'The model did not return JSON that matches the schema.',
+          reason: 'model_no_structured_output',
+          field_errors: {},
+        },
+        400,
+      ),
+  })
+  render()
+  const card = await modelCard()
+  const user = userEvent.setup()
+  await user.type(await within(card).findByLabelText('Model'), 'gpt-test')
+  await user.type(within(card).getByLabelText('API key'), 'sk-test')
+  await user.click(within(card).getByRole('checkbox'))
+  await user.click(
+    within(card).getByRole('button', { name: 'Connect model provider' }),
+  )
+  expect(
+    await within(card).findByText(/did not return JSON that matches/),
+  ).toBeVisible()
+  expect(within(card).getByLabelText('Model')).toHaveValue('gpt-test')
+  expect(within(card).getByLabelText('Base URL')).toHaveValue(
+    'https://api.openai.com/v1',
+  )
+  expect(within(card).getByLabelText('API key')).toHaveValue('')
+})
+
+test('a deployment-managed provider is read-only with only consent to enable', async () => {
+  testMembership.role = 'owner'
+  const fetch = modelApi([], {
+    [`GET ${base}connections/model/deployment/`]: () =>
+      json({
+        managed: true,
+        api_style: 'openai',
+        base_url: 'http://ollama:11434/v1',
+        model: 'llama3.3',
+      }),
+    [`POST ${base}connections/model/connect/`]: () =>
+      new Response(null, { status: 204 }),
+  })
+  render()
+  const card = await modelCard()
+  expect(
+    await within(card).findByText(/This deployment sets the model provider/),
+  ).toBeVisible()
+  expect(within(card).getByText('http://ollama:11434/v1')).toBeVisible()
+  expect(within(card).getByText('llama3.3')).toBeVisible()
+  expect(within(card).queryByLabelText('Base URL')).toBeNull()
+  expect(within(card).queryByLabelText('API key')).toBeNull()
+  expect(within(card).queryByLabelText('Provider')).toBeNull()
+  const enable = within(card).getByRole('button', {
+    name: 'Enable model provider',
+  })
+  expect(enable).toBeDisabled()
+  await userEvent.click(within(card).getByRole('checkbox'))
+  await userEvent.click(enable)
+  await vi.waitFor(() =>
+    expect(connectBodies(fetch)).toEqual([{ consent: true }]),
+  )
+})

@@ -20,7 +20,15 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.views import ErrorSerializer, OwnerWorkspaceView, WorkspaceView
-from connections import providers, services, slack_identity, slack_inbound, slack_outcomes
+from connections import (
+    model_access,
+    model_connection,
+    providers,
+    services,
+    slack_identity,
+    slack_inbound,
+    slack_outcomes,
+)
 from connections.models import Connection
 from feedback.deletion import delete_report, delete_workspace
 from feedback.errors import VersionConflict
@@ -31,6 +39,7 @@ from integrations.github_app.webhooks import (
     parse_delivery,
     verify_webhook_signature,
 )
+from integrations.model.endpoint import validate_settings_url
 from integrations.slack.errors import ChannelRejected
 from integrations.slack.messages import outcome_action_pairs
 from integrations.slack.shortcuts import ShortcutPayloadError
@@ -70,6 +79,41 @@ class ConnectionSerializer(serializers.Serializer):
     version = serializers.IntegerField()
     channels = ChannelSerializer(many=True)
     operations = OperationCountsSerializer()
+    # Model provider only; blank for Slack and GitHub.
+    api_style = serializers.CharField()
+    base_url = serializers.CharField()
+    model = serializers.CharField()
+
+
+class ModelConnectSerializer(serializers.Serializer):
+    """Blank style, URL and model when the deployment config file sets the provider."""
+
+    api_style = serializers.ChoiceField(
+        choices=Connection.ApiStyle.choices, required=False, default="", allow_blank=True
+    )
+    base_url = serializers.CharField(
+        max_length=500, required=False, default="", allow_blank=True, trim_whitespace=True
+    )
+    model = serializers.CharField(max_length=200, required=False, default="", allow_blank=True)
+    api_key = serializers.CharField(
+        max_length=2000, required=False, default="", allow_blank=True, write_only=True
+    )
+    consent = serializers.BooleanField()
+
+    def validate_base_url(self, value: str) -> str:
+        if not value:
+            return value
+        try:
+            return validate_settings_url(value)
+        except providers.SetupError as error:
+            raise serializers.ValidationError(error.detail) from None
+
+
+class ModelDeploymentSerializer(serializers.Serializer):
+    managed = serializers.BooleanField()
+    api_style = serializers.CharField()
+    base_url = serializers.CharField()
+    model = serializers.CharField()
 
 
 class VersionSerializer(serializers.Serializer):
@@ -143,6 +187,13 @@ def provider_name(provider: str) -> str:
     return provider
 
 
+def oauth_provider(provider: str) -> str:
+    """The model provider has no OAuth flow."""
+    if provider_name(provider) == Connection.Provider.MODEL:
+        raise NotFound()
+    return provider
+
+
 class ConnectionListView(WorkspaceView):
     @extend_schema(responses={200: ConnectionSerializer(many=True)})
     def get(self, request: Request, workspace_id: UUID) -> Response:
@@ -157,7 +208,7 @@ class ConnectionListView(WorkspaceView):
 class SetupView(OwnerWorkspaceView):
     @extend_schema(request=SetupSerializer, responses={200: URLSerializer, 400: ErrorSerializer})
     def post(self, request: Request, workspace_id: UUID, provider: str) -> Response:
-        provider_name(provider)
+        oauth_provider(provider)
         data = SetupSerializer(data=request.data)
         data.is_valid(raise_exception=True)
         if (
@@ -188,7 +239,7 @@ class SetupView(OwnerWorkspaceView):
 class CallbackView(OwnerWorkspaceView):
     @extend_schema(exclude=True)
     def get(self, request: Request, workspace_id: UUID, provider: str) -> Any:
-        provider_name(provider)
+        oauth_provider(provider)
         try:
             services.finish_setup(
                 self.membership,
@@ -201,6 +252,30 @@ class CallbackView(OwnerWorkspaceView):
             safe = providers.safe_provider_error(error)
             return Response({"detail": safe.detail, "reason": safe.code}, status=400)
         return HttpResponseRedirect("/settings/connections")
+
+
+class ModelConnectView(OwnerWorkspaceView):
+    @extend_schema(request=ModelConnectSerializer, responses={204: None, 400: ErrorSerializer})
+    def post(self, request: Request, workspace_id: UUID) -> Response:
+        data = ModelConnectSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        return translated(
+            lambda: model_connection.connect_model(self.membership, **data.validated_data)
+        )
+
+
+class ModelDeploymentView(WorkspaceView):
+    @extend_schema(responses={200: ModelDeploymentSerializer})
+    def get(self, request: Request, workspace_id: UUID) -> Response:
+        config = model_access.deployment()
+        return Response(
+            {
+                "managed": config is not None,
+                "api_style": config.api_style if config else "",
+                "base_url": config.base_url if config else "",
+                "model": config.model if config else "",
+            }
+        )
 
 
 class DisconnectView(OwnerWorkspaceView):

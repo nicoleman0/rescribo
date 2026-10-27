@@ -21,3 +21,9 @@ export const getSlackIdentity = (workspaceId: string) =>
   apiRequest<SlackIdentity>(settingsPath(workspaceId, 'slack/identity/'))
 export const getSlackChannels = (workspaceId: string) =>
   apiRequest<SlackChannelOptions>(settingsPath(workspaceId, 'channels/'))
+export type ModelDeployment = components['schemas']['ModelDeployment']
+export type ModelConnect = components['schemas']['ModelConnect']
+export const getModelDeployment = (workspaceId: string) =>
+  apiRequest<ModelDeployment>(
+    settingsPath(workspaceId, 'connections/model/deployment/'),
+  )

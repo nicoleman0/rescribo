@@ -13,7 +13,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from accounts.demo import DEMO_DETAIL, is_demo_workspace
 from accounts.models import Membership, Workspace
 from accounts.tokens import digest, issue_token
-from connections import providers
+from connections import model_access, providers
 from connections.errors import ERROR_DETAILS
 from connections.models import AllowedChannel, Connection, SetupState
 from feedback.models import Report
@@ -192,7 +192,10 @@ def disconnect(actor: Membership, provider: str, version: int) -> None:
     refuse_demo(actor)
     with transaction.atomic():
         row = lock_connection(actor, provider, version)
-        cancel_notifications(actor.workspace_id)
+        if provider == Connection.Provider.MODEL:
+            clear_model(row)
+        else:
+            cancel_notifications(actor.workspace_id)
         row.credential = ""
         # Removing the installation binding prevents future installation-token minting.
         row.external_id = ""
@@ -205,6 +208,14 @@ def disconnect(actor: Membership, provider: str, version: int) -> None:
         SetupState.objects.filter(
             actor__workspace_id=actor.workspace_id, provider=provider, used_at__isnull=True
         ).update(used_at=timezone.now())
+
+
+def clear_model(row: Connection) -> None:
+    """Disconnecting deletes the key and the consent; reconnecting asks for both again."""
+    row.api_style = ""
+    row.base_url = ""
+    row.model = ""
+    row.consented_at = None
 
 
 def update_channel(actor: Membership, version: int, channel_id: str, remove: bool) -> None:
@@ -248,14 +259,14 @@ def refresh_connection(actor: Membership, provider: str, version: int) -> None:
                 "not_connected", "Connect the application before checking its status."
             )
         try:
-            providers.check_connection(
-                provider, row.credential, row.external_id, row.repository, row.repository_id
-            )
+            providers.check_connection(row)
         except providers.PROVIDER_ERRORS as error:
             failure = providers.safe_provider_error(error)
             row.status = Connection.Status.ERROR
             row.error_code = failure.code
-            cancel_notifications(actor.workspace_id)
+            # Notifications go through Slack and GitHub; a model failure leaves them alone.
+            if provider != Connection.Provider.MODEL:
+                cancel_notifications(actor.workspace_id)
         else:
             row.status = Connection.Status.ACTIVE
             row.error_code = ""
@@ -270,7 +281,9 @@ def connection_payload(row: Connection) -> dict[str, Any]:
     from feedback.models import ReportNotificationOperation
     from operations.models import ExternalOperation
 
-    if row.provider == "github":
+    if row.provider == Connection.Provider.MODEL:
+        counts = dict.fromkeys(("queued", "running", "failed", "uncertain"), 0)
+    elif row.provider == "github":
         counts = {
             state: ExternalOperation.objects.filter(
                 workspace_id=row.workspace_id,
@@ -291,7 +304,7 @@ def connection_payload(row: Connection) -> dict[str, Any]:
             ).count()
             for state in ("queued", "failed", "uncertain")
         }
-    return {
+    values = {
         key: getattr(row, key)
         for key in (
             "provider",
@@ -305,13 +318,19 @@ def connection_payload(row: Connection) -> dict[str, Any]:
             "repository",
             "visibility",
             "version",
+            "api_style",
+            "base_url",
+            "model",
         )
-    } | {
+    }
+    if row.provider == Connection.Provider.MODEL:
+        values |= model_access.model_fields(row)
+    return values | {
         "channels": list(
             row.channels.order_by("channel_id").values(
                 "channel_id", "name", "is_private", "verified_at"
             )
         ),
         "operations": counts,
-        "error_detail": ERROR_DETAILS.get(row.error_code, ""),
+        "error_detail": ERROR_DETAILS.get(values["error_code"], ""),
     }

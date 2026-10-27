@@ -1,5 +1,7 @@
 .env
 .env.*
+# Operator deployment settings; rescribo.toml.example is the template.
+rescribo.toml
 !.env.example
 !.env.production.example
 .venv/
