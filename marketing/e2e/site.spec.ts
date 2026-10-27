@@ -15,7 +15,7 @@ test('public content, keyboard navigation, and self-hosted project link', async 
 }) => {
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(
-    'Customer feedback, carried through to a fix',
+    'Team conversations, carried through to shipped code',
   )
   await expect(page.getByRole('heading', { level: 3 })).toHaveText([
     'Capture',

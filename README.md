@@ -8,13 +8,12 @@
 [![Python 3.14](https://img.shields.io/badge/Python-3.14-3776AB?logo=python&logoColor=white)](docs/LOCAL_DEVELOPMENT.md#requirements)
 [![Node.js 24](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)](docs/LOCAL_DEVELOPMENT.md#requirements)
 
-Mention Rescribo in a Slack thread. It drafts a GitHub issue with the relevant code, hands it to a coding agent or an engineer, and pings the thread when the pull request is ready for review.
+Rescribo is being built to help teams turn conversations into shipped code. Mention it in a Slack thread, and it drafts the GitHub issue, gets it built, and pings the thread when the pull request is ready for review.
 
 ## How it works
 
 - **Capture:** Mention Rescribo in a Slack thread, use the message shortcut, or enter a request by hand. Ideas, bugs, feature asks, and customer reports all work.
-- **Draft:** A language model groups related requests and drafts an agent-ready GitHub issue with repository context.
-- **Build:** Hand the issue to a coding agent or an engineer.
+- **Connect:** A language model groups related requests and drafts an agent-ready GitHub issue with repository context. A coding agent or an engineer builds it.
 - **Follow up:** Rescribo pings the conversation when the pull request is ready for review, and again when the fix ships.
 
 Models draft and suggest. A member approves every write to GitHub and Slack. Bring your own model: OpenAI, Anthropic, Google, OpenRouter, or a local OpenAI-compatible server.
